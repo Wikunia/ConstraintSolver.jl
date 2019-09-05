@@ -135,7 +135,7 @@ function get_weak_ind(com::CS.CoM)
     return found, best_ind
 end
 
-function backtrack(com::CS.CoM)
+function rec_backtrack(com::CS.CoM)
     found, ind = get_weak_ind(com)
     if !found 
         empty!(com.search_space)
@@ -159,7 +159,7 @@ function backtrack(com::CS.CoM)
         end
         # value is still possible => set it
         com.grid[ind] = pval
-        status = backtrack(com)
+        status = rec_backtrack(com)
         if status == :Solved
             return :Solved
         end
@@ -168,7 +168,7 @@ function backtrack(com::CS.CoM)
     return :Infeasible
 end
 
-function solve(com::CS.CoM)
+function solve(com::CS.CoM; backtrack=true)
     if length(com.search_space) == 0
         return :Solved
     end
@@ -207,8 +207,16 @@ function solve(com::CS.CoM)
         return :Infeasible
     end
 
-    status = backtrack(com)
-    return status
+    if length(com.search_space) == 0
+        return :Solved
+    end
+
+    if backtrack
+        return rec_backtrack(com)
+    else
+        @info "Backtracking is turned off."
+        return :NotSolved
+    end
 end
 
 end # module
