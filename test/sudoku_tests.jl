@@ -20,6 +20,26 @@
     @test fulfills_sudoku_constr(com)
 end
 
+@testset "Hard Sudoku no backtrack" begin
+    com = CS.init()
+
+    grid = zeros(Int8, (9,9))
+    grid[1,:] = [0 0 0 5 4 6 0 0 9]
+    grid[2,:] = [0 2 0 0 0 0 0 0 7]
+    grid[3,:] = [0 0 3 9 0 0 0 0 4]
+    grid[4,:] = [9 0 5 0 0 0 0 7 0]
+    grid[5,:] = [7 0 0 0 0 0 0 2 0]
+    grid[6,:] = [0 0 0 0 9 3 0 0 0]
+    grid[7,:] = [0 5 6 0 0 8 0 0 0]
+    grid[8,:] = [0 1 0 0 3 9 0 0 0]
+    grid[9,:] = [0 0 0 0 0 0 8 0 6]
+
+    add_sudoku_constr!(com, grid)
+
+    CS.solve(com; backtrack=false)
+    CS.print_search_space(com; max_length=12)
+end
+
 @testset "Hard sudoku" begin
     com = CS.init()
 
@@ -40,6 +60,27 @@ end
     @test fulfills_sudoku_constr(com)
 end
 
+@testset "Hard sudoku infeasible" begin
+    com = CS.init()
+
+    grid = zeros(Int8,(9,9))
+    grid[1,:] = [0 0 0 5 4 6 0 0 9]
+    grid[2,:] = [0 2 0 0 0 0 0 0 7]
+    grid[3,:] = [0 0 3 9 0 0 0 0 4]
+    grid[4,:] = [9 0 5 0 0 0 0 7 3]
+    grid[5,:] = [7 0 0 0 0 0 0 2 0]
+    grid[6,:] = [0 0 0 0 9 3 0 0 0]
+    grid[7,:] = [0 5 6 0 0 8 0 0 0]
+    grid[8,:] = [0 1 0 0 3 9 0 0 0]
+    grid[9,:] = [0 0 0 0 0 0 8 0 6]
+
+    add_sudoku_constr!(com, grid)
+
+    @test CS.solve(com) == :Infeasible
+    @test !fulfills_sudoku_constr(com)
+end
+
+
 @testset "Hard fsudoku repo" begin
     com = CS.init()
 
@@ -59,4 +100,6 @@ end
     @test CS.solve(com) == :Solved
     @test fulfills_sudoku_constr(com)
 end
+
+
 end
