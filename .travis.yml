@@ -1,0 +1,15 @@
+language: julia
+os:
+  - linux
+  - osx
+julia:
+  - 1.0
+  - 1.2
+  - nightly
+matrix:
+  allow_failures:
+    - julia: nightly
+codecov: true
+cache:
+ directories:
+   - /home/travis/.julia
