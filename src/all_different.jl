@@ -26,6 +26,7 @@ function all_different(com::CS.CoM, indices)
                         return false
                     end
                     com.grid[i] = only_value
+                    delete!(com.search_space, i)
                     com.changed[i] = true
                     break 
                 end
