@@ -2,3 +2,4 @@ test/current.jl
 Manifest.toml
 gif
 visualizations/*.png
+literature/
