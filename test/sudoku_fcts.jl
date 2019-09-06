@@ -1,6 +1,4 @@
 function add_sudoku_constr!(com, grid)
-    CS.build_search_space(com, grid,[1,2,3,4,5,6,7,8,9],0)
-
     for rc=1:9
         #row
         CS.add_constraint(com, CS.all_different, CartesianIndices((rc:rc,1:9)))
