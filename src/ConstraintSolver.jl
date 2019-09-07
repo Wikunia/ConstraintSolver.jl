@@ -54,7 +54,7 @@ function arr2dict(arr)
     return d
 end
 
-function build_search_space(com::CS.CoM, grid::AbstractArray, pvals::Vector{Int}, if_val::Int)
+function build_search_space!(com::CS.CoM, grid::AbstractArray, pvals::Vector{Int}, if_val::Int)
     com.grid                = copy(grid)
     com.constraints         = Vector{Constraint}()
     com.subscription        = Dict{CartesianIndex,Vector}()
@@ -136,13 +136,13 @@ function fixed_vs_unfixed(com::CS.CoM, indices)
 end
 
 """
-    add_constraint(com::CS.CoM, fct, indices)
+    add_constraint!(com::CS.CoM, fct, indices)
 
 Add a constraint using a function name and the indices 
 i.e
 all_different on CartesianIndices corresponding to the grid structure
 """
-function add_constraint(com::CS.CoM, fct, indices)
+function add_constraint!(com::CS.CoM, fct, indices)
     current_constraint_number = length(com.constraints)+1
     constraint = Constraint(current_constraint_number, fct, indices)
     push!(com.constraints, constraint)
@@ -174,7 +174,12 @@ function get_weak_ind(com::CS.CoM)
     return found, best_ind
 end
 
-function reverse_pruning!(com, constraints, constraint_outputs)
+"""
+    reverse_pruning!(com, constraints, constraint_outputs)
+
+Reverse the changes made by constraints using their ConstraintOutputs
+"""
+function reverse_pruning!(com::CS.CoM, constraints, constraint_outputs)
     for cidx = 1:length(constraint_outputs)
         constraint = constraints[cidx]
         constraint_output = constraint_outputs[cidx]
@@ -196,7 +201,7 @@ function reverse_pruning!(com, constraints, constraint_outputs)
     end
 end
 
-function rec_backtrack(com::CS.CoM)
+function rec_backtrack!(com::CS.CoM)
     com.info.backtrack_counter += 1
     found, ind = get_weak_ind(com)
     if !found 
@@ -234,7 +239,7 @@ function rec_backtrack(com::CS.CoM)
             continue
         end
 
-        status = rec_backtrack(com)
+        status = rec_backtrack!(com)
         if status == :Solved
             return :Solved
         else 
@@ -247,7 +252,7 @@ function rec_backtrack(com::CS.CoM)
     return :Infeasible
 end
 
-function solve(com::CS.CoM; backtrack=true)
+function solve!(com::CS.CoM; backtrack=true)
     if length(com.search_space) == 0
         return :Solved
     end
@@ -310,7 +315,7 @@ function solve(com::CS.CoM; backtrack=true)
     end
     if backtrack
         com.info.backtracked = true
-        return rec_backtrack(com)
+        return rec_backtrack!(com)
     else
         @info "Backtracking is turned off."
         return :NotSolved

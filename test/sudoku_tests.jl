@@ -14,10 +14,10 @@
     grid[8,:] = [0,9,4,0,0,7,8,0,0]
     grid[9,:] = [2,0,0,5,0,0,0,4,0]
 
-    CS.build_search_space(com, grid,[1,2,3,4,5,6,7,8,9],0)
+    CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
     add_sudoku_constr!(com, grid)
 
-    @test CS.solve(com) == :Solved
+    @test CS.solve!(com) == :Solved
     @test fulfills_sudoku_constr(com)
 end
 
@@ -35,10 +35,10 @@ end
     grid[8,:] = [0 1 0 0 3 9 0 0 0]
     grid[9,:] = [0 0 0 0 0 0 8 0 6]
 
-    CS.build_search_space(com, grid,[1,2,3,4,5,6,7,8,9],0)
+    CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
     add_sudoku_constr!(com, grid)
 
-    CS.solve(com; backtrack=false)
+    CS.solve!(com; backtrack=false)
     CS.print_search_space(com; max_length=12)
 end
 
@@ -56,10 +56,10 @@ end
     grid[8,:] = [0 1 0 0 3 9 0 0 0]
     grid[9,:] = [0 0 0 0 0 0 8 0 6]
 
-    CS.build_search_space(com, grid,[1,2,3,4,5,6,7,8,9],0)
+    CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
     add_sudoku_constr!(com, grid)
 
-    @test CS.solve(com) == :Solved
+    @test CS.solve!(com) == :Solved
     @test fulfills_sudoku_constr(com)
 end
 
@@ -77,10 +77,10 @@ end
     grid[8,:] = [0 1 0 0 3 9 0 0 0]
     grid[9,:] = [0 0 0 0 0 0 8 0 6]
 
-    CS.build_search_space(com, grid,[1,2,3,4,5,6,7,8,9],0)
+    CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
     add_sudoku_constr!(com, grid)
 
-    @test CS.solve(com) == :Infeasible
+    @test CS.solve!(com) == :Infeasible
     @test !fulfills_sudoku_constr(com)
 end
 
@@ -99,10 +99,10 @@ end
     grid[8,:] = [0 8 0 0 7 3 0 5 0]
     grid[9,:] = [0 0 0 0 0 0 0 0 0]
 
-    CS.build_search_space(com, grid,[1,2,3,4,5,6,7,8,9],0)
+    CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
     add_sudoku_constr!(com, grid)
 
-    @test CS.solve(com) == :Solved
+    @test CS.solve!(com) == :Solved
     @test fulfills_sudoku_constr(com)
 end
 
@@ -121,10 +121,10 @@ end
     grid[9,:] = [0 0 0 0 0 0 0 0 0]
     grid .-= 1
 
-    CS.build_search_space(com, grid,[0,1,2,3,4,5,6,7,8],-1)
+    CS.build_search_space!(com, grid,[0,1,2,3,4,5,6,7,8],-1)
     add_sudoku_constr!(com, grid)
 
-    @test CS.solve(com) == :Solved
+    @test CS.solve!(com) == :Solved
     @test fulfills_sudoku_constr(com)
 end
 
@@ -144,10 +144,10 @@ end
     grid .+= 20
     grid .*= 2
 
-    CS.build_search_space(com, grid,[42,44,46,48,50,52,54,56,58],40)
+    CS.build_search_space!(com, grid,[42,44,46,48,50,52,54,56,58],40)
     add_sudoku_constr!(com, grid)
 
-    @test CS.solve(com) == :Solved
+    @test CS.solve!(com) == :Solved
     @test fulfills_sudoku_constr(com)
 end
 

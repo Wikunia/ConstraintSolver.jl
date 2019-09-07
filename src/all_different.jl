@@ -3,7 +3,7 @@
 
 Tries to reduce the search space by the all_different constraint. 
 Fixes values and then sets com.changed to true for the corresponding index.
-Returns true if the problem is still feasible and false otherwise, in that cases it also throws a warning if `logs` is set
+Returns a ConstraintOutput object and throws a warning if infeasible and `logs` is set
 """
 function all_different(com::CS.CoM, indices; logs = true)
     changed = Dict{CartesianIndex, Bool}()
