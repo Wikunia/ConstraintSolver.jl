@@ -157,16 +157,26 @@ end
 function get_weak_ind(com::CS.CoM)
     lowest_num_pvals = length(com.pvals)+1
     best_ind = CartesianIndex(-1,-1)
+    biggest_dependent = typemax(Int)
     found = false
     for ind in keys(com.grid)
         if com.grid[ind] == com.not_val
             num_pvals = length(com.search_space[ind])
-            if num_pvals < lowest_num_pvals
-                lowest_num_pvals = num_pvals
-                best_ind = ind
-                found = true
-                if num_pvals == 2
-                    return found, best_ind
+            if num_pvals <= lowest_num_pvals
+                dependent = 0
+                constraints = com.constraints[com.subscription[ind]]
+                for constraint in constraints
+                    for cind in constraint.indices
+                        if haskey(com.search_space, cind)
+                            dependent += length(com.search_space[cind])
+                        end
+                    end
+                end
+                if dependent > biggest_dependent || num_pvals < lowest_num_pvals
+                    lowest_num_pvals = num_pvals
+                    biggest_dependent = dependent
+                    best_ind = ind
+                    found = true
                 end
             end
         end
