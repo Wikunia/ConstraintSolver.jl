@@ -239,6 +239,52 @@ function rec_backtrack!(com::CS.CoM)
             continue
         end
 
+         # prune on fixed vals
+         co_idx = 1
+         constraint_idxs_dict = Dict{Int, Bool}()
+         # get all constraints which need to be called (only once)
+         while co_idx < length(constraint_outputs)
+             constraint_output = constraint_outputs[co_idx]
+             for fixed_ind in keys(constraint_output.fixed)
+                 inner_constraints = com.constraints[com.subscription[fixed_ind]]
+                 for constraint in inner_constraints
+                     constraint_idxs_dict[constraint.idx] = true
+                 end
+             end
+             co_idx += 1
+         end
+         constraint_idxs = collect(keys(constraint_idxs_dict))
+         con_counter = 0
+         # while we haven't called every constraint
+         while length(constraint_idxs_dict) > 0
+             con_counter += 1
+             constraint = com.constraints[constraint_idxs[con_counter]]
+             delete!(constraint_idxs_dict, constraint.idx)
+ 
+             constraint_output = constraint.fct(com, constraint.indices; logs = false)
+             push!(constraint_outputs, constraint_output)
+             push!(constraints, constraint)
+             if !constraint_output.feasible
+                 feasible = false
+                 break
+             end
+ 
+             # if we fixed another value => add the corresponding constraint to the list
+             # iff the constraint will not be called anyway in the list 
+             for ind in keys(constraint_output.idx_changed)
+                 for constraint in com.constraints[com.subscription[ind]]
+                     if !haskey(constraint_idxs_dict, constraint.idx)
+                         constraint_idxs_dict[constraint.idx] = true
+                         push!(constraint_idxs, constraint.idx)
+                     end
+                 end
+             end
+         end
+         if !feasible
+             reverse_pruning!(com, constraints, constraint_outputs)
+             continue
+         end
+
         status = rec_backtrack!(com)
         if status == :Solved
             return :Solved
