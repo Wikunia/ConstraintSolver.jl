@@ -2,4 +2,6 @@ test/current.jl
 Manifest.toml
 gif
 visualizations/*.png
+visualizations/*.wav
+visualizations/*.mp4
 literature/
