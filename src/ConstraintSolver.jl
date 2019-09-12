@@ -1,11 +1,14 @@
 module ConstraintSolver
 
+using MatrixNetworks
+
 CS = ConstraintSolver
 
 mutable struct CSInfo
     pre_backtrack_calls :: Int
     backtracked         :: Bool
     backtrack_counter   :: Int
+    in_backtrack_calls  :: Int
 end
 
 function Base.show(io::IO, csinfo::CSInfo)
@@ -55,13 +58,13 @@ function arr2dict(arr)
 end
 
 function build_search_space!(com::CS.CoM, grid::AbstractArray, pvals::Vector{Int}, if_val::Int)
-    com.grid                = copy(grid)
+    com.grid                = grid
     com.constraints         = Vector{Constraint}()
     com.subscription        = Dict{CartesianIndex,Vector}()
     com.search_space        = Dict{CartesianIndex,Dict{Int,Bool}}()
     com.pvals               = pvals
     com.not_val             = if_val
-    com.info                = CSInfo(0, false, 0)
+    com.info                = CSInfo(0, false, 0, 0)
 
     for i in keys(grid)
         if grid[i] == if_val
@@ -117,17 +120,17 @@ function print_search_space(com::CS.CoM; max_length=:default)
 end 
 
 """
-    fixed_vs_unfixed(com::CS.CoM, indices)
+    fixed_vs_unfixed(grid, not_val, indices)
 
 Returns the fixed_vals as well as the unfixed_indices
 """
-function fixed_vs_unfixed(com::CS.CoM, indices)
+function fixed_vs_unfixed(grid, not_val, indices)
     # get all values which are fixed
     fixed_vals = Int[]
     unfixed_indices = CartesianIndex[]
     for i in indices
-        if com.grid[i] != com.not_val
-            push!(fixed_vals, com.grid[i])
+        if grid[i] != not_val
+            push!(fixed_vals, grid[i])
         else
             push!(unfixed_indices, i)
         end
@@ -191,15 +194,15 @@ Prune based on previous constraint_outputs.
 Add new constraints and constraint outputs to the corresponding inputs.
 Returns feasible, constraints, constraint_outputs
 """
-function prune!(com, constraints, constraint_outputs)
+function prune!(com, constraints, constraint_outputs; pre_backtrack=false)
     feasible = true
     co_idx = 1
     constraint_idxs_dict = Dict{Int, Bool}()
     # get all constraints which need to be called (only once)
     while co_idx < length(constraint_outputs)
         constraint_output = constraint_outputs[co_idx]
-        for fixed_ind in keys(constraint_output.fixed)
-            inner_constraints = com.constraints[com.subscription[fixed_ind]]
+        for changed_idx in keys(constraint_output.idx_changed)
+            inner_constraints = com.constraints[com.subscription[changed_idx]]
             for constraint in inner_constraints
                 constraint_idxs_dict[constraint.idx] = true
             end
@@ -213,10 +216,18 @@ function prune!(com, constraints, constraint_outputs)
         con_counter += 1
         constraint = com.constraints[constraint_idxs[con_counter]]
         delete!(constraint_idxs_dict, constraint.idx)
-
+        if findfirst(v->v == com.not_val, com.grid[constraint.indices]) === nothing
+            continue
+        end
         constraint_output = constraint.fct(com, constraint.indices; logs = false)
-        push!(constraint_outputs, constraint_output)
-        push!(constraints, constraint)
+        if !pre_backtrack
+            com.info.in_backtrack_calls += 1
+            push!(constraint_outputs, constraint_output)
+            push!(constraints, constraint)
+        else
+            com.info.pre_backtrack_calls += 1
+        end
+        
         if !constraint_output.feasible
             feasible = false
             break
@@ -264,12 +275,12 @@ function reverse_pruning!(com::CS.CoM, constraints, constraint_outputs)
 end
 
 function rec_backtrack!(com::CS.CoM)
-    com.info.backtrack_counter += 1
     found, ind = get_weak_ind(com)
     if !found 
         empty!(com.search_space)
         return :Solved
     end
+    com.info.backtrack_counter += 1
 
     pvals = keys(com.search_space[ind])
     for pval in pvals
@@ -288,7 +299,7 @@ function rec_backtrack!(com::CS.CoM)
         # value is still possible => set it
         com.grid[ind] = pval
         constraint_outputs = ConstraintOutput[]
-        for (cidx, constraint) in enumerate(constraints)
+        for constraint in constraints
             constraint_output = constraint.fct(com, constraint.indices; logs = false)
             push!(constraint_outputs, constraint_output)
             if !constraint_output.feasible
@@ -329,12 +340,8 @@ function solve!(com::CS.CoM; backtrack=true)
 
     changed = Dict{CartesianIndex, Bool}()
     feasible = true
-    constraints = deepcopy(com.constraints)
     constraint_outputs = ConstraintOutput[]
-    for constraint in constraints
-        if findfirst(v->v == com.not_val, com.grid[constraint.indices]) === nothing 
-            continue
-        end
+    for constraint in com.constraints
         com.info.pre_backtrack_calls += 1
         constraint_output = constraint.fct(com, constraint.indices)
         push!(constraint_outputs, constraint_output)
@@ -353,8 +360,14 @@ function solve!(com::CS.CoM; backtrack=true)
         return :Solved
     end
 
-    feasible, constraints, constraint_outputs = prune!(com, constraints, constraint_outputs)
+    feasible, constraints, constraint_outputs = prune!(com, com.constraints, constraint_outputs
+                                                        ;pre_backtrack=true)
 
+
+    if !feasible 
+        return :Infeasible
+    end
+    
     if length(com.search_space) == 0
         return :Solved
     end

@@ -18,8 +18,8 @@ function from_file(filename, sep='\n')
     return grids
 end
 
-function solve_all(grids, name)
-    t = time()
+function solve_all(grids; benchmark=false, single_times=true)
+    ct = time()
     grids = grids
     for (i,grid) in enumerate(grids)
         com = CS.init()
@@ -27,21 +27,42 @@ function solve_all(grids, name)
         CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
         add_sudoku_constr!(com, grid)
 
-        t = time()
-        status = CS.solve!(com);
-        t = time()-t
-        println(i-1,", ", t)
-        # @show com.info
-        # println("Status: ", status)
-        # CS.print_search_space(com)
-        # @assert fulfills_sudoku_constr(com)
+        if single_times
+            GC.enable(false)
+            t = time()
+            status = CS.solve!(com);
+            t = time()-t
+            GC.enable(true)
+            println(i-1,", ", t)
+        else
+            GC.enable(false)
+            status = CS.solve!(com);
+            GC.enable(true)
+        end
+        if !benchmark
+            @show com.info
+            println("Status: ", status)
+            @assert fulfills_sudoku_constr(com)
+        end
     end
-    tt = time()-t
+    println("")
+    tt = time()-ct
     println("total time: ", tt)
     println("avg: ", tt/length(grids))
 end
 
-function main()
-    solve_all(from_file("benchmark/top95.txt"), "hard")
+function solve_one(grid)
+    com = CS.init()
+
+    CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
+    add_sudoku_constr!(com, grid)
+
+    status = CS.solve!(com; backtrack=false);
+    return com
+end
+
+function main(; benchmark=false, single_times=true)
+    solve_all(from_file("benchmark/top95.txt"); benchmark=benchmark, single_times=single_times)
     # solve_all(from_file("hardest.txt"), "hardest")
 end
+
