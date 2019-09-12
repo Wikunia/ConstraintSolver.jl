@@ -21,26 +21,6 @@
     @test fulfills_sudoku_constr(com)
 end
 
-@testset "Hard Sudoku no backtrack" begin
-    com = CS.init()
-
-    grid = zeros(Int8, (9,9))
-    grid[1,:] = [0 0 0 5 4 6 0 0 9]
-    grid[2,:] = [0 2 0 0 0 0 0 0 7]
-    grid[3,:] = [0 0 3 9 0 0 0 0 4]
-    grid[4,:] = [9 0 5 0 0 0 0 7 0]
-    grid[5,:] = [7 0 0 0 0 0 0 2 0]
-    grid[6,:] = [0 0 0 0 9 3 0 0 0]
-    grid[7,:] = [0 5 6 0 0 8 0 0 0]
-    grid[8,:] = [0 1 0 0 3 9 0 0 0]
-    grid[9,:] = [0 0 0 0 0 0 8 0 6]
-
-    CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
-    add_sudoku_constr!(com, grid)
-
-    CS.solve!(com; backtrack=false)
-    CS.print_search_space(com; max_length=12)
-end
 
 @testset "Hard sudoku" begin
     com = CS.init()
@@ -149,6 +129,37 @@ end
 
     @test CS.solve!(com) == :Solved
     @test fulfills_sudoku_constr(com)
+end
+
+@testset "Number 7 in top95.txt uses backtracking" begin
+    com = CS.init()
+
+    grid = Int[6,0,2,0,5,0,0,0,0,0,0,0,0,0,3,0,4,0,0,0,0,0,0,0,0,0,0,4,3,0,0,0,8,0,
+              0,0,0,1,0,0,0,0,2,0,0,0,0,0,0,0,0,7,0,0,5,0,0,2,7,0,0,0,0,0,0,0,0,0,
+              0,0,8,1,0,0,0,6,0,0,0,0,0]
+    grid = transpose(reshape(grid, (9,9)))
+
+    CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
+    add_sudoku_constr!(com, grid)
+
+    @test CS.solve!(com) == :Solved
+    @test fulfills_sudoku_constr(com)
+end
+
+
+@testset "Number 7 in top95.txt w/o backtracking" begin
+    com = CS.init()
+
+    grid = Int[6,0,2,0,5,0,0,0,0,0,0,0,0,0,3,0,4,0,0,0,0,0,0,0,0,0,0,4,3,0,0,0,8,0,
+              0,0,0,1,0,0,0,0,2,0,0,0,0,0,0,0,0,7,0,0,5,0,0,2,7,0,0,0,0,0,0,0,0,0,
+              0,0,8,1,0,0,0,6,0,0,0,0,0]
+    grid = transpose(reshape(grid, (9,9)))
+
+    CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
+    add_sudoku_constr!(com, grid)
+
+    CS.solve!(com; backtrack=false)
+    CS.print_search_space(com)
 end
 
 
