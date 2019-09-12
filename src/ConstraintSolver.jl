@@ -32,12 +32,13 @@ mutable struct ConstraintOutput
 end
 
 mutable struct CoM
-    grid                :: AbstractArray
+    grid                :: Array{Int,2}
     search_space        :: Dict{CartesianIndex,Dict{Int,Bool}}
     subscription        :: Dict{CartesianIndex,Vector{Int}} 
     constraints         :: Vector{Constraint}
     pvals               :: Vector{Int}
     not_val             :: Int
+    bt_infeasible       :: Dict{CartesianIndex,Int}
     info                :: CSInfo
     
     CoM() = new()
@@ -62,6 +63,7 @@ function build_search_space!(com::CS.CoM, grid::AbstractArray, pvals::Vector{Int
     com.constraints         = Vector{Constraint}()
     com.subscription        = Dict{CartesianIndex,Vector}()
     com.search_space        = Dict{CartesianIndex,Dict{Int,Bool}}()
+    com.bt_infeasible       = Dict{CartesianIndex,Int}()
     com.pvals               = pvals
     com.not_val             = if_val
     com.info                = CSInfo(0, false, 0, 0)
@@ -71,6 +73,7 @@ function build_search_space!(com::CS.CoM, grid::AbstractArray, pvals::Vector{Int
             com.search_space[i] = arr2dict(pvals)
         end
         com.subscription[i] = Int[]
+        com.bt_infeasible[i] = 0
     end
 end
 
@@ -159,25 +162,19 @@ end
 
 function get_weak_ind(com::CS.CoM)
     lowest_num_pvals = length(com.pvals)+1
+    biggest_inf = -1
     best_ind = CartesianIndex(-1,-1)
     biggest_dependent = typemax(Int)
     found = false
+
     for ind in keys(com.grid)
         if com.grid[ind] == com.not_val
             num_pvals = length(com.search_space[ind])
-            if num_pvals <= lowest_num_pvals
-                dependent = 0
-                constraints = com.constraints[com.subscription[ind]]
-                for constraint in constraints
-                    for cind in constraint.indices
-                        if haskey(com.search_space, cind)
-                            dependent += length(com.search_space[cind])
-                        end
-                    end
-                end
-                if dependent > biggest_dependent || num_pvals < lowest_num_pvals
+            inf = com.bt_infeasible[ind]
+            if inf >= biggest_inf
+                if inf > biggest_inf || num_pvals < lowest_num_pvals
                     lowest_num_pvals = num_pvals
-                    biggest_dependent = dependent
+                    biggest_inf = inf
                     best_ind = ind
                     found = true
                 end

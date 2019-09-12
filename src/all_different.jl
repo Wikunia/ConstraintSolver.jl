@@ -34,6 +34,7 @@ function all_different(com::CS.CoM, indices; logs = true)
                 push!(pruned[i], pv)
                 changed[i] = true
                 if length(c_search_space) == 0
+                    com.bt_infeasible[i] += 1
                     logs && @warn "The problem is infeasible"
                     return ConstraintOutput(false, changed, pruned, fixed)
                 end
@@ -43,6 +44,7 @@ function all_different(com::CS.CoM, indices; logs = true)
                     # check whether this is against any constraint
                     feasible = fulfills_constraints(com, i, only_value)
                     if !feasible
+                        com.bt_infeasible[i] += 1
                         logs && @warn "The problem is infeasible"
                         return ConstraintOutput(false, changed, pruned, fixed)
                     end
@@ -179,6 +181,7 @@ function all_different(com::CS.CoM, indices; logs = true)
             feasible = fulfills_constraints(com, cind, only_value)
             if !feasible
                 logs && @warn "The problem is infeasible"
+                com.bt_infeasible[cind] += 1
                 return ConstraintOutput(false, changed, pruned, fixed)
             end
             grid[cind] = only_value
