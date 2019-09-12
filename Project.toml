@@ -3,6 +3,9 @@ uuid = "e0e52ebd-5523-408d-9ca3-7641f1cd1405"
 authors = ["Ole Kröger <o.kroeger@opensourc.es>"]
 version = "0.1.0"
 
+[deps]
+MatrixNetworks = "4f449596-a032-5618-b826-5a251cb6dc11"
+
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
