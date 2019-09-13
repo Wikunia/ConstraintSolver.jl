@@ -8,12 +8,8 @@ jobs:
     strategy:
       matrix:
         julia-version: [1.0.4, 1.2.0]
-        julia-arch: [x64, x86]
+        julia-arch: [x64]
         os: [ubuntu-latest, windows-latest, macOS-latest]
-        # 32-bit Julia binaries are not available on macOS
-        exclude:
-          - os: macOS-latest
-            julia-arch: x86
     
     steps:
       - uses: actions/checkout@v1.0.0
