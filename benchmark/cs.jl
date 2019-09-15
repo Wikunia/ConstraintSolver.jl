@@ -11,7 +11,7 @@ function from_file(filename, sep='\n')
     grids = AbstractArray[]
     for str_sudoku in str_sudokus
         str_sudoku = replace(str_sudoku, "."=>"0")
-        one_line_grid = parse.(Int8, split(str_sudoku,""))
+        one_line_grid = parse.(Int, split(str_sudoku,""))
         grid = reshape(one_line_grid, 9, 9)
         push!(grids, grid)
     end
@@ -24,8 +24,8 @@ function solve_all(grids; benchmark=false, single_times=true)
     for (i,grid) in enumerate(grids)
         com = CS.init()
 
-        CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
-        add_sudoku_constr!(com, grid)
+        com_grid = create_sudoku_grid!(com, grid)
+        add_sudoku_constr!(com, com_grid)
 
         if single_times
             GC.enable(false)
@@ -42,7 +42,7 @@ function solve_all(grids; benchmark=false, single_times=true)
         if !benchmark
             @show com.info
             println("Status: ", status)
-            @assert fulfills_sudoku_constr(com)
+            @assert fulfills_sudoku_constr(com_grid)
         end
     end
     println("")

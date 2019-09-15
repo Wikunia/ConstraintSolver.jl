@@ -5,54 +5,49 @@ Tries to reduce the search space by the all_different constraint.
 Fixes values and then sets com.changed to true for the corresponding index.
 Returns a ConstraintOutput object and throws a warning if infeasible and `logs` is set
 """
-function all_different(com::CS.CoM, indices; logs = true)
-    changed = Dict{CartesianIndex, Bool}()
-    pruned  = Dict{CartesianIndex,Vector{Int}}()
-    fixed   = Dict{CartesianIndex, Bool}()
+function all_different(com::CS.CoM, constraint; logs = true)
+    indices = constraint.indices
+    pvals = constraint.pvals 
 
-    grid = com.grid
+    changed = Dict{Int, Bool}()
+    pruned  = zeros(Int, length(indices))
+
     search_space = com.search_space
-    pvals = com.pvals
-    not_val = com.not_val
-    fixed_vals, unfixed_indices = fixed_vs_unfixed(grid, not_val, indices)
+    fixed_vals, unfixed_indices = fixed_vs_unfixed(search_space, indices)
 
     fixed_vals_set = Set(fixed_vals)
     # check if one value is used more than once
     if length(fixed_vals_set) < length(fixed_vals)
         logs && @warn "The problem is infeasible"
-        return ConstraintOutput(false, changed, pruned, fixed)
+        return ConstraintOutput(false, changed, pruned)
     end
 
 
     bfixed = false
-    for i in unfixed_indices
-        pruned[i] = Int[]
-        @views c_search_space = search_space[i]
+    for i in 1:length(unfixed_indices)
+        pi = unfixed_indices[i]
+        ind = indices[pi]
+        @views c_search_space = search_space[ind]
         for pv in fixed_vals
-            if haskey(c_search_space, pv)
-                delete!(c_search_space, pv)
-                push!(pruned[i], pv)
-                changed[i] = true
-                if length(c_search_space) == 0
-                    com.bt_infeasible[i] += 1
+            if has(c_search_space, pv)
+                rm!(c_search_space, pv)
+                pruned[pi] += 1
+                changed[ind] = true
+                if nvalues(c_search_space) == 0
+                    com.bt_infeasible[ind] += 1
                     logs && @warn "The problem is infeasible"
-                    return ConstraintOutput(false, changed, pruned, fixed)
+                    return ConstraintOutput(false, changed, pruned)
                 end
 
-                if length(c_search_space) == 1
-                    only_value = collect(keys(c_search_space))[1]
+                if nvalues(c_search_space) == 1
+                    only_value = value(c_search_space)
                     # check whether this is against any constraint
-                    feasible = fulfills_constraints(com, i, only_value)
+                    feasible = fulfills_constraints(com, ind, only_value)
                     if !feasible
-                        com.bt_infeasible[i] += 1
+                        com.bt_infeasible[ind] += 1
                         logs && @warn "The problem is infeasible"
-                        return ConstraintOutput(false, changed, pruned, fixed)
+                        return ConstraintOutput(false, changed, pruned)
                     end
-                    delete!(search_space, i)
-                    grid[i] = only_value
-                    push!(pruned[i], only_value)
-                    changed[i] = true
-                    fixed[i] = true
                     push!(fixed_vals_set, only_value)
                     bfixed = true
                     break
@@ -62,7 +57,7 @@ function all_different(com::CS.CoM, indices; logs = true)
     end
 
     if length(fixed_vals_set) == length(indices)
-        return ConstraintOutput(true, changed, pruned, fixed)
+        return ConstraintOutput(true, changed, pruned)
     end
 
     # find maximum_matching for infeasible check and Berge's lemma
@@ -92,13 +87,7 @@ function all_different(com::CS.CoM, indices; logs = true)
     # count the number of edges
     num_edges = 0
     @inbounds for i in indices
-        if grid[i] != not_val
-            num_edges += 1
-        else
-            if haskey(search_space,i)
-                num_edges += length(keys(search_space[i]))
-            end
-        end
+        num_edges += nvalues(search_space[i])
     end
 
 
@@ -110,12 +99,12 @@ function all_different(com::CS.CoM, indices; logs = true)
     vc = 0
     @inbounds for i in indices
         vc += 1
-        if grid[i] != not_val
+        if isfixed(search_space[i])
             edge_counter += 1
             ei[edge_counter] = vc
-            ej[edge_counter] = vertex_mapping[grid[i]]-length(indices)
+            ej[edge_counter] = vertex_mapping[value(search_space[i])]-length(indices)
         else
-            for pv in keys(search_space[i])
+            for pv in values(search_space[i])
                 edge_counter += 1
                 ei[edge_counter] = vc
                 ej[edge_counter] = vertex_mapping[pv]-length(indices)
@@ -128,7 +117,7 @@ function all_different(com::CS.CoM, indices; logs = true)
     maximum_matching = bipartite_matching(_weights,ei, ej)
     if maximum_matching.weight != length(indices)
         logs && @warn "Infeasible (No maximum matching was found)"
-        return ConstraintOutput(false, changed, pruned, fixed)
+        return ConstraintOutput(false, changed, pruned)
     end
 
     # directed edges for strongly connected components
@@ -139,12 +128,12 @@ function all_different(com::CS.CoM, indices; logs = true)
     edge_counter = 0
     @inbounds for i in indices
         vc += 1
-        if grid[i] != not_val
+        if isfixed(search_space[i])
             edge_counter += 1
             di_ei[edge_counter] = vc
-            di_ej[edge_counter] = vertex_mapping[grid[i]]
+            di_ej[edge_counter] = vertex_mapping[value(search_space[i])]
         else
-            for pv in keys(search_space[i])
+            for pv in values(search_space[i])
                 edge_counter += 1
                 if pv == pval_mapping[maximum_matching.match[vc]]
                     di_ei[edge_counter] = vc 
@@ -162,6 +151,7 @@ function all_different(com::CS.CoM, indices; logs = true)
     # remove the left over edges from the search space
     vmb = vertex_mapping_bw
     for (src,dst) in zip(di_ei, di_ej)
+        # if in same strong component -> part of a cycle -> part of a maximum matching
         if sccs_map[src] == sccs_map[dst]
             continue
         end
@@ -171,28 +161,29 @@ function all_different(com::CS.CoM, indices; logs = true)
         end
 
         cind = vmb[dst]
-        delete!(search_space[cind], vmb[src])
-        push!(pruned[cind], vmb[src])
+        rm!(search_space[cind], vmb[src])
+        for i=1:length(indices)
+            if indices[i] == cind
+                pruned[i] += 1
+                break
+            end
+        end
         changed[cind] = true
 
         # if only one value possible make it fixed
-        if length(search_space[cind]) == 1
-            only_value = collect(keys(search_space[cind]))[1]
+        if nvalues(search_space[cind]) == 1
+            only_value = value(search_space[cind])
             feasible = fulfills_constraints(com, cind, only_value)
             if !feasible
                 logs && @warn "The problem is infeasible"
                 com.bt_infeasible[cind] += 1
-                return ConstraintOutput(false, changed, pruned, fixed)
+                return ConstraintOutput(false, changed, pruned)
             end
-            grid[cind] = only_value
-            delete!(search_space, cind)
-            push!(pruned[cind], grid[cind])
             changed[cind] = true
-            fixed[cind] = true
         end
     end
 
-    return ConstraintOutput(true, changed, pruned, fixed)
+    return ConstraintOutput(true, changed, pruned)
 end
 
 """
@@ -201,10 +192,5 @@ end
 Returns whether the constraint can be still fulfilled.
 """
 function all_different(com::CoM, indices, value::Int)
-    for i in indices
-        if value == com.grid[i]
-            return false
-        end
-    end
-    return true
+   return !any(v->issetto(v,value), com.search_space[indices])
 end
