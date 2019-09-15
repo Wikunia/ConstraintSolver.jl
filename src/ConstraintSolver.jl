@@ -55,14 +55,6 @@ function init()
     return com
 end
 
-function arr2dict(arr)
-    d = Dict{Int,Bool}()
-    for v in arr
-        d[v] = true
-    end
-    return d
-end
-
 function addVar!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     ind = length(com.search_space)+1
     var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from)
@@ -73,24 +65,6 @@ function addVar!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     push!(com.subscription, Int[])
     push!(com.bt_infeasible, 0)
     return var
-end
-
-function build_search_space!(com::CS.CoM, grid::AbstractArray, pvals::Vector{Int}, if_val::Int)
-    com.constraints         = Vector{Constraint}()
-    com.subscription        = Dict{CartesianIndex,Vector}()
-    com.search_space        = Dict{CartesianIndex,Dict{Int,Bool}}()
-    com.bt_infeasible       = Dict{CartesianIndex,Int}()
-    com.pvals               = pvals
-    com.not_val             = if_val
-    com.info                = CSInfo(0, false, 0, 0)
-
-    for i in keys(grid)
-        if grid[i] == if_val
-            com.search_space[i] = arr2dict(pvals)
-        end
-        com.subscription[i] = Int[]
-        com.bt_infeasible[i] = 0
-    end
 end
 
 function fulfills_constraints(com::CS.CoM, index, value)
