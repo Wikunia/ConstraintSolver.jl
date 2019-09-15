@@ -103,7 +103,7 @@ end
 
     com_grid = Array{CS.Variable, 2}(undef, 9, 9)
     for (ind,val) in enumerate(grid)
-        if val == 0
+        if val == -1
             com_grid[ind] = CS.addVar!(com, 0, 8)
         else
             com_grid[ind] = CS.addVar!(com, 0, 8; fix=val)
@@ -128,7 +128,7 @@ end
     add_sudoku_constr!(com, com_grid)
 
     @test CS.solve!(com) == :Solved
-    @test fulfills_sudoku_constr(com)
+    @test fulfills_sudoku_constr(com_grid)
 end
 
 

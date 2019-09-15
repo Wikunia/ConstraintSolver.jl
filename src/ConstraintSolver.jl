@@ -65,7 +65,7 @@ end
 
 function addVar!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     ind = length(com.search_space)+1
-    var = Variable(ind, from, to, 1, to-from+1, 1:to-from+1, 1:to-from+1)
+    var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from)
     if fix !== nothing
         fix!(var, fix)
     end

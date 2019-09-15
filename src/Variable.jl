@@ -6,6 +6,7 @@ mutable struct Variable
     last_ptr    :: Int
     values      :: Vector{Int}
     indices     :: Vector{Int}
+    offset      :: Int 
 end
 
 function nvalues(v::CS.Variable)
@@ -29,22 +30,22 @@ function issetto(v::CS.Variable, x::Int)
 end
 
 function has(v::CS.Variable, x::Int)
-    if x > length(v.values) || x < 1
+    if x > v.to || x < v.from
         return false
     end
-    ind = v.indices[x]
+    ind = v.indices[x+v.offset]
     return v.first_ptr <= ind <= v.last_ptr
 end
 
 function rm!(v::CS.Variable, x::Int)
-    ind = v.indices[x]
-    v.indices[x], v.indices[v.values[v.last_ptr]] = v.indices[v.values[v.last_ptr]], v.indices[x]
+    ind = v.indices[x+v.offset]
+    v.indices[x+v.offset], v.indices[v.values[v.last_ptr]+v.offset] = v.indices[v.values[v.last_ptr]+v.offset], v.indices[x+v.offset]
     v.values[ind], v.values[v.last_ptr] = v.values[v.last_ptr], v.values[ind]
     v.last_ptr -= 1
 end
 
 function fix!(v::CS.Variable, x::Int)
-    ind = v.indices[x]
+    ind = v.indices[x+v.offset]
     v.last_ptr = ind
     v.first_ptr = ind
 end
