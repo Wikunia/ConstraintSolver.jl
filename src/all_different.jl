@@ -146,11 +146,48 @@ function all_different(com::CS.CoM, constraint; logs = true)
         end
     end
 
+    # if we have more values than indices
+    if length(pvals) > length(indices)
+        # add extra node which has all values as input which are used in the maximum matching
+        # and the ones in maximum matching as inputs see: http://www.minicp.org (Part 6)
+        # the direction is opposite to that of minicp 
+        used_in_maximum_matching = Dict{Int, Bool}()
+        for pval in pvals
+            used_in_maximum_matching[pval] = false
+        end
+        vc = 0
+        for i in indices
+            vc += 1
+            for pv in values(search_space[i])
+                if pv == pval_mapping[maximum_matching.match[vc]]
+                    used_in_maximum_matching[pv] = true
+                    break
+                end
+            end
+        end
+        new_vertex = num_nodes+1
+        for kv in used_in_maximum_matching
+            # not in maximum matching
+            if !kv.second
+                push!(di_ei, new_vertex)
+                push!(di_ej, vertex_mapping[kv.first])
+            else 
+                push!(di_ei, vertex_mapping[kv.first])
+                push!(di_ej, new_vertex)
+            end
+        end
+    end
+
     sccs_map = strong_components_map(di_ei, di_ej)
 
     # remove the left over edges from the search space
     vmb = vertex_mapping_bw
     for (src,dst) in zip(di_ei, di_ej)
+        # edges to the extra node don't count
+        if src > num_nodes || dst > num_nodes
+            continue
+        end
+
         # if in same strong component -> part of a cycle -> part of a maximum matching
         if sccs_map[src] == sccs_map[dst]
             continue
@@ -159,6 +196,7 @@ function all_different(com::CS.CoM, constraint; logs = true)
         if src <= length(indices) && dst == vertex_mapping[pval_mapping[maximum_matching.match[src]]]
             continue
         end
+      
 
         cind = vmb[dst]
         rm!(search_space[cind], vmb[src])

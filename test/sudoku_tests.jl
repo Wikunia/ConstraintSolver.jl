@@ -104,7 +104,14 @@ end
     com_grid = Array{CS.Variable, 2}(undef, 9, 9)
     for (ind,val) in enumerate(grid)
         if val == -1
-            com_grid[ind] = CS.addVar!(com, 0, 8)
+            if ind == 81 # bottom right
+                # some other values are possible there
+                com_grid[ind] = CS.addVar!(com, 9, 11)
+            elseif ind == 80 # one above (will be 9 in the end)
+                com_grid[ind] = CS.addVar!(com, 7, 11)
+            else
+                com_grid[ind] = CS.addVar!(com, 0, 8)
+            end
         else
             com_grid[ind] = CS.addVar!(com, 0, 8; fix=val)
         end
@@ -144,7 +151,10 @@ end
     add_sudoku_constr!(com, com_grid)
 
     CS.solve!(com; backtrack=false)
-    print_search_space(com_grid)
+    @test !com.info.backtracked
+    @test com.info.backtrack_counter == 0
+    @test com.info.in_backtrack_calls == 0
+    @show com.info
 end
 
 

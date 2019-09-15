@@ -321,7 +321,7 @@ function solve!(com::CS.CoM; backtrack=true)
         return :Infeasible
     end
 
-    if length(com.search_space) == 0
+    if all(v->isfixed(v), com.search_space)
         return :Solved
     end
 
