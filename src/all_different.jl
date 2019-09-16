@@ -200,12 +200,7 @@ function all_different(com::CS.CoM, constraint; logs = true)
 
         cind = vmb[dst]
         rm!(search_space[cind], vmb[src])
-        for i=1:length(indices)
-            if indices[i] == cind
-                pruned[i] += 1
-                break
-            end
-        end
+        pruned[dst] += 1
         changed[cind] = true
 
         # if only one value possible make it fixed
