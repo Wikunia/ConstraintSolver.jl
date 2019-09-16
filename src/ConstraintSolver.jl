@@ -4,6 +4,8 @@ using MatrixNetworks
 
 CS = ConstraintSolver
 
+include("Variable.jl")
+
 mutable struct CSInfo
     pre_backtrack_calls :: Int
     backtracked         :: Bool
@@ -21,24 +23,21 @@ end
 mutable struct Constraint
     idx                 :: Int
     fct                 :: Function
-    indices             :: Union{CartesianIndices,Vector{CartesianIndex}}
+    indices             :: Vector{Int}
+    pvals               :: Vector{Int}
 end
 
 mutable struct ConstraintOutput
     feasible            :: Bool
-    idx_changed         :: Dict{CartesianIndex, Bool}
-    pruned              :: Dict{CartesianIndex,Vector{Int}}
-    fixed               :: Dict{CartesianIndex, Bool}
+    idx_changed         :: Dict{Int, Bool}
+    pruned              :: Vector{Int}
 end
 
 mutable struct CoM
-    grid                :: Array{Int,2}
-    search_space        :: Dict{CartesianIndex,Dict{Int,Bool}}
-    subscription        :: Dict{CartesianIndex,Vector{Int}} 
+    search_space        :: Vector{Variable}
+    subscription        :: Vector{Vector{Int}} 
     constraints         :: Vector{Constraint}
-    pvals               :: Vector{Int}
-    not_val             :: Int
-    bt_infeasible       :: Dict{CartesianIndex,Int}
+    bt_infeasible       :: Vector{Int}
     info                :: CSInfo
     
     CoM() = new()
@@ -47,41 +46,33 @@ end
 include("all_different.jl")
 
 function init()
-    return CoM()
-end
-
-function arr2dict(arr)
-    d = Dict{Int,Bool}()
-    for v in arr
-        d[v] = true
-    end
-    return d
-end
-
-function build_search_space!(com::CS.CoM, grid::AbstractArray, pvals::Vector{Int}, if_val::Int)
-    com.grid                = grid
+    com = CoM()
     com.constraints         = Vector{Constraint}()
-    com.subscription        = Dict{CartesianIndex,Vector}()
-    com.search_space        = Dict{CartesianIndex,Dict{Int,Bool}}()
-    com.bt_infeasible       = Dict{CartesianIndex,Int}()
-    com.pvals               = pvals
-    com.not_val             = if_val
+    com.subscription        = Vector{Vector{Int}}()
+    com.search_space        = Vector{Variable}()
+    com.bt_infeasible       = Vector{Int}()
     com.info                = CSInfo(0, false, 0, 0)
+    return com
+end
 
-    for i in keys(grid)
-        if grid[i] == if_val
-            com.search_space[i] = arr2dict(pvals)
-        end
-        com.subscription[i] = Int[]
-        com.bt_infeasible[i] = 0
+function addVar!(com::CS.CoM, from::Int, to::Int; fix=nothing)
+    ind = length(com.search_space)+1
+    var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from)
+    if fix !== nothing
+        fix!(var, fix)
     end
+    push!(com.search_space, var)
+    push!(com.subscription, Int[])
+    push!(com.bt_infeasible, 0)
+    return var
 end
 
 function fulfills_constraints(com::CS.CoM, index, value)
     constraints = com.constraints[com.subscription[index]]
     feasible = true
     for constraint in constraints
-        feasible = constraint.fct(com, constraint.indices, value)
+        check_indices = filter(i->i!=index, constraint.indices)
+        feasible = constraint.fct(com, check_indices, value)
         if !feasible
             break
         end
@@ -89,51 +80,19 @@ function fulfills_constraints(com::CS.CoM, index, value)
     return feasible
 end
 
-function print_search_space(com::CS.CoM; max_length=:default)
-    if max_length == :default
-        if length(com.search_space) == 0
-            max_length = ceil(log10(maximum(com.pvals)))+1
-        else
-            max_length = 2+2*length(com.pvals)
-        end
-    end
-
-    grid = com.grid
-    for y=1:size(grid)[1]
-        line = ""
-        for x=1:size(grid)[2]
-            if grid[y,x] == com.not_val
-                pstr = "-"
-                if haskey(com.search_space, CartesianIndex((y,x)))
-                    possible = sort(collect(keys(com.search_space[CartesianIndex((y,x))])))
-                    pstr = join(possible, ",")
-                end
-                space_left  = floor(Int, (max_length-length(pstr))/2)
-                space_right = ceil(Int, (max_length-length(pstr))/2)
-                line *= repeat(" ", space_left)*pstr*repeat(" ", space_right)
-            else
-                pstr = string(grid[y,x])
-                space_left  = floor(Int, (max_length-length(pstr))/2)
-                space_right = ceil(Int, (max_length-length(pstr))/2)
-                line *= repeat(" ", space_left)*pstr*repeat(" ", space_right)
-            end
-        end
-        println(line)
-    end
-end 
 
 """
-    fixed_vs_unfixed(grid, not_val, indices)
+    fixed_vs_unfixed(search_space, indices)
 
 Returns the fixed_vals as well as the unfixed_indices
 """
-function fixed_vs_unfixed(grid, not_val, indices)
+function fixed_vs_unfixed(search_space, indices)
     # get all values which are fixed
     fixed_vals = Int[]
-    unfixed_indices = CartesianIndex[]
-    for i in indices
-        if grid[i] != not_val
-            push!(fixed_vals, grid[i])
+    unfixed_indices = Int[]
+    for (i,ind) in enumerate(indices)
+        if isfixed(search_space[ind])
+            push!(fixed_vals, value(search_space[ind]))
         else
             push!(unfixed_indices, i)
         end
@@ -142,34 +101,54 @@ function fixed_vs_unfixed(grid, not_val, indices)
 end
 
 """
-    add_constraint!(com::CS.CoM, fct, indices)
+    add_constraint!(com::CS.CoM, fct, variables)
 
-Add a constraint using a function name and the indices 
-i.e
-all_different on CartesianIndices corresponding to the grid structure
+Add a constraint using a function name and the variables over which the constraint should hold
 """
-function add_constraint!(com::CS.CoM, fct, indices)
+function add_constraint!(com::CS.CoM, fct, variables)
     current_constraint_number = length(com.constraints)+1
-    constraint = Constraint(current_constraint_number, fct, indices)
+    indices = vec([v.idx for v in variables])
+    constraint = Constraint(current_constraint_number, fct, indices, Int[])
     push!(com.constraints, constraint)
-    for i in indices
-        # only if index is in search space
-        if haskey(com.subscription, i)
-            push!(com.subscription[i], current_constraint_number)
+    pvals_intervals = Vector{NamedTuple}()
+    push!(pvals_intervals, (from = variables[1].from, to = variables[1].to))
+    for (i,ind) in enumerate(indices)
+        extra_from = variables[i].from
+        extra_to   = variables[i].to
+        comp_inside = false
+        for cpvals in pvals_intervals
+            if extra_from >= cpvals.from && extra_to <= cpvals.to
+                # completely inside the interval already
+                comp_inside = true
+                break
+            elseif extra_from >= cpvals.from && extra_from <= cpvals.to
+                extra_from = cpvals.to+1
+            elseif extra_to <= cpvals.to && extra_to >= cpvals.from
+                extra_to = cpvals.from-1
+            end
         end
+        if !comp_inside && extra_to >= extra_from
+            push!(pvals_intervals, (from = extra_from, to = extra_to))
+        end
+        push!(com.subscription[ind], current_constraint_number)
     end
+    pvals = collect(pvals_intervals[1].from:pvals_intervals[1].to)
+    for interval in pvals_intervals[2:end]
+        pvals = vcat(pvals, collect(interval.from:interval.to))
+    end
+    constraint.pvals = pvals
 end
 
 function get_weak_ind(com::CS.CoM)
-    lowest_num_pvals = length(com.pvals)+1
+    lowest_num_pvals = typemax(Int)
     biggest_inf = -1
-    best_ind = CartesianIndex(-1,-1)
+    best_ind = -1
     biggest_dependent = typemax(Int)
     found = false
 
-    for ind in keys(com.grid)
-        if com.grid[ind] == com.not_val
-            num_pvals = length(com.search_space[ind])
+    for ind in 1:length(com.search_space)
+        if !isfixed(com.search_space[ind])
+            num_pvals = nvalues(com.search_space[ind])
             inf = com.bt_infeasible[ind]
             if inf >= biggest_inf
                 if inf > biggest_inf || num_pvals < lowest_num_pvals
@@ -196,7 +175,7 @@ function prune!(com, constraints, constraint_outputs; pre_backtrack=false)
     co_idx = 1
     constraint_idxs_dict = Dict{Int, Bool}()
     # get all constraints which need to be called (only once)
-    while co_idx < length(constraint_outputs)
+    for co_idx=1:length(constraint_outputs)
         constraint_output = constraint_outputs[co_idx]
         for changed_idx in keys(constraint_output.idx_changed)
             inner_constraints = com.constraints[com.subscription[changed_idx]]
@@ -213,10 +192,10 @@ function prune!(com, constraints, constraint_outputs; pre_backtrack=false)
         con_counter += 1
         constraint = com.constraints[constraint_idxs[con_counter]]
         delete!(constraint_idxs_dict, constraint.idx)
-        if findfirst(v->v == com.not_val, com.grid[constraint.indices]) === nothing
+        if all(v->isfixed(v), com.search_space[constraint.indices])
             continue
         end
-        constraint_output = constraint.fct(com, constraint.indices; logs = false)
+        constraint_output = constraint.fct(com, constraint; logs = false)
         if !pre_backtrack
             com.info.in_backtrack_calls += 1
             push!(constraint_outputs, constraint_output)
@@ -253,20 +232,8 @@ function reverse_pruning!(com::CS.CoM, constraints, constraint_outputs)
     for cidx = 1:length(constraint_outputs)
         constraint = constraints[cidx]
         constraint_output = constraint_outputs[cidx]
-        for local_ind in constraint.indices
-            if !haskey(constraint_output.pruned, local_ind)
-                continue
-            end
-
-            if haskey(constraint_output.fixed, local_ind)
-                com.grid[local_ind] = com.not_val
-            end
-            if !haskey(com.search_space, local_ind) && length(constraint_output.pruned[local_ind]) > 0
-                com.search_space[local_ind] = Dict{Int,Bool}()
-            end
-            for pval in constraint_output.pruned[local_ind]
-                com.search_space[local_ind][pval] = true
-            end
+        for (i,local_ind) in enumerate(constraint.indices)
+            com.search_space[local_ind].last_ptr += constraint_output.pruned[i]
         end
     end
 end
@@ -274,12 +241,12 @@ end
 function rec_backtrack!(com::CS.CoM)
     found, ind = get_weak_ind(com)
     if !found 
-        empty!(com.search_space)
         return :Solved
     end
     com.info.backtrack_counter += 1
 
-    pvals = keys(com.search_space[ind])
+    previous_last_ptr = com.search_space[ind].last_ptr
+    pvals = values(com.search_space[ind])
     for pval in pvals
         # check if this value is still possible
         constraints = com.constraints[com.subscription[ind]]
@@ -294,10 +261,10 @@ function rec_backtrack!(com::CS.CoM)
             continue
         end
         # value is still possible => set it
-        com.grid[ind] = pval
+        fix!(com.search_space[ind], pval)
         constraint_outputs = ConstraintOutput[]
         for constraint in constraints
-            constraint_output = constraint.fct(com, constraint.indices; logs = false)
+            constraint_output = constraint.fct(com, constraint; logs = false)
             push!(constraint_outputs, constraint_output)
             if !constraint_output.feasible
                 feasible = false
@@ -326,21 +293,22 @@ function rec_backtrack!(com::CS.CoM)
             reverse_pruning!(com, constraints, constraint_outputs)
         end
     end
-    com.grid[ind] = com.not_val
+    com.search_space[ind].last_ptr = previous_last_ptr
+    com.search_space[ind].first_ptr = 1
     return :Infeasible
 end
 
 function solve!(com::CS.CoM; backtrack=true)
-    if length(com.search_space) == 0
+    if all(v->isfixed(v), com.search_space)
         return :Solved
     end
 
-    changed = Dict{CartesianIndex, Bool}()
+    changed = Dict{Int, Bool}()
     feasible = true
     constraint_outputs = ConstraintOutput[]
     for constraint in com.constraints
         com.info.pre_backtrack_calls += 1
-        constraint_output = constraint.fct(com, constraint.indices)
+        constraint_output = constraint.fct(com, constraint)
         push!(constraint_outputs, constraint_output)
         merge!(changed, constraint_output.idx_changed)
         if !constraint_output.feasible
@@ -353,7 +321,7 @@ function solve!(com::CS.CoM; backtrack=true)
         return :Infeasible
     end
 
-    if length(com.search_space) == 0
+    if all(v->isfixed(v), com.search_space)
         return :Solved
     end
 
@@ -365,7 +333,7 @@ function solve!(com::CS.CoM; backtrack=true)
         return :Infeasible
     end
     
-    if length(com.search_space) == 0
+    if all(v->isfixed(v), com.search_space)
         return :Solved
     end
     if backtrack
