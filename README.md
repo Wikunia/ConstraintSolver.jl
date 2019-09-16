@@ -10,6 +10,7 @@ I'm just a MSc student in computer science so I don't have much knowledge on how
 - [Pruning in Sudoku](https://opensourc.es/blog/constraint-solver-pruning)
 - [More pruning and benchmarks](https://opensourc.es/blog/constraint-solver-pruning-benchmarking)
 - [Sophisticated implementation of the alldifferent constraint and benchmarks](https://opensourc.es/blog/constraint-solver-alldifferent)
+- [New data structure for better user interface and performance](https://opensourc.es/blog/constraint-solver-data-structure)
 
 ## Installation
 You can install this julia package using 
