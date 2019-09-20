@@ -9,6 +9,9 @@ function sudokus_from_file(filename, sep='\n')
     grids = AbstractArray[]
     for str_sudoku in str_sudokus
         str_sudoku = replace(str_sudoku, "."=>"0")
+        if length(str_sudoku) != 81
+            continue
+        end
         one_line_grid = parse.(Int, split(str_sudoku,""))
         grid = reshape(one_line_grid, 9, 9)
         push!(grids, grid)
