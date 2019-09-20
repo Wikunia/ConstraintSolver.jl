@@ -25,6 +25,7 @@ mutable struct Constraint
     fct                 :: Function
     indices             :: Vector{Int}
     pvals               :: Vector{Int}
+    rhs                 :: Int
 end
 
 mutable struct ConstraintOutput
@@ -54,6 +55,7 @@ mutable struct CoM
 end
 
 include("all_different.jl")
+include("eq_sum.jl")
 
 function init()
     com = CoM()
@@ -67,7 +69,7 @@ end
 
 function addVar!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     ind = length(com.search_space)+1
-    var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from)
+    var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from, from, to)
     if fix !== nothing
         fix!(var, fix)
     end
@@ -81,8 +83,7 @@ function fulfills_constraints(com::CS.CoM, index, value)
     constraints = com.constraints[com.subscription[index]]
     feasible = true
     for constraint in constraints
-        check_indices = filter(i->i!=index, constraint.indices)
-        feasible = constraint.fct(com, check_indices, value)
+        feasible = constraint.fct(com, constraint, value; index=index)
         if !feasible
             break
         end
@@ -111,14 +112,14 @@ function fixed_vs_unfixed(search_space, indices)
 end
 
 """
-    add_constraint!(com::CS.CoM, fct, variables)
+    add_constraint!(com::CS.CoM, fct, variables; rhs=0)
 
 Add a constraint using a function name and the variables over which the constraint should hold
 """
-function add_constraint!(com::CS.CoM, fct, variables)
+function add_constraint!(com::CS.CoM, fct, variables; rhs=0)
     current_constraint_number = length(com.constraints)+1
     indices = vec([v.idx for v in variables])
-    constraint = Constraint(current_constraint_number, fct, indices, Int[])
+    constraint = Constraint(current_constraint_number, fct, indices, Int[], rhs)
     push!(com.constraints, constraint)
     pvals_intervals = Vector{NamedTuple}()
     push!(pvals_intervals, (from = variables[1].from, to = variables[1].to))
@@ -239,21 +240,46 @@ end
 Reverse the changes made by constraints using their ConstraintOutputs
 """
 function reverse_pruning!(com::CS.CoM, constraints, constraint_outputs)
+    search_space = com.search_space
     for cidx = 1:length(constraint_outputs)
         constraint = constraints[cidx]
         constraint_output = constraint_outputs[cidx]
         for (i,local_ind) in enumerate(constraint.indices)
-            com.search_space[local_ind].last_ptr += constraint_output.pruned[i]
+            if constraint_output.pruned[i] > 0
+                var = search_space[local_ind]
+                l_ptr = max(1,var.last_ptr)
+                new_l_ptr = var.last_ptr + constraint_output.pruned[i]
+                @views min_val = minimum(var.values[l_ptr:new_l_ptr])
+                @views max_val = maximum(var.values[l_ptr:new_l_ptr])
+                if min_val < var.min
+                    var.min = min_val
+                end
+                if max_val > var.max
+                    var.max = max_val
+                end
+                var.last_ptr = new_l_ptr
+            end
         end
     end
 end
 
 function reverse_pruning!(com::CS.CoM, backtrack_obj::CS.BacktrackObj)
+    search_space = com.search_space
     for (i,constraint_idx) in enumerate(backtrack_obj.constraint_idx)
         constraint = com.constraints[constraint_idx]
         for (j,local_ind) in enumerate(constraint.indices)
-            com.search_space[local_ind].last_ptr += backtrack_obj.pruned[i][j]
-            @assert com.search_space[local_ind].last_ptr <= 9
+            var = search_space[local_ind]
+            l_ptr = max(1,var.last_ptr)
+            new_l_ptr = var.last_ptr + backtrack_obj.pruned[i][j]
+            @views min_val = minimum(var.values[l_ptr:new_l_ptr])
+            @views max_val = maximum(var.values[l_ptr:new_l_ptr])
+            if min_val < var.min
+                var.min = min_val
+            end
+            if max_val > var.max
+                var.max = max_val
+            end
+            var.last_ptr = new_l_ptr
         end
     end
     empty!(backtrack_obj.constraint_idx)
@@ -267,7 +293,6 @@ function backtrack!(com::CS.CoM)
     end
     com.info.backtrack_counter += 1
 
-    previous_last_ptr = com.search_space[ind].last_ptr
     pvals = values(com.search_space[ind])
     backtrack_obj = BacktrackObj()
     backtrack_obj.variable_idx = ind
@@ -284,10 +309,12 @@ function backtrack!(com::CS.CoM)
             reverse_pruning!(com, backtrack_obj)
         end
 
-        # checked very value => remove from backtrack
+        # checked every value => remove from backtrack
         if backtrack_obj.pval_idx > length(backtrack_obj.pvals)
             com.search_space[ind].last_ptr = length(backtrack_obj.pvals)
             com.search_space[ind].first_ptr = 1
+            com.search_space[ind].min = minimum(backtrack_obj.pvals)
+            com.search_space[ind].max = maximum(backtrack_obj.pvals)
             pop!(backtrack_vec)
             continue
         end
@@ -297,7 +324,7 @@ function backtrack!(com::CS.CoM)
         constraints = com.constraints[com.subscription[ind]]
         feasible = true
         for constraint in constraints
-            feasible = constraint.fct(com, constraint.indices, pval)
+            feasible = constraint.fct(com, constraint, pval; index=ind)
             if !feasible
                 break
             end
