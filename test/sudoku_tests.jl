@@ -125,6 +125,7 @@ end
 
 @testset "top95 some use backtracking" begin
     grids = sudokus_from_file("data/top95")
+    c = 0
     for grid in grids
         com = CS.init()
 
@@ -133,7 +134,10 @@ end
 
         @test CS.solve!(com) == :Solved
         @test fulfills_sudoku_constr(com_grid)
+        c += 1
     end
+    # check that actually all 95 problems were tested
+    @test c == 95
 end
 
 

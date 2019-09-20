@@ -8,7 +8,7 @@ function sudokus_from_file(filename, sep='\n')
     str_sudokus = split(strip(s), sep)
     grids = AbstractArray[]
     for str_sudoku in str_sudokus
-        str_sudoku = replace(str_sudoku, "."=>"0")
+        str_sudoku = strip(replace(str_sudoku, "."=>"0"))
         if length(str_sudoku) != 81
             continue
         end
