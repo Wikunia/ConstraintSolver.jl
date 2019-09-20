@@ -1,6 +1,24 @@
 using ConstraintSolver
 CS = ConstraintSolver
 
+function sudokus_from_file(filename, sep='\n')
+    s = open(filename) do file
+        read(file, String)
+    end
+    str_sudokus = split(strip(s), sep)
+    grids = AbstractArray[]
+    for str_sudoku in str_sudokus
+        str_sudoku = strip(replace(str_sudoku, "."=>"0"))
+        if length(str_sudoku) != 81
+            continue
+        end
+        one_line_grid = parse.(Int, split(str_sudoku,""))
+        grid = reshape(one_line_grid, 9, 9)
+        push!(grids, grid)
+    end
+    return grids
+end
+
 function create_sudoku_grid!(com, grid)
     com_grid = Array{CS.Variable, 2}(undef, 9, 9)
     for (ind,val) in enumerate(grid)

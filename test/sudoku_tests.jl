@@ -123,19 +123,21 @@ end
     @test fulfills_sudoku_constr(com_grid)
 end
 
-@testset "Number 7 in top95.txt uses backtracking" begin
-    com = CS.init()
+@testset "top95 some use backtracking" begin
+    grids = sudokus_from_file("data/top95")
+    c = 0
+    for grid in grids
+        com = CS.init()
 
-    grid = Int[6,0,2,0,5,0,0,0,0,0,0,0,0,0,3,0,4,0,0,0,0,0,0,0,0,0,0,4,3,0,0,0,8,0,
-              0,0,0,1,0,0,0,0,2,0,0,0,0,0,0,0,0,7,0,0,5,0,0,2,7,0,0,0,0,0,0,0,0,0,
-              0,0,8,1,0,0,0,6,0,0,0,0,0]
-    grid = transpose(reshape(grid, (9,9)))
+        com_grid = create_sudoku_grid!(com, grid)
+        add_sudoku_constr!(com, com_grid)
 
-    com_grid = create_sudoku_grid!(com, grid)
-    add_sudoku_constr!(com, com_grid)
-
-    @test CS.solve!(com) == :Solved
-    @test fulfills_sudoku_constr(com_grid)
+        @test CS.solve!(com) == :Solved
+        @test fulfills_sudoku_constr(com_grid)
+        c += 1
+    end
+    # check that actually all 95 problems were tested
+    @test c == 95
 end
 
 
