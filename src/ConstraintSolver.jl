@@ -39,6 +39,8 @@ mutable struct BacktrackObj
     pvals               :: Vector{Int}
     constraint_idx      :: Vector{Int}
     pruned              :: Vector{Vector{Int}}
+
+    BacktrackObj() = new()
 end
 
 mutable struct CoM
@@ -251,11 +253,14 @@ function reverse_pruning!(com::CS.CoM, backtrack_obj::CS.BacktrackObj)
         constraint = com.constraints[constraint_idx]
         for (j,local_ind) in enumerate(constraint.indices)
             com.search_space[local_ind].last_ptr += backtrack_obj.pruned[i][j]
+            @assert com.search_space[local_ind].last_ptr <= 9
         end
     end
+    empty!(backtrack_obj.constraint_idx)
+    empty!(backtrack_obj.pruned)
 end
 
-function rec_backtrack!(com::CS.CoM)
+function backtrack!(com::CS.CoM)
     found, ind = get_weak_ind(com)
     if !found 
         return :Solved
@@ -264,14 +269,20 @@ function rec_backtrack!(com::CS.CoM)
 
     previous_last_ptr = com.search_space[ind].last_ptr
     pvals = values(com.search_space[ind])
-    backtrack_vec = BacktrackObj[BacktrackObj(ind,0,pvals,Int[],[])]
+    backtrack_obj = BacktrackObj()
+    backtrack_obj.variable_idx = ind
+    backtrack_obj.pval_idx = 0
+    backtrack_obj.pvals = pvals
+    backtrack_vec = BacktrackObj[backtrack_obj]
     finished = false
     while length(backtrack_vec) > 0 && !finished
         backtrack_obj = backtrack_vec[end]
         backtrack_obj.pval_idx += 1
         ind = backtrack_obj.variable_idx
         
-        reverse_pruning!(com, backtrack_obj)
+        if isdefined(backtrack_obj, :pruned)
+            reverse_pruning!(com, backtrack_obj)
+        end
 
         # checked very value => remove from backtrack
         if backtrack_obj.pval_idx > length(backtrack_obj.pvals)
@@ -324,15 +335,21 @@ function rec_backtrack!(com::CS.CoM)
         end
         com.info.backtrack_counter += 1
 
+        backtrack_obj.constraint_idx = zeros(Int, length(constraint_outputs))
+        backtrack_obj.pruned = Vector{Vector{Int}}(undef, length(constraint_outputs))
         for cidx = 1:length(constraint_outputs)
             constraint = constraints[cidx]
             constraint_output = constraint_outputs[cidx]
-            push!(backtrack_obj.constraint_idx, constraint.idx)
-            push!(backtrack_obj.pruned, constraint_outputs[cidx].pruned)
+            backtrack_obj.constraint_idx[cidx] = constraint.idx
+            backtrack_obj.pruned[cidx] = constraint_outputs[cidx].pruned
         end
 
         pvals = values(com.search_space[ind])
-        push!(backtrack_vec, BacktrackObj(ind, 0,pvals,Int[],[]))
+        backtrack_obj = BacktrackObj()
+        backtrack_obj.variable_idx = ind
+        backtrack_obj.pval_idx = 0
+        backtrack_obj.pvals = pvals
+        push!(backtrack_vec, backtrack_obj)
     end
     return :Infeasible
 end
@@ -377,7 +394,7 @@ function solve!(com::CS.CoM; backtrack=true)
     end
     if backtrack
         com.info.backtracked = true
-        return rec_backtrack!(com)
+        return backtrack!(com)
     else
         @info "Backtracking is turned off."
         return :NotSolved
