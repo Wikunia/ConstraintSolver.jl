@@ -3,22 +3,19 @@ function eq_sum(com::CS.CoM, constraint::Constraint; logs = true)
     search_space = com.search_space
     changed = Dict{Int, Bool}()
     pruned  = zeros(Int, length(indices))
-    #=
-    println("indices: ")
-    println(indices)
-    println("RHS: ", constraint.rhs)
-    =#
-
+    
     # compute max and min values for each index
     maxs = zeros(Int, length(indices))
     mins = zeros(Int, length(indices))
     pre_maxs = zeros(Int, length(indices))
     pre_mins = zeros(Int, length(indices))
     for (i,idx) in enumerate(indices)
-        maxs[i] = com.search_space[idx].max
-        mins[i] = com.search_space[idx].min
-        pre_maxs[i] = maxs[i]
-        pre_mins[i] = mins[i]
+        max_val = search_space[idx].max
+        min_val = search_space[idx].min
+        maxs[i] = max_val
+        mins[i] = min_val
+        pre_maxs[i] = max_val
+        pre_mins[i] = min_val
     end
 
 
@@ -34,12 +31,14 @@ function eq_sum(com::CS.CoM, constraint::Constraint; logs = true)
         c_min = full_min-mins[i]
         # if the minimum is already too big
         if c_min > -mins[i]
+            com.bt_infeasible[idx] += 1
             return ConstraintOutput(false, changed, pruned)
         end
         # maximum without current index
         c_max = full_max-maxs[i]
         # if the maximum is already too small
         if c_max < -maxs[i]
+            com.bt_infeasible[idx] += 1
             return ConstraintOutput(false, changed, pruned)
         end
 
@@ -50,6 +49,7 @@ function eq_sum(com::CS.CoM, constraint::Constraint; logs = true)
             maxs[i] = -c_max
         end
     end
+    
     # update all 
     for (i,idx) in enumerate(indices)
         if maxs[i] < pre_maxs[i]
@@ -58,6 +58,7 @@ function eq_sum(com::CS.CoM, constraint::Constraint; logs = true)
                 changed[idx] = true
                 pruned[i] += nremoved
                 if !feasible(search_space[idx])
+                    com.bt_infeasible[idx] += 1
                     return ConstraintOutput(false, changed, pruned)
                 end
             end
@@ -68,6 +69,7 @@ function eq_sum(com::CS.CoM, constraint::Constraint; logs = true)
                 changed[idx] = true
                 pruned[i] += nremoved
                 if !feasible(search_space[idx])
+                    com.bt_infeasible[idx] += 1
                     return ConstraintOutput(false, changed, pruned)
                 end
             end
@@ -77,23 +79,20 @@ function eq_sum(com::CS.CoM, constraint::Constraint; logs = true)
     return ConstraintOutput(true, changed, pruned)
 end
 
-function eq_sum(com::CoM, constraint::Constraint, val::Int; index=nothing)
-    if index === nothing
-        indices = constraint.indices
-    else
-        indices = filter(i->i!=index, constraint.indices)
-    end
+function eq_sum(com::CoM, constraint::Constraint, val::Int, index::Int)
+    indices = filter(i->i!=index, constraint.indices)
+    search_space = com.search_space
     csum = 0
     num_not_fixed = 0
     max_extra = 0
     min_extra = 0
     for idx in indices
-        if isfixed(com.search_space[idx])
-            csum += value(com.search_space[idx])
+        if isfixed(search_space[idx])
+            csum += value(search_space[idx])
         else
             num_not_fixed += 1
-            max_extra += com.search_space[idx].max
-            min_extra += com.search_space[idx].min
+            max_extra += search_space[idx].max
+            min_extra += search_space[idx].min
         end
     end
     if num_not_fixed == 0 && csum + val != constraint.rhs

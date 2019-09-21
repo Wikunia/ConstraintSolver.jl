@@ -220,15 +220,11 @@ function all_different(com::CS.CoM, constraint::Constraint; logs = true)
 end
 
 """
-    all_different(com::CoM, constraint::Constraint, value::Int)
+    all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
 
 Returns whether the constraint can be still fulfilled.
 """
-function all_different(com::CoM, constraint::Constraint, value::Int; index=nothing)
-    if index === nothing
-        indices = constraint.indices
-    else
-        indices = filter(i->i!=index, constraint.indices)
-    end
+function all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
+    indices = filter(i->i!=index, constraint.indices)
     return !any(v->issetto(v,value), com.search_space[indices])
 end

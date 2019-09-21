@@ -83,7 +83,7 @@ function fulfills_constraints(com::CS.CoM, index, value)
     constraints = com.constraints[com.subscription[index]]
     feasible = true
     for constraint in constraints
-        feasible = constraint.fct(com, constraint, value; index=index)
+        feasible = constraint.fct(com, constraint, value, index)
         if !feasible
             break
         end
@@ -234,6 +234,23 @@ function prune!(com, constraints, constraint_outputs; pre_backtrack=false)
     return feasible, constraints, constraint_outputs
 end
 
+function single_reverse_pruning!(search_space, index::Int, prune_int::Int)
+    if prune_int > 0
+        var = search_space[index]
+        l_ptr = max(1,var.last_ptr)
+        new_l_ptr = var.last_ptr + prune_int
+        @views min_val = minimum(var.values[l_ptr:new_l_ptr])
+        @views max_val = maximum(var.values[l_ptr:new_l_ptr])
+        if min_val < var.min
+            var.min = min_val
+        end
+        if max_val > var.max
+            var.max = max_val
+        end
+        var.last_ptr = new_l_ptr
+    end
+end
+
 """
     reverse_pruning!(com, constraints, constraint_outputs)
 
@@ -245,20 +262,7 @@ function reverse_pruning!(com::CS.CoM, constraints, constraint_outputs)
         constraint = constraints[cidx]
         constraint_output = constraint_outputs[cidx]
         for (i,local_ind) in enumerate(constraint.indices)
-            if constraint_output.pruned[i] > 0
-                var = search_space[local_ind]
-                l_ptr = max(1,var.last_ptr)
-                new_l_ptr = var.last_ptr + constraint_output.pruned[i]
-                @views min_val = minimum(var.values[l_ptr:new_l_ptr])
-                @views max_val = maximum(var.values[l_ptr:new_l_ptr])
-                if min_val < var.min
-                    var.min = min_val
-                end
-                if max_val > var.max
-                    var.max = max_val
-                end
-                var.last_ptr = new_l_ptr
-            end
+            single_reverse_pruning!(search_space, local_ind, constraint_output.pruned[i])
         end
     end
 end
@@ -268,18 +272,7 @@ function reverse_pruning!(com::CS.CoM, backtrack_obj::CS.BacktrackObj)
     for (i,constraint_idx) in enumerate(backtrack_obj.constraint_idx)
         constraint = com.constraints[constraint_idx]
         for (j,local_ind) in enumerate(constraint.indices)
-            var = search_space[local_ind]
-            l_ptr = max(1,var.last_ptr)
-            new_l_ptr = var.last_ptr + backtrack_obj.pruned[i][j]
-            @views min_val = minimum(var.values[l_ptr:new_l_ptr])
-            @views max_val = maximum(var.values[l_ptr:new_l_ptr])
-            if min_val < var.min
-                var.min = min_val
-            end
-            if max_val > var.max
-                var.max = max_val
-            end
-            var.last_ptr = new_l_ptr
+            single_reverse_pruning!(search_space, local_ind, backtrack_obj.pruned[i][j])
         end
     end
     empty!(backtrack_obj.constraint_idx)
@@ -324,7 +317,7 @@ function backtrack!(com::CS.CoM)
         constraints = com.constraints[com.subscription[ind]]
         feasible = true
         for constraint in constraints
-            feasible = constraint.fct(com, constraint, pval; index=ind)
+            feasible = constraint.fct(com, constraint, pval, ind)
             if !feasible
                 break
             end
