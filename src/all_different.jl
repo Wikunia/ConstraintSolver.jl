@@ -5,7 +5,7 @@ Tries to reduce the search space by the all_different constraint.
 Fixes values and then sets com.changed to true for the corresponding index.
 Returns a ConstraintOutput object and throws a warning if infeasible and `logs` is set
 """
-function all_different(com::CS.CoM, constraint; logs = true)
+function all_different(com::CS.CoM, constraint::Constraint; logs = true)
     indices = constraint.indices
     pvals = constraint.pvals 
 
@@ -220,10 +220,11 @@ function all_different(com::CS.CoM, constraint; logs = true)
 end
 
 """
-    all_different(com::CoM, indices, value::Int)
+    all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
 
 Returns whether the constraint can be still fulfilled.
 """
-function all_different(com::CoM, indices, value::Int)
-   return !any(v->issetto(v,value), com.search_space[indices])
+function all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
+    indices = filter(i->i!=index, constraint.indices)
+    return !any(v->issetto(v,value), com.search_space[indices])
 end

@@ -1,5 +1,6 @@
+rectangle(w, h, x, y) = Shape(x .+ [0,w,w,0], y .+ [0,0,h,h])
+
 function plot_search_space(com, grid, fname)
-    rectangle(w, h, x, y) = Shape(x .+ [0,w,w,0], y .+ [0,0,h,h])
 
     plot(0:9,0:9, size=(500,500), legend=false, xaxis=false, yaxis=false, aspect_ratio=:equal)
     for i=0:8, j=0:8
@@ -45,5 +46,59 @@ function plot_search_space(com, grid, fname)
         end
     end
 
-    png("visualizations/$(fname)")
+    png("visualizations/images/$(fname)")
+end
+
+function plot_killer(grid, sums, fname; fill=true)
+    plot(; size=(900,900), legend=false, xaxis=false, yaxis=false, aspect_ratio=:equal)
+    for s in sums
+        ind = s.indices[1]
+        x = ind[2]-0.75
+        y = 10-ind[1]-0.17
+        annotate!(x, y, text(s.result, 15, :black))
+        for ind in s.indices 
+            plot!(rectangle(1,1,ind[2]-1,9-ind[1]), color=s.color, alpha=0.4)
+        end
+    end
+
+    for i=[3,6]
+        plot!([i,i],[0,9], color=:black, linewidth=4)
+    end
+    for j=[3,6]
+        plot!([0,9],[j,j], color=:black, linewidth=4)
+    end
+
+    
+    if fill
+        for ind in keys(grid)
+            if CS.isfixed(grid[ind])
+                x = ind[2]-0.5
+                y = 10-ind[1]-0.5
+                annotate!(x, y, text(CS.value(grid[ind]),20, :black))
+            else
+                vals = CS.values(grid[ind])
+                sort!(vals)
+                x = ind[2]-0.3
+                y = 10-ind[1]-0.2
+                max_idx = min(3, length(vals))
+                text_vals = join(vals[1:max_idx],",")
+                annotate!(x, y, text(text_vals,11))
+                if length(vals) > 3
+                    y -= 0.25
+                    max_idx = min(6, length(vals))
+                    text_vals = join(vals[4:max_idx],",")
+                    annotate!(x, y, text(text_vals,11))
+                end
+                if length(vals) > 6
+                    y -= 0.25
+                    max_idx = length(vals)
+                    text_vals = join(vals[7:max_idx],",")
+                    annotate!(x, y, text(text_vals,11))
+                end
+
+            end
+        end
+    end
+
+    png("visualizations/images/$(fname)")
 end
