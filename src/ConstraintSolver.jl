@@ -111,16 +111,9 @@ function fixed_vs_unfixed(search_space, indices)
     return fixed_vals, unfixed_indices
 end
 
-"""
-    add_constraint!(com::CS.CoM, fct, variables; rhs=0)
-
-Add a constraint using a function name and the variables over which the constraint should hold
-"""
-function add_constraint!(com::CS.CoM, fct, variables; rhs=0)
-    current_constraint_number = length(com.constraints)+1
+function create_constraint(constraint_idx, fct, variables; rhs = 0)
     indices = vec([v.idx for v in variables])
-    constraint = Constraint(current_constraint_number, fct, indices, Int[], rhs)
-    push!(com.constraints, constraint)
+    constraint = Constraint(constraint_idx, fct, indices, Int[], rhs)
     pvals_intervals = Vector{NamedTuple}()
     push!(pvals_intervals, (from = variables[1].from, to = variables[1].to))
     for (i,ind) in enumerate(indices)
@@ -141,13 +134,27 @@ function add_constraint!(com::CS.CoM, fct, variables; rhs=0)
         if !comp_inside && extra_to >= extra_from
             push!(pvals_intervals, (from = extra_from, to = extra_to))
         end
-        push!(com.subscription[ind], current_constraint_number)
     end
     pvals = collect(pvals_intervals[1].from:pvals_intervals[1].to)
     for interval in pvals_intervals[2:end]
         pvals = vcat(pvals, collect(interval.from:interval.to))
     end
     constraint.pvals = pvals
+    return constraint
+end
+
+"""
+    add_constraint!(com::CS.CoM, fct, variables; rhs=0)
+
+Add a constraint using a function name and the variables over which the constraint should hold
+"""
+function add_constraint!(com::CS.CoM, fct, variables; rhs=0)
+    current_constraint_number = length(com.constraints)+1
+    constraint = create_constraint(current_constraint_number, fct, variables; rhs=rhs)
+    push!(com.constraints, constraint)
+    for (i,ind) in enumerate(constraint.indices)
+        push!(com.subscription[ind], current_constraint_number)
+    end
 end
 
 function get_weak_ind(com::CS.CoM)
@@ -279,7 +286,7 @@ function reverse_pruning!(com::CS.CoM, backtrack_obj::CS.BacktrackObj)
     empty!(backtrack_obj.pruned)
 end
 
-function backtrack!(com::CS.CoM)
+function backtrack!(com::CS.CoM, max_bt_steps)
     found, ind = get_weak_ind(com)
     if !found 
         return :Solved
@@ -353,6 +360,11 @@ function backtrack!(com::CS.CoM)
         if !found 
             return :Solved
         end
+
+        if com.info.backtrack_counter + 1 > max_bt_steps
+            return :NotSolved
+        end
+
         com.info.backtrack_counter += 1
 
         backtrack_obj.constraint_idx = zeros(Int, length(constraint_outputs))
@@ -374,10 +386,102 @@ function backtrack!(com::CS.CoM)
     return :Infeasible
 end
 
-function solve!(com::CS.CoM; backtrack=true)
+function arr2dict(arr)
+    d = Dict{Int,Bool}()
+    for v in arr
+        d[v] = true
+    end
+    return d
+end
+
+function simplify!(com)
+    # check if we have all_different and sum constraints
+    # (all different where every value is used)
+    b_all_different = false
+    b_all_different_sum = false
+    b_sum = false
+    for constraint in com.constraints
+        if nameof(constraint.fct) == :all_different
+            b_all_different = true
+            if length(constraint.indices) == length(constraint.pvals)
+                b_all_different_sum = true
+            end
+        elseif nameof(constraint.fct) == :eq_sum
+            b_sum = true
+        end
+    end
+    # l = 0
+    if b_all_different_sum && b_sum
+        # for each all_different constraint
+        # which can be formulated as a sum constraint 
+        # check which sum constraints are completely inside all different
+        # which are partially inside
+        # compute inside sum and total sum
+        # println("lc :", length(com.constraints))
+        n_constraints_before = length(com.constraints)
+        for constraint_idx in 1:length(com.constraints)
+            constraint = com.constraints[constraint_idx]
+            # l += 1
+            if nameof(constraint.fct) == :all_different
+                if length(constraint.indices) == length(constraint.pvals)
+                    all_diff_sum = sum(constraint.pvals)
+                    in_sum = 0
+                    total_sum = 0
+                    inside_constraints = Constraint[]
+                    outside_constraints = Constraint[]
+                    outside_indices = Int[]
+                    additional_inside_indices = Int[]
+                    cons_indices_dict = arr2dict(constraint.indices)
+                    for variable_idx in keys(cons_indices_dict)
+                        for sub_constraint_idx in com.subscription[variable_idx]
+                            # don't mess with constraints added later on
+                            if sub_constraint_idx > n_constraints_before
+                                continue
+                            end
+                            sub_constraint = com.constraints[sub_constraint_idx]
+                            if nameof(sub_constraint.fct) == :eq_sum
+                                total_sum += sub_constraint.rhs
+                                all_inside = true
+                                partial_additional_inside_indices = Int[]
+                                for sub_variable_idx in sub_constraint.indices
+                                    if !haskey(cons_indices_dict, sub_variable_idx)
+                                        all_inside = false
+                                        push!(outside_indices, sub_variable_idx)
+                                    else 
+                                        push!(partial_additional_inside_indices, sub_variable_idx)
+                                        delete!(cons_indices_dict, sub_variable_idx)
+                                    end
+                                end
+                                if all_inside
+                                    in_sum += sub_constraint.rhs
+                                    push!(inside_constraints, sub_constraint)
+                                else
+                                    push!(outside_constraints, sub_constraint)
+                                    additional_inside_indices = vcat(additional_inside_indices, partial_additional_inside_indices)
+                                end
+                            end
+                        end
+                    end
+                    
+                    # make sure that there are not too many outside indices
+                    if length(outside_indices) < 3
+                        add_constraint!(com, CS.eq_sum, com.search_space[outside_indices]; rhs=total_sum - all_diff_sum)
+                        add_constraint!(com, CS.eq_sum, com.search_space[additional_inside_indices]; rhs=all_diff_sum - in_sum)
+                    end
+                end
+            end
+        end
+    end
+    # println("l: ", l)
+end
+
+function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64))
     if all(v->isfixed(v), com.search_space)
         return :Solved
     end
+
+    # check for better constraints
+    # simplify!(com)
 
     changed = Dict{Int, Bool}()
     feasible = true
@@ -414,7 +518,7 @@ function solve!(com::CS.CoM; backtrack=true)
     end
     if backtrack
         com.info.backtracked = true
-        return backtrack!(com)
+        return backtrack!(com, max_bt_steps)
     else
         @info "Backtracking is turned off."
         return :NotSolved

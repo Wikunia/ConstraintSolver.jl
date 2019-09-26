@@ -49,15 +49,25 @@ function plot_search_space(com, grid, fname)
     png("visualizations/images/$(fname)")
 end
 
-function plot_killer(grid, sums, fname; fill=true)
+function plot_killer(grid, sums, fname; fill=true, mark=nothing)
     plot(; size=(900,900), legend=false, xaxis=false, yaxis=false, aspect_ratio=:equal)
     for s in sums
         ind = s.indices[1]
         x = ind[2]-0.75
         y = 10-ind[1]-0.17
         annotate!(x, y, text(s.result, 15, :black))
-        for ind in s.indices 
-            plot!(rectangle(1,1,ind[2]-1,9-ind[1]), color=s.color, alpha=0.4)
+        if mark === nothing
+            for ind in s.indices 
+                plot!(rectangle(1,1,ind[2]-1,9-ind[1]), color=s.color, alpha=0.4)
+            end
+        else
+            for ind in s.indices 
+                if ind in mark
+                    plot!(rectangle(1,1,ind[2]-1,9-ind[1]), color="red", alpha=0.4)
+                else
+                    plot!(rectangle(1,1,ind[2]-1,9-ind[1]), color=s.color, alpha=0.4)
+                end
+            end
         end
     end
 

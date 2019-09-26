@@ -76,6 +76,65 @@ function eq_sum(com::CS.CoM, constraint::Constraint; logs = true)
         end
     end
 
+    # if there are only two left check all options
+    n_open = 0
+    open_ind = zeros(Int,2)
+    open_local_ind = zeros(Int,2)
+    open_rhs = constraint.rhs
+    li = 0
+    for i in indices 
+        li += 1
+        if !isfixed(search_space[i])
+            n_open += 1
+            if n_open <= 2
+                open_ind[n_open] = i
+                open_local_ind[n_open] = li
+            end
+        else
+            open_rhs -= value(search_space[i])
+        end
+    end
+    #=
+    if n_open == 2
+        intersect_cons = intersect(com.subscription[open_ind[1]], com.subscription[open_ind[2]])
+        is_all_different = false
+        for constraint_idx in intersect_cons
+            if nameof(com.constraints[constraint_idx].fct) == :all_different
+                is_all_different = true
+                break
+            end
+        end
+
+        for v in 1:2
+            if v == 1
+                this, local_this = open_ind[1], open_local_ind[1]
+                other, local_other = open_ind[2], open_local_ind[2]
+            else
+                other, local_other = open_ind[1], open_local_ind[1]
+                this, local_this = open_ind[2], open_local_ind[2]
+            end
+            for val in values(search_space[this])
+                if is_all_different && open_rhs-val == val
+                    rm!(search_space[this], val)
+                    changed[this] = true
+                    pruned[local_this] += 1
+                    if has(search_space[other], open_rhs-val)
+                        rm!(search_space[other], val)
+                        changed[other] = true
+                        pruned[local_other] += 1
+                    end
+                else
+                    if !has(search_space[other], open_rhs-val)
+                        rm!(search_space[this], val)
+                        changed[this] = true
+                        pruned[local_this] += 1
+                    end
+                end
+            end
+        end
+    end
+    =#
+
     return ConstraintOutput(true, changed, pruned)
 end
 
