@@ -1,7 +1,7 @@
 using ConstraintSolver
 
 CS = ConstraintSolver
-include("../test/sudoku_fcts.jl")
+include("../../test/sudoku_fcts.jl")
 
 function from_file(filename, sep='\n')
     s = open(filename) do file
@@ -62,7 +62,7 @@ function solve_one(grid)
 end
 
 function main(; benchmark=false, single_times=true)
-    solve_all(from_file("benchmark/top95.txt"); benchmark=benchmark, single_times=single_times)
+    solve_all(from_file("benchmark/sudoku/data/top95.txt"); benchmark=benchmark, single_times=single_times)
     # solve_all(from_file("hardest.txt"), "hardest")
 end
 
