@@ -23,7 +23,6 @@ function all_different(com::CS.CoM, constraint::Constraint; logs = true)
         return ConstraintOutput(false, changed, pruned, pruned_below)
     end
 
-
     bfixed = false
     for i in 1:length(unfixed_indices)
         pi = unfixed_indices[i]
@@ -32,7 +31,6 @@ function all_different(com::CS.CoM, constraint::Constraint; logs = true)
         for pv in fixed_vals
             if has(c_search_space, pv)
                 if !rm!(com, c_search_space, pv)
-                    com.bt_infeasible[ind] += 1
                     logs && @warn "The problem is infeasible"
                     return ConstraintOutput(false, changed, pruned, pruned_below)
                 end
@@ -195,7 +193,6 @@ function all_different(com::CS.CoM, constraint::Constraint; logs = true)
         cind = vmb[dst]
         if !rm!(com, search_space[cind], vmb[src])
             logs && @warn "The problem is infeasible"
-            com.bt_infeasible[cind] += 1
             return ConstraintOutput(false, changed, pruned, pruned_below)
         end
         pruned[dst] += 1
