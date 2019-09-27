@@ -1,16 +1,3 @@
-mutable struct Variable
-    idx         :: Int
-    from        :: Int
-    to          :: Int
-    first_ptr   :: Int
-    last_ptr    :: Int
-    values      :: Vector{Int}
-    indices     :: Vector{Int}
-    offset      :: Int 
-    min         :: Int
-    max         :: Int
-end
-
 function nvalues(v::CS.Variable)
     return v.last_ptr-v.first_ptr+1
 end
@@ -39,12 +26,28 @@ function has(v::CS.Variable, x::Int)
     return v.first_ptr <= ind <= v.last_ptr
 end
 
-function rm!(v::CS.Variable, x::Int; set_min_max=true)
+function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several=false)
+    if !in_remove_several
+        # after removing nothing would be possible
+        len_vals = nvalues(v)
+        if len_vals == 1
+            com.bt_infeasible[v.idx] += 1
+            return false
+        elseif len_vals == 2
+            possible = values(v)
+            left_over = possible[1] == x ? possible[2] : possible[1]
+            if !fulfills_constraints(com, v.idx, left_over)
+                com.bt_infeasible[v.idx] += 1
+                return false
+            end
+        end
+    end
+
     ind = v.indices[x+v.offset]
     v.indices[x+v.offset], v.indices[v.values[v.last_ptr]+v.offset] = v.indices[v.values[v.last_ptr]+v.offset], v.indices[x+v.offset]
     v.values[ind], v.values[v.last_ptr] = v.values[v.last_ptr], v.values[ind]
     v.last_ptr -= 1
-    if set_min_max 
+    if !in_remove_several 
         vals = values(v)
         if length(vals) > 0
             if x == v.min 
@@ -55,48 +58,78 @@ function rm!(v::CS.Variable, x::Int; set_min_max=true)
             end
         end
     end
+    return true
 end
 
-function fix!(v::CS.Variable, x::Int)
+function fix!(com::CS.CoM, v::CS.Variable, x::Int)
+    if !fulfills_constraints(com, v.idx, x)
+        com.bt_infeasible[v.idx] += 1
+        return false, 0, 0
+    end
     ind = v.indices[x+v.offset]
+    pr_below = ind-v.first_ptr
+    pr_above = v.last_ptr-ind
     v.last_ptr = ind
     v.first_ptr = ind
     v.min = x
     v.max = x
+    return true, pr_below, pr_above
 end
 
 function isfixed(v::CS.Variable)
     return v.last_ptr == v.first_ptr
 end
 
-function remove_below(var::CS.Variable, val::Int)
+function remove_below!(com::CS.CoM, var::CS.Variable, val::Int)
     vals = values(var)
+    still_possible = filter(v -> v >= val, vals)
+    if length(still_possible) == 0
+        com.bt_infeasible[var.idx] += 1
+        return false, 0
+    elseif length(still_possible) == 1
+        if !fulfills_constraints(com, var.idx, still_possible[1])
+            com.bt_infeasible[var.idx] += 1
+            return false, 0
+        end
+    end
+
     nremoved = 0
     for v in vals
         if v < val
-            rm!(var, v; set_min_max = false)
+            rm!(com, var, v; in_remove_several = true)
             nremoved += 1
         end
     end
     if nremoved > 0 && feasible(var)
         var.min = minimum(values(var))
     end
-    return nremoved
+    return true, nremoved
 end
 
-function remove_above(var::CS.Variable, val::Int)
+function remove_above!(com::CS.CoM, var::CS.Variable, val::Int)
     vals = values(var)
+    still_possible = filter(v -> v <= val, vals)
+    if length(still_possible) == 0
+        com.bt_infeasible[var.idx] += 1
+        return false, 0
+    elseif length(still_possible) == 1
+        if !fulfills_constraints(com, var.idx, still_possible[1])
+            com.bt_infeasible[var.idx] += 1
+            return false, 0
+        end
+    end
+
     nremoved = 0
     for v in vals
         if v > val
-            rm!(var, v; set_min_max = false)
+            rm!(com, var, v; in_remove_several = true)
             nremoved += 1
         end
     end
     if nremoved > 0 && feasible(var)
         var.max = maximum(values(var))
     end
-    return nremoved
+    return true, nremoved
 end
 
 function feasible(var::CS.Variable)
