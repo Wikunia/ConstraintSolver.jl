@@ -31,7 +31,7 @@ end
     sums = parseKillerJSON(JSON.parsefile("data/killer_wikipedia"))
 
     for s in sums
-        CS.add_constraint!(com, CS.eq_sum, [com_grid[CartesianIndex(ind)] for ind in s.indices]; rhs=s.result)
+        CS.add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
     end
 
     add_sudoku_constr!(com, com_grid)
@@ -57,7 +57,7 @@ end
     sums = parseKillerJSON(JSON.parsefile("data/killer_niallsudoku_5500"))
 
     for s in sums
-        CS.add_constraint!(com, CS.eq_sum, [com_grid[CartesianIndex(ind)] for ind in s.indices]; rhs=s.result)
+        CS.add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
     end
 
     add_sudoku_constr!(com, com_grid)
