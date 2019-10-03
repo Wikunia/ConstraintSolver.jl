@@ -42,6 +42,23 @@ mutable struct BasicConstraint <: Constraint
     BasicConstraint() = new()
 end
 
+mutable struct LinearVariables
+    indices             :: Vector{Int}
+    coeffs              :: Vector{Int}
+end
+
+mutable struct LinearConstraint <: Constraint
+    idx                 :: Int
+    fct                 :: Function
+    indices             :: Vector{Int}
+    pvals               :: Vector{Int}
+    coeffs              :: Vector{Int}
+    operator            :: Symbol
+    rhs                 :: Int
+    in_all_different    :: Bool
+    LinearConstraint() = new()
+end
+
 mutable struct ConstraintOutput
     feasible            :: Bool
     idx_changed         :: Dict{Int, Bool}
@@ -71,8 +88,9 @@ mutable struct CoM
 end
 
 include("Variable.jl")
+include("linearcombination.jl")
 include("all_different.jl")
-# include("eq_sum.jl")
+include("eq_sum.jl")
 
 function init()
     com = CoM()
@@ -509,7 +527,7 @@ function simplify!(com)
                     
                     # make sure that there are not too many outside indices
                     if add_sum_constraint && length(outside_indices) < 3
-                        add_constraint!(com, CS.eq_sum, com.search_space[outside_indices]; rhs=total_sum - all_diff_sum)
+                        add_constraint!(com, sum(com.search_space[outside_indices]) == total_sum - all_diff_sum)
                     end
                 end
             end

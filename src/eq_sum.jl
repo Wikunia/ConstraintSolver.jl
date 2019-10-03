@@ -1,4 +1,18 @@
-function eq_sum(com::CS.CoM, constraint::Constraint; logs = true)
+function Base.:(==)(x::LinearVariables, y::Int)
+    lc = LinearConstraint()
+    lc.fct = eq_sum
+    lc.indices = x.indices
+    lc.coeffs = x.coeffs
+    lc.operator = :(==)
+    lc.rhs = y
+    return lc
+end
+
+
+function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
+    if any(c->c!=1, constraint.coeffs)
+        throw(ArgumentError("Currently only a coefficient of 1 is possible in sum constraints"))
+    end
     indices = constraint.indices
     search_space = com.search_space
     changed = Dict{Int, Bool}()
@@ -153,7 +167,10 @@ function eq_sum(com::CS.CoM, constraint::Constraint; logs = true)
     return ConstraintOutput(true, changed, pruned, pruned_below)
 end
 
-function eq_sum(com::CoM, constraint::Constraint, val::Int, index::Int)
+function eq_sum(com::CoM, constraint::LinearConstraint, val::Int, index::Int)
+    if any(c->c!=1, constraint.coeffs)
+        throw(ArgumentError("Currently only a coefficient of 1 is possible in sum constraints"))
+    end
     indices = filter(i->i!=index, constraint.indices)
     search_space = com.search_space
     csum = 0
