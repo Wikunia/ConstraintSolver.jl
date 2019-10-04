@@ -501,7 +501,8 @@ function simplify!(com)
                                 continue
                             end
                             sub_constraint = com.constraints[sub_constraint_idx]
-                            if nameof(sub_constraint.fct) == :eq_sum
+                            # it must be an equal constraint and all coefficients must be 1 otherwise we can't add a constraint
+                            if nameof(sub_constraint.fct) == :eq_sum && all(c->c==1, sub_constraint.coeffs)
                                 found_sum_constraint = true
                                 total_sum += sub_constraint.rhs
                                 all_inside = true

@@ -10,9 +10,6 @@ end
 
 
 function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
-    if any(c->c!=1, constraint.coeffs)
-        throw(ArgumentError("Currently only a coefficient of 1 is possible in sum constraints"))
-    end
     indices = constraint.indices
     search_space = com.search_space
     changed = Dict{Int, Bool}()
@@ -25,8 +22,8 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     pre_maxs = zeros(Int, length(indices))
     pre_mins = zeros(Int, length(indices))
     for (i,idx) in enumerate(indices)
-        max_val = search_space[idx].max
-        min_val = search_space[idx].min
+        max_val = search_space[idx].max * constraint.coeffs[i]
+        min_val = search_space[idx].min * constraint.coeffs[i]
         maxs[i] = max_val
         mins[i] = min_val
         pre_maxs[i] = max_val
@@ -38,37 +35,36 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     full_max = sum(maxs)-constraint.rhs
     full_min = sum(mins)-constraint.rhs
 
+    if full_max < 0 || full_min > 0
+        com.bt_infeasible[indices] .+= 1
+        return ConstraintOutput(false, changed, pruned, pruned_below)
+    end
+    
     for (i,idx) in enumerate(indices)
         if isfixed(search_space[idx])
             continue
         end
         # minimum without current index
         c_min = full_min-mins[i]
-        # if the minimum is already too big
-        if c_min > -mins[i]
-            com.bt_infeasible[idx] += 1
-            return ConstraintOutput(false, changed, pruned, pruned_below)
-        end
+        
         # maximum without current index
         c_max = full_max-maxs[i]
-        # if the maximum is already too small
-        if c_max < -maxs[i]
-            com.bt_infeasible[idx] += 1
-            return ConstraintOutput(false, changed, pruned, pruned_below)
+        
+        p_max = -c_min
+        if p_max < maxs[i]
+            maxs[i] = p_max
         end
 
-        if c_min < -mins[i]
-            mins[i] = -c_min
-        end
-        if c_max > -maxs[i]
-            maxs[i] = -c_max
+        p_min = -c_max
+        if p_min > mins[i]
+            mins[i] = p_min
         end
     end
-    
+
     # update all 
     for (i,idx) in enumerate(indices)
         if maxs[i] < pre_maxs[i]
-            still_feasible, nremoved = remove_below!(com, search_space[idx], maxs[i])
+            still_feasible, nremoved = remove_above!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
             if !still_feasible
                 return ConstraintOutput(false, changed, pruned, pruned_below)
             end
@@ -78,7 +74,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
             end
         end
         if mins[i] > pre_mins[i]
-            still_feasible, nremoved = remove_above!(com, search_space[idx], mins[i])
+            still_feasible, nremoved = remove_below!(com, search_space[idx], cld(mins[i], constraint.coeffs[i]))
             if !still_feasible
                 return ConstraintOutput(false, changed, pruned, pruned_below)
             end
@@ -104,11 +100,21 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 unfixed_local_ind[n_unfixed] = li
             end
         else
-            unfixed_rhs -= value(search_space[i])
+            unfixed_rhs -= value(search_space[i])*constraint.coeffs[li]
         end
     end
+
+    # only a single one left
     if n_unfixed == 1
+        if unfixed_rhs % constraint.coeffs[unfixed_local_ind[1]] != 0
+            com.bt_infeasible[unfixed_ind[1]] += 1
+            return ConstraintOutput(false, changed, pruned, pruned_below)
+        else 
+            # divide rhs such that it is comparable with the variable directly without coefficient
+            unfixed_rhs = fld(unfixed_rhs, constraint.coeffs[unfixed_local_ind[1]])
+        end
         if !has(search_space[unfixed_ind[1]], unfixed_rhs)
+            com.bt_infeasible[unfixed_ind[1]] += 1
             return ConstraintOutput(false, changed, pruned, pruned_below)
         else
             changed[unfixed_ind[1]] = true
@@ -119,6 +125,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
             pruned[unfixed_local_ind[1]] += pr_above
             pruned_below[unfixed_local_ind[1]] += pr_below
         end
+    
     elseif n_unfixed == 2
         intersect_cons = intersect(com.subscription[unfixed_ind[1]], com.subscription[unfixed_ind[2]])
         is_all_different = false
@@ -137,22 +144,33 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 other, local_other = unfixed_ind[1], unfixed_local_ind[1]
                 this, local_this = unfixed_ind[2], unfixed_local_ind[2]
             end
+    
             for val in values(search_space[this])
-                if is_all_different && unfixed_rhs-val == val
+                # if we choose this value but the other wouldn't be an integer => remove this value
+                if (unfixed_rhs-val*constraint.coeffs[local_this]) % constraint.coeffs[local_other] != 0
+                    if !rm!(com, search_space[this], val)
+                        return ConstraintOutput(false, changed, pruned, pruned_below)
+                    end
+                    continue
+                end
+
+                check_other_val = fld(unfixed_rhs-val*constraint.coeffs[local_this], constraint.coeffs[local_other])
+                # if all different but those two are the same 
+                if is_all_different && check_other_val == val
                     if !rm!(com, search_space[this], val)
                         return ConstraintOutput(false, changed, pruned, pruned_below)
                     end
                     changed[this] = true
                     pruned[local_this] += 1
-                    if has(search_space[other], unfixed_rhs-val)
-                        if !rm!(com, search_space[other], val)
+                    if has(search_space[other], check_other_val)
+                        if !rm!(com, search_space[other], check_other_val)
                             return ConstraintOutput(false, changed, pruned, pruned_below)
                         end
                         changed[other] = true
                         pruned[local_other] += 1
                     end
                 else
-                    if !has(search_space[other], unfixed_rhs-val)
+                    if !has(search_space[other], check_other_val)
                         if !rm!(com, search_space[this], val)
                             return ConstraintOutput(false, changed, pruned, pruned_below)
                         end
@@ -168,22 +186,22 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
 end
 
 function eq_sum(com::CoM, constraint::LinearConstraint, val::Int, index::Int)
-    if any(c->c!=1, constraint.coeffs)
-        throw(ArgumentError("Currently only a coefficient of 1 is possible in sum constraints"))
-    end
-    indices = filter(i->i!=index, constraint.indices)
     search_space = com.search_space
     csum = 0
     num_not_fixed = 0
     max_extra = 0
     min_extra = 0
-    for idx in indices
+    for (i,idx) in enumerate(constraint.indices)
+        if idx == index
+            val = val*constraint.coeffs[i]
+            continue
+        end
         if isfixed(search_space[idx])
-            csum += value(search_space[idx])
+            csum += value(search_space[idx])*constraint.coeffs[i]
         else
             num_not_fixed += 1
-            max_extra += search_space[idx].max
-            min_extra += search_space[idx].min
+            max_extra += search_space[idx].max*constraint.coeffs[i]
+            min_extra += search_space[idx].min*constraint.coeffs[i]
         end
     end
     if num_not_fixed == 0 && csum + val != constraint.rhs

@@ -44,7 +44,7 @@ end
     end
 end
 
-@testset "Killer Sudoku niallsudoku_5500" begin
+@testset "Killer Sudoku niallsudoku_5500 with coefficients" begin
     com = CS.init()
 
     grid = zeros(Int, (9,9))
@@ -56,7 +56,11 @@ end
 
     sums = parseKillerJSON(JSON.parsefile("data/killer_niallsudoku_5500"))
 
-    for s in sums
+    # the upper left sum constraint is x+y+z = 10 and the solution is 2+1+7
+    # here I change it to 5*x+7*y+z = 24
+    CS.add_constraint!(com, 5*com_grid[CartesianIndex(1,1)]+7*com_grid[CartesianIndex(2,1)]+com_grid[CartesianIndex(2,2)] == 24)
+
+    for s in sums[2:end]
         CS.add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
     end
 
@@ -65,7 +69,8 @@ end
 
     @test CS.solve!(com) == :Solved
     @test fulfills_sudoku_constr(com_grid)
-    for s in sums
+    @test 5*CS.value(com_grid[CartesianIndex(1,1)])+7*CS.value(com_grid[CartesianIndex(2,1)])+CS.value(com_grid[CartesianIndex(2,2)]) == 24
+    for s in sums[2:end]
         @test s.result == sum([CS.value(com_grid[CartesianIndex(i)]) for i in s.indices])
     end
 end
