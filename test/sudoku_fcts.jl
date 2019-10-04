@@ -34,14 +34,17 @@ end
 function add_sudoku_constr!(com, grid)
     for rc=1:9
         #row
-        CS.add_constraint!(com, CS.all_different, grid[CartesianIndices((rc:rc,1:9))])
+        variables = grid[CartesianIndices((rc:rc,1:9))]
+        CS.add_constraint!(com, CS.all_different([variables...]))
         #col
-        CS.add_constraint!(com, CS.all_different, grid[CartesianIndices((1:9,rc:rc))])
+        variables = grid[CartesianIndices((1:9,rc:rc))]
+        CS.add_constraint!(com, CS.all_different([variables...]))
     end
 
     for br=0:2
         for bc=0:2
-            CS.add_constraint!(com, CS.all_different, grid[CartesianIndices((br*3+1:(br+1)*3,bc*3+1:(bc+1)*3))])
+            variables = grid[CartesianIndices((br*3+1:(br+1)*3,bc*3+1:(bc+1)*3))]
+            CS.add_constraint!(com, CS.all_different([variables...]))
         end
     end
 end

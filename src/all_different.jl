@@ -1,11 +1,24 @@
 """
-    all_different(com::CS.CoM, indices; logs = true)
+    all_different(variables::Vector{Variable})
+
+Create a BasicConstraint which will later be used by `all_different(com, constraint)`
+"""
+function all_different(variables::Vector{Variable})
+    constraint = BasicConstraint()
+    constraint.fct = all_different
+    constraint.indices = Int[v.idx for v in variables]
+    return constraint
+end
+
+
+"""
+    all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
 
 Tries to reduce the search space by the all_different constraint. 
 Fixes values and then sets com.changed to true for the corresponding index.
 Returns a ConstraintOutput object and throws a warning if infeasible and `logs` is set
 """
-function all_different(com::CS.CoM, constraint::Constraint; logs = true)
+function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     indices = constraint.indices
     pvals = constraint.pvals 
 

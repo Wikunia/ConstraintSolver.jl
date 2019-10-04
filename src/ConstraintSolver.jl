@@ -31,13 +31,32 @@ function Base.show(io::IO, csinfo::CSInfo)
     end
 end
 
-mutable struct Constraint
+abstract type Constraint 
+end
+
+mutable struct BasicConstraint <: Constraint
     idx                 :: Int
     fct                 :: Function
     indices             :: Vector{Int}
     pvals               :: Vector{Int}
+    BasicConstraint() = new()
+end
+
+mutable struct LinearVariables
+    indices             :: Vector{Int}
+    coeffs              :: Vector{Int}
+end
+
+mutable struct LinearConstraint <: Constraint
+    idx                 :: Int
+    fct                 :: Function
+    indices             :: Vector{Int}
+    pvals               :: Vector{Int}
+    coeffs              :: Vector{Int}
+    operator            :: Symbol
     rhs                 :: Int
-    in_all_different    :: Bool # completely part of a all different constraint
+    in_all_different    :: Bool
+    LinearConstraint() = new()
 end
 
 mutable struct ConstraintOutput
@@ -69,6 +88,7 @@ mutable struct CoM
 end
 
 include("Variable.jl")
+include("linearcombination.jl")
 include("all_different.jl")
 include("eq_sum.jl")
 
@@ -130,11 +150,14 @@ function fixed_vs_unfixed(search_space, indices)
     return fixed_vals, unfixed_indices
 end
 
-function create_constraint(constraint_idx, fct, variables; rhs = 0)
-    indices = vec([v.idx for v in variables])
-    # will be updated in a later step
-    b_all_different = nameof(fct) == :all_different
-    constraint = Constraint(constraint_idx, fct, indices, Int[], rhs, b_all_different)
+"""
+    set_pvals!(com::CS.CoM, constraint::Constraint)
+
+Computes the possible values inside this constraint and sets it as constraint.pvals
+"""
+function set_pvals!(com::CS.CoM, constraint::Constraint)
+    indices = constraint.indices
+    variables = Variable[v for v in com.search_space[indices]]
     pvals_intervals = Vector{NamedTuple}()
     push!(pvals_intervals, (from = variables[1].from, to = variables[1].to))
     for (i,ind) in enumerate(indices)
@@ -161,20 +184,19 @@ function create_constraint(constraint_idx, fct, variables; rhs = 0)
         pvals = vcat(pvals, collect(interval.from:interval.to))
     end
     constraint.pvals = pvals
-    return constraint
 end
 
 """
-    add_constraint!(com::CS.CoM, fct, variables; rhs=0)
+    add_constraint!(com::CS.CoM, constraint::Constraint)
 
-Add a constraint using a function name and the variables over which the constraint should hold
+Add a constraint to the model
 """
-function add_constraint!(com::CS.CoM, fct, variables; rhs=0)
-    current_constraint_number = length(com.constraints)+1
-    constraint = create_constraint(current_constraint_number, fct, variables; rhs=rhs)
+function add_constraint!(com::CS.CoM, constraint::Constraint)
+    constraint.idx = length(com.constraints)+1
     push!(com.constraints, constraint)
+    set_pvals!(com, constraint)
     for (i,ind) in enumerate(constraint.indices)
-        push!(com.subscription[ind], current_constraint_number)
+        push!(com.subscription[ind], constraint.idx)
     end
 end
 
@@ -338,6 +360,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
     backtrack_obj.pvals = pvals
     backtrack_vec = BacktrackObj[backtrack_obj]
     finished = false
+
     while length(backtrack_vec) > 0 && !finished
         backtrack_obj = backtrack_vec[end]
         backtrack_obj.pval_idx += 1
@@ -479,7 +502,8 @@ function simplify!(com)
                                 continue
                             end
                             sub_constraint = com.constraints[sub_constraint_idx]
-                            if nameof(sub_constraint.fct) == :eq_sum
+                            # it must be an equal constraint and all coefficients must be 1 otherwise we can't add a constraint
+                            if nameof(sub_constraint.fct) == :eq_sum && all(c->c==1, sub_constraint.coeffs)
                                 found_sum_constraint = true
                                 total_sum += sub_constraint.rhs
                                 all_inside = true
@@ -505,7 +529,7 @@ function simplify!(com)
                     
                     # make sure that there are not too many outside indices
                     if add_sum_constraint && length(outside_indices) < 3
-                        add_constraint!(com, CS.eq_sum, com.search_space[outside_indices]; rhs=total_sum - all_diff_sum)
+                        add_constraint!(com, sum(com.search_space[outside_indices]) == total_sum - all_diff_sum)
                     end
                 end
             end
@@ -516,14 +540,16 @@ end
 
 function set_in_all_different!(com::CS.CoM)
     for constraint in com.constraints
-        if !constraint.in_all_different
-            subscriptions_idxs = [[i for i in com.subscription[v]] for v in constraint.indices]
-            intersects = intersect(subscriptions_idxs...)
+        if :in_all_different in fieldnames(typeof(constraint))
+            if !constraint.in_all_different
+                subscriptions_idxs = [[i for i in com.subscription[v]] for v in constraint.indices]
+                intersects = intersect(subscriptions_idxs...)
 
-            for i in intersects
-                if nameof(com.constraints[i].fct) == :all_different
-                    constraint.in_all_different = true
-                    break
+                for i in intersects
+                    if nameof(com.constraints[i].fct) == :all_different
+                        constraint.in_all_different = true
+                        break
+                    end
                 end
             end
         end
