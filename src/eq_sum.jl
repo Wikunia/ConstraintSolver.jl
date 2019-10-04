@@ -15,15 +15,20 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     changed = Dict{Int, Bool}()
     pruned  = zeros(Int, length(indices))
     pruned_below  = zeros(Int, length(indices))
-    
+
     # compute max and min values for each index
     maxs = zeros(Int, length(indices))
     mins = zeros(Int, length(indices))
     pre_maxs = zeros(Int, length(indices))
     pre_mins = zeros(Int, length(indices))
     for (i,idx) in enumerate(indices)
-        max_val = search_space[idx].max * constraint.coeffs[i]
-        min_val = search_space[idx].min * constraint.coeffs[i]
+        if constraint.coeffs[i] >= 0
+            max_val = search_space[idx].max * constraint.coeffs[i]
+            min_val = search_space[idx].min * constraint.coeffs[i]
+        else
+            min_val = search_space[idx].max * constraint.coeffs[i]
+            max_val = search_space[idx].min * constraint.coeffs[i]
+        end
         maxs[i] = max_val
         mins[i] = min_val
         pre_maxs[i] = max_val
@@ -64,8 +69,13 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     # update all 
     for (i,idx) in enumerate(indices)
         if maxs[i] < pre_maxs[i]
-            still_feasible, nremoved = remove_above!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
+            if constraint.coeffs[i] > 0
+                still_feasible, nremoved = remove_above!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
+            else
+                still_feasible, nremoved = remove_below!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
+            end            
             if !still_feasible
+                # println("i above: ", i)
                 return ConstraintOutput(false, changed, pruned, pruned_below)
             end
             if nremoved > 0
@@ -74,8 +84,13 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
             end
         end
         if mins[i] > pre_mins[i]
-            still_feasible, nremoved = remove_below!(com, search_space[idx], cld(mins[i], constraint.coeffs[i]))
+            if constraint.coeffs[i] > 0
+                still_feasible, nremoved = remove_below!(com, search_space[idx], cld(mins[i], constraint.coeffs[i]))
+            else
+                still_feasible, nremoved = remove_above!(com, search_space[idx], cld(mins[i], constraint.coeffs[i]))
+            end
             if !still_feasible
+                # println("i below: ", i)
                 return ConstraintOutput(false, changed, pruned, pruned_below)
             end
             if nremoved > 0
@@ -84,7 +99,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
             end
         end
     end
-    
+
     # if there are only two left check all options
     n_unfixed = 0
     unfixed_ind = zeros(Int,2)
@@ -125,7 +140,6 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
             pruned[unfixed_local_ind[1]] += pr_above
             pruned_below[unfixed_local_ind[1]] += pr_below
         end
-    
     elseif n_unfixed == 2
         intersect_cons = intersect(com.subscription[unfixed_ind[1]], com.subscription[unfixed_ind[2]])
         is_all_different = false
@@ -151,6 +165,8 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                     if !rm!(com, search_space[this], val)
                         return ConstraintOutput(false, changed, pruned, pruned_below)
                     end
+                    changed[this] = true
+                    pruned[local_this] += 1
                     continue
                 end
 
@@ -200,8 +216,13 @@ function eq_sum(com::CoM, constraint::LinearConstraint, val::Int, index::Int)
             csum += value(search_space[idx])*constraint.coeffs[i]
         else
             num_not_fixed += 1
-            max_extra += search_space[idx].max*constraint.coeffs[i]
-            min_extra += search_space[idx].min*constraint.coeffs[i]
+            if constraint.coeffs[i] >= 0
+                max_extra += search_space[idx].max*constraint.coeffs[i]
+                min_extra += search_space[idx].min*constraint.coeffs[i]
+            else
+                min_extra += search_space[idx].max*constraint.coeffs[i]
+                max_extra += search_space[idx].min*constraint.coeffs[i]
+            end
         end
     end
     if num_not_fixed == 0 && csum + val != constraint.rhs

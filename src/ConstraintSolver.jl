@@ -360,6 +360,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
     backtrack_obj.pvals = pvals
     backtrack_vec = BacktrackObj[backtrack_obj]
     finished = false
+
     while length(backtrack_vec) > 0 && !finished
         backtrack_obj = backtrack_vec[end]
         backtrack_obj.pval_idx += 1
