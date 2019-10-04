@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/Wikunia/ConstraintSolver.jl.svg?branch=master)](https://travis-ci.org/Wikunia/ConstraintSolver.jl) [![codecov](https://codecov.io/gh/Wikunia/ConstraintSolver.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/Wikunia/ConstraintSolver.jl)
+
 # ConstraintSolver.jl
 
 This package aims to be a constraint solver written in Julia and will be documented completely on my blog [OpenSourc.es](https://opensourc.es/blog/constraint-solver-1)
@@ -5,12 +7,14 @@ This package aims to be a constraint solver written in Julia and will be documen
 In general it's the goal to be as fast as possible but also as a teaching project on how one can do such a project by himself.
 I'm just a MSc student in computer science so I don't have much knowledge on how constraint programming works but I'm keen to find out ;)
 
-## Blog
+## Blog posts
 - [Setup of the solver and basic backtracking for Sudoku](https://opensourc.es/blog/constraint-solver-1)
 - [Pruning in Sudoku](https://opensourc.es/blog/constraint-solver-pruning)
 - [More pruning and benchmarks](https://opensourc.es/blog/constraint-solver-pruning-benchmarking)
 - [Sophisticated implementation of the alldifferent constraint and benchmarks](https://opensourc.es/blog/constraint-solver-alldifferent)
 - [New data structure for better user interface and performance](https://opensourc.es/blog/constraint-solver-data-structure)
+- [Backtrack without recursion and start of sum constraint](https://opensourc.es/blog/constraint-solver-backtrack-sum)
+- [Speed up the sum constraint](https://opensourc.es/blog/constraint-solver-sum-speed)
 
 ## Installation
 You can install this julia package using 
