@@ -24,7 +24,8 @@ jobs:
           julia --project=@. -e "using Pkg; Pkg.test(\"ConstraintSolver\");"
   coverage:
     runs-on: ubuntu-latest
-     - uses: actions/checkout@v1.0.0
+    steps:
+      - uses: actions/checkout@v1.0.0
       - name: "Set up Julia"
         uses: julia-actions/setup-julia@v0.2
         with:
