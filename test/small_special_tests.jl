@@ -37,6 +37,32 @@
     @test CS.value(com_grid[7]) == 3
 end
 
+@testset "Reordering sum constraint" begin
+    com = CS.init()
+
+    x = CS.addVar!(com, 0, 9)
+    y = CS.addVar!(com, 0, 9)
+    z = CS.addVar!(com, 0, 9)
+
+    c1 = 2x+3x == 5
+    @test length(c1.indices) == 1
+    @test c1.indices[1] == 1
+    @test c1.coeffs[1] == 5
+    @test c1.rhs == 5
+    
+    CS.add_constraint!(com, 2x+3x == 5)
+    CS.add_constraint!(com, 2x-3y+6+x == z)
+    CS.add_constraint!(com, x+2 == z)
+    CS.add_constraint!(com, z-2 == x)
+    CS.add_constraint!(com, 2x+x == z+3y-6)
+
+    status = CS.solve!(com)
+    @test status == :Solved 
+    @test CS.isfixed(x) && CS.value(x) == 1
+    @test 2*CS.value(x)-3*CS.value(y)+6+CS.value(x) == CS.value(z)
+    @test CS.value(x)+2 == CS.value(z)
+end
+
 @testset "Infeasible coeff sum" begin
     com = CS.init()
 

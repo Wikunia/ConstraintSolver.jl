@@ -1,13 +1,21 @@
 function Base.:(==)(x::LinearVariables, y::Int)
     lc = LinearConstraint()
+    indices, coeffs, constant_lhs = simplify(x)
     lc.fct = eq_sum
-    lc.indices = x.indices
-    lc.coeffs = x.coeffs
+    lc.indices = indices
+    lc.coeffs = coeffs
     lc.operator = :(==)
-    lc.rhs = y
+    lc.rhs = y-constant_lhs
     return lc
 end
 
+function Base.:(==)(x::LinearVariables, y::Variable)
+    return x == LinearVariables([y.idx], [1])
+end
+
+function Base.:(==)(x::LinearVariables, y::LinearVariables)
+    return x-y == 0
+end
 
 function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     indices = constraint.indices
