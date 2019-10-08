@@ -1,6 +1,6 @@
 rectangle(w, h, x, y) = Shape(x .+ [0,w,w,0], y .+ [0,0,h,h])
 
-function plot_search_space(com, grid, fname)
+function plot_search_space(grid, com_grid, fname)
 
     plot(0:9,0:9, size=(500,500), legend=false, xaxis=false, yaxis=false, aspect_ratio=:equal)
     for i=0:8, j=0:8
@@ -13,17 +13,17 @@ function plot_search_space(com, grid, fname)
         plot!([0,9],[j,j], color=:black, linewidth=4)
     end
 
-    for ind in keys(com.grid)
-        if com.grid[ind] != com.not_val
+    for ind in keys(com_grid)
+        if CS.isfixed(com_grid[ind])
             x = ind[2]-0.5
             y = 10-ind[1]-0.5
-            if grid[ind] != com.not_val
-                annotate!(x, y, text(com.grid[ind],20, :black))
+            if grid[ind] != 0
+                annotate!(x, y, text(CS.value(com_grid[ind]),20, :black))
             else
-                annotate!(x, y, text(com.grid[ind],20, :blue))
+                annotate!(x, y, text(CS.value(com_grid[ind]),20, :blue))
             end
         else
-            vals = collect(keys(com.search_space[ind]))
+            vals = CS.values(com_grid[ind])
             sort!(vals)
             x = ind[2]-0.5
             y = 10-ind[1]-0.2
@@ -45,7 +45,6 @@ function plot_search_space(com, grid, fname)
 
         end
     end
-
     png("visualizations/images/$(fname)")
 end
 

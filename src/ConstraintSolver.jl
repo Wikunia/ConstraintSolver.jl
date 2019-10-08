@@ -61,9 +61,9 @@ end
 
 mutable struct ConstraintOutput
     feasible            :: Bool
-    idx_changed         :: Dict{Int, Bool}
-    pruned              :: Vector{Int}
-    pruned_below        :: Vector{Int}
+    idx_changed         :: Dict{Int, Bool} # which variables changed 
+    pruned              :: Vector{Int} # how many values we removed (right)
+    pruned_below        :: Vector{Int} # how many values we removed (left = only when fixing)
 end
 
 mutable struct BacktrackObj
@@ -91,6 +91,7 @@ include("Variable.jl")
 include("linearcombination.jl")
 include("all_different.jl")
 include("eq_sum.jl")
+include("equal.jl")
 
 function init()
     com = CoM()
@@ -348,10 +349,7 @@ end
 
 function backtrack!(com::CS.CoM, max_bt_steps)
     found, ind = get_weak_ind(com)
-    if !found 
-        return :Solved
-    end
-    com.info.backtrack_counter += 1
+    com.info.backtrack_counter = 1
 
     pvals = values(com.search_space[ind])
     backtrack_obj = BacktrackObj()
@@ -359,9 +357,8 @@ function backtrack!(com::CS.CoM, max_bt_steps)
     backtrack_obj.pval_idx = 0
     backtrack_obj.pvals = pvals
     backtrack_vec = BacktrackObj[backtrack_obj]
-    finished = false
 
-    while length(backtrack_vec) > 0 && !finished
+    while length(backtrack_vec) > 0
         backtrack_obj = backtrack_vec[end]
         backtrack_obj.pval_idx += 1
         ind = backtrack_obj.variable_idx
@@ -557,22 +554,18 @@ function set_in_all_different!(com::CS.CoM)
 end
 
 function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64))
-    if all(v->isfixed(v), com.search_space)
-        return :Solved
-    end
     set_in_all_different!(com)
 
     # check for better constraints
     simplify!(com)
 
-    changed = Dict{Int, Bool}()
+    # check if all feasible even if for example everything is fixed
     feasible = true
     constraint_outputs = ConstraintOutput[]
     for constraint in com.constraints
         com.info.pre_backtrack_calls += 1
         constraint_output = constraint.fct(com, constraint)
         push!(constraint_outputs, constraint_output)
-        merge!(changed, constraint_output.idx_changed)
         if !constraint_output.feasible
             feasible = false
             break
