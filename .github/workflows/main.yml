@@ -18,21 +18,11 @@ jobs:
         with:
           version: ${{ matrix.julia-version }}
           arch: ${{ matrix.julia-arch }}
+      - name: "Build package"
+        uses: julia-actions/julia-buildpkg@master
       - name: "Run tests"
-        run: |
-          julia --project=@. -e "using Pkg; Pkg.instantiate();"
-          julia --project=@. -e "using Pkg; Pkg.test(\"ConstraintSolver\");"
-  coverage:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1.0.0
-      - name: "Set up Julia"
-        uses: julia-actions/setup-julia@v0.2
-        with:
-          version: 1.2.0
-          arch: x64
-      - name: "Run tests"
-        run: |
-          julia --project=@. -e "using Pkg; Pkg.instantiate();"
-          julia --project=@. -e "using Pkg; Pkg.test(\"ConstraintSolver\");"
-          julia --project=@. -e "using Pkg; Pkg.add(\"Coverage\"); using Coverage; Codecov.submit(process_folder())"
+        uses: julia-actions/julia-runtest@master
+      - name: "CodeCov"
+        uses: julia-actions/julia-uploadcodecov@master
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
