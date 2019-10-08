@@ -104,6 +104,21 @@ end
 end
 
 @testset "Equal constraint" begin
+    # nothing to do
+    com = CS.init()
+
+    v1 = CS.addVar!(com, 1, 2; fix=2)
+    v2 = CS.addVar!(com, 1, 2; fix=2)
+
+    CS.add_constraint!(com, v1 == v2)
+
+    status = CS.solve!(com)
+    @test status == :Solved
+    @test !com.info.backtracked
+    @test CS.isfixed(v1) && CS.value(v1) == 2
+    @test CS.isfixed(v2) && CS.value(v2) == 2
+
+    # normal
     com = CS.init()
 
     v1 = CS.addVar!(com, 1, 2)
@@ -116,6 +131,32 @@ end
     @test !com.info.backtracked
     @test CS.isfixed(v1) && CS.value(v1) == 2
     @test CS.isfixed(v2) && CS.value(v2) == 2
+
+    # set but infeasible
+    com = CS.init()
+
+    v1 = CS.addVar!(com, 1, 2)
+    v2 = CS.addVar!(com, 1, 2; fix=2)
+
+    CS.add_constraint!(com, v1 == v2)
+    CS.add_constraint!(com, CS.all_different([v1, v2]))
+
+    status = CS.solve!(com)
+    @test status == :Infeasible
+    @test !com.info.backtracked
+
+    # set but infeasible reversed
+    com = CS.init()
+
+    v1 = CS.addVar!(com, 1, 2)
+    v2 = CS.addVar!(com, 1, 2; fix=2)
+
+    CS.add_constraint!(com, v2 == v1)
+    CS.add_constraint!(com, CS.all_different([v1, v2]))
+
+    status = CS.solve!(com)
+    @test status == :Infeasible
+    @test !com.info.backtracked
 
     # reversed
     com = CS.init()

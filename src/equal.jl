@@ -69,9 +69,6 @@ function equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
             if !feasible
                 return ConstraintOutput(false, changed, pruned, pruned_below)
             end
-            changed[indices[2]] = true
-            pruned[2] = pr_above
-            pruned_below[2] = pr_below
         else 
             feasible, pr_below, pr_above = fix!(com, v1, value(v2))
             if !feasible
