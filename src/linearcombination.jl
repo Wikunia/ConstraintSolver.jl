@@ -63,7 +63,7 @@ end
 function simplify(x::LinearVariables)
     set_indices = Set(x.indices)
     # if unique
-    if length(set_indices) == x.indices
+    if length(set_indices) == length(x.indices)
         if 0 in set_indices
             indices = Int[]
             coeffs = Int[]
