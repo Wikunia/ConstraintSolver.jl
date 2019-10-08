@@ -76,7 +76,7 @@ function simplify(x::LinearVariables)
                     push!(coeffs, x.coeffs[i])
                 end
             end
-            return x.indices, x.coeffs, lhs
+            return indices, coeffs, lhs
         else
             return x.indices, x.coeffs, 0
         end
