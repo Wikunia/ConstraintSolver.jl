@@ -349,9 +349,6 @@ end
 
 function backtrack!(com::CS.CoM, max_bt_steps)
     found, ind = get_weak_ind(com)
-    if !found 
-        return :Solved
-    end
     com.info.backtrack_counter = 1
 
     pvals = values(com.search_space[ind])
@@ -557,14 +554,12 @@ function set_in_all_different!(com::CS.CoM)
 end
 
 function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64))
-    if all(v->isfixed(v), com.search_space)
-        return :Solved
-    end
     set_in_all_different!(com)
 
     # check for better constraints
     simplify!(com)
 
+    # check if all feasible even if for example everything is fixed
     feasible = true
     constraint_outputs = ConstraintOutput[]
     for constraint in com.constraints

@@ -55,11 +55,11 @@ function equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
         fixed_v1 = isfixed(v1)
         fixed_v2 = isfixed(v2)
         if !fixed_v1 && !fixed_v2
+            return ConstraintOutput(true, changed, pruned, pruned_below)
+        elseif fixed_v1 && fixed_v2
             if value(v1) != value(v2)
                 return ConstraintOutput(false, changed, pruned, pruned_below)
             end
-            return ConstraintOutput(true, changed, pruned, pruned_below)
-        elseif fixed_v1 && fixed_v2
             return ConstraintOutput(true, changed, pruned, pruned_below)
         end
         # one is fixed and one isn't
