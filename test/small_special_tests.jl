@@ -91,4 +91,58 @@ end
     @test CS.isfixed(com_grid[3]) && CS.value(com_grid[3]) == 3
 end
 
+@testset "Equal constraint" begin
+    com = CS.init()
+
+    v1 = CS.addVar!(com, 1, 2)
+    v2 = CS.addVar!(com, 1, 2; fix=2)
+
+    CS.add_constraint!(com, v1 == v2)
+
+    status = CS.solve!(com)
+    @test status == :Solved
+    @test !com.info.backtracked
+    @test CS.isfixed(v1) && CS.value(v1) == 2
+    @test CS.isfixed(v2) && CS.value(v2) == 2
+
+    # test with more
+    com = CS.init()
+
+    v1 = CS.addVar!(com, 1, 2)
+    v2 = CS.addVar!(com, 1, 2; fix=2)
+    v3 = CS.addVar!(com, 1, 2)
+    v4 = CS.addVar!(com, 1, 2)
+
+    CS.add_constraint!(com, v1 == v2)
+    CS.add_constraint!(com, v1 == v4)
+    CS.add_constraint!(com, v1 == v3)
+
+    status = CS.solve!(com)
+    @test status == :Solved
+    @test !com.info.backtracked
+    @test CS.isfixed(v1) && CS.value(v1) == 2
+    @test CS.isfixed(v2) && CS.value(v2) == 2
+    @test CS.isfixed(v3) && CS.value(v3) == 2
+    @test CS.isfixed(v4) && CS.value(v4) == 2
+
+    # test using equal
+    com = CS.init()
+
+    v1 = CS.addVar!(com, 1, 2)
+    v2 = CS.addVar!(com, 1, 2; fix=2)
+    v3 = CS.addVar!(com, 1, 2)
+    v4 = CS.addVar!(com, 1, 2)
+
+    CS.add_constraint!(com, CS.equal([v1,v2,v3,v4]))
+
+    status = CS.solve!(com)
+    @test status == :Solved
+    @test !com.info.backtracked
+    @test CS.isfixed(v1) && CS.value(v1) == 2
+    @test CS.isfixed(v2) && CS.value(v2) == 2
+    @test CS.isfixed(v3) && CS.value(v3) == 2
+    @test CS.isfixed(v4) && CS.value(v4) == 2
+
+end
+
 end
