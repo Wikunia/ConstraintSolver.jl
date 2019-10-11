@@ -311,5 +311,113 @@ end
     @test !CS.isfixed(v4)
 end
 
+@testset "Graph coloring small" begin
+    com = CS.init()
+
+    # cover from numberphile video
+    v1 = CS.addVar!(com, 1, 4)
+    v2 = CS.addVar!(com, 1, 4)
+    v3 = CS.addVar!(com, 1, 4)
+    v4 = CS.addVar!(com, 1, 4)
+    v5 = CS.addVar!(com, 1, 4)
+    v6 = CS.addVar!(com, 1, 4)
+    v7 = CS.addVar!(com, 1, 4)
+    v8 = CS.addVar!(com, 1, 4)
+    v9 = CS.addVar!(com, 1, 4)
+
+    CS.add_constraint!(com, v1 != v2)
+    CS.add_constraint!(com, v1 != v3)
+    CS.add_constraint!(com, v1 != v4)
+    CS.add_constraint!(com, v1 != v5)
+    CS.add_constraint!(com, v2 != v3)
+    CS.add_constraint!(com, v2 != v5)
+    CS.add_constraint!(com, v4 != v3)
+    CS.add_constraint!(com, v4 != v5)
+    CS.add_constraint!(com, v2 != v6)
+    CS.add_constraint!(com, v2 != v7)
+    CS.add_constraint!(com, v3 != v7)
+    CS.add_constraint!(com, v3 != v8)
+    CS.add_constraint!(com, v4 != v8)
+    CS.add_constraint!(com, v4 != v9)
+    CS.add_constraint!(com, v5 != v9)
+    CS.add_constraint!(com, v5 != v6)
+    CS.add_constraint!(com, v5 != v6)
+    CS.add_constraint!(com, v6 != v9)
+    CS.add_constraint!(com, v6 != v9)
+    CS.add_constraint!(com, v6 != v7)
+    CS.add_constraint!(com, v8 != v9)
+    CS.add_constraint!(com, v8 != v7)
+
+    status = CS.solve!(com)
+    @test status == :Solved
+    @test com.info.backtracked
+
+    # Infeasible with 3 colors
+    v1 = CS.addVar!(com, 1, 3)
+    v2 = CS.addVar!(com, 1, 3)
+    v3 = CS.addVar!(com, 1, 3)
+    v4 = CS.addVar!(com, 1, 3)
+    v5 = CS.addVar!(com, 1, 3)
+    v6 = CS.addVar!(com, 1, 3)
+    v7 = CS.addVar!(com, 1, 3)
+    v8 = CS.addVar!(com, 1, 3)
+    v9 = CS.addVar!(com, 1, 3)
+
+    CS.add_constraint!(com, v1 != v2)
+    CS.add_constraint!(com, v1 != v3)
+    CS.add_constraint!(com, v1 != v4)
+    CS.add_constraint!(com, v1 != v5)
+    CS.add_constraint!(com, v2 != v3)
+    CS.add_constraint!(com, v2 != v5)
+    CS.add_constraint!(com, v4 != v3)
+    CS.add_constraint!(com, v4 != v5)
+    CS.add_constraint!(com, v2 != v6)
+    CS.add_constraint!(com, v2 != v7)
+    CS.add_constraint!(com, v3 != v7)
+    CS.add_constraint!(com, v3 != v8)
+    CS.add_constraint!(com, v4 != v8)
+    CS.add_constraint!(com, v4 != v9)
+    CS.add_constraint!(com, v5 != v9)
+    CS.add_constraint!(com, v5 != v6)
+    CS.add_constraint!(com, v5 != v6)
+    CS.add_constraint!(com, v6 != v9)
+    CS.add_constraint!(com, v6 != v9)
+    CS.add_constraint!(com, v6 != v7)
+    CS.add_constraint!(com, v8 != v9)
+    CS.add_constraint!(com, v8 != v7)
+
+    status = CS.solve!(com)
+    @test status == :Infeasible
+    @test com.info.backtracked
+
+
+    # very simple
+    com = CS.init()
+
+    v1 = CS.addVar!(com, 1, 2; fix=1)
+    v2 = CS.addVar!(com, 1, 2)
+
+    CS.add_constraint!(com, v1 != v2)
+
+    status = CS.solve!(com; backtrack=false)
+    @test status == :Solved
+    @test !com.info.backtracked
+    @test CS.isfixed(v1) && CS.value(v1) == 1
+    @test CS.isfixed(v2) && CS.value(v2) == 2
+
+    # infeasible at beginning
+    com = CS.init()
+
+    v1 = CS.addVar!(com, 1, 2; fix=1)
+    v2 = CS.addVar!(com, 1, 2; fix=1)
+
+    CS.add_constraint!(com, v1 != v2)
+
+    status = CS.solve!(com; backtrack=false)
+    @test status == :Infeasible
+    @test !com.info.backtracked
+end
+
+
 
 end

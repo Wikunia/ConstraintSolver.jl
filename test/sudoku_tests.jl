@@ -154,7 +154,7 @@ end
 
     CS.solve!(com; backtrack=false)
     @test !com.info.backtracked
-    @test com.info.backtrack_counter == 0
+    @test com.info.backtrack_fixes == 0
     @test com.info.in_backtrack_calls == 0
     @show com.info
 end

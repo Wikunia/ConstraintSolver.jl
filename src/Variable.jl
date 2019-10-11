@@ -58,6 +58,9 @@ function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several=false)
             end
         end
     end
+    if com.input[:visualize] 
+        push!(com.snapshots, (search_space=deepcopy(com.search_space), vidx=v.idx, fct=:rm))
+    end
     return true
 end
 
@@ -73,6 +76,9 @@ function fix!(com::CS.CoM, v::CS.Variable, x::Int)
     v.first_ptr = ind
     v.min = x
     v.max = x
+    if com.input[:visualize] 
+        push!(com.snapshots, (search_space=deepcopy(com.search_space), vidx=v.idx, fct=:fix))
+    end
     return true, pr_below, pr_above
 end
 
@@ -103,6 +109,9 @@ function remove_below!(com::CS.CoM, var::CS.Variable, val::Int)
     if nremoved > 0 && feasible(var)
         var.min = minimum(values(var))
     end
+    if com.input[:visualize] 
+        push!(com.snapshots, (search_space=deepcopy(com.search_space), vidx=var.idx, fct=:rm_below))
+    end
     return true, nremoved
 end
 
@@ -128,6 +137,9 @@ function remove_above!(com::CS.CoM, var::CS.Variable, val::Int)
     end
     if nremoved > 0 && feasible(var)
         var.max = maximum(values(var))
+    end
+    if com.input[:visualize] 
+        push!(com.snapshots, (search_space=deepcopy(com.search_space), vidx=var.idx, fct=:rm_above))
     end
     return true, nremoved
 end
