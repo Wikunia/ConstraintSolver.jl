@@ -1,6 +1,7 @@
 @testset "Small special tests" begin
 @testset "Sum" begin
     com = CS.init()
+    com.input[:visualize] = true
 
     com_grid = Array{CS.Variable, 1}(undef, 7)
     com_grid[1] = CS.addVar!(com, 1, 9)
@@ -22,8 +23,9 @@
     # testing coefficients from left and right
     CS.add_constraint!(com, com_grid[6]*1+2*com_grid[7] ==  7)
     
-    status = CS.solve!(com; backtrack=false)
+    status = CS.solve!(com; backtrack=false, visualize=true)
     @test status != :Infeasible
+    @test length(com.snapshots) > 0
     @test CS.isfixed(com_grid[1])
     @test CS.value(com_grid[1]) == 6
     @test CS.isfixed(com_grid[5])
