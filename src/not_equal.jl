@@ -1,10 +1,10 @@
 
 function Base.:!(bc::CS.BasicConstraint)
     if bc.fct != equal
-        throw("!BasicConstraint is only implemented for !equal")
+        throw(ErrorException("!BasicConstraint is only implemented for !equal"))
     end
     if length(bc.indices) != 2
-        throw("!BasicConstraint is only implemented for !equal with exactly 2 variables")
+        throw(ErrorException("!BasicConstraint is only implemented for !equal with exactly 2 variables"))
     end
     bc.fct = not_equal
     return bc

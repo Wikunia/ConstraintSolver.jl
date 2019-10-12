@@ -418,6 +418,16 @@ end
     status = CS.solve!(com; backtrack=false)
     @test status == :Infeasible
     @test !com.info.backtracked
+
+    # Error not implemented
+    com = CS.init()
+
+    v1 = CS.addVar!(com, 1, 2; fix=1)
+    v2 = CS.addVar!(com, 1, 2)
+    v3 = CS.addVar!(com, 1, 2)
+
+    @test_throws ErrorException CS.add_constraint!(com, !CS.equal([v1,v2,v3]))
+    @test_throws ErrorException CS.add_constraint!(com, !CS.all_different([v1,v2,v3]))
 end
 
 
