@@ -20,8 +20,9 @@ end
 mutable struct CSInfo
     pre_backtrack_calls :: Int
     backtracked         :: Bool
-    backtrack_counter   :: Int
+    backtrack_fixes     :: Int
     in_backtrack_calls  :: Int
+    backtrack_reverses  :: Int
 end
 
 function Base.show(io::IO, csinfo::CSInfo)
@@ -83,6 +84,8 @@ mutable struct CoM
     constraints         :: Vector{Constraint}
     bt_infeasible       :: Vector{Int}
     info                :: CSInfo
+    snapshots           :: Vector{NamedTuple}
+    input               :: Dict{Symbol,Any}
     
     CoM() = new()
 end
@@ -92,6 +95,7 @@ include("linearcombination.jl")
 include("all_different.jl")
 include("eq_sum.jl")
 include("equal.jl")
+include("not_equal.jl")
 
 function init()
     com = CoM()
@@ -99,7 +103,10 @@ function init()
     com.subscription        = Vector{Vector{Int}}()
     com.search_space        = Vector{Variable}()
     com.bt_infeasible       = Vector{Int}()
-    com.info                = CSInfo(0, false, 0, 0)
+    com.info                = CSInfo(0, false, 0, 0, 0)
+    com.snapshots           = Vector{NamedTuple}()
+    com.input               = Dict{Symbol, Any}()
+    com.input[:visualize]   = false
     return com
 end
 
@@ -349,7 +356,7 @@ end
 
 function backtrack!(com::CS.CoM, max_bt_steps)
     found, ind = get_weak_ind(com)
-    com.info.backtrack_counter = 1
+    com.info.backtrack_fixes   = 1
 
     pvals = values(com.search_space[ind])
     backtrack_obj = BacktrackObj()
@@ -364,6 +371,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
         ind = backtrack_obj.variable_idx
         
         if isdefined(backtrack_obj, :pruned)
+            com.info.backtrack_reverses += 1
             reverse_pruning!(com, backtrack_obj)
         end
 
@@ -403,6 +411,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
             end
         end
         if !feasible
+            com.info.backtrack_reverses += 1
             reverse_pruning!(com, constraints, constraint_outputs)
             continue
         end
@@ -411,6 +420,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
         feasible, constraints, constraint_outputs = prune!(com, constraints, constraint_outputs)
          
         if !feasible
+            com.info.backtrack_reverses += 1
             reverse_pruning!(com, constraints, constraint_outputs)
             continue
         end
@@ -420,11 +430,11 @@ function backtrack!(com::CS.CoM, max_bt_steps)
             return :Solved
         end
 
-        if com.info.backtrack_counter + 1 > max_bt_steps
+        if com.info.backtrack_fixes   + 1 > max_bt_steps
             return :NotSolved
         end
 
-        com.info.backtrack_counter += 1
+        com.info.backtrack_fixes   += 1
 
         backtrack_obj.constraint_idx = zeros(Int, length(constraint_outputs))
         backtrack_obj.pruned = Vector{Vector{Int}}(undef, length(constraint_outputs))
@@ -553,7 +563,9 @@ function set_in_all_different!(com::CS.CoM)
     end
 end
 
-function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64))
+function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), visualize=false)
+    com.input[:visualize] = visualize
+ 
     set_in_all_different!(com)
 
     # check for better constraints
