@@ -21,8 +21,6 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     indices = constraint.indices
     search_space = com.search_space
     changed = Dict{Int, Bool}()
-    pruned  = zeros(Int, length(indices))
-    pruned_below  = zeros(Int, length(indices))
 
     # compute max and min values for each index
     maxs = zeros(Int, length(indices))
@@ -50,7 +48,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
 
     if full_max < 0 || full_min > 0
         com.bt_infeasible[indices] .+= 1
-        return ConstraintOutput(false, changed, pruned, pruned_below)
+        return ConstraintOutput(false, changed)
     end
     
     for (i,idx) in enumerate(indices)
@@ -84,11 +82,10 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
             end            
             if !still_feasible
                 # println("i above: ", i)
-                return ConstraintOutput(false, changed, pruned, pruned_below)
+                return ConstraintOutput(false, changed)
             end
             if nremoved > 0
                 changed[idx] = true
-                pruned[i] += nremoved
             end
         end
         if mins[i] > pre_mins[i]
@@ -99,11 +96,10 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
             end
             if !still_feasible
                 # println("i below: ", i)
-                return ConstraintOutput(false, changed, pruned, pruned_below)
+                return ConstraintOutput(false, changed)
             end
             if nremoved > 0
                 changed[idx] = true
-                pruned[i] += nremoved
             end
         end
     end
@@ -131,22 +127,20 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     if n_unfixed == 1
         if unfixed_rhs % constraint.coeffs[unfixed_local_ind[1]] != 0
             com.bt_infeasible[unfixed_ind[1]] += 1
-            return ConstraintOutput(false, changed, pruned, pruned_below)
+            return ConstraintOutput(false, changed)
         else 
             # divide rhs such that it is comparable with the variable directly without coefficient
             unfixed_rhs = fld(unfixed_rhs, constraint.coeffs[unfixed_local_ind[1]])
         end
         if !has(search_space[unfixed_ind[1]], unfixed_rhs)
             com.bt_infeasible[unfixed_ind[1]] += 1
-            return ConstraintOutput(false, changed, pruned, pruned_below)
+            return ConstraintOutput(false, changed)
         else
             changed[unfixed_ind[1]] = true
             still_feasible, pr_below, pr_above = fix!(com, search_space[unfixed_ind[1]], unfixed_rhs)
             if !still_feasible
-                return ConstraintOutput(false, changed, pruned, pruned_below)
+                return ConstraintOutput(false, changed)
             end
-            pruned[unfixed_local_ind[1]] += pr_above
-            pruned_below[unfixed_local_ind[1]] += pr_below
         end
     elseif n_unfixed == 2
         intersect_cons = intersect(com.subscription[unfixed_ind[1]], com.subscription[unfixed_ind[2]])
@@ -171,10 +165,9 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 # if we choose this value but the other wouldn't be an integer => remove this value
                 if (unfixed_rhs-val*constraint.coeffs[local_this]) % constraint.coeffs[local_other] != 0
                     if !rm!(com, search_space[this], val)
-                        return ConstraintOutput(false, changed, pruned, pruned_below)
+                        return ConstraintOutput(false, changed)
                     end
                     changed[this] = true
-                    pruned[local_this] += 1
                     continue
                 end
 
@@ -182,31 +175,28 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 # if all different but those two are the same 
                 if is_all_different && check_other_val == val
                     if !rm!(com, search_space[this], val)
-                        return ConstraintOutput(false, changed, pruned, pruned_below)
+                        return ConstraintOutput(false, changed)
                     end
                     changed[this] = true
-                    pruned[local_this] += 1
                     if has(search_space[other], check_other_val)
                         if !rm!(com, search_space[other], check_other_val)
-                            return ConstraintOutput(false, changed, pruned, pruned_below)
+                            return ConstraintOutput(false, changed)
                         end
                         changed[other] = true
-                        pruned[local_other] += 1
                     end
                 else
                     if !has(search_space[other], check_other_val)
                         if !rm!(com, search_space[this], val)
-                            return ConstraintOutput(false, changed, pruned, pruned_below)
+                            return ConstraintOutput(false, changed)
                         end
                         changed[this] = true
-                        pruned[local_this] += 1
                     end
                 end
             end
         end
     end
 
-    return ConstraintOutput(true, changed, pruned, pruned_below)
+    return ConstraintOutput(true, changed)
 end
 
 function eq_sum(com::CoM, constraint::LinearConstraint, val::Int, index::Int)

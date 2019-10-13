@@ -57,6 +57,7 @@ function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several=false)
                 v.max = maximum(vals)
             end
         end
+        com.c_backtrack_idx > 0 && push!(v.changes[com.c_backtrack_idx], (0,1))
     end
     if com.input[:visualize] 
         push!(com.snapshots, (search_space=deepcopy(com.search_space), vidx=v.idx, fct=:rm))
@@ -79,6 +80,7 @@ function fix!(com::CS.CoM, v::CS.Variable, x::Int)
     if com.input[:visualize] 
         push!(com.snapshots, (search_space=deepcopy(com.search_space), vidx=v.idx, fct=:fix))
     end
+    com.c_backtrack_idx > 0 && push!(v.changes[com.c_backtrack_idx], (pr_below, pr_above))
     return true, pr_below, pr_above
 end
 
@@ -112,6 +114,7 @@ function remove_below!(com::CS.CoM, var::CS.Variable, val::Int)
     if com.input[:visualize] 
         push!(com.snapshots, (search_space=deepcopy(com.search_space), vidx=var.idx, fct=:rm_below))
     end
+    com.c_backtrack_idx > 0 && push!(var.changes[com.c_backtrack_idx], (0, nremoved))
     return true, nremoved
 end
 
@@ -141,6 +144,7 @@ function remove_above!(com::CS.CoM, var::CS.Variable, val::Int)
     if com.input[:visualize] 
         push!(com.snapshots, (search_space=deepcopy(com.search_space), vidx=var.idx, fct=:rm_above))
     end
+    com.c_backtrack_idx > 0 && push!(var.changes[com.c_backtrack_idx], (0, nremoved))
     return true, nremoved
 end
 

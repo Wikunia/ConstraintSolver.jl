@@ -15,6 +15,7 @@ mutable struct Variable
     offset      :: Int 
     min         :: Int
     max         :: Int
+    changes     :: Vector{Vector{NTuple{2,Int64}}}
 end
 
 mutable struct CSInfo
@@ -63,17 +64,16 @@ end
 mutable struct ConstraintOutput
     feasible            :: Bool
     idx_changed         :: Dict{Int, Bool} # which variables changed 
-    pruned              :: Vector{Int} # how many values we removed (right)
-    pruned_below        :: Vector{Int} # how many values we removed (left = only when fixing)
 end
 
 mutable struct BacktrackObj
+    idx                 :: Int
+    parent_idx          :: Int
+    depth               :: Int
+    status              :: Symbol
     variable_idx        :: Int
-    pval_idx            :: Int
-    pvals               :: Vector{Int}
+    pval                :: Int
     constraint_idx      :: Vector{Int}
-    pruned              :: Vector{Vector{Int}}
-    pruned_below        :: Vector{Vector{Int}}
 
     BacktrackObj() = new()
 end
@@ -83,6 +83,7 @@ mutable struct CoM
     subscription        :: Vector{Vector{Int}} 
     constraints         :: Vector{Constraint}
     bt_infeasible       :: Vector{Int}
+    c_backtrack_idx     :: Int
     info                :: CSInfo
     snapshots           :: Vector{NamedTuple}
     input               :: Dict{Symbol,Any}
@@ -103,6 +104,7 @@ function init()
     com.subscription        = Vector{Vector{Int}}()
     com.search_space        = Vector{Variable}()
     com.bt_infeasible       = Vector{Int}()
+    com.c_backtrack_idx     = 0
     com.info                = CSInfo(0, false, 0, 0, 0)
     com.snapshots           = Vector{NamedTuple}()
     com.input               = Dict{Symbol, Any}()
@@ -112,7 +114,8 @@ end
 
 function addVar!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     ind = length(com.search_space)+1
-    var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from, from, to)
+    changes = Vector{Vector{NTuple{2,Int64}}}()
+    var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from, from, to, changes)
     if fix !== nothing
         fix!(com, var, fix)
     end
@@ -354,37 +357,76 @@ function reverse_pruning!(com::CS.CoM, backtrack_obj::CS.BacktrackObj)
     empty!(backtrack_obj.pruned_below)
 end
 
+function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
+    search_space = com.search_space
+    for var in search_space
+        v_idx = var.idx
+        for change in var.changes[backtrack_idx]
+            single_reverse_pruning!(search_space, v_idx, change[2], change[1])
+        end
+    end
+end
+
 function backtrack!(com::CS.CoM, max_bt_steps)
     found, ind = get_weak_ind(com)
     com.info.backtrack_fixes   = 1
+    
 
-    pvals = values(com.search_space[ind])
-    backtrack_obj = BacktrackObj()
-    backtrack_obj.variable_idx = ind
-    backtrack_obj.pval_idx = 0
-    backtrack_obj.pvals = pvals
-    backtrack_vec = BacktrackObj[backtrack_obj]
+    pvals = reverse!(values(com.search_space[ind]))
+    backtrack_vec = BacktrackObj[]
+    num_backtrack_objs = 0
+    for pval in pvals
+        backtrack_obj = BacktrackObj()
+        num_backtrack_objs += 1
+        backtrack_obj.idx = num_backtrack_objs
+        backtrack_obj.parent_idx = 0
+        backtrack_obj.depth = 1
+        backtrack_obj.status = :Open
+        backtrack_obj.variable_idx = ind
+        backtrack_obj.pval = pval
+        push!(backtrack_vec, backtrack_obj)
+        for v in com.search_space
+            push!(v.changes, Vector{NTuple{2,Int64}}())
+        end
+    end
+    last_backtrack_obj = backtrack_vec[end]
+
+    just_increased_depth = true
 
     while length(backtrack_vec) > 0
-        backtrack_obj = backtrack_vec[end]
-        backtrack_obj.pval_idx += 1
+        l = length(backtrack_vec)
+        backtrack_obj = backtrack_vec[l]
+        while l > 0
+            backtrack_obj = backtrack_vec[l]
+            if backtrack_obj.status == :Open
+                break
+            end
+            l -= 1
+        end
+        if l == 0
+            break
+        end
         ind = backtrack_obj.variable_idx
-        
-        if isdefined(backtrack_obj, :pruned)
-            com.info.backtrack_reverses += 1
-            reverse_pruning!(com, backtrack_obj)
-        end
 
-        # checked every value => remove from backtrack
-        if backtrack_obj.pval_idx > length(backtrack_obj.pvals)
-            com.search_space[ind].last_ptr = length(backtrack_obj.pvals)
-            com.search_space[ind].first_ptr = 1
-            com.search_space[ind].min = minimum(backtrack_obj.pvals)
-            com.search_space[ind].max = maximum(backtrack_obj.pvals)
-            pop!(backtrack_vec)
-            continue
+        com.c_backtrack_idx = backtrack_obj.idx
+        
+        if !just_increased_depth && last_backtrack_obj.parent_idx != backtrack_obj.parent_idx
+            @assert backtrack_obj.depth < last_backtrack_obj.depth
+            depth = last_backtrack_obj.depth
+            parent_idx = last_backtrack_obj.parent_idx
+            while backtrack_obj.depth < depth
+                reverse_pruning!(com, parent_idx) 
+                parent = backtrack_vec[parent_idx]
+                parent_idx = parent.parent_idx
+                depth -= 1
+            end
         end
-        pval = backtrack_obj.pvals[backtrack_obj.pval_idx]
+        last_backtrack_obj = backtrack_obj
+
+        just_increased_depth = false
+        backtrack_obj.status = :Closed
+
+        pval = backtrack_obj.pval
 
         # check if this value is still possible
         constraints = com.constraints[com.subscription[ind]]
@@ -412,7 +454,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
         end
         if !feasible
             com.info.backtrack_reverses += 1
-            reverse_pruning!(com, constraints, constraint_outputs)
+            reverse_pruning!(com, backtrack_obj.idx)
             continue
         end
 
@@ -421,7 +463,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
          
         if !feasible
             com.info.backtrack_reverses += 1
-            reverse_pruning!(com, constraints, constraint_outputs)
+            reverse_pruning!(com, backtrack_obj.idx)
             continue
         end
 
@@ -430,29 +472,30 @@ function backtrack!(com::CS.CoM, max_bt_steps)
             return :Solved
         end
 
-        if com.info.backtrack_fixes   + 1 > max_bt_steps
+        if com.info.backtrack_fixes + 1 > max_bt_steps
             return :NotSolved
         end
 
         com.info.backtrack_fixes   += 1
-
-        backtrack_obj.constraint_idx = zeros(Int, length(constraint_outputs))
-        backtrack_obj.pruned = Vector{Vector{Int}}(undef, length(constraint_outputs))
-        backtrack_obj.pruned_below = Vector{Vector{Int}}(undef, length(constraint_outputs))
-        for cidx = 1:length(constraint_outputs)
-            constraint = constraints[cidx]
-            constraint_output = constraint_outputs[cidx]
-            backtrack_obj.constraint_idx[cidx] = constraint.idx
-            backtrack_obj.pruned[cidx] = constraint_outputs[cidx].pruned
-            backtrack_obj.pruned_below[cidx] = constraint_outputs[cidx].pruned_below
+    
+        # never call current node again
+        pvals = reverse!(values(com.search_space[ind]))
+        
+        for pval in pvals
+            backtrack_obj = BacktrackObj()
+            num_backtrack_objs += 1
+            backtrack_obj.parent_idx = last_backtrack_obj.idx
+            backtrack_obj.depth = last_backtrack_obj.depth + 1
+            backtrack_obj.idx = num_backtrack_objs
+            backtrack_obj.status = :Open
+            backtrack_obj.variable_idx = ind
+            backtrack_obj.pval = pval
+            push!(backtrack_vec, backtrack_obj)
+            for v in com.search_space
+                push!(v.changes, Vector{NTuple{2,Int64}}())
+            end
         end
-
-        pvals = values(com.search_space[ind])
-        backtrack_obj = BacktrackObj()
-        backtrack_obj.variable_idx = ind
-        backtrack_obj.pval_idx = 0
-        backtrack_obj.pvals = pvals
-        push!(backtrack_vec, backtrack_obj)
+        just_increased_depth = true
     end
     return :Infeasible
 end

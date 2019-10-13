@@ -45,7 +45,9 @@ function plot_search_space(grid, com_grid, fname)
 
         end
     end
-    png("visualizations/images/$(fname)")
+    if fname != ""
+        png("visualizations/images/$(fname)")
+    end
 end
 
 function plot_killer(grid, sums, fname; fill=true, mark=nothing)

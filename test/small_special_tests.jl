@@ -355,6 +355,7 @@ end
     @test com.info.backtracked
 
     # Infeasible with 3 colors
+    com = CS.init()
     v1 = CS.addVar!(com, 1, 3)
     v2 = CS.addVar!(com, 1, 3)
     v3 = CS.addVar!(com, 1, 3)
