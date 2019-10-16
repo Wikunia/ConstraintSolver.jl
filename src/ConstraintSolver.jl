@@ -61,11 +61,6 @@ mutable struct LinearConstraint <: Constraint
     LinearConstraint() = new()
 end
 
-mutable struct ConstraintOutput
-    feasible            :: Bool
-    idx_changed         :: Dict{Int, Bool} # which variables changed 
-end
-
 mutable struct BacktrackObj
     idx                 :: Int
     parent_idx          :: Int
@@ -104,7 +99,7 @@ function init()
     com.subscription        = Vector{Vector{Int}}()
     com.search_space        = Vector{Variable}()
     com.bt_infeasible       = Vector{Int}()
-    com.c_backtrack_idx     = 0
+    com.c_backtrack_idx     = 1
     com.info                = CSInfo(0, false, 0, 0, 0)
     com.snapshots           = Vector{NamedTuple}()
     com.input               = Dict{Symbol, Any}()
@@ -115,6 +110,7 @@ end
 function addVar!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     ind = length(com.search_space)+1
     changes = Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}()
+    push!(changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
     var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from, from, to, changes)
     if fix !== nothing
         fix!(com, var, fix)
@@ -236,63 +232,79 @@ function get_weak_ind(com::CS.CoM)
 end
 
 """
-    prune!(com, constraints, constraint_outputs)
+    prune!(com)
 
-Prune based on previous constraint_outputs.
-Add new constraints and constraint outputs to the corresponding inputs.
-Returns feasible, constraints, constraint_outputs
+Prune based on changes by initial solve or backtracking. The information for it is stored in each variable
+Returns whether it's still feasible
 """
-function prune!(com, constraints, constraint_outputs; pre_backtrack=false)
+function prune!(com; pre_backtrack=false)
     feasible = true
-    co_idx = 1
-    constraint_idxs_dict = Dict{Int, Bool}()
+    prev_var_length = zeros(Int, length(com.search_space))
+    constraint_idxs_vec = zeros(Int, length(com.constraints))
     # get all constraints which need to be called (only once)
-    for co_idx=1:length(constraint_outputs)
-        constraint_output = constraint_outputs[co_idx]
-        for changed_idx in keys(constraint_output.idx_changed)
-            inner_constraints = com.constraints[com.subscription[changed_idx]]
+    current_backtrack_id = com.c_backtrack_idx
+    for var in com.search_space
+        if length(var.changes[current_backtrack_id]) > 0
+            inner_constraints = com.constraints[com.subscription[var.idx]]
             for constraint in inner_constraints
-                constraint_idxs_dict[constraint.idx] = true
+                constraint_idxs_vec[constraint.idx] = 1
             end
         end
-        co_idx += 1
     end
-    constraint_idxs = collect(keys(constraint_idxs_dict))
-    con_counter = 0
+
+    current_level = 1
+    level_increased = false
     # while we haven't called every constraint
-    while length(constraint_idxs_dict) > 0
-        con_counter += 1
-        constraint = com.constraints[constraint_idxs[con_counter]]
-        delete!(constraint_idxs_dict, constraint.idx)
+    while true
+        b_open_constraint = false
+        # will be changed or b_open_constraint => false
+        constraint = com.constraints[1]
+        for ci in 1:length(com.constraints)
+            if constraint_idxs_vec[ci] == current_level
+                constraint = com.constraints[ci]
+                constraint_idxs_vec[ci] = 0 
+                b_open_constraint = true
+                break
+            end
+        end
+        if !b_open_constraint && !level_increased
+            level_increased = true
+            current_level += 1
+            continue
+        end
+        if !b_open_constraint && level_increased
+            break
+        end
+        level_increased = false
         if all(v->isfixed(v), com.search_space[constraint.indices])
             continue
         end
-        constraint_output = constraint.fct(com, constraint; logs = false)
+        feasible = constraint.fct(com, constraint; logs = false)
         if !pre_backtrack
             com.info.in_backtrack_calls += 1
-            push!(constraint_outputs, constraint_output)
-            push!(constraints, constraint)
         else
             com.info.pre_backtrack_calls += 1
         end
         
-        if !constraint_output.feasible
-            feasible = false
+        if !feasible
             break
         end
 
-        # if we fixed another value => add the corresponding constraint to the list
-        # iff the constraint will not be called anyway in the list 
-        for ind in keys(constraint_output.idx_changed)
-            for constraint in com.constraints[com.subscription[ind]]
-                if !haskey(constraint_idxs_dict, constraint.idx)
-                    constraint_idxs_dict[constraint.idx] = true
-                    push!(constraint_idxs, constraint.idx)
+        # if we changed another variable increase the level of the constraints to call them later
+        for var in com.search_space
+            new_var_length = length(var.changes[current_backtrack_id])
+            if new_var_length > prev_var_length[var.idx]
+                prev_var_length[var.idx] = new_var_length
+                inner_constraints = com.constraints[com.subscription[var.idx]]
+                for constraint in inner_constraints
+                    if constraint_idxs_vec[constraint.idx] < current_level
+                        constraint_idxs_vec[constraint.idx] = current_level + 1
+                    end
                 end
             end
         end
     end
-    return feasible, constraints, constraint_outputs
+    return feasible
 end
 
 function single_reverse_pruning!(search_space, index::Int, prune_int::Int, prune_int_below::Int)
@@ -349,13 +361,18 @@ function backtrack!(com::CS.CoM, max_bt_steps)
     
 
     pvals = reverse!(values(com.search_space[ind]))
-    backtrack_vec = BacktrackObj[]
-    num_backtrack_objs = 0
+    dummy_backtrack_obj = BacktrackObj()
+    dummy_backtrack_obj.status = :Close
+    dummy_backtrack_obj.idx = 0
+    backtrack_vec = BacktrackObj[dummy_backtrack_obj]
+
+    # the first solve (before backtrack) has idx 1 
+    num_backtrack_objs = 1
     for pval in pvals
         backtrack_obj = BacktrackObj()
         num_backtrack_objs += 1
         backtrack_obj.idx = num_backtrack_objs
-        backtrack_obj.parent_idx = 0
+        backtrack_obj.parent_idx = 1
         backtrack_obj.depth = 1
         backtrack_obj.status = :Open
         backtrack_obj.variable_idx = ind
@@ -423,11 +440,9 @@ function backtrack!(com::CS.CoM, max_bt_steps)
         # value is still possible => set it
         fix!(com, com.search_space[ind], pval)
 
-        constraint_outputs = ConstraintOutput[]
         for constraint in constraints
-            constraint_output = constraint.fct(com, constraint; logs = false)
-            push!(constraint_outputs, constraint_output)
-            if !constraint_output.feasible
+            feasible = constraint.fct(com, constraint; logs = false)
+            if !feasible
                 feasible = false
                 break
             end
@@ -438,8 +453,8 @@ function backtrack!(com::CS.CoM, max_bt_steps)
             continue
         end
 
-        # prune on fixed vals
-        feasible, constraints, constraint_outputs = prune!(com, constraints, constraint_outputs)
+        # prune on changed values
+        feasible = prune!(com)
          
         if !feasible
             com.info.backtrack_reverses += 1
@@ -596,12 +611,10 @@ function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), visual
 
     # check if all feasible even if for example everything is fixed
     feasible = true
-    constraint_outputs = ConstraintOutput[]
     for constraint in com.constraints
         com.info.pre_backtrack_calls += 1
-        constraint_output = constraint.fct(com, constraint)
-        push!(constraint_outputs, constraint_output)
-        if !constraint_output.feasible
+        feasible = constraint.fct(com, constraint)
+        if !feasible
             feasible = false
             break
         end
@@ -614,9 +627,9 @@ function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), visual
     if all(v->isfixed(v), com.search_space)
         return :Solved
     end
-    feasible, constraints, constraint_outputs = prune!(com, com.constraints, constraint_outputs
-                                                        ;pre_backtrack=true)
+    feasible = prune!(com; pre_backtrack=true)
 
+    
 
     if !feasible 
         return :Infeasible

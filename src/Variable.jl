@@ -57,7 +57,7 @@ function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several=false)
                 v.max = maximum(vals)
             end
         end
-        com.c_backtrack_idx > 0 && push!(v.changes[com.c_backtrack_idx], (:rm, x, 0, 1))
+        push!(v.changes[com.c_backtrack_idx], (:rm, x, 0, 1))
     end
     if com.input[:visualize] 
         push!(com.snapshots, (search_space=deepcopy(com.search_space), vidx=v.idx, fct=:rm))
@@ -65,10 +65,10 @@ function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several=false)
     return true
 end
 
-function fix!(com::CS.CoM, v::CS.Variable, x::Int)
+function fix!(com::CS.CoM, v::CS.Variable, x::Int; changes=true)
     if !fulfills_constraints(com, v.idx, x)
         com.bt_infeasible[v.idx] += 1
-        return false, 0, 0
+        return false
     end
     ind = v.indices[x+v.offset]
     pr_below = ind-v.first_ptr
@@ -80,8 +80,8 @@ function fix!(com::CS.CoM, v::CS.Variable, x::Int)
     if com.input[:visualize] 
         push!(com.snapshots, (search_space=deepcopy(com.search_space), vidx=v.idx, fct=:fix))
     end
-    com.c_backtrack_idx > 0 && push!(v.changes[com.c_backtrack_idx], (:fix, x, pr_below, pr_above))
-    return true, pr_below, pr_above
+    changes && push!(v.changes[com.c_backtrack_idx], (:fix, x, pr_below, pr_above))
+    return true
 end
 
 function isfixed(v::CS.Variable)
@@ -93,11 +93,11 @@ function remove_below!(com::CS.CoM, var::CS.Variable, val::Int)
     still_possible = filter(v -> v >= val, vals)
     if length(still_possible) == 0
         com.bt_infeasible[var.idx] += 1
-        return false, 0
+        return false
     elseif length(still_possible) == 1
         if !fulfills_constraints(com, var.idx, still_possible[1])
             com.bt_infeasible[var.idx] += 1
-            return false, 0
+            return false
         end
     end
 
@@ -110,12 +110,12 @@ function remove_below!(com::CS.CoM, var::CS.Variable, val::Int)
     end
     if nremoved > 0 && feasible(var)
         var.min = minimum(values(var))
+        push!(var.changes[com.c_backtrack_idx], (:rm_below, val, 0, nremoved))
     end
-    com.c_backtrack_idx > 0 && push!(var.changes[com.c_backtrack_idx], (:rm_below, val, 0, nremoved))
     if com.input[:visualize] 
         push!(com.snapshots, (search_space=deepcopy(com.search_space), vidx=var.idx, fct=:rm_below))
     end
-    return true, nremoved
+    return true
 end
 
 function remove_above!(com::CS.CoM, var::CS.Variable, val::Int)
@@ -123,11 +123,11 @@ function remove_above!(com::CS.CoM, var::CS.Variable, val::Int)
     still_possible = filter(v -> v <= val, vals)
     if length(still_possible) == 0
         com.bt_infeasible[var.idx] += 1
-        return false, 0
+        return false
     elseif length(still_possible) == 1
         if !fulfills_constraints(com, var.idx, still_possible[1])
             com.bt_infeasible[var.idx] += 1
-            return false, 0
+            return false
         end
     end
 
@@ -140,12 +140,12 @@ function remove_above!(com::CS.CoM, var::CS.Variable, val::Int)
     end
     if nremoved > 0 && feasible(var)
         var.max = maximum(values(var))
+        push!(var.changes[com.c_backtrack_idx], (:rm_above, val, 0, nremoved))
     end
-    com.c_backtrack_idx > 0 && push!(var.changes[com.c_backtrack_idx], (:rm_above, val, 0, nremoved))
     if com.input[:visualize] 
         push!(com.snapshots, (search_space=deepcopy(com.search_space), vidx=var.idx, fct=:rm_above))
     end
-    return true, nremoved
+    return true
 end
 
 function feasible(var::CS.Variable)
