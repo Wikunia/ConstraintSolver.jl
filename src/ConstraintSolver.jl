@@ -15,7 +15,7 @@ mutable struct Variable
     offset      :: Int 
     min         :: Int
     max         :: Int
-    changes     :: Vector{Vector{NTuple{2,Int64}}}
+    changes     :: Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}
 end
 
 mutable struct CSInfo
@@ -114,7 +114,7 @@ end
 
 function addVar!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     ind = length(com.search_space)+1
-    changes = Vector{Vector{NTuple{2,Int64}}}()
+    changes = Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}()
     var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from, from, to, changes)
     if fix !== nothing
         fix!(com, var, fix)
@@ -329,40 +329,16 @@ function single_reverse_pruning!(search_space, index::Int, prune_int::Int, prune
 end
 
 """
-    reverse_pruning!(com, constraints, constraint_outputs)
+    reverse_pruning!(com, backtrack_idx)
 
-Reverse the changes made by constraints using their ConstraintOutputs
+Reverse the changes made by a specific backtrack object
 """
-function reverse_pruning!(com::CS.CoM, constraints, constraint_outputs)
-    search_space = com.search_space
-    for cidx = 1:length(constraint_outputs)
-        constraint = constraints[cidx]
-        constraint_output = constraint_outputs[cidx]
-        for (i,local_ind) in enumerate(constraint.indices)
-            single_reverse_pruning!(search_space, local_ind, constraint_output.pruned[i], constraint_output.pruned_below[i])
-        end
-    end
-end
-
-function reverse_pruning!(com::CS.CoM, backtrack_obj::CS.BacktrackObj)
-    search_space = com.search_space
-    for (i,constraint_idx) in enumerate(backtrack_obj.constraint_idx)
-        constraint = com.constraints[constraint_idx]
-        for (j,local_ind) in enumerate(constraint.indices)
-            single_reverse_pruning!(search_space, local_ind, backtrack_obj.pruned[i][j], backtrack_obj.pruned_below[i][j])
-        end
-    end
-    empty!(backtrack_obj.constraint_idx)
-    empty!(backtrack_obj.pruned)
-    empty!(backtrack_obj.pruned_below)
-end
-
 function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
     search_space = com.search_space
     for var in search_space
         v_idx = var.idx
         for change in var.changes[backtrack_idx]
-            single_reverse_pruning!(search_space, v_idx, change[2], change[1])
+            single_reverse_pruning!(search_space, v_idx, change[4], change[3])
         end
     end
 end
@@ -386,7 +362,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
         backtrack_obj.pval = pval
         push!(backtrack_vec, backtrack_obj)
         for v in com.search_space
-            push!(v.changes, Vector{NTuple{2,Int64}}())
+            push!(v.changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
         end
     end
     last_backtrack_obj = backtrack_vec[end]
@@ -394,6 +370,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
     just_increased_depth = true
 
     while length(backtrack_vec) > 0
+        # get next open backtrack object
         l = length(backtrack_vec)
         backtrack_obj = backtrack_vec[l]
         while l > 0
@@ -403,6 +380,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
             end
             l -= 1
         end
+        # no open node => Infeasible
         if l == 0
             break
         end
@@ -410,6 +388,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
 
         com.c_backtrack_idx = backtrack_obj.idx
         
+        # if have to revert more than once
         if !just_increased_depth && last_backtrack_obj.parent_idx != backtrack_obj.parent_idx
             @assert backtrack_obj.depth < last_backtrack_obj.depth
             depth = last_backtrack_obj.depth
@@ -420,6 +399,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
                 parent_idx = parent.parent_idx
                 depth -= 1
             end
+            @assert parent_idx == backtrack_obj.parent_idx
         end
         last_backtrack_obj = backtrack_obj
 
@@ -492,7 +472,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
             backtrack_obj.pval = pval
             push!(backtrack_vec, backtrack_obj)
             for v in com.search_space
-                push!(v.changes, Vector{NTuple{2,Int64}}())
+                push!(v.changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
             end
         end
         just_increased_depth = true
