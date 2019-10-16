@@ -99,8 +99,8 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
 
     # if there are only two left check all options
     n_unfixed = 0
-    unfixed_ind = zeros(Int,2)
-    unfixed_local_ind = zeros(Int,2)
+    unfixed_ind_1, unfixed_ind_2 = 0, 0
+    unfixed_local_ind_1, unfixed_local_ind_2 = 0,0
     unfixed_rhs = constraint.rhs
     li = 0
     for i in indices 
@@ -108,8 +108,13 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
         if !isfixed(search_space[i])
             n_unfixed += 1
             if n_unfixed <= 2
-                unfixed_ind[n_unfixed] = i
-                unfixed_local_ind[n_unfixed] = li
+                if n_unfixed == 1
+                    unfixed_ind_1 = i
+                    unfixed_local_ind_1 = li
+                else
+                    unfixed_ind_2 = i
+                    unfixed_local_ind_2 = li
+                end
             end
         else
             unfixed_rhs -= value(search_space[i])*constraint.coeffs[li]
@@ -118,24 +123,24 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
 
     # only a single one left
     if n_unfixed == 1
-        if unfixed_rhs % constraint.coeffs[unfixed_local_ind[1]] != 0
-            com.bt_infeasible[unfixed_ind[1]] += 1
+        if unfixed_rhs % constraint.coeffs[unfixed_local_ind_1] != 0
+            com.bt_infeasible[unfixed_ind_1] += 1
             return false
         else 
             # divide rhs such that it is comparable with the variable directly without coefficient
-            unfixed_rhs = fld(unfixed_rhs, constraint.coeffs[unfixed_local_ind[1]])
+            unfixed_rhs = fld(unfixed_rhs, constraint.coeffs[unfixed_local_ind_1])
         end
-        if !has(search_space[unfixed_ind[1]], unfixed_rhs)
-            com.bt_infeasible[unfixed_ind[1]] += 1
+        if !has(search_space[unfixed_ind_1], unfixed_rhs)
+            com.bt_infeasible[unfixed_ind_1] += 1
             return false
         else
-            still_feasible = fix!(com, search_space[unfixed_ind[1]], unfixed_rhs)
+            still_feasible = fix!(com, search_space[unfixed_ind_1], unfixed_rhs)
             if !still_feasible
                 return false
             end
         end
     elseif n_unfixed == 2
-        intersect_cons = intersect(com.subscription[unfixed_ind[1]], com.subscription[unfixed_ind[2]])
+        intersect_cons = intersect(com.subscription[unfixed_ind_1], com.subscription[unfixed_ind_2])
         is_all_different = false
         for constraint_idx in intersect_cons
             if nameof(com.constraints[constraint_idx].fct) == :all_different
@@ -146,11 +151,11 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
 
         for v in 1:2
             if v == 1
-                this, local_this = unfixed_ind[1], unfixed_local_ind[1]
-                other, local_other = unfixed_ind[2], unfixed_local_ind[2]
+                this, local_this = unfixed_ind_1, unfixed_local_ind_1
+                other, local_other = unfixed_ind_2, unfixed_local_ind_2
             else
-                other, local_other = unfixed_ind[1], unfixed_local_ind[1]
-                this, local_this = unfixed_ind[2], unfixed_local_ind[2]
+                other, local_other = unfixed_ind_1, unfixed_local_ind_1
+                this, local_this = unfixed_ind_2, unfixed_local_ind_2
             end
     
             for val in values(search_space[this])
