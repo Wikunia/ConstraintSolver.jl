@@ -87,6 +87,7 @@ mutable struct TreeLogNode
     id              :: Int
     status          :: Symbol
     best_bound      :: Int
+    step_nr         :: Int
     var_idx         :: Int
     set_val         :: Int
     var_states      :: Dict{Int64,Vector{Int64}}
@@ -501,9 +502,9 @@ function backtrack!(com::CS.CoM, max_bt_steps)
     backtrack_vec = com.backtrack_vec
     push!(backtrack_vec, dummy_backtrack_obj)
 
-    parent_snapshots_hashs = Vector{UInt64}(undef,1)
     # the first solve (before backtrack) has idx 1 
     num_backtrack_objs = 1
+    step_nr = 1
     for pval in pvals
         backtrack_obj = BacktrackObj()
         num_backtrack_objs += 1
@@ -514,13 +515,12 @@ function backtrack!(com::CS.CoM, max_bt_steps)
         backtrack_obj.best_bound = get_best_bound(com; var_idx=ind, val=pval)
         backtrack_obj.variable_idx = ind
         backtrack_obj.pval = pval
-        # push!(parent_snapshots_hashs, hash([values(var) for var in com.search_space]))
         push!(backtrack_vec, backtrack_obj)
         for v in com.search_space
             push!(v.changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
         end
         if com.input[:logs]
-            push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs))
+            push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, -1))
         end
     end
     last_backtrack_id = 0
@@ -529,6 +529,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
     just_increased_depth = true
 
     while length(backtrack_vec) > 0
+        step_nr += 1
         # get next open backtrack object
         l = 1
         if com.sense == :None 
@@ -568,7 +569,10 @@ function backtrack!(com::CS.CoM, max_bt_steps)
             com.c_backtrack_idx = 0
             checkout_from_to!(com, last_backtrack_id, backtrack_obj.idx)
             com.c_backtrack_idx = backtrack_obj.idx
-            # @assert parent_snapshots_hashs[backtrack_obj.idx] == hash([values(var) for var in com.search_space])
+        end
+
+        if com.input[:logs]
+            com.logs[backtrack_obj.idx].step_nr = step_nr
         end
 
         started = false
@@ -632,7 +636,7 @@ function backtrack!(com::CS.CoM, max_bt_steps)
         com.info.backtrack_fixes   += 1
 
         if com.input[:logs]
-            com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx)
+            com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr)
         end
     
         # never call current node again
@@ -650,13 +654,12 @@ function backtrack!(com::CS.CoM, max_bt_steps)
             backtrack_obj.best_bound = get_best_bound(com; var_idx=ind, val=pval)
             backtrack_obj.variable_idx = ind
             backtrack_obj.pval = pval
-            # push!(parent_snapshots_hashs, hash([values(var) for var in com.search_space]))
             push!(backtrack_vec, backtrack_obj)
             for v in com.search_space
                 push!(v.changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
             end
             if com.input[:logs]
-                push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs))
+                push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, -1))
             end
         end
         just_increased_depth = true
@@ -799,21 +802,25 @@ function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), keep_l
         return :Infeasible
     end
 
+    
     if all(v->isfixed(v), com.search_space)
+        com.best_bound = get_best_bound(com)
+        com.best_sol = com.best_bound
         return :Solved
     end
     feasible = prune!(com; pre_backtrack=true)
 
+    com.best_bound = get_best_bound(com)
     if keep_logs
-        push!(com.logs, log_one_node(com, length(com.search_space), 1))
+        push!(com.logs, log_one_node(com, length(com.search_space), 1, 1))
     end
 
     if !feasible 
         return :Infeasible
     end
-    com.best_bound = get_best_bound(com)
 
     if all(v->isfixed(v), com.search_space)
+        com.best_sol = com.best_bound
         return :Solved
     end
     if backtrack

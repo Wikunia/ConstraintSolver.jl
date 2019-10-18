@@ -1,4 +1,4 @@
-test/current*.jl
+test/current/
 Manifest.toml
 gif
 visualizations/images/

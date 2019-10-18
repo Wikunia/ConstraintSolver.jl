@@ -1,5 +1,6 @@
-function log_one_node(com, nvars, back_idx)
+function log_one_node(com, nvars, back_idx, step_nr)
     tree_log_node = TreeLogNode()
+    tree_log_node.step_nr = step_nr
     tree_log_node.id = back_idx
     parent_idx = 0
     if length(com.backtrack_vec) > 0
@@ -13,6 +14,7 @@ function log_one_node(com, nvars, back_idx)
         tree_log_node.status = :Closed
         tree_log_node.var_idx = 0
         tree_log_node.set_val = 0
+        tree_log_node.best_bound = com.best_bound
     end
     tree_log_node.var_changes = Dict{Int64,Vector{Tuple{Symbol, Int64, Int64, Int64}}}()
     tree_log_node.var_states = Dict{Int64,Vector{Int64}}()
