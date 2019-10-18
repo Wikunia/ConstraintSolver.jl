@@ -169,7 +169,8 @@
     CS.set_objective!(com, :Min, CS.vars_max(states))
 
     status = CS.solve!(com; keep_logs=true)
-    CS.save_logs(com, "/tmp/graph_color_optimize.json")
+    CS.save_logs(com, "graph_color_optimize.json")
+    rm("graph_color_optimize.json")
 
     @test status == :Solved
     @test com.best_sol == 4
