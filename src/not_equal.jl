@@ -13,10 +13,6 @@ end
 function not_equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
     indices = constraint.indices
 
-    changed = Dict{Int, Bool}()
-    pruned  = zeros(Int, length(indices))
-    pruned_below  = zeros(Int, length(indices))
-
     search_space = com.search_space
     # we always have only two variables
     v1 = search_space[indices[1]]
@@ -24,12 +20,12 @@ function not_equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
     fixed_v1 = isfixed(v1)
     fixed_v2 = isfixed(v2)
     if !fixed_v1 && !fixed_v2
-        return ConstraintOutput(true, changed, pruned, pruned_below)
+        return true
     elseif fixed_v1 && fixed_v2
         if value(v1) == value(v2)
-            return ConstraintOutput(false, changed, pruned, pruned_below)
+            return false
         end
-        return ConstraintOutput(true, changed, pruned, pruned_below)
+        return true
     end
     # one is fixed and one isn't
     if fixed_v1
@@ -43,12 +39,10 @@ function not_equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
     end
     if has(prune_v, other_val)
         if !rm!(com, prune_v, other_val)
-            return ConstraintOutput(false, changed, pruned, pruned_below)
+            return false
         end
-        changed[indices[prune_v_idx]] = true
-        pruned[prune_v_idx] = 1
     end
-    return ConstraintOutput(true, changed, pruned, pruned_below)
+    return true
 end
 
 """

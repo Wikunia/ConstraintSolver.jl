@@ -22,10 +22,6 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     indices = constraint.indices
     pvals = constraint.pvals 
 
-    changed = Dict{Int, Bool}()
-    pruned  = zeros(Int, length(indices))
-    pruned_below  = zeros(Int, length(indices))
-
     search_space = com.search_space
     fixed_vals, unfixed_indices = fixed_vs_unfixed(search_space, indices)
 
@@ -33,7 +29,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     # check if one value is used more than once
     if length(fixed_vals_set) < length(fixed_vals)
         logs && @warn "The problem is infeasible"
-        return ConstraintOutput(false, changed, pruned, pruned_below)
+        return false
     end
 
     bfixed = false
@@ -45,11 +41,8 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
             if has(c_search_space, pv)
                 if !rm!(com, c_search_space, pv)
                     logs && @warn "The problem is infeasible"
-                    return ConstraintOutput(false, changed, pruned, pruned_below)
+                    return false
                 end
-
-                pruned[pi] += 1
-                changed[ind] = true
 
                 if nvalues(c_search_space) == 1
                     only_value = value(c_search_space)
@@ -62,7 +55,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     end
 
     if length(fixed_vals_set) == length(indices)
-        return ConstraintOutput(true, changed, pruned, pruned_below)
+        return true
     end
 
     # find maximum_matching for infeasible check and Berge's lemma
@@ -95,7 +88,6 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         num_edges += nvalues(search_space[i])
     end
 
-
     ei = Vector{Int64}(undef,num_edges)
     ej = Vector{Int64}(undef,num_edges)
 
@@ -122,7 +114,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     maximum_matching = bipartite_matching(_weights,ei, ej)
     if maximum_matching.weight != length(indices)
         logs && @warn "Infeasible (No maximum matching was found)"
-        return ConstraintOutput(false, changed, pruned, pruned_below)
+        return false
     end
 
     # directed edges for strongly connected components
@@ -206,19 +198,16 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         cind = vmb[dst]
         if !rm!(com, search_space[cind], vmb[src])
             logs && @warn "The problem is infeasible"
-            return ConstraintOutput(false, changed, pruned, pruned_below)
+            return false
         end
-        pruned[dst] += 1
-        changed[cind] = true
 
         # if only one value possible make it fixed
         if nvalues(search_space[cind]) == 1
             only_value = value(search_space[cind])
-            changed[cind] = true
         end
     end
 
-    return ConstraintOutput(true, changed, pruned, pruned_below)
+    return true
 end
 
 """

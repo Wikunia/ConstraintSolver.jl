@@ -1,7 +1,8 @@
-test/current*.jl
+test/current/
 Manifest.toml
 gif
 visualizations/images/
 visualizations/videos/
 literature/
 extra/
+test/logs/
