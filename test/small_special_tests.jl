@@ -3,14 +3,14 @@
     com = CS.init()
 
     com_grid = Array{CS.Variable, 1}(undef, 7)
-    com_grid[1] = CS.addVar!(com, 1, 9)
-    com_grid[2] = CS.addVar!(com, 1, 9; fix=5)
-    com_grid[3] = CS.addVar!(com, 1, 9)
-    com_grid[4] = CS.addVar!(com, 1, 9)
-    com_grid[5] = CS.addVar!(com, 1, 9)
+    com_grid[1] = CS.add_var!(com, 1, 9)
+    com_grid[2] = CS.add_var!(com, 1, 9; fix=5)
+    com_grid[3] = CS.add_var!(com, 1, 9)
+    com_grid[4] = CS.add_var!(com, 1, 9)
+    com_grid[5] = CS.add_var!(com, 1, 9)
 
-    com_grid[6] = CS.addVar!(com, 1, 2)
-    com_grid[7] = CS.addVar!(com, 3, 5)
+    com_grid[6] = CS.add_var!(com, 1, 2)
+    com_grid[7] = CS.add_var!(com, 3, 5)
     
 
     CS.rm!(com, com_grid[4], 5)
@@ -40,9 +40,9 @@ end
 @testset "Reordering sum constraint" begin
     com = CS.init()
 
-    x = CS.addVar!(com, 0, 9)
-    y = CS.addVar!(com, 0, 9)
-    z = CS.addVar!(com, 0, 9)
+    x = CS.add_var!(com, 0, 9)
+    y = CS.add_var!(com, 0, 9)
+    z = CS.add_var!(com, 0, 9)
 
     c1 = 2x+3x == 5
     @test length(c1.indices) == 1
@@ -67,9 +67,9 @@ end
     com = CS.init()
 
     com_grid = Array{CS.Variable, 1}(undef, 3)
-    com_grid[1] = CS.addVar!(com, 1, 9)
-    com_grid[2] = CS.addVar!(com, 1, 9)
-    com_grid[3] = CS.addVar!(com, 1, 9)
+    com_grid[1] = CS.add_var!(com, 1, 9)
+    com_grid[2] = CS.add_var!(com, 1, 9)
+    com_grid[3] = CS.add_var!(com, 1, 9)
     
     CS.rm!(com, com_grid[2], 2)
     CS.rm!(com, com_grid[2], 3)
@@ -87,9 +87,9 @@ end
     com = CS.init()
 
     com_grid = Array{CS.Variable, 1}(undef, 3)
-    com_grid[1] = CS.addVar!(com, 1, 9)
-    com_grid[2] = CS.addVar!(com, 1, 9)
-    com_grid[3] = CS.addVar!(com, 1, 9)
+    com_grid[1] = CS.add_var!(com, 1, 9)
+    com_grid[2] = CS.add_var!(com, 1, 9)
+    com_grid[3] = CS.add_var!(com, 1, 9)
     
     CS.remove_above!(com, com_grid[3], 3)
 
@@ -104,9 +104,9 @@ end
     com = CS.init()
 
     com_grid = Array{CS.Variable, 1}(undef, 3)
-    com_grid[1] = CS.addVar!(com, 1, 5)
-    com_grid[2] = CS.addVar!(com, 1, 2)
-    com_grid[3] = CS.addVar!(com, 1, 9)
+    com_grid[1] = CS.add_var!(com, 1, 5)
+    com_grid[2] = CS.add_var!(com, 1, 2)
+    com_grid[3] = CS.add_var!(com, 1, 9)
     
     CS.add_constraint!(com, sum([7,5,-10].*com_grid) == -13)
     
@@ -118,8 +118,8 @@ end
 
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 5)
-    v2 = CS.addVar!(com, 5, 10)
+    v1 = CS.add_var!(com, 1, 5)
+    v2 = CS.add_var!(com, 5, 10)
     
     CS.add_constraint!(com, v1-v2 == 0)
     
@@ -133,8 +133,8 @@ end
     # nothing to do
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2; fix=2)
-    v2 = CS.addVar!(com, 1, 2; fix=2)
+    v1 = CS.add_var!(com, 1, 2; fix=2)
+    v2 = CS.add_var!(com, 1, 2; fix=2)
 
     CS.add_constraint!(com, v1 == v2)
 
@@ -147,8 +147,8 @@ end
     # normal
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2)
-    v2 = CS.addVar!(com, 1, 2; fix=2)
+    v1 = CS.add_var!(com, 1, 2)
+    v2 = CS.add_var!(com, 1, 2; fix=2)
 
     CS.add_constraint!(com, v1 == v2)
 
@@ -161,8 +161,8 @@ end
     # set but infeasible
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2)
-    v2 = CS.addVar!(com, 1, 2; fix=2)
+    v1 = CS.add_var!(com, 1, 2)
+    v2 = CS.add_var!(com, 1, 2; fix=2)
 
     CS.add_constraint!(com, v1 == v2)
     CS.add_constraint!(com, CS.all_different([v1, v2]))
@@ -174,8 +174,8 @@ end
     # set but infeasible reversed
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2)
-    v2 = CS.addVar!(com, 1, 2; fix=2)
+    v1 = CS.add_var!(com, 1, 2)
+    v2 = CS.add_var!(com, 1, 2; fix=2)
 
     CS.add_constraint!(com, v2 == v1)
     CS.add_constraint!(com, CS.all_different([v1, v2]))
@@ -187,8 +187,8 @@ end
     # reversed
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2)
-    v2 = CS.addVar!(com, 1, 2; fix=2)
+    v1 = CS.add_var!(com, 1, 2)
+    v2 = CS.add_var!(com, 1, 2; fix=2)
 
     CS.add_constraint!(com, v2 == v1)
 
@@ -201,10 +201,10 @@ end
     # test with more
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2)
-    v2 = CS.addVar!(com, 1, 2; fix=2)
-    v3 = CS.addVar!(com, 1, 2)
-    v4 = CS.addVar!(com, 1, 2)
+    v1 = CS.add_var!(com, 1, 2)
+    v2 = CS.add_var!(com, 1, 2; fix=2)
+    v3 = CS.add_var!(com, 1, 2)
+    v4 = CS.add_var!(com, 1, 2)
 
     CS.add_constraint!(com, v1 == v2)
     CS.add_constraint!(com, v1 == v4)
@@ -223,8 +223,8 @@ end
     # NotSolved without backtracking
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2)
-    v2 = CS.addVar!(com, 1, 2)
+    v1 = CS.add_var!(com, 1, 2)
+    v2 = CS.add_var!(com, 1, 2)
 
     CS.add_constraint!(com, v2 == v1)
 
@@ -235,8 +235,8 @@ end
     # Infeasible without backtracking
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2; fix=1)
-    v2 = CS.addVar!(com, 1, 2; fix=2)
+    v1 = CS.add_var!(com, 1, 2; fix=1)
+    v2 = CS.add_var!(com, 1, 2; fix=2)
 
     CS.add_constraint!(com, v2 == v1)
 
@@ -247,8 +247,8 @@ end
     # Infeasible without backtracking reverse
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2; fix=1)
-    v2 = CS.addVar!(com, 1, 2; fix=2)
+    v1 = CS.add_var!(com, 1, 2; fix=1)
+    v2 = CS.add_var!(com, 1, 2; fix=2)
 
     CS.add_constraint!(com, v1 == v2)
 
@@ -261,10 +261,10 @@ end
     # test using equal
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2)
-    v2 = CS.addVar!(com, 1, 2; fix=2)
-    v3 = CS.addVar!(com, 1, 2)
-    v4 = CS.addVar!(com, 1, 2)
+    v1 = CS.add_var!(com, 1, 2)
+    v2 = CS.add_var!(com, 1, 2; fix=2)
+    v3 = CS.add_var!(com, 1, 2)
+    v4 = CS.add_var!(com, 1, 2)
 
     CS.add_constraint!(com, CS.equal([v1,v2,v3,v4]))
 
@@ -281,10 +281,10 @@ end
     # test using equal
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2)
-    v2 = CS.addVar!(com, 1, 2; fix=2)
-    v3 = CS.addVar!(com, 1, 2)
-    v4 = CS.addVar!(com, 1, 3; fix=3)
+    v1 = CS.add_var!(com, 1, 2)
+    v2 = CS.add_var!(com, 1, 2; fix=2)
+    v3 = CS.add_var!(com, 1, 2)
+    v4 = CS.add_var!(com, 1, 3; fix=3)
 
     CS.add_constraint!(com, CS.equal([v1,v2,v3,v4]))
 
@@ -297,10 +297,10 @@ end
     # test using equal
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2)
-    v2 = CS.addVar!(com, 1, 2)
-    v3 = CS.addVar!(com, 1, 2)
-    v4 = CS.addVar!(com, 1, 2)
+    v1 = CS.add_var!(com, 1, 2)
+    v2 = CS.add_var!(com, 1, 2)
+    v3 = CS.add_var!(com, 1, 2)
+    v4 = CS.add_var!(com, 1, 2)
 
     CS.add_constraint!(com, CS.equal([v1,v2,v3,v4]))
 
@@ -315,15 +315,15 @@ end
     com = CS.init()
 
     # cover from numberphile video
-    v1 = CS.addVar!(com, 1, 4)
-    v2 = CS.addVar!(com, 1, 4)
-    v3 = CS.addVar!(com, 1, 4)
-    v4 = CS.addVar!(com, 1, 4)
-    v5 = CS.addVar!(com, 1, 4)
-    v6 = CS.addVar!(com, 1, 4)
-    v7 = CS.addVar!(com, 1, 4)
-    v8 = CS.addVar!(com, 1, 4)
-    v9 = CS.addVar!(com, 1, 4)
+    v1 = CS.add_var!(com, 1, 4)
+    v2 = CS.add_var!(com, 1, 4)
+    v3 = CS.add_var!(com, 1, 4)
+    v4 = CS.add_var!(com, 1, 4)
+    v5 = CS.add_var!(com, 1, 4)
+    v6 = CS.add_var!(com, 1, 4)
+    v7 = CS.add_var!(com, 1, 4)
+    v8 = CS.add_var!(com, 1, 4)
+    v9 = CS.add_var!(com, 1, 4)
 
     CS.add_constraint!(com, v1 != v2)
     CS.add_constraint!(com, v1 != v3)
@@ -354,15 +354,15 @@ end
 
     # Infeasible with 3 colors
     com = CS.init()
-    v1 = CS.addVar!(com, 1, 3)
-    v2 = CS.addVar!(com, 1, 3)
-    v3 = CS.addVar!(com, 1, 3)
-    v4 = CS.addVar!(com, 1, 3)
-    v5 = CS.addVar!(com, 1, 3)
-    v6 = CS.addVar!(com, 1, 3)
-    v7 = CS.addVar!(com, 1, 3)
-    v8 = CS.addVar!(com, 1, 3)
-    v9 = CS.addVar!(com, 1, 3)
+    v1 = CS.add_var!(com, 1, 3)
+    v2 = CS.add_var!(com, 1, 3)
+    v3 = CS.add_var!(com, 1, 3)
+    v4 = CS.add_var!(com, 1, 3)
+    v5 = CS.add_var!(com, 1, 3)
+    v6 = CS.add_var!(com, 1, 3)
+    v7 = CS.add_var!(com, 1, 3)
+    v8 = CS.add_var!(com, 1, 3)
+    v9 = CS.add_var!(com, 1, 3)
 
     CS.add_constraint!(com, v1 != v2)
     CS.add_constraint!(com, v1 != v3)
@@ -395,8 +395,8 @@ end
     # very simple
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2; fix=1)
-    v2 = CS.addVar!(com, 1, 2)
+    v1 = CS.add_var!(com, 1, 2; fix=1)
+    v2 = CS.add_var!(com, 1, 2)
 
     CS.add_constraint!(com, v1 != v2)
 
@@ -409,8 +409,8 @@ end
     # infeasible at beginning
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2; fix=1)
-    v2 = CS.addVar!(com, 1, 2; fix=1)
+    v1 = CS.add_var!(com, 1, 2; fix=1)
+    v2 = CS.add_var!(com, 1, 2; fix=1)
 
     CS.add_constraint!(com, v1 != v2)
 
@@ -421,9 +421,9 @@ end
     # Error not implemented
     com = CS.init()
 
-    v1 = CS.addVar!(com, 1, 2; fix=1)
-    v2 = CS.addVar!(com, 1, 2)
-    v3 = CS.addVar!(com, 1, 2)
+    v1 = CS.add_var!(com, 1, 2; fix=1)
+    v2 = CS.add_var!(com, 1, 2)
+    v3 = CS.add_var!(com, 1, 2)
 
     @test_throws ErrorException CS.add_constraint!(com, !CS.equal([v1,v2,v3]))
     @test_throws ErrorException CS.add_constraint!(com, !CS.all_different([v1,v2,v3]))

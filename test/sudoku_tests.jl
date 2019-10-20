@@ -106,14 +106,14 @@ end
         if val == -1
             if ind == 81 # bottom right
                 # some other values are possible there
-                com_grid[ind] = CS.addVar!(com, 9, 11)
+                com_grid[ind] = CS.add_var!(com, 9, 11)
             elseif ind == 80 # one above (will be 9 in the end)
-                com_grid[ind] = CS.addVar!(com, 7, 11)
+                com_grid[ind] = CS.add_var!(com, 7, 11)
             else
-                com_grid[ind] = CS.addVar!(com, 0, 8)
+                com_grid[ind] = CS.add_var!(com, 0, 8)
             end
         else
-            com_grid[ind] = CS.addVar!(com, 0, 8; fix=val)
+            com_grid[ind] = CS.add_var!(com, 0, 8; fix=val)
         end
     end
     
