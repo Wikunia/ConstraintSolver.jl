@@ -17,7 +17,7 @@
     com_grid = create_sudoku_grid!(com, grid)
     add_sudoku_constr!(com, com_grid)
 
-    @test CS.solve!(com) == :Solved
+    @test solve!(com) == :Solved
     @test fulfills_sudoku_constr(com_grid)
 end
 
@@ -39,7 +39,7 @@ end
     com_grid = create_sudoku_grid!(com, grid)
     add_sudoku_constr!(com, com_grid)
 
-    @test CS.solve!(com) == :Solved
+    @test solve!(com) == :Solved
     @test fulfills_sudoku_constr(com_grid)
 end
 
@@ -60,7 +60,7 @@ end
     com_grid = create_sudoku_grid!(com, grid)
     add_sudoku_constr!(com, com_grid)
 
-    @test CS.solve!(com) == :Infeasible
+    @test solve!(com) == :Infeasible
     @test !fulfills_sudoku_constr(com_grid)
 end
 
@@ -82,7 +82,7 @@ end
     com_grid = create_sudoku_grid!(com, grid)
     add_sudoku_constr!(com, com_grid)
 
-    @test CS.solve!(com) == :Solved
+    @test solve!(com) == :Solved
     @test fulfills_sudoku_constr(com_grid)
 end
 
@@ -106,20 +106,20 @@ end
         if val == -1
             if ind == 81 # bottom right
                 # some other values are possible there
-                com_grid[ind] = CS.add_var!(com, 9, 11)
+                com_grid[ind] = add_var!(com, 9, 11)
             elseif ind == 80 # one above (will be 9 in the end)
-                com_grid[ind] = CS.add_var!(com, 7, 11)
+                com_grid[ind] = add_var!(com, 7, 11)
             else
-                com_grid[ind] = CS.add_var!(com, 0, 8)
+                com_grid[ind] = add_var!(com, 0, 8)
             end
         else
-            com_grid[ind] = CS.add_var!(com, 0, 8; fix=val)
+            com_grid[ind] = add_var!(com, 0, 8; fix=val)
         end
     end
     
     add_sudoku_constr!(com, com_grid)
 
-    @test CS.solve!(com) == :Solved
+    @test solve!(com) == :Solved
     @test fulfills_sudoku_constr(com_grid)
 end
 
@@ -132,7 +132,7 @@ end
         com_grid = create_sudoku_grid!(com, grid)
         add_sudoku_constr!(com, com_grid)
 
-        @test CS.solve!(com) == :Solved
+        @test solve!(com) == :Solved
         @test fulfills_sudoku_constr(com_grid)
         c += 1
     end
@@ -152,7 +152,7 @@ end
     com_grid = create_sudoku_grid!(com, grid)
     add_sudoku_constr!(com, com_grid)
 
-    CS.solve!(com; backtrack=false)
+    solve!(com; backtrack=false)
     @test !com.info.backtracked
     @test com.info.backtrack_fixes == 0
     @test com.info.in_backtrack_calls == 0

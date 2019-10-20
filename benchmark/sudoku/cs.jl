@@ -30,13 +30,13 @@ function solve_all(grids; benchmark=false, single_times=true)
         if single_times
             GC.enable(false)
             t = time()
-            status = CS.solve!(com);
+            status = solve!(com);
             t = time()-t
             GC.enable(true)
             println(i-1,", ", t)
         else
             GC.enable(false)
-            status = CS.solve!(com);
+            status = solve!(com);
             GC.enable(true)
         end
         if !benchmark
@@ -57,7 +57,7 @@ function solve_one(grid)
     CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
     add_sudoku_constr!(com, grid)
 
-    status = CS.solve!(com; backtrack=false);
+    status = solve!(com; backtrack=false);
     return com
 end
 

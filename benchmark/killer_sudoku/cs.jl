@@ -28,7 +28,7 @@ function solve_all(filenames; benchmark=false, single_times=true)
         com_grid = create_sudoku_grid!(com, grid)
 
         for s in sums
-            CS.add_constraint!(com, CS.eq_sum, [com_grid[CartesianIndex(ind)] for ind in s.indices]; rhs=s.result)
+            add_constraint!(com, CS.eq_sum, [com_grid[CartesianIndex(ind)] for ind in s.indices]; rhs=s.result)
         end
 
         add_sudoku_constr!(com, com_grid)
@@ -36,13 +36,13 @@ function solve_all(filenames; benchmark=false, single_times=true)
         if single_times
             GC.enable(false)
             t = time()
-            status = CS.solve!(com);
+            status = solve!(com);
             t = time()-t
             GC.enable(true)
             println(i-1,", ", t)
         else
             GC.enable(false)
-            status = CS.solve!(com);
+            status = solve!(com);
             GC.enable(true)
         end
         if !benchmark
