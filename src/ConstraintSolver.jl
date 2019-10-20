@@ -828,4 +828,6 @@ function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), keep_l
     end
 end
 
+export add_var!, add_constraint!, solve!, value, set_objective! 
+
 end # module

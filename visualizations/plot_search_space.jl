@@ -18,12 +18,12 @@ function plot_search_space(grid, com_grid, fname)
             x = ind[2]-0.5
             y = 10-ind[1]-0.5
             if grid[ind] != 0
-                annotate!(x, y, text(CS.value(com_grid[ind]),20, :black))
+                annotate!(x, y, text(value(com_grid[ind]),20, :black))
             else
-                annotate!(x, y, text(CS.value(com_grid[ind]),20, :blue))
+                annotate!(x, y, text(value(com_grid[ind]),20, :blue))
             end
         else
-            vals = CS.values(com_grid[ind])
+            vals = values(com_grid[ind])
             sort!(vals)
             x = ind[2]-0.5
             y = 10-ind[1]-0.2
@@ -85,9 +85,9 @@ function plot_killer(grid, sums, fname; fill=true, mark=nothing)
             if CS.isfixed(grid[ind])
                 x = ind[2]-0.5
                 y = 10-ind[1]-0.5
-                annotate!(x, y, text(CS.value(grid[ind]),20, :black))
+                annotate!(x, y, text(value(grid[ind]),20, :black))
             else
-                vals = CS.values(grid[ind])
+                vals = values(grid[ind])
                 sort!(vals)
                 x = ind[2]-0.3
                 y = 10-ind[1]-0.2
