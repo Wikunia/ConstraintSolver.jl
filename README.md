@@ -15,6 +15,9 @@ I'm just a MSc student in computer science so I don't have much knowledge on how
 - [New data structure for better user interface and performance](https://opensourc.es/blog/constraint-solver-data-structure)
 - [Backtrack without recursion and start of sum constraint](https://opensourc.es/blog/constraint-solver-backtrack-sum)
 - [Speed up the sum constraint](https://opensourc.es/blog/constraint-solver-sum-speed)
+- [UI changes and refactoring](https://opensourc.es/blog/constraint-solver-ui-refactor)
+- [Recap video](https://opensourc.es/blog/constraint-solver-first-recap)
+- [First step in graph coloring](https://opensourc.es/blog/constraint-solver-simple-graph-coloring)
 
 ## Installation
 You can install this julia package using 
@@ -25,4 +28,4 @@ If everything goes well I will make a request to make this a julia package but t
 
 ## Support
 If you find a bug or improvement please open an issue or make a pull request. 
-You just enjoy reading and want to see more posts? Support me on [Patreon](https://www.patreon.com/opensources)
+You just enjoy reading and want to see more posts and get them earlier? Support me on [Patreon](https://www.patreon.com/opensources)

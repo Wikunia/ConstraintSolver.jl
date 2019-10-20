@@ -142,7 +142,7 @@ function init()
     return com
 end
 
-function addVar!(com::CS.CoM, from::Int, to::Int; fix=nothing)
+function add_var!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     ind = length(com.search_space)+1
     changes = Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}()
     push!(changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
@@ -291,7 +291,7 @@ function prune!(com::CS.CoM, prune_steps::Vector{Int})
                 elseif fct_symbol == :remove_below
                     remove_below!(com, var, val; changes=false)
                 else
-                    err
+                    throw(ErrorException("There is no pruning function for $fct_symbol"))
                 end
             end
         end
@@ -639,11 +639,8 @@ function backtrack!(com::CS.CoM, max_bt_steps)
             com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr)
         end
     
-        # never call current node again
         pvals = reverse!(values(com.search_space[ind]))
         last_backtrack_obj = backtrack_vec[last_backtrack_id]
-        # println([o.idx for o in backtrack_vec])
-        @assert last_backtrack_obj.idx == last_backtrack_id
         for pval in pvals
             backtrack_obj = BacktrackObj()
             num_backtrack_objs += 1
@@ -755,7 +752,6 @@ function simplify!(com)
             end
         end
     end
-    # println("l: ", l)
 end
 
 function set_in_all_different!(com::CS.CoM)

@@ -23,9 +23,9 @@ function create_sudoku_grid!(com, grid)
     com_grid = Array{CS.Variable, 2}(undef, 9, 9)
     for (ind,val) in enumerate(grid)
         if val == 0
-            com_grid[ind] = CS.addVar!(com, 1, 9)
+            com_grid[ind] = CS.add_var!(com, 1, 9)
         else
-            com_grid[ind] = CS.addVar!(com, 1, 9; fix=val)
+            com_grid[ind] = CS.add_var!(com, 1, 9; fix=val)
         end
     end
     return com_grid

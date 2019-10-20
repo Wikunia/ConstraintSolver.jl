@@ -25,7 +25,7 @@ end
 
     com_grid = Array{CS.Variable, 2}(undef, 9, 9)
     for (ind,val) in enumerate(grid)
-        com_grid[ind] = CS.addVar!(com, 1, 9)
+        com_grid[ind] = CS.add_var!(com, 1, 9)
     end
 
     sums = parseKillerJSON(JSON.parsefile("data/killer_wikipedia"))
@@ -51,7 +51,7 @@ end
 
     com_grid = Array{CS.Variable, 2}(undef, 9, 9)
     for (ind,val) in enumerate(grid)
-        com_grid[ind] = CS.addVar!(com, 1, 9)
+        com_grid[ind] = CS.add_var!(com, 1, 9)
     end
 
     sums = parseKillerJSON(JSON.parsefile("data/killer_niallsudoku_5500"))
@@ -82,7 +82,7 @@ end
 
     com_grid = Array{CS.Variable, 2}(undef, 9, 9)
     for (ind,val) in enumerate(grid)
-        com_grid[ind] = CS.addVar!(com, -9, -1)
+        com_grid[ind] = CS.add_var!(com, -9, -1)
     end
 
     sums = parseKillerJSON(JSON.parsefile("data/killer_niallsudoku_5500"))
