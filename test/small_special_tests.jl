@@ -26,6 +26,9 @@
     # remove without pruning
     CS.remove_above!(com, com_grid[3], 5)
 
+    # should also work for a fixed variable
+    @test CS.compress_var_string(com_grid[1]) == "6"
+
     str_output = CS.get_str_repr(com_grid)
     @test str_output[1] == "6, 5, 2:5, [2, 3, 4, 6, 7, 8, 9], 1, 1, 3"
 
