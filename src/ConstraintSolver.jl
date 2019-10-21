@@ -27,13 +27,6 @@ mutable struct CSInfo
     backtrack_reverses  :: Int
 end
 
-function Base.show(io::IO, csinfo::CSInfo)
-    println("Info: ")
-    for name in fieldnames(CSInfo)
-        println(io, "$name = $(getfield(csinfo, name))")
-    end
-end
-
 abstract type Constraint 
 end
 
@@ -116,6 +109,7 @@ mutable struct CoM
     CoM() = new()
 end
 
+include("printing.jl")
 include("logs.jl")
 include("Variable.jl")
 include("objective.jl")
