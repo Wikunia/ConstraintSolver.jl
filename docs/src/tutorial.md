@@ -19,9 +19,8 @@ CS = ConstraintSolver
 ```
 
 Solving:
-  - [Sudoku](#sudoku)
-  - [Killer Sudoku](#killer-sudoku)
-  - [Graph coloring](#graph-coloring)
+  - [Sudoku](#Sudoku-1)
+  - [Graph coloring](#Graph-coloring-1)
 
 ## Sudoku
 
@@ -103,12 +102,70 @@ This returns a status `:Solved` or `:Infeasible` if there is no solution.
 
 In our case it returns `:Solved`. If we want to get the solved sudoku we can use:
 
+```
+println(com_grid)
+```
 
+which outputs:
+```
+6 9 3 4 8 2 5 7 1 
+8 5 7 3 1 9 6 2 4 
+2 1 4 7 6 5 8 9 3 
+1 7 8 5 9 4 2 3 6 
+5 6 9 2 3 1 7 4 8 
+4 3 2 8 7 6 1 5 9 
+3 8 1 9 2 7 4 6 5 
+7 4 6 1 5 3 9 8 2 
+9 2 5 6 4 8 3 1 7 
+```
 
+If you want to get a single value you can i.e use `value(com_grid[1])`.
 
+In the next part you'll learn a different constraint type and how to include an optimization function.
 
-
-
-
-## Killer Sudoku
 ## Graph coloring
+
+The goal is to color a graph in such a way that neighboring nodes have a different color. This can also be used to color a map.
+
+We want to find the coloring which uses the least amount of colors.
+
+```
+com = CS.init()
+
+germany = add_var!(com, 1, 10)
+france = add_var!(com, 1, 10)
+spain = add_var!(com, 1, 10)
+switzerland = add_var!(com, 1, 10)
+italy = add_var!(com, 1, 10)
+
+countries = [germany, switzerland, france, italy, spain];
+```
+
+I know this is only a small example but you can easily extend it.
+In the above case we assume that we don't need more than 10 colors.
+
+Adding the constraints:
+
+```
+add_constraint!(com, germany != france)
+add_constraint!(com, germany != switzerland)
+add_constraint!(com, france != spain)
+add_constraint!(com, france != switzerland)
+add_constraint!(com, france != italy)
+add_constraint!(com, switzerland != italy)
+```
+
+If we call `status = solve!(com)` now we probably don't get a coloring with the least amount of colors.
+
+We can get this using:
+
+```
+set_objective!(com, :Min, CS.vars_max(countries))
+status = solve!(com)
+```
+
+We can get the value for each variable using `value(germany)` for example or as before print the values:
+
+```
+println(countries)
+```
