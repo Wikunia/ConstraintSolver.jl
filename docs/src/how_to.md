@@ -52,7 +52,7 @@ val_y = value(y)
 
 ## How to get the state before backtracking?
 
-For the explanation of the question look [here](../explanation.html/#Backtracking-1).
+For the explanation of the question look [here](explanation.html#Backtracking-1).
 
 Instead of solving the model directly you can have a look at the state before backtracking with:
 
