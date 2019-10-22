@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/Wikunia/ConstraintSolver.jl.svg?branch=master)](https://travis-ci.org/Wikunia/ConstraintSolver.jl) [![codecov](https://codecov.io/gh/Wikunia/ConstraintSolver.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/Wikunia/ConstraintSolver.jl)
+[![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://wikunia.github.io/ConstraintSolver.jl/dev)
 
 # ConstraintSolver.jl
 
