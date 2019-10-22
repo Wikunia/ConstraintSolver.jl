@@ -119,6 +119,11 @@ include("eq_sum.jl")
 include("equal.jl")
 include("not_equal.jl")
 
+"""
+    init()
+
+Initialize the constraint model object
+"""
 function init()
     com = CoM()
     com.constraints         = Vector{Constraint}()
@@ -136,6 +141,12 @@ function init()
     return com
 end
 
+"""
+    add_var!(com::CS.CoM, from::Int, to::Int; fix=nothing)
+
+Adding a variable to the constraint model `com`. The variable is discrete and has the possible values from,..., to.
+If the variable should be fixed to something one can use the `fix` keyword i.e `add_var!(com, 1, 9; fix=5)`
+"""
 function add_var!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     ind = length(com.search_space)+1
     changes = Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}()
@@ -150,6 +161,11 @@ function add_var!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     return var
 end
 
+"""
+    fulfills_constraints(com::CS.CoM, index, value)
+
+Return whether the model is still feasible after setting the variable at position `index` to `value`.
+"""
 function fulfills_constraints(com::CS.CoM, index, value)
     # variable doesn't have any constraint
     if index > length(com.subscription)
@@ -170,7 +186,7 @@ end
 """
     fixed_vs_unfixed(search_space, indices)
 
-Returns the fixed_vals as well as the unfixed_indices
+Return the fixed_vals as well as the unfixed_indices
 """
 function fixed_vs_unfixed(search_space, indices)
     # get all values which are fixed
@@ -189,7 +205,7 @@ end
 """
     set_pvals!(com::CS.CoM, constraint::Constraint)
 
-Computes the possible values inside this constraint and sets it as constraint.pvals
+Compute the possible values inside this constraint and set it as constraint.pvals
 """
 function set_pvals!(com::CS.CoM, constraint::Constraint)
     indices = constraint.indices
@@ -225,7 +241,7 @@ end
 """
     add_constraint!(com::CS.CoM, constraint::Constraint)
 
-Add a constraint to the model
+Add a constraint to the model i.e `add_constraint!(com, a != b)`
 """
 function add_constraint!(com::CS.CoM, constraint::Constraint)
     constraint.idx = length(com.constraints)+1
@@ -236,6 +252,11 @@ function add_constraint!(com::CS.CoM, constraint::Constraint)
     end
 end
 
+"""
+    set_objective!(com::CS.CoM, sense::Symbol, objective::ObjectiveFunction)
+
+Set the objective of the model. Sense can be `:Min` or `:Max`.
+"""
 function set_objective!(com::CS.CoM, sense::Symbol, objective::ObjectiveFunction)
     if sense != :Min && sense != :Max
         throw(ErrorException("The objective sense must be :Min or :Max"))
@@ -244,6 +265,12 @@ function set_objective!(com::CS.CoM, sense::Symbol, objective::ObjectiveFunction
     com.objective = objective
 end
 
+"""
+    get_weak_ind(com::CS.CoM)
+
+Get the next weak index for backtracking. This will be the next branching variable.
+Return whether there is an unfixed variable and a best index
+"""
 function get_weak_ind(com::CS.CoM)
     lowest_num_pvals = typemax(Int)
     biggest_inf = -1
@@ -268,7 +295,11 @@ function get_weak_ind(com::CS.CoM)
     return found, best_ind
 end
 
+"""
+    prune!(com::CS.CoM, prune_steps::Vector{Int})
 
+Prune the search space based on a list of backtracking indices `prune_steps`.
+"""
 function prune!(com::CS.CoM, prune_steps::Vector{Int})
     search_space = com.search_space
     for backtrack_idx in prune_steps
@@ -368,6 +399,11 @@ function prune!(com::CS.CoM; pre_backtrack=false)
     return feasible
 end
 
+"""
+    single_reverse_pruning!(search_space, index::Int, prune_int::Int, prune_fix::Int)
+
+Reverse a single variable using `prune_int` (number of value removals) and `prune_fix` (new last_ptr if not 0).
+"""
 function single_reverse_pruning!(search_space, index::Int, prune_int::Int, prune_fix::Int)
     if prune_int > 0
         var = search_space[index]
@@ -417,6 +453,12 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
     end
 end
 
+"""
+    get_best_bound(com::CS.CoM; var_idx=0, val=0)
+
+Return the best bound if setting the variable with idx: `var_idx` to `val` if `var_idx != 0`.
+Without an objective function return 0.
+"""
 function get_best_bound(com::CS.CoM; var_idx=0, val=0)
     if com.sense == :None
         return 0
@@ -433,7 +475,6 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
     end
     reverse_pruning!(com, from.idx)
     
-
     prune_steps = Vector{Int}()
     # first go to same level if new is higher in the tree
     if to.depth < from.depth
@@ -483,6 +524,12 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
     prune!(com, prune_steps)
 end
 
+"""
+    backtrack!(com::CS.CoM, max_bt_steps)
+
+Start backtracking and stop after `max_bt_steps`.
+Return :Solved or :Infeasible if proven or `:NotSolved` if interrupted by `max_bt_steps`.
+"""
 function backtrack!(com::CS.CoM, max_bt_steps)
     found, ind = get_weak_ind(com)
     com.info.backtrack_fixes   = 1
@@ -669,6 +716,12 @@ function arr2dict(arr)
     return d
 end
 
+"""
+    simplify!(com)
+
+Simplify constraints i.e by adding new constraints which uses an implicit connection between two constraints.
+i.e an `all_different` does sometimes include information about the sum.
+"""
 function simplify!(com)
     # check if we have all_different and sum constraints
     # (all different where every value is used)
@@ -685,14 +738,12 @@ function simplify!(com)
             b_sum = true
         end
     end
-    # l = 0
     if b_all_different_sum && b_sum
         # for each all_different constraint
         # which can be formulated as a sum constraint 
         # check which sum constraints are completely inside all different
         # which are partially inside
         # compute inside sum and total sum
-        # println("lc :", length(com.constraints))
         n_constraints_before = length(com.constraints)
         for constraint_idx in 1:length(com.constraints)
             constraint = com.constraints[constraint_idx]
@@ -748,6 +799,11 @@ function simplify!(com)
     end
 end
 
+"""
+    set_in_all_different!(com::CS.CoM)
+
+Set `constraint.in_all_different` if all variables in the constraint are part of the same `all_different` constraint.
+"""
 function set_in_all_different!(com::CS.CoM)
     for constraint in com.constraints
         if :in_all_different in fieldnames(typeof(constraint))
@@ -766,6 +822,14 @@ function set_in_all_different!(com::CS.CoM)
     end
 end
 
+"""
+    solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), keep_logs=false)
+
+Solve the constraint model if `backtrack = true` otherwise stop before calling backtracking.
+This way the search space can be inspected after the first pruning step.
+If `max_bt_steps` is set only that many backtracking steps are performed. 
+With `keep_logs` one is able to write the tree structure of the backtracking tree using `ConstraintSolver.save_logs`.
+"""
 function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), keep_logs=false)
     com.input[:logs] = keep_logs
     if keep_logs
