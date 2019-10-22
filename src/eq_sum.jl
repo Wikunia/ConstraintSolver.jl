@@ -1,3 +1,9 @@
+"""
+    Base.:(==)(x::LinearVariables, y::Int)
+
+Create a linear constraint with `LinearVariables` and an integer rhs `y`. \n
+Can be used i.e by `add_constraint!(com, x+y = 2)`.
+"""
 function Base.:(==)(x::LinearVariables, y::Int)
     lc = LinearConstraint()
     indices, coeffs, constant_lhs = simplify(x)
@@ -9,10 +15,22 @@ function Base.:(==)(x::LinearVariables, y::Int)
     return lc
 end
 
+"""
+    Base.:(==)(x::LinearVariables, y::Variable)
+
+Create a linear constraint with `LinearVariables` and a variable rhs `y`. \n
+Can be used i.e by `add_constraint!(com, x+y = z)`.
+"""
 function Base.:(==)(x::LinearVariables, y::Variable)
     return x == LinearVariables([y.idx], [1])
 end
 
+"""
+    Base.:(==)(x::LinearVariables, y::LinearVariables)
+
+Create a linear constraint with `LinearVariables` on the left and right hand side. \n
+Can be used i.e by `add_constraint!(com, x+y = a+b)`.
+"""
 function Base.:(==)(x::LinearVariables, y::LinearVariables)
     return x-y == 0
 end

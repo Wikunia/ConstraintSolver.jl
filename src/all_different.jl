@@ -1,7 +1,8 @@
 """
     all_different(variables::Vector{Variable})
 
-Create a BasicConstraint which will later be used by `all_different(com, constraint)`
+Create a BasicConstraint which will later be used by `all_different(com, constraint)`. \n
+Can be used i.e by `add_constraint!(com, CS.all_different(variables))`.
 """
 function all_different(variables::Vector{Variable})
     constraint = BasicConstraint()

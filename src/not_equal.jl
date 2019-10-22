@@ -1,4 +1,9 @@
+"""
+    Base.:!(bc::CS.BasicConstraint)
 
+Change the `BasicConstraint` to describe the opposite of it. Only works with a `equal` basic constraint. \n
+Can be used i.e by `add_constraint!(com, x != y)`.
+"""
 function Base.:!(bc::CS.BasicConstraint)
     if bc.fct != equal
         throw(ErrorException("!BasicConstraint is only implemented for !equal"))

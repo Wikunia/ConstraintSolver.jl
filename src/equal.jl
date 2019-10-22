@@ -1,7 +1,8 @@
 """
     equal(variables::Vector{Variable})
 
-Create a BasicConstraint which will later be used by `equal(com, constraint)`
+Create a BasicConstraint which will later be used by `equal(com, constraint)` \n
+Can be used i.e by `add_constraint!(com, CS.equal([x,y,z])`.
 """
 function equal(variables::Vector{Variable})
     constraint = BasicConstraint()
@@ -10,6 +11,12 @@ function equal(variables::Vector{Variable})
     return constraint
 end
 
+"""
+    Base.:(==)(x::Variable, y::Variable)
+
+Create a BasicConstraint which will later be used by `equal(com, constraint)` \n
+Can be used i.e by `add_constraint!(com, x == y)`.
+"""
 function Base.:(==)(x::Variable, y::Variable)
     bc = BasicConstraint()
     bc.fct = equal

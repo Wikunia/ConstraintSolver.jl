@@ -43,6 +43,12 @@ function log_one_node(com, nvars, back_idx, step_nr)
     return tree_log_node
 end
 
+"""
+    save_logs(com::CS.CoM, filepath)
+
+Save the tree structure and some additional problem information in a json file `filepath`.
+Can be only used if `keep_logs` is set to `true` in the [`solve!`](@ref) call.
+"""
 function save_logs(com::CS.CoM, filepath)
     logs = Dict{Symbol, Any}()
     nvars = length(com.search_space)

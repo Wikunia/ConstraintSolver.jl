@@ -2,6 +2,12 @@ function nvalues(v::CS.Variable)
     return v.last_ptr-v.first_ptr+1
 end
 
+"""
+    value(v::CS.Variable)
+
+Get the value of the variable if it is fixed. Otherwise one of the possible values is returned.
+Can be used if the status is :Solved as then all variables are fixed.
+"""
 function value(v::CS.Variable)
     return v.values[v.last_ptr]
 end

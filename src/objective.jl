@@ -1,3 +1,10 @@
+"""
+    vars_max(vars::Vector{CS.Variable})
+
+Create an objective which computes the maximum value a variable has if all are fixed otherwise depends
+on whether the objective sense is set to `:Min` or `:Max`. \n
+Can be used i.e by `set_objective!(com, :Min, CS.vars_max([x,y])`.
+"""
 function vars_max(vars::Vector{CS.Variable})
     return MinMaxObjective(vars_max, [var.idx for var in vars])
 end
