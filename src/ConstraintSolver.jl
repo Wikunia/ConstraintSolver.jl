@@ -588,17 +588,23 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                 backtrack_obj = backtrack_vec[l]
             end
         else # sort for objective
-            sorted_backtrack_idxs_nvals = sortperm(backtrack_vec; by=o->o.depth, rev=true)
-            sorted_backtrack_idxs_bb = sortperm(backtrack_vec[sorted_backtrack_idxs_nvals]; by=o->o.best_bound, rev=com.sense == :Max )
-            sorted_backtrack_idxs = sorted_backtrack_idxs_nvals[sorted_backtrack_idxs_bb]
-
-            backtrack_obj = backtrack_vec[sorted_backtrack_idxs[l]]
-            while backtrack_obj.status != :Open
-                l += 1
-                if l > length(backtrack_vec)
-                    break
+            # don't actually sort => just get the best backtrack idx
+            # the one with the best bound and if same best bound choose the one with higher depth
+            l = 0
+            best_fac_bound = typemax(Int64)
+            best_depth = 0
+            for i=1:length(backtrack_vec)
+                bo = backtrack_vec[i]
+                if bo.status == :Open
+                    if obj_factor*bo.best_bound < best_fac_bound || (obj_factor*bo.best_bound == best_fac_bound && bo.depth > best_depth)
+                        l = i
+                        best_depth = bo.depth
+                        best_fac_bound = obj_factor*bo.best_bound
+                    end
                 end
-                backtrack_obj = backtrack_vec[sorted_backtrack_idxs[l]]
+            end
+            if l != 0
+                backtrack_obj = backtrack_vec[l]
             end
         end
 
