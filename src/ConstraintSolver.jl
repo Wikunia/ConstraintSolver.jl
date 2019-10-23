@@ -568,21 +568,25 @@ function backtrack!(com::CS.CoM, max_bt_steps)
 
     started = true
     just_increased_depth = true
+    obj_factor = com.sense == :Min ? 1 : -1
 
     while length(backtrack_vec) > 0
         step_nr += 1
         # get next open backtrack object
         l = 1
+        
+        # if there is no objective
         if com.sense == :None 
+            l = length(backtrack_vec)
             backtrack_obj = backtrack_vec[l]
             while backtrack_obj.status != :Open
-                l += 1
-                if l > length(backtrack_vec)
+                l -= 1
+                if l == 0
                     break
                 end
                 backtrack_obj = backtrack_vec[l]
             end
-        else
+        else # sort for objective
             sorted_backtrack_idxs_nvals = sortperm(backtrack_vec; by=o->o.depth, rev=true)
             sorted_backtrack_idxs_bb = sortperm(backtrack_vec[sorted_backtrack_idxs_nvals]; by=o->o.best_bound, rev=com.sense == :Max )
             sorted_backtrack_idxs = sorted_backtrack_idxs_nvals[sorted_backtrack_idxs_bb]
@@ -596,12 +600,21 @@ function backtrack!(com::CS.CoM, max_bt_steps)
                 backtrack_obj = backtrack_vec[sorted_backtrack_idxs[l]]
             end
         end
-        
+
         # no open node => Infeasible
-        if l > length(backtrack_vec)
+        if l <= 0 || l > length(backtrack_vec)
             break
         end
-        com.best_bound = backtrack_obj.best_bound
+        if com.sense == :Min
+            max_val = typemax(Int64)
+            com.best_bound = minimum([bo.status == :Open ? bo.best_bound : max_val for bo in backtrack_vec])
+        elseif com.sense == :Max
+            min_val = typemin(Int64)
+            com.best_bound = maximum([bo.status == :Open ? bo.best_bound : min_val for bo in backtrack_vec])
+        else
+            com.best_bound = 0
+        end
+
         ind = backtrack_obj.variable_idx
 
         com.c_backtrack_idx = backtrack_obj.idx
@@ -662,10 +675,16 @@ function backtrack!(com::CS.CoM, max_bt_steps)
         found, ind = get_weak_ind(com)
         if !found 
             com.best_sol = get_best_bound(com)
+            push!(com.solutions, backtrack_obj.idx)
             if com.best_sol == com.best_bound
-                push!(com.solutions, backtrack_obj.idx)
                 return :Solved
             else 
+                # set all nodes to :Worse if they can't achieve a better solution
+                for bo in backtrack_vec
+                    if bo.status == :Open && obj_factor*bo.best_bound >= com.best_sol
+                        bo.status = :Worse
+                    end
+                end
                 continue
             end
         end
@@ -692,12 +711,18 @@ function backtrack!(com::CS.CoM, max_bt_steps)
             backtrack_obj.best_bound = get_best_bound(com; var_idx=ind, val=pval)
             backtrack_obj.variable_idx = ind
             backtrack_obj.pval = pval
-            push!(backtrack_vec, backtrack_obj)
-            for v in com.search_space
-                push!(v.changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
-            end
-            if com.input[:logs]
-                push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, -1))
+
+            # only include nodes which have a better objective than the current best solution if one was found already
+            if backtrack_obj.best_bound*obj_factor < com.best_sol || length(com.solutions) == 0
+                push!(backtrack_vec, backtrack_obj)
+                for v in com.search_space
+                    push!(v.changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
+                end
+                if com.input[:logs]
+                    push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, -1))
+                end
+            else
+                num_backtrack_objs -= 1
             end
         end
         just_increased_depth = true
