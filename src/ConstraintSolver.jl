@@ -525,12 +525,13 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
 end
 
 """
-    backtrack!(com::CS.CoM, max_bt_steps)
+    backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
 Start backtracking and stop after `max_bt_steps`.
+If `sorting` is set to `false` the same ordering is used as when used without objective this has only an effect when an objective is used.
 Return :Solved or :Infeasible if proven or `:NotSolved` if interrupted by `max_bt_steps`.
 """
-function backtrack!(com::CS.CoM, max_bt_steps)
+function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
     found, ind = get_weak_ind(com)
     com.info.backtrack_fixes   = 1
     
@@ -575,8 +576,8 @@ function backtrack!(com::CS.CoM, max_bt_steps)
         # get next open backtrack object
         l = 1
         
-        # if there is no objective
-        if com.sense == :None 
+        # if there is no objective or sorting is set to false
+        if com.sense == :None || !sorting 
             l = length(backtrack_vec)
             backtrack_obj = backtrack_vec[l]
             while backtrack_obj.status != :Open
@@ -728,7 +729,13 @@ function backtrack!(com::CS.CoM, max_bt_steps)
         just_increased_depth = true
     end
     if length(com.solutions) > 0
-        println("Actually found one")
+        # find one of the best solutions 
+        sol, sol_id = findmin([backtrack_vec[sol_id].best_bound*obj_factor for sol_id in com.solutions])
+        backtrack_id = com.solutions[sol_id]
+        checkout_from_to!(com, last_backtrack_id, backtrack_id)
+        # prune the last step as checkout_from_to! excludes the to part
+        prune!(com, [backtrack_id])
+        return :Solved
     end
     return :Infeasible
 end
@@ -848,14 +855,15 @@ function set_in_all_different!(com::CS.CoM)
 end
 
 """
-    solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), keep_logs=false)
+    solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), backtrack_sorting=true, keep_logs=false)
 
 Solve the constraint model if `backtrack = true` otherwise stop before calling backtracking.
 This way the search space can be inspected after the first pruning step.
 If `max_bt_steps` is set only that many backtracking steps are performed. 
+If `backtrack_sorting` is set to `false` the same ordering is used as when used without objective this has only an effect when an objective is used.
 With `keep_logs` one is able to write the tree structure of the backtracking tree using `ConstraintSolver.save_logs`.
 """
-function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), keep_logs=false)
+function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), backtrack_sorting=true, keep_logs=false)
     com.input[:logs] = keep_logs
     if keep_logs
         com.init_search_space = deepcopy(com.search_space)
@@ -904,7 +912,7 @@ function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), keep_l
     end
     if backtrack
         com.info.backtracked = true
-        return backtrack!(com, max_bt_steps)
+        return backtrack!(com, max_bt_steps; sorting=backtrack_sorting)
     else
         @info "Backtracking is turned off."
         return :NotSolved
