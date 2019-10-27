@@ -20,7 +20,7 @@ end
 function solve_all(filenames; benchmark=false, single_times=true)
     ct = time()
     for (i,filename) in enumerate(filenames)
-        sums = parseJSON(JSON.parsefile("benchmark/killer_sudoku/data/$(filename)"))
+        sums = parseJSON(JSON.parsefile("data/$(filename)"))
 
         com = CS.init()
         grid = zeros(Int, (9,9))
@@ -28,7 +28,8 @@ function solve_all(filenames; benchmark=false, single_times=true)
         com_grid = create_sudoku_grid!(com, grid)
 
         for s in sums
-            add_constraint!(com, CS.eq_sum, [com_grid[CartesianIndex(ind)] for ind in s.indices]; rhs=s.result)
+            add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
+            add_constraint!(com, CS.all_different([com_grid[CartesianIndex(ind)] for ind in s.indices]))
         end
 
         add_sudoku_constr!(com, com_grid)
@@ -58,7 +59,7 @@ function solve_all(filenames; benchmark=false, single_times=true)
 end
 
 function main(; benchmark=false, single_times=true)
-    solve_all(["en_wikipedia" for i=1:100]; benchmark=benchmark, single_times=single_times)
+    solve_all(["niallsudoku_5500", "niallsudoku_5501", "niallsudoku_5502", "niallsudoku_5503"]; benchmark=benchmark, single_times=single_times)
     # solve_all(from_file("hardest.txt"), "hardest")
 end
 
