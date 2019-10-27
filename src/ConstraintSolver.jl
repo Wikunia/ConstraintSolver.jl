@@ -593,16 +593,28 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             l = 0
             best_fac_bound = typemax(Int64)
             best_depth = 0
+            found_sol = length(com.solutions) > 0
+            nopen_nodes = 0
             for i=1:length(backtrack_vec)
                 bo = backtrack_vec[i]
                 if bo.status == :Open
-                    if obj_factor*bo.best_bound < best_fac_bound || (obj_factor*bo.best_bound == best_fac_bound && bo.depth > best_depth)
-                        l = i
-                        best_depth = bo.depth
-                        best_fac_bound = obj_factor*bo.best_bound
+                    nopen_nodes += 1
+                    if found_sol
+                        if obj_factor*bo.best_bound < best_fac_bound || (obj_factor*bo.best_bound == best_fac_bound && bo.depth > best_depth)
+                            l = i
+                            best_depth = bo.depth
+                            best_fac_bound = obj_factor*bo.best_bound
+                        end
+                    else
+                        if bo.depth > best_depth || (obj_factor*bo.best_bound < best_fac_bound && bo.depth == best_depth)
+                            l = i
+                            best_depth = bo.depth
+                            best_fac_bound = obj_factor*bo.best_bound
+                        end
                     end
                 end
             end
+
             if l != 0
                 backtrack_obj = backtrack_vec[l]
             end
@@ -681,7 +693,12 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
         found, ind = get_weak_ind(com)
         if !found 
-            com.best_sol = get_best_bound(com)
+            new_sol = get_best_bound(com)
+            if length(com.solutions) == 0
+                com.best_sol = new_sol
+            elseif obj_factor*new_sol < obj_factor*com.best_sol
+                com.best_sol = new_sol
+            end
             push!(com.solutions, backtrack_obj.idx)
             if com.best_sol == com.best_bound
                 return :Solved

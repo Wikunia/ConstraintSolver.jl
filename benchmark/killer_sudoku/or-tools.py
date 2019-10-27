@@ -44,17 +44,17 @@ def solve(pidx, filename):
 
   for s in problem:
     model.Add(sum(x[i[0]-1,i[1]-1] for i in s["indices"]) == s["result"])
+    model.AddAllDifferent([x[i[0]-1,i[1]-1] for i in s["indices"]])
 
   
 
   # search and solution
   solver = cp_model.CpSolver()
-  solver.parameters.log_search_progress = True
   status = solver.Solve(model)
   print(str(pidx)+",",solver.WallTime())
 
 if __name__ == "__main__":
   i = 0
-  for filename in ["niallsudoku_5500" for i in range(100)]:
+  for filename in ["niallsudoku_5500", "niallsudoku_5501", "niallsudoku_5502", "niallsudoku_5503"]:
 	  solve(i, filename)
 	  i += 1
