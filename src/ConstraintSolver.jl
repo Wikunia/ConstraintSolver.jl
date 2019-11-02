@@ -336,7 +336,9 @@ function prune!(com::CS.CoM; pre_backtrack=false)
     # get all constraints which need to be called (only once)
     current_backtrack_id = com.c_backtrack_idx
     for var in com.search_space
-        if length(var.changes[current_backtrack_id]) > 0
+        new_var_length = length(var.changes[current_backtrack_id])
+        if new_var_length > 0
+            prev_var_length[var.idx] = new_var_length
             inner_constraints = com.constraints[com.subscription[var.idx]]
             for constraint in inner_constraints
                 constraint_idxs_vec[constraint.idx] = 1
@@ -383,7 +385,8 @@ function prune!(com::CS.CoM; pre_backtrack=false)
         end
 
         # if we changed another variable increase the level of the constraints to call them later
-        for var in com.search_space
+        for var_idx in constraint.indices
+            var = com.search_space[var_idx]
             new_var_length = length(var.changes[current_backtrack_id])
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
@@ -410,8 +413,7 @@ function single_reverse_pruning!(search_space, index::Int, prune_int::Int, prune
         l_ptr = max(1,var.last_ptr)
 
         new_l_ptr = var.last_ptr + prune_int
-        @views min_val = minimum(var.values[l_ptr:new_l_ptr])
-        @views max_val = maximum(var.values[l_ptr:new_l_ptr])
+        min_val, max_val = extrema(var.values[l_ptr:new_l_ptr])
         if min_val < var.min
             var.min = min_val
         end
@@ -425,8 +427,7 @@ function single_reverse_pruning!(search_space, index::Int, prune_int::Int, prune
         f_ptr = max(1,var.first_ptr)
         var.last_ptr = prune_fix
 
-        @views min_val = minimum(var.values[1:prune_fix])
-        @views max_val = maximum(var.values[1:prune_fix])
+        min_val, max_val = extrema(var.values[1:prune_fix])
         if min_val < var.min
             var.min = min_val
         end

@@ -22,6 +22,7 @@ Returns a ConstraintOutput object and throws a warning if infeasible and `logs` 
 function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     indices = constraint.indices
     pvals = constraint.pvals 
+    nindices = length(indices)
 
     search_space = com.search_space
     fixed_vals, unfixed_indices = fixed_vs_unfixed(search_space, indices)
@@ -55,18 +56,22 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         end
     end
 
-    if length(fixed_vals_set) == length(indices)
+    if length(fixed_vals_set) == nindices
         return true
     end
+
+    min_pvals, max_pvals = extrema(pvals)
+    len_range = max_pvals-min_pvals+1
 
     # find maximum_matching for infeasible check and Berge's lemma
     # building graph
     # ei = indices, ej = possible values
     # i.e ei=[1,2,1] ej = [1,2,2] => 1->[1,2], 2->[2]
+    min_pvals_m1 = min_pvals-1
 
     pval_mapping = zeros(Int, length(pvals))
-    vertex_mapping = Dict{Int,Int64}()
-    vertex_mapping_bw = Vector{Union{CartesianIndex,Int}}(undef, length(indices)+length(pvals))
+    vertex_mapping = zeros(Int, len_range)
+    vertex_mapping_bw = Vector{Union{CartesianIndex,Int}}(undef, nindices+length(pvals))
     vc = 1
     for i in indices
         vertex_mapping_bw[vc] = i
@@ -75,7 +80,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     pvc = 1
     for pv in pvals
         pval_mapping[pvc] = pv
-        vertex_mapping[pv] = vc
+        vertex_mapping[pv-min_pvals_m1] = vc
         vertex_mapping_bw[vc] = pv
         vc += 1
         pvc += 1
@@ -89,8 +94,8 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         num_edges += nvalues(search_space[i])
     end
 
-    ei = Vector{Int64}(undef,num_edges)
-    ej = Vector{Int64}(undef,num_edges)
+    di_ei = Vector{Int64}(undef,num_edges)
+    di_ej = Vector{Int64}(undef,num_edges)
 
     # add edge from each index to the possible values
     edge_counter = 0
@@ -99,29 +104,26 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         vc += 1
         if isfixed(search_space[i])
             edge_counter += 1
-            ei[edge_counter] = vc
-            ej[edge_counter] = vertex_mapping[value(search_space[i])]-length(indices)
+            di_ei[edge_counter] = vc
+            di_ej[edge_counter] = vertex_mapping[value(search_space[i])-min_pvals_m1]-nindices
         else
             for pv in values(search_space[i])
                 edge_counter += 1
-                ei[edge_counter] = vc
-                ej[edge_counter] = vertex_mapping[pv]-length(indices)
+                di_ei[edge_counter] = vc
+                di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1]-nindices
             end
         end
     end
 
     # find maximum matching (weights are 1)
     _weights = ones(Bool,num_edges)
-    maximum_matching = bipartite_matching(_weights,ei, ej)
-    if maximum_matching.weight != length(indices)
+    maximum_matching = bipartite_matching(_weights, di_ei, di_ej)
+    if maximum_matching.weight != nindices
         logs && @warn "Infeasible (No maximum matching was found)"
         return false
     end
 
     # directed edges for strongly connected components
-    di_ei = Vector{Int64}(undef,num_edges)
-    di_ej = Vector{Int64}(undef,num_edges)
-
     vc = 0
     edge_counter = 0
     @inbounds for i in indices
@@ -129,15 +131,15 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         if isfixed(search_space[i])
             edge_counter += 1
             di_ei[edge_counter] = vc
-            di_ej[edge_counter] = vertex_mapping[value(search_space[i])]
+            di_ej[edge_counter] = vertex_mapping[value(search_space[i])-min_pvals_m1]
         else
             for pv in values(search_space[i])
                 edge_counter += 1
                 if pv == pval_mapping[maximum_matching.match[vc]]
                     di_ei[edge_counter] = vc 
-                    di_ej[edge_counter] = vertex_mapping[pv]
+                    di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1]
                 else
-                    di_ei[edge_counter] = vertex_mapping[pv]
+                    di_ei[edge_counter] = vertex_mapping[pv-min_pvals_m1]
                     di_ej[edge_counter] = vc
                 end
             end
@@ -145,7 +147,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     end
 
     # if we have more values than indices
-    if length(pvals) > length(indices)
+    if length(pvals) > nindices
         # add extra node which has all values as input which are used in the maximum matching
         # and the ones in maximum matching as inputs see: http://www.minicp.org (Part 6)
         # the direction is opposite to that of minicp 
@@ -168,9 +170,9 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
             # not in maximum matching
             if !kv.second
                 push!(di_ei, new_vertex)
-                push!(di_ej, vertex_mapping[kv.first])
+                push!(di_ej, vertex_mapping[kv.first-min_pvals_m1])
             else 
-                push!(di_ei, vertex_mapping[kv.first])
+                push!(di_ei, vertex_mapping[kv.first-min_pvals_m1])
                 push!(di_ej, new_vertex)
             end
         end
@@ -191,7 +193,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
             continue
         end
         #  remove edges in maximum matching and then edges which are part of a cycle
-        if src <= length(indices) && dst == vertex_mapping[pval_mapping[maximum_matching.match[src]]]
+        if src <= nindices && dst == vertex_mapping[pval_mapping[maximum_matching.match[src]]-min_pvals_m1]
             continue
         end
       
@@ -214,9 +216,17 @@ end
 """
     all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
 
-Returns whether the constraint can be still fulfilled.
+Returns whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
 """
 function all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
-    indices = filter(i->i!=index, constraint.indices)
-    return !any(v->issetto(v,value), com.search_space[indices])
+    indices = constraint.indices
+    for i=1:length(indices)
+        if indices[i] == index
+            continue
+        end
+        if issetto(com.search_space[indices[i]], value)
+            return false
+        end 
+    end
+    return true
 end
