@@ -60,6 +60,10 @@ mutable struct LinearConstraint <: Constraint
     operator            :: Symbol
     rhs                 :: Int
     in_all_different    :: Bool
+    mins                :: Vector{Int}
+    maxs                :: Vector{Int}
+    pre_mins            :: Vector{Int}
+    pre_maxs            :: Vector{Int}
     LinearConstraint() = new()
 end
 

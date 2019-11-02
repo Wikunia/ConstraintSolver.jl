@@ -12,6 +12,10 @@ function Base.:(==)(x::LinearVariables, y::Int)
     lc.coeffs = coeffs
     lc.operator = :(==)
     lc.rhs = y-constant_lhs
+    lc.maxs = zeros(Int, length(indices))
+    lc.mins = zeros(Int, length(indices))
+    lc.pre_maxs = zeros(Int, length(indices))
+    lc.pre_mins = zeros(Int, length(indices))
     return lc
 end
 
@@ -40,10 +44,10 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     search_space = com.search_space
 
     # compute max and min values for each index
-    maxs = zeros(Int, length(indices))
-    mins = zeros(Int, length(indices))
-    pre_maxs = zeros(Int, length(indices))
-    pre_mins = zeros(Int, length(indices))
+    maxs = constraint.maxs
+    mins = constraint.mins
+    pre_maxs = constraint.pre_maxs
+    pre_mins = constraint.pre_mins
     for (i,idx) in enumerate(indices)
         if constraint.coeffs[i] >= 0
             max_val = search_space[idx].max * constraint.coeffs[i]
