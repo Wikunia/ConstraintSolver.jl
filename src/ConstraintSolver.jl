@@ -327,6 +327,16 @@ function prune!(com::CS.CoM, prune_steps::Vector{Int})
     end
 end
 
+function open_possibilities(search_space, indices)
+    open = 0
+    for vi in indices
+        if !isfixed(search_space[vi])
+            open += nvalues(search_space[vi])
+        end
+    end
+    return open
+end
+
 """
     prune!(com::CS.CoM; pre_backtrack=false)
 
@@ -335,17 +345,19 @@ Returns whether it's still feasible
 """
 function prune!(com::CS.CoM; pre_backtrack=false)
     feasible = true
-    prev_var_length = zeros(Int, length(com.search_space))
-    constraint_idxs_vec = zeros(Int, length(com.constraints))
+    N = 10000
+    search_space = com.search_space
+    prev_var_length = zeros(Int, length(search_space))
+    constraint_idxs_vec = N .* ones(Int, length(com.constraints))
     # get all constraints which need to be called (only once)
     current_backtrack_id = com.c_backtrack_idx
-    for var in com.search_space
+    for var in search_space
         new_var_length = length(var.changes[current_backtrack_id])
         if new_var_length > 0
             prev_var_length[var.idx] = new_var_length
             inner_constraints = com.constraints[com.subscription[var.idx]]
             for constraint in inner_constraints
-                constraint_idxs_vec[constraint.idx] = 1
+                constraint_idxs_vec[constraint.idx] = open_possibilities(search_space, constraint.indices)
             end
         end
     end
@@ -356,15 +368,18 @@ function prune!(com::CS.CoM; pre_backtrack=false)
     while true
         b_open_constraint = false
         # will be changed or b_open_constraint => false
-        constraint = com.constraints[1]
-        for ci in 1:length(com.constraints)
-            if constraint_idxs_vec[ci] == current_level
-                constraint = com.constraints[ci]
-                constraint_idxs_vec[ci] = 0 
-                b_open_constraint = true
-                break
-            end
+        open_pos, ci = findmin(constraint_idxs_vec)
+        if open_pos == 0
+            constraint_idxs_vec[ci] = N
+            continue
         end
+        if open_pos == N
+            break
+        end
+        constraint_idxs_vec[ci] = N
+        constraint = com.constraints[ci]
+
+        #=
         if !b_open_constraint && !level_increased
             level_increased = true
             current_level += 1
@@ -374,9 +389,10 @@ function prune!(com::CS.CoM; pre_backtrack=false)
             break
         end
         level_increased = false
-        if all(v->isfixed(v), com.search_space[constraint.indices])
+        if all(v->isfixed(v), search_space[constraint.indices])
             continue
         end
+        =#
         feasible = constraint.fct(com, constraint; logs = false)
         if !pre_backtrack
             com.info.in_backtrack_calls += 1
@@ -390,14 +406,14 @@ function prune!(com::CS.CoM; pre_backtrack=false)
 
         # if we changed another variable increase the level of the constraints to call them later
         for var_idx in constraint.indices
-            var = com.search_space[var_idx]
+            var = search_space[var_idx]
             new_var_length = length(var.changes[current_backtrack_id])
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
                 inner_constraints = com.constraints[com.subscription[var.idx]]
-                for constraint in inner_constraints
-                    if constraint_idxs_vec[constraint.idx] < current_level
-                        constraint_idxs_vec[constraint.idx] = current_level + 1
+                for inner_constraint in inner_constraints
+                    if inner_constraint.idx != constraint.idx
+                        constraint_idxs_vec[inner_constraint.idx] = open_possibilities(search_space, inner_constraint.indices)
                     end
                 end
             end
