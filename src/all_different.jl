@@ -34,29 +34,39 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         return false
     end
 
-    bfixed = false
-    for i in 1:length(unfixed_indices)
-        pi = unfixed_indices[i]
-        ind = indices[pi]
-        @views c_search_space = search_space[ind]
-        for pv in fixed_vals
-            if has(c_search_space, pv)
-                if !rm!(com, c_search_space, pv)
-                    logs && @warn "The problem is infeasible"
-                    return false
-                end
+    bfixed = true
+    current_fixed_vals = fixed_vals
+    
+    while bfixed
+        new_fixed_vals = Int[]
+        bfixed = false
+        for i in 1:length(unfixed_indices)
+            pi = unfixed_indices[i]
+            ind = indices[pi]
+            @views c_search_space = search_space[ind]
+            if !CS.isfixed(c_search_space)
+                for pv in current_fixed_vals
+                    if has(c_search_space, pv)
+                        if !rm!(com, c_search_space, pv)
+                            logs && @warn "The problem is infeasible"
+                            return false
+                        end
 
-                if nvalues(c_search_space) == 1
-                    only_value = value(c_search_space)
-                    push!(fixed_vals_set, only_value)
-                    bfixed = true
-                    break
+                        if nvalues(c_search_space) == 1
+                            only_value = value(c_search_space)
+                            push!(fixed_vals, only_value)
+                            push!(new_fixed_vals, only_value)
+                            bfixed = true
+                            break
+                        end
+                    end
                 end
             end
         end
+        current_fixed_vals = new_fixed_vals
     end
 
-    if length(fixed_vals_set) == nindices
+    if length(fixed_vals) == nindices
         return true
     end
 
@@ -71,7 +81,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
 
     pval_mapping = zeros(Int, length(pvals))
     vertex_mapping = zeros(Int, len_range)
-    vertex_mapping_bw = Vector{Union{CartesianIndex,Int}}(undef, nindices+length(pvals))
+    vertex_mapping_bw = zeros(Int, nindices+length(pvals))
     vc = 1
     for i in indices
         vertex_mapping_bw[vc] = i
@@ -107,7 +117,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
             di_ei[edge_counter] = vc
             di_ej[edge_counter] = vertex_mapping[value(search_space[i])-min_pvals_m1]-nindices
         else
-            for pv in values(search_space[i])
+            for pv in view_values(search_space[i])
                 edge_counter += 1
                 di_ei[edge_counter] = vc
                 di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1]-nindices
@@ -133,7 +143,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
             di_ei[edge_counter] = vc
             di_ej[edge_counter] = vertex_mapping[value(search_space[i])-min_pvals_m1]
         else
-            for pv in values(search_space[i])
+            for pv in view_values(search_space[i])
                 edge_counter += 1
                 if pv == pval_mapping[maximum_matching.match[vc]]
                     di_ei[edge_counter] = vc 
@@ -158,7 +168,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         vc = 0
         for i in indices
             vc += 1
-            for pv in values(search_space[i])
+            for pv in view_values(search_space[i])
                 if pv == pval_mapping[maximum_matching.match[vc]]
                     used_in_maximum_matching[pv] = true
                     break

@@ -162,12 +162,14 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
             end
         end
     elseif n_unfixed == 2
-        intersect_cons = intersect(com.subscription[unfixed_ind_1], com.subscription[unfixed_ind_2])
-        is_all_different = false
-        for constraint_idx in intersect_cons
-            if nameof(com.constraints[constraint_idx].fct) == :all_different
-                is_all_different = true
-                break
+        is_all_different = constraint.in_all_different
+        if !is_all_different
+            intersect_cons = intersect(com.subscription[unfixed_ind_1], com.subscription[unfixed_ind_2])
+            for constraint_idx in intersect_cons
+                if nameof(com.constraints[constraint_idx].fct) == :all_different
+                    is_all_different = true
+                    break
+                end
             end
         end
 

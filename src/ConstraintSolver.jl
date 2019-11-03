@@ -356,8 +356,9 @@ function prune!(com::CS.CoM; pre_backtrack=false)
         if new_var_length > 0
             prev_var_length[var.idx] = new_var_length
             inner_constraints = com.constraints[com.subscription[var.idx]]
-            for constraint in inner_constraints
-                constraint_idxs_vec[constraint.idx] = open_possibilities(search_space, constraint.indices)
+            for ci in com.subscription[var.idx]
+                inner_constraint = com.constraints[ci]
+                constraint_idxs_vec[inner_constraint.idx] = open_possibilities(search_space, inner_constraint.indices)
             end
         end
     end
@@ -379,20 +380,6 @@ function prune!(com::CS.CoM; pre_backtrack=false)
         constraint_idxs_vec[ci] = N
         constraint = com.constraints[ci]
 
-        #=
-        if !b_open_constraint && !level_increased
-            level_increased = true
-            current_level += 1
-            continue
-        end
-        if !b_open_constraint && level_increased
-            break
-        end
-        level_increased = false
-        if all(v->isfixed(v), search_space[constraint.indices])
-            continue
-        end
-        =#
         feasible = constraint.fct(com, constraint; logs = false)
         if !pre_backtrack
             com.info.in_backtrack_calls += 1
@@ -411,8 +398,9 @@ function prune!(com::CS.CoM; pre_backtrack=false)
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
                 inner_constraints = com.constraints[com.subscription[var.idx]]
-                for inner_constraint in inner_constraints
-                    if inner_constraint.idx != constraint.idx
+                for ci in com.subscription[var.idx]
+                    if ci != constraint.idx
+                        inner_constraint = com.constraints[ci]
                         constraint_idxs_vec[inner_constraint.idx] = open_possibilities(search_space, inner_constraint.indices)
                     end
                 end
