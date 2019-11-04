@@ -29,17 +29,19 @@ function solve_all(filenames; benchmark=false, single_times=true)
 
         for s in sums
             add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
-            add_constraint!(com, CS.all_different([com_grid[CartesianIndex(ind)] for ind in s.indices]))
+            # add_constraint!(com, CS.all_different([com_grid[CartesianIndex(ind)] for ind in s.indices]))
         end
 
         add_sudoku_constr!(com, com_grid)
 
         if single_times
-            GC.enable(false)
+            # GC.enable(false)
             t = time()
-            status = solve!(com);
+            @time status = solve!(com; keep_logs=true);
+            fname = convert(Int,fld(time_ns() % 20000,1))
+            CS.save_logs(com, "$fname.json")
             t = time()-t
-            GC.enable(true)
+            # GC.enable(true)
             println(i-1,", ", t)
         else
             GC.enable(false)
@@ -59,7 +61,7 @@ function solve_all(filenames; benchmark=false, single_times=true)
 end
 
 function main(; benchmark=false, single_times=true)
-    solve_all(["niallsudoku_5500", "niallsudoku_5501", "niallsudoku_5502", "niallsudoku_5503"]; benchmark=benchmark, single_times=single_times)
+    solve_all(["niallsudoku_5500"#=, "niallsudoku_5501", "niallsudoku_5502", "niallsudoku_5503"=#]; benchmark=benchmark, single_times=single_times)
     # solve_all(from_file("hardest.txt"), "hardest")
 end
 

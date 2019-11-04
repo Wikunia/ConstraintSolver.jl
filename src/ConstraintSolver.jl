@@ -177,6 +177,8 @@ function fulfills_constraints(com::CS.CoM, index, value)
     end
     constraints = com.constraints[com.subscription[index]]
     feasible = true
+    # for ci in com.subscription[index]
+        # constraint = com.constraints[ci]
     for constraint in constraints
         feasible = constraint.fct(com, constraint, value, index)
         if !feasible
@@ -363,8 +365,6 @@ function prune!(com::CS.CoM; pre_backtrack=false)
         end
     end
 
-    current_level = 1
-    level_increased = false
     # while we haven't called every constraint
     while true
         b_open_constraint = false
@@ -432,7 +432,6 @@ function single_reverse_pruning!(search_space, index::Int, prune_int::Int, prune
     end
     if prune_fix > 0
         var = search_space[index]
-        f_ptr = max(1,var.first_ptr)
         var.last_ptr = prune_fix
 
         min_val, max_val = extrema(var.values[1:prune_fix])
@@ -577,7 +576,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
     last_backtrack_id = 0
 
     started = true
-    just_increased_depth = true
     obj_factor = com.sense == :Min ? 1 : -1
 
     while length(backtrack_vec) > 0
@@ -596,7 +594,9 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                 end
                 backtrack_obj = backtrack_vec[l]
             end
+       
         else # sort for objective
+            err
             # don't actually sort => just get the best backtrack idx
             # the one with the best bound and if same best bound choose the one with higher depth
             l = 0
@@ -660,7 +660,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         started = false
         last_backtrack_id = backtrack_obj.idx
 
-        just_increased_depth = false
         backtrack_obj.status = :Closed
 
         pval = backtrack_obj.pval
@@ -701,6 +700,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         end
 
         found, ind = get_weak_ind(com)
+        # no index found => solution found
         if !found 
             new_sol = get_best_bound(com)
             if length(com.solutions) == 0
@@ -712,6 +712,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             if com.best_sol == com.best_bound
                 return :Solved
             else 
+                err
                 # set all nodes to :Worse if they can't achieve a better solution
                 for bo in backtrack_vec
                     if bo.status == :Open && obj_factor*bo.best_bound >= com.best_sol
@@ -758,7 +759,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                 num_backtrack_objs -= 1
             end
         end
-        just_increased_depth = true
     end
     if length(com.solutions) > 0
         # find one of the best solutions 

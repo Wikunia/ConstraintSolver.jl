@@ -102,7 +102,6 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 still_feasible = remove_below!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
             end            
             if !still_feasible
-                # println("i above: ", i)
                 return false
             end
         end
@@ -113,7 +112,6 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 still_feasible = remove_above!(com, search_space[idx], cld(mins[i], constraint.coeffs[i]))
             end
             if !still_feasible
-                # println("i below: ", i)
                 return false
             end
         end
