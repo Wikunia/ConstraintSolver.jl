@@ -4,6 +4,8 @@ using JSON
 
 CS = ConstraintSolver
 
+include("fct_tests.jl")
+
 include("sudoku_fcts.jl")
 include("small_special_tests.jl")
 include("sudoku_tests.jl")

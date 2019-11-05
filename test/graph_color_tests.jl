@@ -1,6 +1,6 @@
 @testset "Graph coloring" begin
 
-@testset "49 US states + DC" begin
+function normal_49_states()
     com = CS.init()
 
     num_colors = 8
@@ -180,6 +180,21 @@
     @test all([CS.isfixed(var) for var in states])
     @test maximum([value(var) for var in states]) == 4
 
+    return com
+end
+
+@testset "49 US states + DC" begin
+    com1 = normal_49_states()
+    com2 = normal_49_states()
+    info_1 = com1.info
+    info_2 = com2.info
+    @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
+    @test info_1.backtrack_fixes == info_2.backtrack_fixes
+    @test info_1.in_backtrack_calls == info_2.in_backtrack_calls
+    @test info_1.backtrack_reverses == info_2.backtrack_reverses
+    logs_1 = CS.get_logs(com1)
+    logs_2 = CS.get_logs(com2)
+    @test CS.same_logs(logs_1[:tree], logs_2[:tree])
 end
 
 @testset "49 US states + DC without sorting" begin
