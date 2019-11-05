@@ -595,9 +595,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                 end
                 backtrack_obj = backtrack_vec[l]
             end
-       
         else # sort for objective
-            err
             # don't actually sort => just get the best backtrack idx
             # the one with the best bound and if same best bound choose the one with higher depth
             l = 0
@@ -713,7 +711,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             if com.best_sol == com.best_bound
                 return :Solved
             else 
-                err
                 # set all nodes to :Worse if they can't achieve a better solution
                 for bo in backtrack_vec
                     if bo.status == :Open && obj_factor*bo.best_bound >= com.best_sol
