@@ -87,6 +87,7 @@ mutable struct TreeLogNode
     var_changes     :: Dict{Int64,Vector{Tuple{Symbol, Int64, Int64, Int64}}}
     children        :: Vector{TreeLogNode}
     TreeLogNode() = new()
+    TreeLogNode(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children) = new(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children)
 end
 
 mutable struct CoM
