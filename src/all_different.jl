@@ -100,7 +100,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
 
     # count the number of edges
     num_edges = 0
-    for i in indices
+    @inbounds for i in indices
         num_edges += nvalues(search_space[i])
     end
 
@@ -110,7 +110,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     # add edge from each index to the possible values
     edge_counter = 0
     vc = 0
-    for i in indices
+    @inbounds for i in indices
         vc += 1
         if isfixed(search_space[i])
             edge_counter += 1
@@ -136,7 +136,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     # directed edges for strongly connected components
     vc = 0
     edge_counter = 0
-    for i in indices
+    @inbounds for i in indices
         vc += 1
         if isfixed(search_space[i])
             edge_counter += 1
@@ -208,7 +208,6 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
             continue
         end
       
-
         cind = vmb[dst]
         @assert cind in indices
         if !rm!(com, search_space[cind], vmb[src])
