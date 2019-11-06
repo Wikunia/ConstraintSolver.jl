@@ -6,7 +6,7 @@
     var_changes = Dict{Int64,Vector{Tuple{Symbol, Int64, Int64, Int64}}}()
     children = CS.TreeLogNode[]
     bt_infeasible = Int[]
-    feasible = true
+    feasible = 0
     l1 = CS.TreeLogNode(0,:Open,0,0,0,0,var_states, var_changes, children, bt_infeasible, feasible) 
     l2 = CS.TreeLogNode(0,:Closed,0,0,0,0,var_states, var_changes, children, bt_infeasible, feasible) 
     @test !CS.same_logs(l1,l2) 
