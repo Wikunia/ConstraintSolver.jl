@@ -10,6 +10,7 @@ function log_one_node(com, nvars, back_idx, step_nr, feasible)
         tree_log_node.var_idx = com.backtrack_vec[back_idx].variable_idx
         tree_log_node.set_val = com.backtrack_vec[back_idx].pval
         tree_log_node.best_bound = com.backtrack_vec[back_idx].best_bound
+        tree_log_node.constraint_idxs = com.backtrack_vec[back_idx].constraint_idxs
 
         parent_idx = com.backtrack_vec[back_idx].parent_idx
     else # for initial solve
@@ -17,6 +18,7 @@ function log_one_node(com, nvars, back_idx, step_nr, feasible)
         tree_log_node.var_idx = 0
         tree_log_node.set_val = 0
         tree_log_node.best_bound = com.best_bound
+        tree_log_node.constraint_idxs = Int[] # currently don't save for initial solve
     end
     tree_log_node.var_changes = Dict{Int64,Vector{Tuple{Symbol, Int64, Int64, Int64}}}()
     tree_log_node.var_states = Dict{Int64,Vector{Int64}}()
@@ -103,7 +105,8 @@ function same_logs(log1, log2)
             return false
         end
 
-        if node1.id != node2.id || node1.status != node2.status || node1.best_bound != node2.best_bound || node1.bt_infeasible != node2.bt_infeasible || node1.feasible != node2.feasible || 
+        if node1.id != node2.id || node1.status != node2.status || node1.best_bound != node2.best_bound || node1.bt_infeasible != node2.bt_infeasible ||
+            node1.feasible != node2.feasible || node1.constraint_idxs != node2.constraint_idxs ||
             node1.step_nr != node2.step_nr || node1.var_idx != node2.var_idx || node1.set_val != node2.set_val || node1.var_states != node2.var_states || node1.var_changes != node2.var_changes
             println("Not identical at i=", i)
             println("node1: ")
@@ -111,12 +114,14 @@ function same_logs(log1, log2)
             println("id: ", node1.id, " status: ", node1.status, " best_bound: ", node1.best_bound, " step_nr: ", node1.step_nr)
             println("var_idx: ", node1.var_idx, " set_val: ", node1.set_val, " var_states: ", node1.var_states)
             println("var_changes: ", node1.var_changes)
+            println("constraint_idxs: ", node1.constraint_idxs)
             println("bt_infeasible: ", node1.bt_infeasible)
             println("node2: ")
             println("Feasible: ", node2.feasible)
             println("id: ", node2.id, " status: ", node2.status, " best_bound: ", node2.best_bound, " step_nr: ", node2.step_nr)
             println("var_idx: ", node2.var_idx, " set_val: ", node2.set_val, " var_states: ", node2.var_states)
             println("var_changes: ", node2.var_changes)
+            println("constraint_idxs: ", node2.constraint_idxs)
             println("bt_infeasible: ", node2.bt_infeasible)
             return false
         end

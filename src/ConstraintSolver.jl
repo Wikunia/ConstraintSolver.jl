@@ -75,7 +75,7 @@ mutable struct BacktrackObj
     variable_idx        :: Int
     pval                :: Int
     best_bound          :: Int
-
+    constraint_idxs     :: Vector{Int}         
     BacktrackObj() = new()
 end
 
@@ -91,8 +91,9 @@ mutable struct TreeLogNode
     children        :: Vector{TreeLogNode}
     bt_infeasible   :: Vector{Int}
     feasible        :: Int
+    constraint_idxs :: Vector{Int}
     TreeLogNode() = new()
-    TreeLogNode(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children, bt_infeasible, feasible) = new(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children, bt_infeasible, feasible)
+    TreeLogNode(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children, bt_infeasible, feasible, constraint_idxs) = new(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children, bt_infeasible, feasible, constraint_idxs)
 end
 
 mutable struct CoM
@@ -353,7 +354,8 @@ function prune!(com::CS.CoM; pre_backtrack=false)
     # get all constraints which need to be called (only once)
     current_backtrack_id = com.c_backtrack_idx
     for var in com.search_space
-        if length(var.changes[current_backtrack_id]) > 0
+        prev_var_length[var.idx] = length(var.changes[current_backtrack_id])
+        if prev_var_length[var.idx] > 0
             inner_constraints = com.constraints[com.subscription[var.idx]]
             for constraint in inner_constraints
                 constraint_idxs_vec[constraint.idx] = 1
@@ -383,6 +385,9 @@ function prune!(com::CS.CoM; pre_backtrack=false)
         end
         if !b_open_constraint && level_increased
             break
+        end
+        if !pre_backtrack
+            push!(com.backtrack_vec[current_backtrack_id].constraint_idxs, constraint.idx)
         end
         level_increased = false
         if all(v->isfixed(v), com.search_space[constraint.indices])
@@ -555,6 +560,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
     dummy_backtrack_obj.idx = 1
     dummy_backtrack_obj.variable_idx = 1
     dummy_backtrack_obj.depth = 0
+    dummy_backtrack_obj.constraint_idxs = Int[]
 
     backtrack_vec = com.backtrack_vec
     push!(backtrack_vec, dummy_backtrack_obj)
@@ -572,6 +578,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         backtrack_obj.best_bound = get_best_bound(com; var_idx=ind, val=pval)
         backtrack_obj.variable_idx = ind
         backtrack_obj.pval = pval
+        backtrack_obj.constraint_idxs = Int[]
         push!(backtrack_vec, backtrack_obj)
         for v in com.search_space
             push!(v.changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
@@ -674,6 +681,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         constraints = com.constraints[com.subscription[ind]]
         feasible = true
         for constraint in constraints
+            push!(backtrack_obj.constraint_idxs, constraint.idx)
             feasible = constraint.fct(com, constraint, pval, ind)
             if !feasible
                 break
@@ -689,6 +697,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         fix!(com, com.search_space[ind], pval)
 
         for constraint in constraints
+            push!(backtrack_obj.constraint_idxs, constraint.idx)
             feasible = constraint.fct(com, constraint; logs = false)
             if !feasible
                 feasible = false
@@ -759,6 +768,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             backtrack_obj.best_bound = get_best_bound(com; var_idx=ind, val=pval)
             backtrack_obj.variable_idx = ind
             backtrack_obj.pval = pval
+            backtrack_obj.constraint_idxs = Int[]
 
             # only include nodes which have a better objective than the current best solution if one was found already
             if backtrack_obj.best_bound*obj_factor < com.best_sol || length(com.solutions) == 0
