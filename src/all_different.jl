@@ -117,7 +117,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
             di_ei[edge_counter] = vc
             di_ej[edge_counter] = vertex_mapping[value(search_space[i])-min_pvals_m1]-nindices
         else
-            for pv in view_values(search_space[i])
+            for pv in values(search_space[i])
                 edge_counter += 1
                 di_ei[edge_counter] = vc
                 di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1]-nindices
@@ -143,7 +143,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
             di_ei[edge_counter] = vc
             di_ej[edge_counter] = vertex_mapping[value(search_space[i])-min_pvals_m1]
         else
-            for pv in view_values(search_space[i])
+            for pv in values(search_space[i])
                 edge_counter += 1
                 if pv == pval_mapping[maximum_matching.match[vc]]
                     di_ei[edge_counter] = vc 
@@ -168,7 +168,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         vc = 0
         for i in indices
             vc += 1
-            for pv in view_values(search_space[i])
+            for pv in values(search_space[i])
                 if pv == pval_mapping[maximum_matching.match[vc]]
                     used_in_maximum_matching[pv] = true
                     break
@@ -176,13 +176,13 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
             end
         end
         new_vertex = num_nodes+1
-        for kv in used_in_maximum_matching
+        for pv in pvals #kv in used_in_maximum_matching
             # not in maximum matching
-            if !kv.second
+            if !used_in_maximum_matching[pv]
                 push!(di_ei, new_vertex)
-                push!(di_ej, vertex_mapping[kv.first-min_pvals_m1])
+                push!(di_ej, vertex_mapping[pv-min_pvals_m1])
             else 
-                push!(di_ei, vertex_mapping[kv.first-min_pvals_m1])
+                push!(di_ei, vertex_mapping[pv-min_pvals_m1])
                 push!(di_ej, new_vertex)
             end
         end

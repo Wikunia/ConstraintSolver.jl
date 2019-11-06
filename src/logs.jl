@@ -2,6 +2,7 @@ function log_one_node(com, nvars, back_idx, step_nr)
     tree_log_node = TreeLogNode()
     tree_log_node.step_nr = step_nr
     tree_log_node.id = back_idx
+    tree_log_node.bt_infeasible = copy(com.bt_infeasible)
     parent_idx = 0
     if length(com.backtrack_vec) > 0
         tree_log_node.status = com.backtrack_vec[back_idx].status
@@ -20,10 +21,10 @@ function log_one_node(com, nvars, back_idx, step_nr)
     tree_log_node.var_states = Dict{Int64,Vector{Int64}}()
     if tree_log_node.status == :Closed
         for var in com.search_space
-            if length(var.changes[back_idx]) > 0
-                tree_log_node.var_states[var.idx] = sort!(values(var))
+            #if length(var.changes[back_idx]) > 0
+                tree_log_node.var_states[var.idx] = values(var)
                 tree_log_node.var_changes[var.idx] = var.changes[back_idx]
-            end
+            #end
         end
     end
     tree_log_node.children = Vector{TreeLogNode}()
@@ -46,11 +47,13 @@ end
 function bfs_list(start_node::CS.TreeLogNode)
     to_process = Vector{CS.TreeLogNode}()
     depths = Vector{Int}()
+    ret_depths = Vector{Int}()
     nodes_list = Vector{CS.TreeLogNode}()
     num_children = Vector{Int}()
 
     push!(to_process, start_node)
     push!(depths, 0)
+    push!(ret_depths, 0)
     node = deepcopy(start_node)
     push!(num_children, length(node.children))
     node.children = TreeLogNode[]
@@ -64,22 +67,31 @@ function bfs_list(start_node::CS.TreeLogNode)
         push!(num_children, length(node.children))
         node.children = TreeLogNode[]
         push!(nodes_list, node)
+        push!(ret_depths, depth)
 
         for child_node in current_node.children
             push!(to_process, child_node)
             push!(depths, depth + 1)
         end
     end
-    return nodes_list, num_children
+    return nodes_list, num_children, ret_depths
 end
 
 function same_logs(log1, log2)
-    nodes_list1, num_children1 = bfs_list(log1)
-    nodes_list2, num_children2 = bfs_list(log2)
+    nodes_list1, num_children1, d1 = bfs_list(log1)
+    nodes_list2, num_children2, d2 = bfs_list(log2)
     if length(nodes_list1) != length(nodes_list2)
         println("Different length")
-        return false
     end
+    ordering1 = sortperm(nodes_list1; by=o->o.step_nr)
+    ordering2 = sortperm(nodes_list2; by=o->o.step_nr)
+    nodes_list1 = nodes_list1[ordering1]
+    nodes_list2 = nodes_list2[ordering2]
+    num_children1 = num_children1[ordering1]
+    num_children2 = num_children2[ordering2]
+    d1 = d1[ordering1]
+    d2 = d2[ordering2]
+
     for i=1:length(nodes_list1)
         node1 = nodes_list1[i]
         node2 = nodes_list2[i]
@@ -90,18 +102,27 @@ function same_logs(log1, log2)
             return false
         end
 
-        if node1.id != node2.id || node1.status != node2.status || node1.best_bound != node2.best_bound ||
-            node1.step_nr != node2.step_nr || node1.var_idx != node2.var_idx || node1.set_val != node2.set_val || node1.var_states != node2.var_states
+        if node1.id != node2.id || node1.status != node2.status || node1.best_bound != node2.best_bound || node1.bt_infeasible != node2.bt_infeasible ||
+            node1.step_nr != node2.step_nr || node1.var_idx != node2.var_idx || node1.set_val != node2.set_val || node1.var_states != node2.var_states || node1.var_changes != node2.var_changes
             println("Not identical at i=", i)
             println("node1: ")
             println("id: ", node1.id, " status: ", node1.status, " best_bound: ", node1.best_bound, " step_nr: ", node1.step_nr)
             println("var_idx: ", node1.var_idx, " set_val: ", node1.set_val, " var_states: ", node1.var_states)
+            println("bt_infeasible: ", node1.bt_infeasible)
+            println("var_changes: ", node1.var_changes)
             println("node2: ")
             println("id: ", node2.id, " status: ", node2.status, " best_bound: ", node2.best_bound, " step_nr: ", node2.step_nr)
             println("var_idx: ", node2.var_idx, " set_val: ", node2.set_val, " var_states: ", node2.var_states)
+            println("var_changes: ", node2.var_changes)
+            println("bt_infeasible: ", node2.bt_infeasible)
             return false
         end
     end
+    if ordering1 != ordering2
+        println("Only wrong order")
+        return false
+    end
+
     return true
 end
 

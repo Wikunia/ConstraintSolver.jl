@@ -132,8 +132,26 @@ end
         com_grid = create_sudoku_grid!(com, grid)
         add_sudoku_constr!(com, com_grid)
 
-        @test solve!(com) == :Solved
+        @test solve!(com; keep_logs=true) == :Solved
         @test fulfills_sudoku_constr(com_grid)
+        logs_1 = CS.get_logs(com)
+        info_1 = com.info
+
+        com = CS.init()
+
+        com_grid = create_sudoku_grid!(com, grid)
+        add_sudoku_constr!(com, com_grid)
+
+        @test solve!(com; keep_logs=true) == :Solved
+        @test fulfills_sudoku_constr(com_grid)
+        logs_2 = CS.get_logs(com)
+        info_2 = com.info
+        @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
+        @test info_1.backtrack_fixes == info_2.backtrack_fixes
+        @test info_1.in_backtrack_calls == info_2.in_backtrack_calls
+        @test info_1.backtrack_reverses == info_2.backtrack_reverses
+        @test CS.same_logs(logs_1[:tree], logs_2[:tree])
+
         c += 1
     end
     # check that actually all 95 problems were tested

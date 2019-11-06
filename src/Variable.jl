@@ -102,11 +102,12 @@ function remove_below!(com::CS.CoM, var::CS.Variable, val::Int; changes=true)
     nremoved = 0
     for v in vals
         if v < val
-            rm!(com, var, v; in_remove_several = true)
+            @assert rm!(com, var, v; in_remove_several = true)
             nremoved += 1
         end
     end
-    if nremoved > 0 && feasible(var)
+    @assert feasible(var)
+    if nremoved > 0 
         var.min = minimum(values(var))
         changes && push!(var.changes[com.c_backtrack_idx], (:remove_below, val, 0, nremoved))
     end
@@ -129,11 +130,12 @@ function remove_above!(com::CS.CoM, var::CS.Variable, val::Int; changes=true)
     nremoved = 0
     for v in vals
         if v > val
-            rm!(com, var, v; in_remove_several = true)
+            @assert rm!(com, var, v; in_remove_several = true)
             nremoved += 1
         end
     end
-    if nremoved > 0 && feasible(var)
+    @assert feasible(var)
+    if nremoved > 0 
         var.max = maximum(values(var))
         changes && push!(var.changes[com.c_backtrack_idx], (:remove_above, val, 0, nremoved))
     end

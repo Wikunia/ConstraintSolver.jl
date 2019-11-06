@@ -149,9 +149,13 @@ end
     @test info_1.backtrack_fixes == info_2.backtrack_fixes
     @test info_1.in_backtrack_calls == info_2.in_backtrack_calls
     @test info_1.backtrack_reverses == info_2.backtrack_reverses
-    logs_1 = CS.get_logs(com1)
-    logs_2 = CS.get_logs(com2)
-    @test CS.same_logs(logs_1[:tree], logs_2[:tree])
+    if info_1.in_backtrack_calls != info_2.in_backtrack_calls
+        CS.save_logs(com1, "1.json")
+        CS.save_logs(com2, "2.json")
+        logs_1 = CS.get_logs(com1)
+        logs_2 = CS.get_logs(com2)
+        @test CS.same_logs(logs_1[:tree], logs_2[:tree])
+    end
 end
 
 end
