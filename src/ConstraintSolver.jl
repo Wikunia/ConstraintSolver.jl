@@ -401,6 +401,10 @@ function prune!(com::CS.CoM; pre_backtrack=false)
         end
         
         if !feasible
+            # push with negative sign in constraint_idxs
+            if !pre_backtrack
+                push!(com.backtrack_vec[current_backtrack_id].constraint_idxs, -constraint.idx)
+            end
             break
         end
 
@@ -659,11 +663,13 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         ind = backtrack_obj.variable_idx
 
         com.c_backtrack_idx = backtrack_obj.idx
+        bi = backtrack_obj.idx
         
         if !started
             com.c_backtrack_idx = 0
             checkout_from_to!(com, last_backtrack_id, backtrack_obj.idx)
             com.c_backtrack_idx = backtrack_obj.idx
+            @assert com.c_backtrack_idx == bi
         end
 
         if com.input[:logs]

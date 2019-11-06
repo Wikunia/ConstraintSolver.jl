@@ -100,7 +100,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
 
     # count the number of edges
     num_edges = 0
-    @inbounds for i in indices
+    for i in indices
         num_edges += nvalues(search_space[i])
     end
 
@@ -110,7 +110,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     # add edge from each index to the possible values
     edge_counter = 0
     vc = 0
-    @inbounds for i in indices
+    for i in indices
         vc += 1
         if isfixed(search_space[i])
             edge_counter += 1
@@ -136,7 +136,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     # directed edges for strongly connected components
     vc = 0
     edge_counter = 0
-    @inbounds for i in indices
+    for i in indices
         vc += 1
         if isfixed(search_space[i])
             edge_counter += 1
@@ -192,7 +192,8 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
 
     # remove the left over edges from the search space
     vmb = vertex_mapping_bw
-    for (src,dst) in zip(di_ei, di_ej)
+    for i = 1:length(di_ei) 
+        src,dst = di_ei[i], di_ej[i]
         # edges to the extra node don't count
         if src > num_nodes || dst > num_nodes
             continue
@@ -209,6 +210,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
       
 
         cind = vmb[dst]
+        @assert cind in indices
         if !rm!(com, search_space[cind], vmb[src])
             logs && @warn "The problem is infeasible"
             return false
