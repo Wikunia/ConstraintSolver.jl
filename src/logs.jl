@@ -1,7 +1,8 @@
-function log_one_node(com, nvars, back_idx, step_nr)
+function log_one_node(com, nvars, back_idx, step_nr, feasible)
     tree_log_node = TreeLogNode()
     tree_log_node.step_nr = step_nr
     tree_log_node.id = back_idx
+    tree_log_node.feasible = feasible
     tree_log_node.bt_infeasible = copy(com.bt_infeasible)
     parent_idx = 0
     if length(com.backtrack_vec) > 0
@@ -102,15 +103,17 @@ function same_logs(log1, log2)
             return false
         end
 
-        if node1.id != node2.id || node1.status != node2.status || node1.best_bound != node2.best_bound || node1.bt_infeasible != node2.bt_infeasible ||
+        if node1.id != node2.id || node1.status != node2.status || node1.best_bound != node2.best_bound || node1.bt_infeasible != node2.bt_infeasible || node1.feasible != node2.feasible || 
             node1.step_nr != node2.step_nr || node1.var_idx != node2.var_idx || node1.set_val != node2.set_val || node1.var_states != node2.var_states || node1.var_changes != node2.var_changes
             println("Not identical at i=", i)
             println("node1: ")
+            println("Feasible: ", node1.feasible)
             println("id: ", node1.id, " status: ", node1.status, " best_bound: ", node1.best_bound, " step_nr: ", node1.step_nr)
             println("var_idx: ", node1.var_idx, " set_val: ", node1.set_val, " var_states: ", node1.var_states)
-            println("bt_infeasible: ", node1.bt_infeasible)
             println("var_changes: ", node1.var_changes)
+            println("bt_infeasible: ", node1.bt_infeasible)
             println("node2: ")
+            println("Feasible: ", node2.feasible)
             println("id: ", node2.id, " status: ", node2.status, " best_bound: ", node2.best_bound, " step_nr: ", node2.step_nr)
             println("var_idx: ", node2.var_idx, " set_val: ", node2.set_val, " var_states: ", node2.var_states)
             println("var_changes: ", node2.var_changes)

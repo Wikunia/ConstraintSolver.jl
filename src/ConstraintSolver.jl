@@ -90,8 +90,9 @@ mutable struct TreeLogNode
     var_changes     :: Dict{Int64,Vector{Tuple{Symbol, Int64, Int64, Int64}}}
     children        :: Vector{TreeLogNode}
     bt_infeasible   :: Vector{Int}
+    feasible        :: Bool
     TreeLogNode() = new()
-    TreeLogNode(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children, bt_infeasible) = new(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children, bt_infeasible)
+    TreeLogNode(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children, bt_infeasible, feasible) = new(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children, bt_infeasible, feasible)
 end
 
 mutable struct CoM
@@ -576,7 +577,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             push!(v.changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
         end
         if com.input[:logs]
-            push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, typemax(Int)))
+            push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, typemax(Int), true))
         end
     end
     last_backtrack_id = 0
@@ -679,6 +680,9 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             end
         end
         if !feasible
+            if com.input[:logs]
+                com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr, false)
+            end
             continue
         end
         # value is still possible => set it
@@ -693,6 +697,9 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         end
         if !feasible
             com.info.backtrack_reverses += 1
+            if com.input[:logs]
+                com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr, false)
+            end
             continue
         end
 
@@ -701,6 +708,9 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
          
         if !feasible
             com.info.backtrack_reverses += 1
+            if com.input[:logs]
+                com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr, false)
+            end
             continue
         end
 
@@ -734,7 +744,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         com.info.backtrack_fixes   += 1
 
         if com.input[:logs]
-            com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr)
+            com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr, true)
         end
     
         pvals = reverse(values(com.search_space[ind]))
@@ -757,7 +767,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                     push!(v.changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
                 end
                 if com.input[:logs]
-                    push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, typemax(Int)))
+                    push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, typemax(Int), true))
                 end
             else
                 num_backtrack_objs -= 1
@@ -938,7 +948,7 @@ function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), backtr
 
     com.best_bound = get_best_bound(com)
     if keep_logs
-        push!(com.logs, log_one_node(com, length(com.search_space), 1, 1))
+        push!(com.logs, log_one_node(com, length(com.search_space), 1, 1, feasible))
     end
 
     if !feasible 
