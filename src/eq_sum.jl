@@ -99,8 +99,10 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
         if maxs[i] < pre_maxs[i]
             if constraint.coeffs[i] > 0
                 still_feasible = remove_above!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
+                logs && @info "removed above $(fld(maxs[i], constraint.coeffs[i])) for idx: $idx at constraint.idx = $(constraint.idx)"
             else
                 still_feasible = remove_below!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
+                logs && @info "removed below $(fld(maxs[i], constraint.coeffs[i])) for idx: $idx at constraint.idx = $(constraint.idx)"
             end            
             if !still_feasible
                 logs && @warn "maxs changed for i: $i at constraint.idx = $(constraint.idx) and got infeasible"
@@ -110,8 +112,10 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
         if mins[i] > pre_mins[i]
             if constraint.coeffs[i] > 0
                 still_feasible = remove_below!(com, search_space[idx], cld(mins[i], constraint.coeffs[i]))
+                logs && @info "removed below $(cld(mins[i], constraint.coeffs[i])) for idx: $idx at constraint.idx = $(constraint.idx)"
             else
                 still_feasible = remove_above!(com, search_space[idx], cld(mins[i], constraint.coeffs[i]))
+                logs && @info "removed above $(cld(mins[i], constraint.coeffs[i])) for idx: $idx at constraint.idx = $(constraint.idx)"
             end
             if !still_feasible
                 logs && @warn "mins changed for i: $i at constraint.idx = $(constraint.idx) and got infeasible"
@@ -163,6 +167,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 logs && @warn "Only single left but can't fix it because others at constraint.idx = $(constraint.idx) and got infeasible"
                 return false
             end
+            logs && @info "fixed idx: $unfixed_ind_1 to $unfixed_rhs at constraint.idx = $(constraint.idx)"
         end
     elseif n_unfixed == 2
         is_all_different = constraint.in_all_different
@@ -189,9 +194,10 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 # if we choose this value but the other wouldn't be an integer => remove this value
                 if (unfixed_rhs-val*constraint.coeffs[local_this]) % constraint.coeffs[local_other] != 0
                     if !rm!(com, search_space[this], val)
-                        logs && @warn "Two left but can't remove a value at constraint.idx = $(constraint.idx) and got infeasible"
+                        logs && @warn "Two left but can't remove a value at constraint.idx = $(constraint.idx) and got infeasible (1)"
                         return false
                     end
+                    logs && @info "Two left and removed $val at idx: $this at constraint.idx = $(constraint.idx) (1)"
                     continue
                 end
 
@@ -199,21 +205,24 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 # if all different but those two are the same 
                 if is_all_different && check_other_val == val
                     if !rm!(com, search_space[this], val)
-                        logs && @warn "Two left but can't remove a value at constraint.idx = $(constraint.idx) and got infeasible"
+                        logs && @warn "Two left but can't remove a value at constraint.idx = $(constraint.idx) and got infeasible (2)"
                         return false
                     end
+                    logs && @info "Two left and removed $val at idx: $this at constraint.idx = $(constraint.idx) (2)"
                     if has(search_space[other], check_other_val)
                         if !rm!(com, search_space[other], check_other_val)
-                            logs && @warn "Two left but can't remove a value at constraint.idx = $(constraint.idx) and got infeasible"
+                            logs && @warn "Two left but can't remove a value at constraint.idx = $(constraint.idx) and got infeasible (3)"
                             return false
                         end
+                        logs && @info "Two left and removed $check_other_val at idx: $other at constraint.idx = $(constraint.idx) (3)"
                     end
                 else
                     if !has(search_space[other], check_other_val)
                         if !rm!(com, search_space[this], val)
-                            logs && @warn "Two left but can't remove a value at constraint.idx = $(constraint.idx) and got infeasible"
+                            logs && @warn "Two left but can't remove a value at constraint.idx = $(constraint.idx) and got infeasible (4)"
                             return false
                         end
+                        logs && @info "Two left and removed $val at idx: $this at constraint.idx = $(constraint.idx) (4)"
                     end
                 end
             end
