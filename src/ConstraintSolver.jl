@@ -949,13 +949,14 @@ Set `constraint.in_all_different` if all variables in the constraint are part of
 function set_in_all_different!(com::CS.CoM)
     for constraint in com.constraints
         if :in_all_different in fieldnames(typeof(constraint))
-            subscriptions_idxs = [[i for i in com.subscription[v]] for v in constraint.indices]
-            intersects = intersect(subscriptions_idxs...)
-
-            for i in intersects
-                if nameof(com.constraints[i].fct) == :all_different
-                    constraint.in_all_different = true
-                    break
+            if !constraint.in_all_different 
+                subscriptions_idxs = [[i for i in com.subscription[v]] for v in constraint.indices]
+                intersects = intersect(subscriptions_idxs...)
+                for i in intersects
+                    if nameof(com.constraints[i].fct) == :all_different
+                        constraint.in_all_different = true
+                        break
+                    end
                 end
             end
         end
