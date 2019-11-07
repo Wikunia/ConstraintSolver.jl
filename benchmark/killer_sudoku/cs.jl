@@ -35,13 +35,11 @@ function solve_all(filenames; benchmark=false, single_times=true)
         add_sudoku_constr!(com, com_grid)
 
         if single_times
-            # GC.enable(false)
+            GC.enable(false)
             t = time()
-            @time status = solve!(com; keep_logs=true);
-            fname = convert(Int,fld(time_ns() % 20000,1))
-            CS.save_logs(com, "$fname.json")
+            status = solve!(com; keep_logs=true);
             t = time()-t
-            # GC.enable(true)
+            GC.enable(true)
             println(i-1,", ", t)
         else
             GC.enable(false)
@@ -61,7 +59,7 @@ function solve_all(filenames; benchmark=false, single_times=true)
 end
 
 function main(; benchmark=false, single_times=true)
-    solve_all(["niallsudoku_5500"#=, "niallsudoku_5501", "niallsudoku_5502", "niallsudoku_5503"=#]; benchmark=benchmark, single_times=single_times)
+    solve_all(["niallsudoku_5500", "niallsudoku_5501", "niallsudoku_5502", "niallsudoku_5503"]; benchmark=benchmark, single_times=single_times)
     # solve_all(from_file("hardest.txt"), "hardest")
 end
 

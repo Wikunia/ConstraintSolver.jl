@@ -74,7 +74,6 @@ mutable struct BacktrackObj
     status              :: Symbol
     variable_idx        :: Int
     pval                :: Int
-    constraint_idx      :: Vector{Int}
     best_bound          :: Int
 
     BacktrackObj() = new()
