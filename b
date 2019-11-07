@@ -1,26 +1,75 @@
 [54, 60],[ Info: removed below -7 for idx: 2 at constraint.idx = 1
 [ Info: removed below -8 for idx: 73 at constraint.idx = 6
 [ Info: removed below -8 for idx: 74 at constraint.idx = 6
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 73 and 74
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
 [ Info: removed above -6 for idx: 3 at constraint.idx = 8
 [ Info: removed above -6 for idx: 12 at constraint.idx = 8
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 3 and 12
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 4 and 13
+[ Info: eq_sum: only two left v: 1
 [ Info: Two left and removed -5 at idx: 4 at constraint.idx = 10 (2)
 [ Info: Two left and removed -5 at idx: 13 at constraint.idx = 10 (3)
+[ Info: eq_sum: only two left v: 2
 [ Info: removed above -2 for idx: 40 at constraint.idx = 11
 [ Info: removed above -2 for idx: 41 at constraint.idx = 11
 [ Info: removed above -2 for idx: 42 at constraint.idx = 11
 [ Info: removed below -6 for idx: 5 at constraint.idx = 13
 [ Info: removed below -6 for idx: 14 at constraint.idx = 13
 [ Info: removed below -6 for idx: 6 at constraint.idx = 13
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 69 and 78
+[ Info: eq_sum: only two left v: 1
 [ Info: Two left and removed -5 at idx: 69 at constraint.idx = 17 (2)
 [ Info: Two left and removed -5 at idx: 78 at constraint.idx = 17 (3)
+[ Info: eq_sum: only two left v: 2
 [ Info: removed above -6 for idx: 70 at constraint.idx = 20
 [ Info: removed above -6 for idx: 79 at constraint.idx = 20
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 70 and 79
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
 [ Info: removed above -7 for idx: 8 at constraint.idx = 21
 [ Info: removed above -7 for idx: 9 at constraint.idx = 21
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 8 and 9
+[ Info: eq_sum: only two left v: 1
 [ Info: Two left and removed -8 at idx: 8 at constraint.idx = 21 (2)
 [ Info: Two left and removed -8 at idx: 9 at constraint.idx = 21 (3)
+[ Info: eq_sum: only two left v: 2
+[ Info: removed -9 at index 1
+[ Info: removed -7 at index 1
+[ Info: removed -7 at index 2
+[ Info: removed -9 at index 3
+[ Info: removed -7 at index 3
+[ Info: removed -9 at index 4
+[ Info: removed -7 at index 4
+[ Info: removed -9 at index 7
+[ Info: removed -7 at index 7
+[ Info: removed -9 at index 16
+[ Info: removed -7 at index 16
+[ Info: removed -9 at index 17
+[ Info: removed -7 at index 17
+[ Info: removed -9 at index 18
+[ Info: removed -7 at index 18
+[ Info: removed -9 at index 25
+[ Info: removed -7 at index 25
+[ Info: removed -9 at index 26
+[ Info: removed -7 at index 26
+[ Info: removed -9 at index 27
+[ Info: removed -7 at index 27
 [ Info: removed below -8 for idx: 54 at constraint.idx = 51
 [ Info: removed below -8 for idx: 60 at constraint.idx = 51
+[ Info: Only two left is_all_different: false
+[ Info: Only two left : 54 and 60
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
 Before pruning: 
 var.idx 1: [-3]
 var.idx 2: [-2]
@@ -103,6 +152,26 @@ var.idx 78: [-9, -2, -4, -6, -1, -8]
 var.idx 79: [-9, -8, -7, -6]
 var.idx 80: [-6, -4, -3, -1, -5]
 var.idx 81: [-6, -4, -3, -5, -2, -9, -1]
+[ Info: removed -2 at index 28
+[ Info: removed -2 at index 30
+[ Info: removed -5 at index 30
+[ Info: removed -5 at index 31
+[ Info: removed -2 at index 33
+[ Info: removed -5 at index 33
+[ Info: removed -2 at index 34
+[ Info: removed -5 at index 34
+[ Info: removed -4 at index 29
+[ Info: removed -1 at index 29
+[ Info: removed -4 at index 33
+[ Info: removed -1 at index 33
+[ Info: removed -4 at index 34
+[ Info: removed -1 at index 34
+[ Info: removed -2 at index 45
+[ Info: removed -2 at index 63
+[ Info: removed -2 at index 72
+[ Info: removed -2 at index 81
+[ Info: removed -2 at index 43
+[ Info: removed -2 at index 52
 1595...
 var.idx 1: [-3]
 var.idx 2: [-2]
@@ -190,19 +259,93 @@ var.idx 81: [-6, -4, -3, -5, -1, -9]
 [ Info: removed below -5 for idx: 43 at constraint.idx = 19
 [ Info: removed below -5 for idx: 44 at constraint.idx = 19
 [ Info: removed below -5 for idx: 45 at constraint.idx = 19
+[ Info: removed -4 at index 37
+[ Info: removed -5 at index 37
+[ Info: removed -4 at index 46
+[ Info: removed -5 at index 46
+[ Info: removed -4 at index 55
+[ Info: removed -5 at index 55
+[ Info: removed -4 at index 64
+[ Info: removed -5 at index 64
+[ Info: removed -5 at index 73
+[ Info: removed -7 at index 61
+[ Info: removed -3 at index 61
+[ Info: removed -6 at index 61
+[ Info: removed -9 at index 61
+[ Info: removed -8 at index 61
+[ Info: removed -4 at index 61
+[ Info: removed -1 at index 61
+[ Info: removed -5 at index 61
+[ Info: removed -9 at index 70
+[ Info: removed -6 at index 70
+[ Info: removed -9 at index 79
+[ Info: removed -6 at index 79
+[ Info: removed -2 at index 55
+[ Info: removed -2 at index 57
+[ Info: removed -2 at index 59
+[ Info: removed -5 at index 39
+[ Info: removed -5 at index 48
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 73 and 74
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
 [ Info: Two left and removed -4 at idx: 74 at constraint.idx = 6 (4)
 [ Info: removed above -5 for idx: 60 at constraint.idx = 16
 [ Info: removed above -3 for idx: 62 at constraint.idx = 16
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 60 and 62
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
 [ Info: Two left and removed -4 at idx: 62 at constraint.idx = 16 (4)
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 70 and 79
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
+[ Info: removed -4 at index 20
+[ Info: removed -4 at index 21
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 73 and 74
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 60 and 62
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
+[ Info: removed -5 at index 24
+[ Info: removed -6 at index 24
 [ Info: removed below -4 for idx: 54 at constraint.idx = 51
+[ Info: Only two left is_all_different: false
+[ Info: Only two left : 54 and 60
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
+[ Info: Only two left is_all_different: false
+[ Info: Only two left : 33 and 25
+[ Info: eq_sum: only two left v: 1
 [ Info: Two left and removed -8 at idx: 33 at constraint.idx = 15 (4)
+[ Info: eq_sum: only two left v: 2
 [ Info: Two left and removed -5 at idx: 25 at constraint.idx = 15 (4)
 [ Info: removed above -2 for idx: 63 at constraint.idx = 23
 [ Info: removed above -2 for idx: 72 at constraint.idx = 23
+[ Info: removed -3 at index 22
+[ Info: removed -3 at index 25
+[ Info: removed -6 at index 22
+[ Info: removed -6 at index 23
+[ Info: removed -5 at index 5
+[ Info: removed -5 at index 6
+[ Info: removed -4 at index 14
+[ Info: removed -1 at index 14
+[ Info: removed -1 at index 52
+[ Info: removed -5 at index 52
+[ Info: removed -3 at index 52
+[ Info: removed -4 at index 52
+[ Info: Only two left is_all_different: false
+[ Info: Only two left : 54 and 60
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
 [ Info: removed below -1 for idx: 5 at constraint.idx = 13
 [ Info: removed below -1 for idx: 6 at constraint.idx = 13
 â”Œ Warning: mins changed for i: 3 at constraint.idx = 13 and got infeasible
-â”” @ ConstraintSolver D:\a\ConstraintSolver.jl\ConstraintSolver.jl\src\eq_sum.jl:121
+â”” @ ConstraintSolver ~/runners/2.160.0/work/ConstraintSolver.jl/ConstraintSolver.jl/src/eq_sum.jl:121
 Before pruning: 
 var.idx 1: [-3]
 var.idx 2: [-2]
@@ -286,6 +429,19 @@ var.idx 79: [-7, -8, -9, -6]
 var.idx 80: [-6, -7, -4, -5, -3, -1]
 var.idx 81: [-6, -5, -4, -3, -9, -1, -2]
 [ Info: removed above -4 for idx: 30 at constraint.idx = 9
+[ Info: Only two left is_all_different: false
+[ Info: Only two left : 30 and 23
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
+[ Info: removed -3 at index 40
+[ Info: removed -3 at index 49
+[ Info: removed -3 at index 58
+[ Info: removed -3 at index 67
+[ Info: removed -3 at index 76
+[ Info: removed -3 at index 33
+[ Info: removed -3 at index 36
+[ Info: removed -3 at index 42
+[ Info: removed -3 at index 51
 1723...
 var.idx 1: [-3]
 var.idx 2: [-2]
@@ -368,21 +524,91 @@ var.idx 78: [-4, -6, -2, -8]
 var.idx 79: [-7, -8, -9, -6]
 var.idx 80: [-6, -7, -4, -5, -3, -1]
 var.idx 81: [-6, -5, -4, -3, -9, -1, -2]
+[ Info: Only two left is_all_different: false
+[ Info: Only two left : 30 and 23
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
+[ Info: removed -6 at index 60
+[ Info: removed -4 at index 60
+[ Info: removed -8 at index 60
+[ Info: removed -5 at index 60
+[ Info: removed -3 at index 56
+[ Info: removed -3 at index 57
+[ Info: removed -3 at index 62
+[ Info: removed -3 at index 63
 [ Info: removed above -3 for idx: 61 at constraint.idx = 16
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 61 and 62
+[ Info: eq_sum: only two left v: 1
 [ Info: Two left and removed -8 at idx: 61 at constraint.idx = 16 (4)
 [ Info: Two left and removed -7 at idx: 61 at constraint.idx = 16 (4)
+[ Info: eq_sum: only two left v: 2
 [ Info: Two left and removed -7 at idx: 62 at constraint.idx = 16 (4)
 [ Info: Two left and removed -5 at idx: 62 at constraint.idx = 16 (2)
 [ Info: removed above -6 for idx: 54 at constraint.idx = 51
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 61 and 62
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
 [ Info: removed below -8 for idx: 63 at constraint.idx = 23
 [ Info: removed below -8 for idx: 72 at constraint.idx = 23
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 63 and 72
+[ Info: eq_sum: only two left v: 1
 [ Info: Two left and removed -1 at idx: 63 at constraint.idx = 23 (4)
 [ Info: Two left and removed -2 at idx: 63 at constraint.idx = 23 (4)
+[ Info: eq_sum: only two left v: 2
 [ Info: Two left and removed -6 at idx: 72 at constraint.idx = 23 (4)
 [ Info: Two left and removed -2 at idx: 72 at constraint.idx = 23 (4)
 [ Info: Two left and removed -1 at idx: 72 at constraint.idx = 23 (4)
+[ Info: removed -6 at index 46
+[ Info: removed -6 at index 47
+[ Info: removed -6 at index 49
+[ Info: removed -6 at index 50
+[ Info: removed -6 at index 51
+[ Info: removed -6 at index 52
+[ Info: removed -6 at index 53
+[ Info: removed -6 at index 18
+[ Info: removed -6 at index 36
+[ Info: removed -6 at index 45
+[ Info: removed -6 at index 63
+[ Info: removed -6 at index 81
+[ Info: removed -6 at index 43
+[ Info: removed -6 at index 44
 [ Info: removed above -3 for idx: 16 at constraint.idx = 18
 [ Info: removed above -3 for idx: 17 at constraint.idx = 18
 [ Info: removed above -4 for idx: 72 at constraint.idx = 23
+[ Info: Only two left is_all_different: true
+[ Info: Only two left : 63 and 72
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
+[ Info: removed -4 at index 18
+[ Info: removed -5 at index 33
+[ Info: removed -4 at index 33
+[ Info: removed -2 at index 33
+[ Info: removed -6 at index 24
+[ Info: removed -6 at index 42
+[ Info: removed -6 at index 69
+[ Info: removed -6 at index 78
+[ Info: removed -7 at index 43
+[ Info: removed -4 at index 43
+[ Info: removed -9 at index 43
+[ Info: removed -4 at index 52
+[ Info: removed -9 at index 52
+[ Info: removed -7 at index 52
+[ Info: removed -1 at index 45
+[ Info: removed -1 at index 81
+[ Info: removed -5 at index 36
+[ Info: removed -4 at index 36
+[ Info: removed -5 at index 45
+[ Info: removed -4 at index 45
+[ Info: removed -2 at index 45
+[ Info: removed -2 at index 81
+[ Info: removed -5 at index 81
+[ Info: removed -4 at index 81
+[ Info: removed -6 at index 40
+[ Info: removed -6 at index 41
+[ Info: removed -2 at index 43
+[ Info: removed -1 at index 44
 â”Œ Warning: The problem is infeasible
-â”” @ ConstraintSolver D:\a\ConstraintSolver.jl\ConstraintSolver.jl\src\all_different.jl:51
+â”” @ ConstraintSolver ~/runners/2.160.0/work/ConstraintSolver.jl/ConstraintSolver.jl/src/all_different.jl:51

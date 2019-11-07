@@ -171,8 +171,11 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
         end
     elseif n_unfixed == 2
         is_all_different = constraint.in_all_different
+        logs && @info "Only two left: Before intersect is_all_different: $is_all_different"
         if !is_all_different
             intersect_cons = intersect(com.subscription[unfixed_ind_1], com.subscription[unfixed_ind_2])
+            logs && @info "$(com.subscription[unfixed_ind_1]) and $(com.subscription[unfixed_ind_2])"
+            logs && @info "intersect_cons: $(intersect_cons)"
             for constraint_idx in intersect_cons
                 if nameof(com.constraints[constraint_idx].fct) == :all_different
                     is_all_different = true
