@@ -1,4 +1,4 @@
-@inline nvalues(v::CS.Variable) = v.last_ptr-v.first_ptr+1
+nvalues(v::CS.Variable) = v.last_ptr-v.first_ptr+1
 
 
 """
@@ -7,11 +7,9 @@
 Get the value of the variable if it is fixed. Otherwise one of the possible values is returned.
 Can be used if the status is :Solved as then all variables are fixed.
 """
-@inline value(v::CS.Variable) = v.values[v.last_ptr]
+value(v::CS.Variable) = v.values[v.last_ptr]
 
-@inline values(v::CS.Variable) = v.values[v.first_ptr:v.last_ptr]
-
-@inline view_values(v::CS.Variable) = @views v.values[v.first_ptr:v.last_ptr]
+values(v::CS.Variable) = v.values[v.first_ptr:v.last_ptr]
 
 
 function issetto(v::CS.Variable, x::Int)

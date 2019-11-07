@@ -552,7 +552,7 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
     @assert from.depth == to.depth
     # same diff but different parent
     # => level up until same parent
-     while from.parent_idx != to.parent_idx
+    while from.parent_idx != to.parent_idx
         reverse_pruning!(com, from.parent_idx) 
         from = backtrack_vec[from.parent_idx]
 
@@ -561,6 +561,25 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
     end
 
     prune!(com, prune_steps)
+end
+
+function correct_var_states(com)
+    # looking for parent states
+    correct = true
+    parent = com.backtrack_vec[com.c_backtrack_idx].parent_idx
+    for var_idx=1:length(com.search_space)
+        # should contain the same values but not necessarily in the same order
+        ssv = sort!(values(com.search_space[var_idx]))
+        nsv = sort!(com.logs[parent].var_states[var_idx])
+        if ssv != nsv
+            println("Different for $var_idx: $ssv != $nsv")
+            correct = false
+        end
+    end
+    if !correct 
+        println("First fail of correct_var_states at c_backtrack_idx: $(com.c_backtrack_idx)")
+    end
+    return correct
 end
 
 """
@@ -662,6 +681,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                 backtrack_obj = backtrack_vec[l]
             end
         end
+        @assert backtrack_obj.idx != 1
         # no open node => Infeasible
         if l <= 0 || l > length(backtrack_vec)
             break
@@ -685,6 +705,9 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             com.c_backtrack_idx = 0
             checkout_from_to!(com, last_backtrack_id, backtrack_obj.idx)
             com.c_backtrack_idx = backtrack_obj.idx
+            if com.input[:logs]
+                @assert correct_var_states(com)
+            end
             @assert com.c_backtrack_idx == bi
         end
 
