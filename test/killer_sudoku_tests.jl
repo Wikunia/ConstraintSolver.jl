@@ -17,7 +17,7 @@ end
 
 
 @testset "Killer Sudoku" begin
-
+#=
 @testset "Killer Sudoku from wikipedia" begin
     com = CS.init()
 
@@ -107,6 +107,7 @@ end
     @test info_1.backtrack_reverses == info_2.backtrack_reverses
     @test CS.same_logs(logs_1[:tree], logs_2[:tree])
 end
+=#
 
 function killer_negative()
     com = CS.init()

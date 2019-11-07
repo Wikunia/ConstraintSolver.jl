@@ -364,9 +364,15 @@ function prune!(com::CS.CoM; pre_backtrack=false)
     end
     if current_backtrack_id == 1595
         println("1595...")
+        for var in com.search_space
+            println("var.idx $(var.idx): ", values(var))
+        end
     end
     if current_backtrack_id == 1723
         println("1723...")
+        for var in com.search_space
+            println("var.idx $(var.idx): ", values(var))
+        end
     end
 
     current_level = 1
