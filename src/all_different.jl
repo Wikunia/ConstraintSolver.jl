@@ -51,6 +51,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
                             logs && @warn "The problem is infeasible"
                             return false
                         end
+                        logs && @info "removed $pv at index $ind"
 
                         if nvalues(c_search_space) == 1
                             only_value = value(c_search_space)
@@ -214,6 +215,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
             logs && @warn "The problem is infeasible"
             return false
         end
+        logs && @info "removed $(vmb[src]) at index $cind"
 
         # if only one value possible make it fixed
         if nvalues(search_space[cind]) == 1

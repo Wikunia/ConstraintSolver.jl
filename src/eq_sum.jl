@@ -180,8 +180,11 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 end
             end
         end
+        logs && @info "Only two left is_all_different: $is_all_different"
+        logs && @info "Only two left : $unfixed_ind_1 and $unfixed_ind_2"
 
         for v in 1:2
+            logs && @info "eq_sum: only two left v: $v"
             if v == 1
                 this, local_this = unfixed_ind_1, unfixed_local_ind_1
                 other, local_other = unfixed_ind_2, unfixed_local_ind_2
@@ -190,6 +193,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 this, local_this = unfixed_ind_2, unfixed_local_ind_2
             end
     
+
             for val in values(search_space[this])
                 # if we choose this value but the other wouldn't be an integer => remove this value
                 if (unfixed_rhs-val*constraint.coeffs[local_this]) % constraint.coeffs[local_other] != 0
