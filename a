@@ -1,16 +1,19 @@
 [54, 60],[ Info: removed below -7 for idx: 2 at constraint.idx = 1
 [ Info: removed below -8 for idx: 73 at constraint.idx = 6
 [ Info: removed below -8 for idx: 74 at constraint.idx = 6
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 73 and 74
 [ Info: eq_sum: only two left v: 1
 [ Info: eq_sum: only two left v: 2
 [ Info: removed above -6 for idx: 3 at constraint.idx = 8
 [ Info: removed above -6 for idx: 12 at constraint.idx = 8
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 3 and 12
 [ Info: eq_sum: only two left v: 1
 [ Info: eq_sum: only two left v: 2
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 4 and 13
 [ Info: eq_sum: only two left v: 1
@@ -23,6 +26,7 @@
 [ Info: removed below -6 for idx: 5 at constraint.idx = 13
 [ Info: removed below -6 for idx: 14 at constraint.idx = 13
 [ Info: removed below -6 for idx: 6 at constraint.idx = 13
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 69 and 78
 [ Info: eq_sum: only two left v: 1
@@ -31,12 +35,14 @@
 [ Info: eq_sum: only two left v: 2
 [ Info: removed above -6 for idx: 70 at constraint.idx = 20
 [ Info: removed above -6 for idx: 79 at constraint.idx = 20
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 70 and 79
 [ Info: eq_sum: only two left v: 1
 [ Info: eq_sum: only two left v: 2
 [ Info: removed above -7 for idx: 8 at constraint.idx = 21
 [ Info: removed above -7 for idx: 9 at constraint.idx = 21
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 8 and 9
 [ Info: eq_sum: only two left v: 1
@@ -66,6 +72,9 @@
 [ Info: removed -7 at index 27
 [ Info: removed below -8 for idx: 54 at constraint.idx = 51
 [ Info: removed below -8 for idx: 60 at constraint.idx = 51
+[ Info: Only two left: Before intersect is_all_different: false
+[ Info: [23, 35, 40, 49, 51] and [16, 34, 37, 47, 51]
+[ Info: intersect_cons: [51]
 [ Info: Only two left is_all_different: false
 [ Info: Only two left : 54 and 60
 [ Info: eq_sum: only two left v: 1
@@ -285,6 +294,7 @@ var.idx 81: [-6, -4, -3, -5, -1, -9]
 [ Info: removed -2 at index 59
 [ Info: removed -5 at index 39
 [ Info: removed -5 at index 48
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 73 and 74
 [ Info: eq_sum: only two left v: 1
@@ -292,21 +302,25 @@ var.idx 81: [-6, -4, -3, -5, -1, -9]
 [ Info: Two left and removed -4 at idx: 74 at constraint.idx = 6 (4)
 [ Info: removed above -5 for idx: 60 at constraint.idx = 16
 [ Info: removed above -3 for idx: 62 at constraint.idx = 16
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 60 and 62
 [ Info: eq_sum: only two left v: 1
 [ Info: eq_sum: only two left v: 2
 [ Info: Two left and removed -4 at idx: 62 at constraint.idx = 16 (4)
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 70 and 79
 [ Info: eq_sum: only two left v: 1
 [ Info: eq_sum: only two left v: 2
 [ Info: removed -4 at index 20
 [ Info: removed -4 at index 21
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 73 and 74
 [ Info: eq_sum: only two left v: 1
 [ Info: eq_sum: only two left v: 2
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 60 and 62
 [ Info: eq_sum: only two left v: 1
@@ -314,10 +328,16 @@ var.idx 81: [-6, -4, -3, -5, -1, -9]
 [ Info: removed -5 at index 24
 [ Info: removed -6 at index 24
 [ Info: removed below -4 for idx: 54 at constraint.idx = 51
+[ Info: Only two left: Before intersect is_all_different: false
+[ Info: [23, 35, 40, 49, 51] and [16, 34, 37, 47, 51]
+[ Info: intersect_cons: [51]
 [ Info: Only two left is_all_different: false
 [ Info: Only two left : 54 and 60
 [ Info: eq_sum: only two left v: 1
 [ Info: eq_sum: only two left v: 2
+[ Info: Only two left: Before intersect is_all_different: false
+[ Info: [15, 31, 34, 46] and [15, 29, 36, 48]
+[ Info: intersect_cons: [15]
 [ Info: Only two left is_all_different: false
 [ Info: Only two left : 33 and 25
 [ Info: eq_sum: only two left v: 1
@@ -338,6 +358,9 @@ var.idx 81: [-6, -4, -3, -5, -1, -9]
 [ Info: removed -5 at index 52
 [ Info: removed -3 at index 52
 [ Info: removed -4 at index 52
+[ Info: Only two left: Before intersect is_all_different: false
+[ Info: [23, 35, 40, 49, 51] and [16, 34, 37, 47, 51]
+[ Info: intersect_cons: [51]
 [ Info: Only two left is_all_different: false
 [ Info: Only two left : 54 and 60
 [ Info: eq_sum: only two left v: 1
@@ -429,20 +452,19 @@ var.idx 79: [-7, -8, -9, -6]
 var.idx 80: [-6, -7, -4, -5, -3, -1]
 var.idx 81: [-6, -5, -4, -3, -9, -1, -2]
 [ Info: removed above -4 for idx: 30 at constraint.idx = 9
-[ Info: Only two left is_all_different: true
+[ Info: Only two left: Before intersect is_all_different: false
+[ Info: [9, 28, 31, 43] and [9, 29, 32, 45]
+[ Info: intersect_cons: [9]
+[ Info: Only two left is_all_different: false
 [ Info: Only two left : 30 and 23
 [ Info: eq_sum: only two left v: 1
-[ Info: Two left and removed -5 at idx: 30 at constraint.idx = 9 (2)
-[ Info: Two left and removed -5 at idx: 23 at constraint.idx = 9 (3)
 [ Info: eq_sum: only two left v: 2
 [ Info: removed -3 at index 40
 [ Info: removed -3 at index 49
 [ Info: removed -3 at index 58
 [ Info: removed -3 at index 67
 [ Info: removed -3 at index 76
-[ Info: removed -4 at index 33
 [ Info: removed -3 at index 33
-[ Info: removed -4 at index 36
 [ Info: removed -3 at index 36
 [ Info: removed -3 at index 42
 [ Info: removed -3 at index 51
@@ -469,20 +491,20 @@ var.idx 19: [-7, -4]
 var.idx 20: [-1, -4, -7]
 var.idx 21: [-4, -1, -7]
 var.idx 22: [-9, -6, -5]
-var.idx 23: [-6]
+var.idx 23: [-6, -5]
 var.idx 24: [-5, -9, -6]
 var.idx 25: [-3]
 var.idx 26: [-2]
 var.idx 27: [-8]
 var.idx 28: [-2, -5]
 var.idx 29: [-7, -9]
-var.idx 30: [-4]
+var.idx 30: [-4, -5]
 var.idx 31: [-3]
 var.idx 32: [-1]
-var.idx 33: [-5, -2, -6]
+var.idx 33: [-5, -4, -6, -2]
 var.idx 34: [-7, -9]
 var.idx 35: [-8]
-var.idx 36: [-6, -5, -2]
+var.idx 36: [-6, -2, -4, -5]
 var.idx 37: [-9, -5, -6, -1, -4, -2, -7]
 var.idx 38: [-6, -7, -1, -4, -9, -8, -3]
 var.idx 39: [-4, -3, -2, -1, -7, -8, -5]
@@ -528,19 +550,13 @@ var.idx 78: [-4, -6, -2, -8]
 var.idx 79: [-7, -8, -9, -6]
 var.idx 80: [-6, -7, -4, -5, -3, -1]
 var.idx 81: [-6, -5, -4, -3, -9, -1, -2]
-[ Info: removed -4 at index 21
-[ Info: removed -4 at index 39
-[ Info: removed -4 at index 48
-[ Info: removed -4 at index 57
-[ Info: removed -4 at index 66
-[ Info: removed -4 at index 75
-[ Info: removed -6 at index 22
-[ Info: removed -6 at index 24
-[ Info: removed -6 at index 41
-[ Info: removed -6 at index 50
-[ Info: removed -6 at index 59
-[ Info: removed -6 at index 68
-[ Info: removed -6 at index 77
+[ Info: Only two left: Before intersect is_all_different: false
+[ Info: [9, 28, 31, 43] and [9, 29, 32, 45]
+[ Info: intersect_cons: [9]
+[ Info: Only two left is_all_different: false
+[ Info: Only two left : 30 and 23
+[ Info: eq_sum: only two left v: 1
+[ Info: eq_sum: only two left v: 2
 [ Info: removed -6 at index 60
 [ Info: removed -4 at index 60
 [ Info: removed -8 at index 60
@@ -549,11 +565,8 @@ var.idx 81: [-6, -5, -4, -3, -9, -1, -2]
 [ Info: removed -3 at index 57
 [ Info: removed -3 at index 62
 [ Info: removed -3 at index 63
-[ Info: removed -4 at index 37
-[ Info: removed -4 at index 38
-[ Info: removed -4 at index 46
-[ Info: removed -4 at index 47
 [ Info: removed above -3 for idx: 61 at constraint.idx = 16
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 61 and 62
 [ Info: eq_sum: only two left v: 1
@@ -563,12 +576,14 @@ var.idx 81: [-6, -5, -4, -3, -9, -1, -2]
 [ Info: Two left and removed -7 at idx: 62 at constraint.idx = 16 (4)
 [ Info: Two left and removed -5 at idx: 62 at constraint.idx = 16 (2)
 [ Info: removed above -6 for idx: 54 at constraint.idx = 51
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 61 and 62
 [ Info: eq_sum: only two left v: 1
 [ Info: eq_sum: only two left v: 2
 [ Info: removed below -8 for idx: 63 at constraint.idx = 23
 [ Info: removed below -8 for idx: 72 at constraint.idx = 23
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 63 and 72
 [ Info: eq_sum: only two left v: 1
@@ -581,6 +596,7 @@ var.idx 81: [-6, -5, -4, -3, -9, -1, -2]
 [ Info: removed -6 at index 46
 [ Info: removed -6 at index 47
 [ Info: removed -6 at index 49
+[ Info: removed -6 at index 50
 [ Info: removed -6 at index 51
 [ Info: removed -6 at index 52
 [ Info: removed -6 at index 53
@@ -594,13 +610,16 @@ var.idx 81: [-6, -5, -4, -3, -9, -1, -2]
 [ Info: removed above -3 for idx: 16 at constraint.idx = 18
 [ Info: removed above -3 for idx: 17 at constraint.idx = 18
 [ Info: removed above -4 for idx: 72 at constraint.idx = 23
+[ Info: Only two left: Before intersect is_all_different: true
 [ Info: Only two left is_all_different: true
 [ Info: Only two left : 63 and 72
 [ Info: eq_sum: only two left v: 1
 [ Info: eq_sum: only two left v: 2
 [ Info: removed -4 at index 18
 [ Info: removed -5 at index 33
+[ Info: removed -4 at index 33
 [ Info: removed -2 at index 33
+[ Info: removed -6 at index 24
 [ Info: removed -6 at index 42
 [ Info: removed -6 at index 69
 [ Info: removed -6 at index 78
@@ -613,6 +632,7 @@ var.idx 81: [-6, -5, -4, -3, -9, -1, -2]
 [ Info: removed -1 at index 45
 [ Info: removed -1 at index 81
 [ Info: removed -5 at index 36
+[ Info: removed -4 at index 36
 [ Info: removed -5 at index 45
 [ Info: removed -4 at index 45
 [ Info: removed -2 at index 45
@@ -620,6 +640,7 @@ var.idx 81: [-6, -5, -4, -3, -9, -1, -2]
 [ Info: removed -5 at index 81
 [ Info: removed -4 at index 81
 [ Info: removed -6 at index 40
+[ Info: removed -6 at index 41
 [ Info: removed -2 at index 43
 [ Info: removed -1 at index 44
 â”Œ Warning: The problem is infeasible
