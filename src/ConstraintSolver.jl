@@ -740,6 +740,12 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         # value is still possible => set it
         fix!(com, com.search_space[ind], pval)
         b_logs = backtrack_obj.idx == 1723 || backtrack_obj.idx == 1595
+        if b_logs
+            println("Before pruning: ")
+            for var in com.search_space
+                println("var.idx $(var.idx): ", values(var))
+            end
+        end
 
         for constraint in constraints
             push!(backtrack_obj.constraint_idxs, constraint.idx)
