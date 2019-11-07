@@ -726,7 +726,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         constraints = com.constraints[com.subscription[ind]]
         feasible = true
         for constraint in constraints
-            push!(backtrack_obj.constraint_idxs, constraint.idx)
             feasible = constraint.fct(com, constraint, pval, ind)
             if !feasible
                 break
@@ -740,10 +739,11 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         end
         # value is still possible => set it
         fix!(com, com.search_space[ind], pval)
+        b_logs = backtrack_obj.idx == 1723 || backtrack_obj.idx == 1595
 
         for constraint in constraints
             push!(backtrack_obj.constraint_idxs, constraint.idx)
-            feasible = constraint.fct(com, constraint; logs = false)
+            feasible = constraint.fct(com, constraint; logs = b_logs)
             if !feasible
                 feasible = false
                 break

@@ -1,3 +1,26 @@
+[54, 60],[ Info: removed below -7 for idx: 2 at constraint.idx = 1
+[ Info: removed below -8 for idx: 73 at constraint.idx = 6
+[ Info: removed below -8 for idx: 74 at constraint.idx = 6
+[ Info: removed above -6 for idx: 3 at constraint.idx = 8
+[ Info: removed above -6 for idx: 12 at constraint.idx = 8
+[ Info: Two left and removed -5 at idx: 4 at constraint.idx = 10 (2)
+[ Info: Two left and removed -5 at idx: 13 at constraint.idx = 10 (3)
+[ Info: removed above -2 for idx: 40 at constraint.idx = 11
+[ Info: removed above -2 for idx: 41 at constraint.idx = 11
+[ Info: removed above -2 for idx: 42 at constraint.idx = 11
+[ Info: removed below -6 for idx: 5 at constraint.idx = 13
+[ Info: removed below -6 for idx: 14 at constraint.idx = 13
+[ Info: removed below -6 for idx: 6 at constraint.idx = 13
+[ Info: Two left and removed -5 at idx: 69 at constraint.idx = 17 (2)
+[ Info: Two left and removed -5 at idx: 78 at constraint.idx = 17 (3)
+[ Info: removed above -6 for idx: 70 at constraint.idx = 20
+[ Info: removed above -6 for idx: 79 at constraint.idx = 20
+[ Info: removed above -7 for idx: 8 at constraint.idx = 21
+[ Info: removed above -7 for idx: 9 at constraint.idx = 21
+[ Info: Two left and removed -8 at idx: 8 at constraint.idx = 21 (2)
+[ Info: Two left and removed -8 at idx: 9 at constraint.idx = 21 (3)
+[ Info: removed below -8 for idx: 54 at constraint.idx = 51
+[ Info: removed below -8 for idx: 60 at constraint.idx = 51
 1595...
 var.idx 1: [-3]
 var.idx 2: [-2]
