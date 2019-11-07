@@ -69,6 +69,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
 
     if full_max < 0 || full_min > 0
         com.bt_infeasible[indices] .+= 1
+        logs && @warn "full_max: $full_max < 0 || full_min: $full_min > 0"
         return false
     end
     
@@ -102,6 +103,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 still_feasible = remove_below!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
             end            
             if !still_feasible
+                logs && @warn "maxs changed for i: $i at constraint.idx = $(constraint.idx) and got infeasible"
                 return false
             end
         end
@@ -112,6 +114,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 still_feasible = remove_above!(com, search_space[idx], cld(mins[i], constraint.coeffs[i]))
             end
             if !still_feasible
+                logs && @warn "mins changed for i: $i at constraint.idx = $(constraint.idx) and got infeasible"
                 return false
             end
         end
@@ -152,10 +155,12 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
         end
         if !has(search_space[unfixed_ind_1], unfixed_rhs)
             com.bt_infeasible[unfixed_ind_1] += 1
+            logs && @warn "Only single left  and needed value not existent at constraint.idx = $(constraint.idx) and got infeasible"
             return false
         else
             still_feasible = fix!(com, search_space[unfixed_ind_1], unfixed_rhs)
             if !still_feasible
+                logs && @warn "Only single left but can't fix it because others at constraint.idx = $(constraint.idx) and got infeasible"
                 return false
             end
         end
@@ -184,6 +189,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 # if we choose this value but the other wouldn't be an integer => remove this value
                 if (unfixed_rhs-val*constraint.coeffs[local_this]) % constraint.coeffs[local_other] != 0
                     if !rm!(com, search_space[this], val)
+                        logs && @warn "Two left but can't remove a value at constraint.idx = $(constraint.idx) and got infeasible"
                         return false
                     end
                     continue
@@ -193,16 +199,19 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 # if all different but those two are the same 
                 if is_all_different && check_other_val == val
                     if !rm!(com, search_space[this], val)
+                        logs && @warn "Two left but can't remove a value at constraint.idx = $(constraint.idx) and got infeasible"
                         return false
                     end
                     if has(search_space[other], check_other_val)
                         if !rm!(com, search_space[other], check_other_val)
+                            logs && @warn "Two left but can't remove a value at constraint.idx = $(constraint.idx) and got infeasible"
                             return false
                         end
                     end
                 else
                     if !has(search_space[other], check_other_val)
                         if !rm!(com, search_space[this], val)
+                            logs && @warn "Two left but can't remove a value at constraint.idx = $(constraint.idx) and got infeasible"
                             return false
                         end
                     end

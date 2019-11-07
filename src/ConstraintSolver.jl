@@ -362,6 +362,9 @@ function prune!(com::CS.CoM; pre_backtrack=false)
             end
         end
     end
+    if current_backtrack_id == 1595
+        println("1595...")
+    end
 
     current_level = 1
     level_increased = false
@@ -393,7 +396,11 @@ function prune!(com::CS.CoM; pre_backtrack=false)
         if all(v->isfixed(v), com.search_space[constraint.indices])
             continue
         end
-        feasible = constraint.fct(com, constraint; logs = false)
+        if current_backtrack_id == 1595
+            feasible = constraint.fct(com, constraint; logs = true)
+        else
+            feasible = constraint.fct(com, constraint; logs = false)
+        end
         if !pre_backtrack
             com.info.in_backtrack_calls += 1
         else
