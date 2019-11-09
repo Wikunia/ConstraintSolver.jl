@@ -37,7 +37,7 @@ function solve_all(filenames; benchmark=false, single_times=true)
         if single_times
             GC.enable(false)
             t = time()
-            status = solve!(com; keep_logs=true);
+            status = solve!(com);
             t = time()-t
             GC.enable(true)
             println(i-1,", ", t)

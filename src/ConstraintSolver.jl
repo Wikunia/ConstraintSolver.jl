@@ -175,11 +175,9 @@ function fulfills_constraints(com::CS.CoM, index, value)
     if index > length(com.subscription)
         return true
     end
-    constraints = com.constraints[com.subscription[index]]
     feasible = true
-    # for ci in com.subscription[index]
-        # constraint = com.constraints[ci]
-    for constraint in constraints
+    for ci in com.subscription[index]
+        constraint = com.constraints[ci]
         feasible = constraint.fct(com, constraint, value, index)
         if !feasible
             break
