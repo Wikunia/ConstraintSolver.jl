@@ -19,6 +19,8 @@ I'm just a MSc student in computer science so I don't have much knowledge on how
 - [UI changes and refactoring](https://opensourc.es/blog/constraint-solver-ui-refactor)
 - [Recap video](https://opensourc.es/blog/constraint-solver-first-recap)
 - [First step in graph coloring](https://opensourc.es/blog/constraint-solver-simple-graph-coloring)
+- [Comarison with MIP using graph coloring](https://opensourc.es/blog/constraint-solver-mip-graph-coloring)
+- [Documentation with Documenter.jl and newest Benchmarking results](https://opensourc.es/blog/constraint-solver-docs-and-benchmarking)
 
 ## Installation
 You can install this julia package using 
