@@ -60,6 +60,10 @@ mutable struct LinearConstraint <: Constraint
     operator            :: Symbol
     rhs                 :: Int
     in_all_different    :: Bool
+    mins                :: Vector{Int}
+    maxs                :: Vector{Int}
+    pre_mins            :: Vector{Int}
+    pre_maxs            :: Vector{Int}
     LinearConstraint() = new()
 end
 
@@ -70,7 +74,6 @@ mutable struct BacktrackObj
     status              :: Symbol
     variable_idx        :: Int
     pval                :: Int
-    constraint_idx      :: Vector{Int}
     best_bound          :: Int
 
     BacktrackObj() = new()
@@ -172,9 +175,9 @@ function fulfills_constraints(com::CS.CoM, index, value)
     if index > length(com.subscription)
         return true
     end
-    constraints = com.constraints[com.subscription[index]]
     feasible = true
-    for constraint in constraints
+    for ci in com.subscription[index]
+        constraint = com.constraints[ci]
         feasible = constraint.fct(com, constraint, value, index)
         if !feasible
             break
@@ -324,6 +327,16 @@ function prune!(com::CS.CoM, prune_steps::Vector{Int})
     end
 end
 
+function open_possibilities(search_space, indices)
+    open = 0
+    for vi in indices
+        if !isfixed(search_space[vi])
+            open += nvalues(search_space[vi])
+        end
+    end
+    return open
+end
+
 """
     prune!(com::CS.CoM; pre_backtrack=false)
 
@@ -332,46 +345,39 @@ Returns whether it's still feasible
 """
 function prune!(com::CS.CoM; pre_backtrack=false)
     feasible = true
-    prev_var_length = zeros(Int, length(com.search_space))
-    constraint_idxs_vec = zeros(Int, length(com.constraints))
+    N = 10000
+    search_space = com.search_space
+    prev_var_length = zeros(Int, length(search_space))
+    constraint_idxs_vec = N .* ones(Int, length(com.constraints))
     # get all constraints which need to be called (only once)
     current_backtrack_id = com.c_backtrack_idx
-    for var in com.search_space
-        if length(var.changes[current_backtrack_id]) > 0
+    for var in search_space
+        new_var_length = length(var.changes[current_backtrack_id])
+        if new_var_length > 0
+            prev_var_length[var.idx] = new_var_length
             inner_constraints = com.constraints[com.subscription[var.idx]]
-            for constraint in inner_constraints
-                constraint_idxs_vec[constraint.idx] = 1
+            for ci in com.subscription[var.idx]
+                inner_constraint = com.constraints[ci]
+                constraint_idxs_vec[inner_constraint.idx] = open_possibilities(search_space, inner_constraint.indices)
             end
         end
     end
 
-    current_level = 1
-    level_increased = false
     # while we haven't called every constraint
     while true
         b_open_constraint = false
         # will be changed or b_open_constraint => false
-        constraint = com.constraints[1]
-        for ci in 1:length(com.constraints)
-            if constraint_idxs_vec[ci] == current_level
-                constraint = com.constraints[ci]
-                constraint_idxs_vec[ci] = 0 
-                b_open_constraint = true
-                break
-            end
-        end
-        if !b_open_constraint && !level_increased
-            level_increased = true
-            current_level += 1
+        open_pos, ci = findmin(constraint_idxs_vec)
+        if open_pos == 0
+            constraint_idxs_vec[ci] = N
             continue
         end
-        if !b_open_constraint && level_increased
+        if open_pos == N
             break
         end
-        level_increased = false
-        if all(v->isfixed(v), com.search_space[constraint.indices])
-            continue
-        end
+        constraint_idxs_vec[ci] = N
+        constraint = com.constraints[ci]
+
         feasible = constraint.fct(com, constraint; logs = false)
         if !pre_backtrack
             com.info.in_backtrack_calls += 1
@@ -384,14 +390,16 @@ function prune!(com::CS.CoM; pre_backtrack=false)
         end
 
         # if we changed another variable increase the level of the constraints to call them later
-        for var in com.search_space
+        for var_idx in constraint.indices
+            var = search_space[var_idx]
             new_var_length = length(var.changes[current_backtrack_id])
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
                 inner_constraints = com.constraints[com.subscription[var.idx]]
-                for constraint in inner_constraints
-                    if constraint_idxs_vec[constraint.idx] < current_level
-                        constraint_idxs_vec[constraint.idx] = current_level + 1
+                for ci in com.subscription[var.idx]
+                    if ci != constraint.idx
+                        inner_constraint = com.constraints[ci]
+                        constraint_idxs_vec[inner_constraint.idx] = open_possibilities(search_space, inner_constraint.indices)
                     end
                 end
             end
@@ -411,8 +419,7 @@ function single_reverse_pruning!(search_space, index::Int, prune_int::Int, prune
         l_ptr = max(1,var.last_ptr)
 
         new_l_ptr = var.last_ptr + prune_int
-        @views min_val = minimum(var.values[l_ptr:new_l_ptr])
-        @views max_val = maximum(var.values[l_ptr:new_l_ptr])
+        min_val, max_val = extrema(var.values[l_ptr:new_l_ptr])
         if min_val < var.min
             var.min = min_val
         end
@@ -423,11 +430,9 @@ function single_reverse_pruning!(search_space, index::Int, prune_int::Int, prune
     end
     if prune_fix > 0
         var = search_space[index]
-        f_ptr = max(1,var.first_ptr)
         var.last_ptr = prune_fix
 
-        @views min_val = minimum(var.values[1:prune_fix])
-        @views max_val = maximum(var.values[1:prune_fix])
+        min_val, max_val = extrema(var.values[1:prune_fix])
         if min_val < var.min
             var.min = min_val
         end
@@ -569,7 +574,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
     last_backtrack_id = 0
 
     started = true
-    just_increased_depth = true
     obj_factor = com.sense == :Min ? 1 : -1
 
     while length(backtrack_vec) > 0
@@ -652,7 +656,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         started = false
         last_backtrack_id = backtrack_obj.idx
 
-        just_increased_depth = false
         backtrack_obj.status = :Closed
 
         pval = backtrack_obj.pval
@@ -693,6 +696,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         end
 
         found, ind = get_weak_ind(com)
+        # no index found => solution found
         if !found 
             new_sol = get_best_bound(com)
             if length(com.solutions) == 0
@@ -750,7 +754,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                 num_backtrack_objs -= 1
             end
         end
-        just_increased_depth = true
     end
     if length(com.solutions) > 0
         # find one of the best solutions 

@@ -108,7 +108,7 @@ end
     @test CS.same_logs(logs_1[:tree], logs_2[:tree])
 end
 
-@testset "Killer Sudoku niallsudoku_5500 with negative coefficients and -9 to -1" begin
+function killer_negative()
     com = CS.init()
 
     grid = zeros(Int, (9,9))
@@ -131,12 +131,27 @@ end
     add_sudoku_constr!(com, com_grid)
 
 
-    @test solve!(com) == :Solved
+    @test solve!(com; keep_logs=true) == :Solved
     @test fulfills_sudoku_constr(com_grid)
     @test 5*value(com_grid[CartesianIndex(1,1)])-7*value(com_grid[CartesianIndex(2,1)])-value(com_grid[CartesianIndex(2,2)]) == 4
     for s in sums[2:end]
         @test -s.result == sum([value(com_grid[CartesianIndex(i)]) for i in s.indices])
     end
+    return com
+end
+
+@testset "Killer Sudoku niallsudoku_5500 with negative coefficients and -9 to -1" begin
+    com1 = killer_negative()
+    com2 = killer_negative()
+    info_1 = com1.info
+    info_2 = com2.info
+    @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
+    @test info_1.backtrack_fixes == info_2.backtrack_fixes
+    @test info_1.in_backtrack_calls == info_2.in_backtrack_calls
+    @test info_1.backtrack_reverses == info_2.backtrack_reverses
+    logs_1 = CS.get_logs(com1)
+    logs_2 = CS.get_logs(com2)
+    @test CS.same_logs(logs_1[:tree], logs_2[:tree])
 end
 
 end

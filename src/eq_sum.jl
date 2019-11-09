@@ -12,6 +12,12 @@ function Base.:(==)(x::LinearVariables, y::Int)
     lc.coeffs = coeffs
     lc.operator = :(==)
     lc.rhs = y-constant_lhs
+    lc.maxs = zeros(Int, length(indices))
+    lc.mins = zeros(Int, length(indices))
+    lc.pre_maxs = zeros(Int, length(indices))
+    lc.pre_mins = zeros(Int, length(indices))
+    # this can be changed later in `set_in_all_different!` but needs to be initialized with false
+    lc.in_all_different = false
     return lc
 end
 
@@ -40,10 +46,10 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     search_space = com.search_space
 
     # compute max and min values for each index
-    maxs = zeros(Int, length(indices))
-    mins = zeros(Int, length(indices))
-    pre_maxs = zeros(Int, length(indices))
-    pre_mins = zeros(Int, length(indices))
+    maxs = constraint.maxs
+    mins = constraint.mins
+    pre_maxs = constraint.pre_maxs
+    pre_mins = constraint.pre_mins
     for (i,idx) in enumerate(indices)
         if constraint.coeffs[i] >= 0
             max_val = search_space[idx].max * constraint.coeffs[i]
@@ -98,7 +104,6 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 still_feasible = remove_below!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
             end            
             if !still_feasible
-                # println("i above: ", i)
                 return false
             end
         end
@@ -109,7 +114,6 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 still_feasible = remove_above!(com, search_space[idx], cld(mins[i], constraint.coeffs[i]))
             end
             if !still_feasible
-                # println("i below: ", i)
                 return false
             end
         end
@@ -158,12 +162,14 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
             end
         end
     elseif n_unfixed == 2
-        intersect_cons = intersect(com.subscription[unfixed_ind_1], com.subscription[unfixed_ind_2])
-        is_all_different = false
-        for constraint_idx in intersect_cons
-            if nameof(com.constraints[constraint_idx].fct) == :all_different
-                is_all_different = true
-                break
+        is_all_different = constraint.in_all_different
+        if !is_all_different
+            intersect_cons = intersect(com.subscription[unfixed_ind_1], com.subscription[unfixed_ind_2])
+            for constraint_idx in intersect_cons
+                if nameof(com.constraints[constraint_idx].fct) == :all_different
+                    is_all_different = true
+                    break
+                end
             end
         end
 

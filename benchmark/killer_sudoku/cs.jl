@@ -29,7 +29,7 @@ function solve_all(filenames; benchmark=false, single_times=true)
 
         for s in sums
             add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
-            add_constraint!(com, CS.all_different([com_grid[CartesianIndex(ind)] for ind in s.indices]))
+            # add_constraint!(com, CS.all_different([com_grid[CartesianIndex(ind)] for ind in s.indices]))
         end
 
         add_sudoku_constr!(com, com_grid)
