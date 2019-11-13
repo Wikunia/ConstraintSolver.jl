@@ -1,3 +1,5 @@
+include("bipartite.jl")
+
 """
     all_different(variables::Vector{Variable})
 
@@ -125,9 +127,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         end
     end
 
-    # find maximum matching (weights are 1)
-    _weights = ones(Bool,num_edges)
-    maximum_matching = bipartite_matching(_weights, di_ei, di_ej)
+    maximum_matching = bipartite_cardinality_matching(di_ei, di_ej, vc, len_range; l_sorted=true)
     if maximum_matching.weight != nindices
         logs && @warn "Infeasible (No maximum matching was found)"
         return false
