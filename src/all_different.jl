@@ -127,7 +127,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         end
     end
 
-    maximum_matching = bipartite_cardinality_matching(di_ei, di_ej, vc, len_range; l_sorted=true)
+    maximum_matching = bipartite_cardinality_matching(di_ei, di_ej, vc, len_range; ei_sorted=true)
     if maximum_matching.weight != nindices
         logs && @warn "Infeasible (No maximum matching was found)"
         return false
