@@ -2,22 +2,35 @@ module ConstraintSolver
 
 using MatrixNetworks
 using JSON
+using MathOptInterface
+using JuMP: @variable, @constraint, @objective, Model, with_optimizer
+
+const MOI = MathOptInterface
+const MOIU = MOI.Utilities
+
 
 CS = ConstraintSolver
 
 mutable struct Variable
-    idx         :: Int
-    from        :: Int
-    to          :: Int
-    first_ptr   :: Int
-    last_ptr    :: Int
-    values      :: Vector{Int}
-    indices     :: Vector{Int}
-    offset      :: Int 
-    min         :: Int
-    max         :: Int
-    changes     :: Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}
+    idx                 :: Int
+    lower_bound         :: Int
+    upper_bound         :: Int
+    first_ptr           :: Int
+    last_ptr            :: Int
+    values              :: Vector{Int}
+    indices             :: Vector{Int}
+    offset              :: Int 
+    min                 :: Int
+    max                 :: Int
+    changes             :: Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}
+    has_upper_bound     :: Bool # must be true to work 
+    has_lower_bound     :: Bool # must be true to work 
+    is_fixed            :: Bool
+    is_integer          :: Bool # must be true to work 
+
 end
+
+Variable(idx) = Variable(idx,0,0,0,0,[],[],0,0,0,Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}(), false, false, false, false)
 
 mutable struct CSInfo
     pre_backtrack_calls :: Int
@@ -46,6 +59,14 @@ mutable struct BasicConstraint <: Constraint
     BasicConstraint() = new()
 end
 
+mutable struct AllDifferentSet <: MOI.AbstractVectorSet
+    dimension           :: Int64
+    indices             :: Vector{Int}
+    pvals               :: Vector{Int}
+    AllDifferentSet(dimension) = new(dimension, [], [])
+end
+
+
 mutable struct LinearVariables
     indices             :: Vector{Int}
     coeffs              :: Vector{Int}
@@ -54,7 +75,7 @@ end
 mutable struct LinearConstraint <: Constraint
     idx                 :: Int
     fct                 :: Function
-    indices             :: Vector{Int}
+    indices             :: Vector{MOI.VariableIndex}
     pvals               :: Vector{Int}
     coeffs              :: Vector{Int}
     operator            :: Symbol
@@ -93,7 +114,7 @@ mutable struct TreeLogNode
     TreeLogNode(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children) = new(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children)
 end
 
-mutable struct CoM
+mutable struct ConstraintSolverModel
     init_search_space   :: Vector{Variable}
     search_space        :: Vector{Variable}
     subscription        :: Vector{Vector{Int}} 
@@ -110,9 +131,12 @@ mutable struct CoM
     input               :: Dict{Symbol,Any}
     logs                :: Vector{TreeLogNode}
 
-    CoM() = new()
+    ConstraintSolverModel() = new()
 end
 
+const CoM = ConstraintSolverModel
+
+include("MOI_wrapper/MOI_wrapper.jl")
 include("printing.jl")
 include("logs.jl")
 include("Variable.jl")
