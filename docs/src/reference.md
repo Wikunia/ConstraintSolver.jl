@@ -8,7 +8,7 @@ add_var!
 add_constraint!
 set_objective!
 solve!
-value
+ConstraintSolver.value
 ```
 
 ### Constraints
