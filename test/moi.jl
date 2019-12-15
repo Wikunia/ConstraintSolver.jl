@@ -31,7 +31,7 @@ function moi_tests()
     # <- works
 
     m = Model()
-    set_optimizer(m, ConstraintSolver.Optimizer)
+    set_optimizer(m, with_optimizer(ConstraintSolver.Optimizer))
     @variable(m, 1 <= x[1:3] <= 9, Int)
     @constraint(m, x[1]+x[2] == 3)
     @constraint(m, x in CS.AllDifferentSet(3))

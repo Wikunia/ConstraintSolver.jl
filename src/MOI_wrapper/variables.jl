@@ -51,6 +51,8 @@ function MOI.add_variable(model::Optimizer)
     return MOI.VariableIndex(index)
 end
 
+MOI.add_variables(model::Optimizer, n::Int) = [MOI.add_variable(model) for i in 1:n]
+
 function check_inbounds(model::Optimizer, vi::VI)
 	num_variables = length(model.variable_info)
 	if !(1 <= vi.value <= num_variables)
