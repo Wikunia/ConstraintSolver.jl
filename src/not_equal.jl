@@ -27,7 +27,7 @@ function not_equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
     if !fixed_v1 && !fixed_v2
         return true
     elseif fixed_v1 && fixed_v2
-        if value(v1) == value(v2)
+        if CS.value(v1) == CS.value(v2)
             return false
         end
         return true
@@ -36,11 +36,11 @@ function not_equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
     if fixed_v1
         prune_v = v2
         prune_v_idx = 2
-        other_val = value(v1)       
+        other_val = CS.value(v1)       
     else 
         prune_v = v1
         prune_v_idx = 1
-        other_val = value(v2) 
+        other_val = CS.value(v2) 
     end
     if has(prune_v, other_val)
         if !rm!(com, prune_v, other_val)

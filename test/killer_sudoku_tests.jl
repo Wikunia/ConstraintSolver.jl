@@ -40,7 +40,7 @@ end
     @test solve!(com) == :Solved
     @test fulfills_sudoku_constr(com_grid)
     for s in sums
-        @test s.result == sum([value(com_grid[CartesianIndex(i)]) for i in s.indices])
+        @test s.result == sum([CS.value(com_grid[CartesianIndex(i)]) for i in s.indices])
     end
 end
 
@@ -71,9 +71,9 @@ end
     logs_1 = CS.get_logs(com)
     info_1 = com.info
     @test fulfills_sudoku_constr(com_grid)
-    @test 5*value(com_grid[CartesianIndex(1,1)])+7*value(com_grid[CartesianIndex(2,1)])+value(com_grid[CartesianIndex(2,2)]) == 24
+    @test 5*CS.value(com_grid[CartesianIndex(1,1)])+7*CS.value(com_grid[CartesianIndex(2,1)])+CS.value(com_grid[CartesianIndex(2,2)]) == 24
     for s in sums[2:end]
-        @test s.result == sum([value(com_grid[CartesianIndex(i)]) for i in s.indices])
+        @test s.result == sum([CS.value(com_grid[CartesianIndex(i)]) for i in s.indices])
     end
 
     # test if deterministic by running it again
@@ -133,9 +133,9 @@ function killer_negative()
 
     @test solve!(com; keep_logs=true) == :Solved
     @test fulfills_sudoku_constr(com_grid)
-    @test 5*value(com_grid[CartesianIndex(1,1)])-7*value(com_grid[CartesianIndex(2,1)])-value(com_grid[CartesianIndex(2,2)]) == 4
+    @test 5*CS.value(com_grid[CartesianIndex(1,1)])-7*CS.value(com_grid[CartesianIndex(2,1)])-CS.value(com_grid[CartesianIndex(2,2)]) == 4
     for s in sums[2:end]
-        @test -s.result == sum([value(com_grid[CartesianIndex(i)]) for i in s.indices])
+        @test -s.result == sum([CS.value(com_grid[CartesianIndex(i)]) for i in s.indices])
     end
     return com
 end

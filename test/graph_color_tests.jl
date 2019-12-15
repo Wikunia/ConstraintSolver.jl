@@ -178,7 +178,7 @@ function normal_49_states()
     @test status == :Solved
     @test com.best_sol == 4
     @test all([CS.isfixed(var) for var in states])
-    @test maximum([value(var) for var in states]) == 4
+    @test maximum([CS.value(var) for var in states]) == 4
 
     return com
 end
@@ -375,7 +375,7 @@ end
     @test status == :Solved
     @test com.best_sol == 4
     @test all([CS.isfixed(var) for var in states])
-    @test maximum([value(var) for var in states]) == 4
+    @test maximum([CS.value(var) for var in states]) == 4
 
 end
 

@@ -56,14 +56,14 @@ function fulfills_sudoku_constr(com_grid)
         if any(v->!CS.isfixed(v), row)
             return false
         end
-        vals = unique([value(v) for v in row])
+        vals = unique([CS.value(v) for v in row])
         correct = length(vals) != 9 ? false : correct
 
         col = com_grid[CartesianIndices((1:9, rc:rc))]
         if any(v->!CS.isfixed(v), col)
             return false
         end
-        vals = unique([value(v) for v in col])
+        vals = unique([CS.value(v) for v in col])
         correct = length(vals) != 9 ? false : correct
     end
 
@@ -73,7 +73,7 @@ function fulfills_sudoku_constr(com_grid)
             if any(v->!CS.isfixed(v), box)
                 return false
             end
-            vals = unique([value(v) for v in box])
+            vals = unique([CS.value(v) for v in box])
             correct = length(vals) != 9 ? false : correct
         end
     end
@@ -99,7 +99,7 @@ function print_search_space(com_grid; max_length=:default)
                 space_right = ceil(Int, (max_length-length(pstr))/2)
                 line *= repeat(" ", space_left)*pstr*repeat(" ", space_right)
             else
-                pstr = string(value(com_grid[y,x]))
+                pstr = string(CS.value(com_grid[y,x]))
                 space_left  = floor(Int, (max_length-length(pstr))/2)
                 space_right = ceil(Int, (max_length-length(pstr))/2)
                 line *= repeat(" ", space_left)*pstr*repeat(" ", space_right)

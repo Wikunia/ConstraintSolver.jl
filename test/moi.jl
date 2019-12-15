@@ -2,8 +2,31 @@ using ConstraintSolver, JuMP
 # using Plots
 
 CS = ConstraintSolver
-include("../sudoku_fcts.jl")
-include("../../visualizations/plot_search_space.jl")
+include("sudoku_fcts.jl")
+include("../visualizations/plot_search_space.jl")
+
+function moi_tests()
+    com = CS.init();
+ 
+    optimizer = CS.Optimizer()
+    @assert MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.AllDifferentSet)
+
+
+    x1 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 3.0))
+    x2 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 3.0))
+    x3 = MOI.add_constrained_variable(optimizer, MOI.Interval(3.0, 3.0))
+
+    # [1] to get the index
+    MOI.add_constraint(optimizer, x1[1], MOI.Integer())
+    MOI.add_constraint(optimizer, x2[1], MOI.Integer())
+    MOI.add_constraint(optimizer, x3[1], MOI.Integer())
+
+    MOI.add_constraint(optimizer, MOI.VectorOfVariables([x1[1], x2[1], x3[1]]), CS.AllDifferentSet())
+
+    MOI.optimize!(optimizer)
+    # <- works
+
+end
 
 function main(;benchmark=false, backtrack=true, visualize=false)
     com = CS.init()
@@ -20,7 +43,7 @@ function main(;benchmark=false, backtrack=true, visualize=false)
     grid[9,:] = [0,0,0,6,0,0,0,0,0]
   
     m = Model(with_optimizer(ConstraintSolver.Optimizer))
-    @variable(m, 1 <= x[1:81] <= 9, Int)
+    @variable(m, 1 <= x[1:9] <= 9, Int)
     println("Added variables")
 
     #=
@@ -30,15 +53,17 @@ function main(;benchmark=false, backtrack=true, visualize=false)
         end
     end
     =#
-
-    @constraint(m, alldiff, x[1:9] in CS.AllDifferentSet(9))
+    @constraint(m, x[1]+x[2] == 1)
+    
+    @constraint(m, [x[1]] in CS.AllDifferentSet(1))
 
     # plot_search_space(grid, com_grid, "search_space_start")
 
     # add_sudoku_constr!(com, com_grid)
 
-    #optimize!(m)
+    optimize!(m)
     
+    #=
     if !benchmark
         println("Status: ", status)
         print_search_space(com_grid)
@@ -55,6 +80,7 @@ function main(;benchmark=false, backtrack=true, visualize=false)
         =#
         @assert fulfills_sudoku_constr(com_grid)
     end 
+    =#
     # plot_search_space(com, grid, "final_search_space")
 end
 

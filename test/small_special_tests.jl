@@ -41,16 +41,16 @@
 
     @test status != :Infeasible
     @test CS.isfixed(com_grid[1])
-    @test value(com_grid[1]) == 6
+    @test CS.value(com_grid[1]) == 6
     @test CS.isfixed(com_grid[5])
-    @test value(com_grid[5]) == 1
+    @test CS.value(com_grid[5]) == 1
     @test !CS.has(com_grid[3], 6)
 
     @test CS.isfixed(com_grid[6])
-    @test value(com_grid[6]) == 1
+    @test CS.value(com_grid[6]) == 1
 
     @test CS.isfixed(com_grid[7])
-    @test value(com_grid[7]) == 3
+    @test CS.value(com_grid[7]) == 3
 end
 
 @testset "Reordering sum constraint" begin
@@ -74,9 +74,9 @@ end
 
     status = solve!(com)
     @test status == :Solved 
-    @test CS.isfixed(x) && value(x) == 1
-    @test 2*value(x)-3*value(y)+6+value(x) == value(z)
-    @test value(x)+2 == value(z)
+    @test CS.isfixed(x) && CS.value(x) == 1
+    @test 2*CS.value(x)-3*CS.value(y)+6+CS.value(x) == CS.value(z)
+    @test CS.value(x)+2 == CS.value(z)
 end
 
 @testset "Infeasible coeff sum" begin
@@ -113,9 +113,9 @@ end
     
     status = solve!(com; backtrack=true)
     @test status == :Solved
-    @test CS.isfixed(com_grid[1]) && value(com_grid[1]) == 1
-    @test CS.isfixed(com_grid[2]) && value(com_grid[2]) == 2
-    @test CS.isfixed(com_grid[3]) && value(com_grid[3]) == 3
+    @test CS.isfixed(com_grid[1]) && CS.value(com_grid[1]) == 1
+    @test CS.isfixed(com_grid[2]) && CS.value(com_grid[2]) == 2
+    @test CS.isfixed(com_grid[3]) && CS.value(com_grid[3]) == 3
 
     com = CS.init()
 
@@ -128,9 +128,9 @@ end
     
     status = solve!(com; backtrack=true)
     @test status == :Solved
-    @test CS.isfixed(com_grid[1]) && value(com_grid[1]) == 1
-    @test CS.isfixed(com_grid[2]) && value(com_grid[2]) == 2
-    @test CS.isfixed(com_grid[3]) && value(com_grid[3]) == 3
+    @test CS.isfixed(com_grid[1]) && CS.value(com_grid[1]) == 1
+    @test CS.isfixed(com_grid[2]) && CS.value(com_grid[2]) == 2
+    @test CS.isfixed(com_grid[3]) && CS.value(com_grid[3]) == 3
 
     com = CS.init()
 
@@ -141,8 +141,8 @@ end
     
     status = solve!(com; backtrack=false)
     @test status == :Solved
-    @test CS.isfixed(v1) && value(v1) == 5
-    @test CS.isfixed(v2) && value(v2) == 5
+    @test CS.isfixed(v1) && CS.value(v1) == 5
+    @test CS.isfixed(v2) && CS.value(v2) == 5
 end
 
 @testset "Equal constraint" begin
@@ -157,8 +157,8 @@ end
     status = solve!(com)
     @test status == :Solved
     @test !com.info.backtracked
-    @test CS.isfixed(v1) && value(v1) == 2
-    @test CS.isfixed(v2) && value(v2) == 2
+    @test CS.isfixed(v1) && CS.value(v1) == 2
+    @test CS.isfixed(v2) && CS.value(v2) == 2
 
     # normal
     com = CS.init()
@@ -171,8 +171,8 @@ end
     status = solve!(com)
     @test status == :Solved
     @test !com.info.backtracked
-    @test CS.isfixed(v1) && value(v1) == 2
-    @test CS.isfixed(v2) && value(v2) == 2
+    @test CS.isfixed(v1) && CS.value(v1) == 2
+    @test CS.isfixed(v2) && CS.value(v2) == 2
 
     # set but infeasible
     com = CS.init()
@@ -211,8 +211,8 @@ end
     status = solve!(com)
     @test status == :Solved
     @test !com.info.backtracked
-    @test CS.isfixed(v1) && value(v1) == 2
-    @test CS.isfixed(v2) && value(v2) == 2
+    @test CS.isfixed(v1) && CS.value(v1) == 2
+    @test CS.isfixed(v2) && CS.value(v2) == 2
 
     # test with more
     com = CS.init()
@@ -229,10 +229,10 @@ end
     status = solve!(com)
     @test status == :Solved
     @test !com.info.backtracked
-    @test CS.isfixed(v1) && value(v1) == 2
-    @test CS.isfixed(v2) && value(v2) == 2
-    @test CS.isfixed(v3) && value(v3) == 2
-    @test CS.isfixed(v4) && value(v4) == 2
+    @test CS.isfixed(v1) && CS.value(v1) == 2
+    @test CS.isfixed(v2) && CS.value(v2) == 2
+    @test CS.isfixed(v3) && CS.value(v3) == 2
+    @test CS.isfixed(v4) && CS.value(v4) == 2
 end
 
 @testset "NotSolved or infeasible" begin
@@ -287,10 +287,10 @@ end
     status = solve!(com)
     @test status == :Solved
     @test !com.info.backtracked
-    @test CS.isfixed(v1) && value(v1) == 2
-    @test CS.isfixed(v2) && value(v2) == 2
-    @test CS.isfixed(v3) && value(v3) == 2
-    @test CS.isfixed(v4) && value(v4) == 2
+    @test CS.isfixed(v1) && CS.value(v1) == 2
+    @test CS.isfixed(v2) && CS.value(v2) == 2
+    @test CS.isfixed(v3) && CS.value(v3) == 2
+    @test CS.isfixed(v4) && CS.value(v4) == 2
 end
 
 @testset "Test Equals() NotSolved/Infeasible" begin
@@ -307,8 +307,8 @@ end
     status = solve!(com)
     @test status == :Infeasible
     @test !com.info.backtracked
-    @test CS.isfixed(v2) && value(v2) == 2
-    @test CS.isfixed(v4) && value(v4) == 3
+    @test CS.isfixed(v2) && CS.value(v2) == 2
+    @test CS.isfixed(v4) && CS.value(v4) == 3
 
     # test using equal
     com = CS.init()
@@ -419,8 +419,8 @@ end
     status = solve!(com; backtrack=false)
     @test status == :Solved
     @test !com.info.backtracked
-    @test CS.isfixed(v1) && value(v1) == 1
-    @test CS.isfixed(v2) && value(v2) == 2
+    @test CS.isfixed(v1) && CS.value(v1) == 1
+    @test CS.isfixed(v2) && CS.value(v2) == 2
 
     # infeasible at beginning
     com = CS.init()

@@ -23,7 +23,7 @@ function issetto(v::CS.Variable, x::Int)
 end
 
 function has(v::CS.Variable, x::Int)
-    if x > v.to || x < v.from
+    if x > v.min || x < v.max
         return false
     end
     ind = v.indices[x+v.offset]

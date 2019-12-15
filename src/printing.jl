@@ -7,7 +7,7 @@ end
 
 function compress_var_string(variable::CS.Variable)
     if CS.isfixed(variable)
-        return string(value(variable))
+        return string(CS.value(variable))
     end
 
     sorted_vals = sort(CS.values(variable))
@@ -24,7 +24,7 @@ function get_str_repr(variables::Array{CS.Variable})
             if !CS.isfixed(variables[i])
                 output *= "$(compress_var_string(variables[i])), "
             else
-                output *= "$(value(variables[i])), "
+                output *= "1" # $(CS.value(variables[i])), "
             end
         end
         return [output[1:end-2]]
@@ -38,7 +38,7 @@ function get_str_repr(variables::Array{CS.Variable})
                         max_length = len
                     end
                 else
-                    len = length(string(value(variables[i,j])))
+                    len = length(string(CS.value(variables[i,j])))
                     if len > max_length
                         max_length = len
                     end

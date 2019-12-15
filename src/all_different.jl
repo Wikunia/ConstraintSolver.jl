@@ -55,7 +55,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
                         end
 
                         if nvalues(c_search_space) == 1
-                            only_value = value(c_search_space)
+                            only_value = CS.value(c_search_space)
                             push!(fixed_vals, only_value)
                             push!(new_fixed_vals, only_value)
                             bfixed = true
@@ -117,7 +117,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         if isfixed(search_space[i])
             edge_counter += 1
             di_ei[edge_counter] = vc
-            di_ej[edge_counter] = vertex_mapping[value(search_space[i])-min_pvals_m1]-nindices
+            di_ej[edge_counter] = vertex_mapping[CS.value(search_space[i])-min_pvals_m1]-nindices
         else
             for pv in view_values(search_space[i])
                 edge_counter += 1
@@ -141,7 +141,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         if isfixed(search_space[i])
             edge_counter += 1
             di_ei[edge_counter] = vc
-            di_ej[edge_counter] = vertex_mapping[value(search_space[i])-min_pvals_m1]
+            di_ej[edge_counter] = vertex_mapping[CS.value(search_space[i])-min_pvals_m1]
         else
             for pv in view_values(search_space[i])
                 edge_counter += 1
@@ -216,7 +216,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
 
         # if only one value possible make it fixed
         if nvalues(search_space[cind]) == 1
-            only_value = value(search_space[cind])
+            only_value = CS.value(search_space[cind])
         end
     end
 

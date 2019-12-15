@@ -59,11 +59,8 @@ mutable struct BasicConstraint <: Constraint
     BasicConstraint() = new()
 end
 
-mutable struct AllDifferentSet <: MOI.AbstractVectorSet
-    dimension           :: Int64
-    indices             :: Vector{Int}
-    pvals               :: Vector{Int}
-    AllDifferentSet(dimension) = new(dimension, [], [])
+struct AllDifferentSet <: MOI.AbstractVectorSet
+
 end
 
 
@@ -222,7 +219,7 @@ function fixed_vs_unfixed(search_space, indices)
     unfixed_indices = Int[]
     for (i,ind) in enumerate(indices)
         if isfixed(search_space[ind])
-            push!(fixed_vals, value(search_space[ind]))
+            push!(fixed_vals, CS.value(search_space[ind]))
         else
             push!(unfixed_indices, i)
         end
@@ -239,10 +236,10 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
     indices = constraint.indices
     variables = Variable[v for v in com.search_space[indices]]
     pvals_intervals = Vector{NamedTuple}()
-    push!(pvals_intervals, (from = variables[1].from, to = variables[1].to))
+    push!(pvals_intervals, (from = variables[1].min, to = variables[1].max))
     for (i,ind) in enumerate(indices)
-        extra_from = variables[i].from
-        extra_to   = variables[i].to
+        extra_from = variables[i].min
+        extra_to   = variables[i].max
         comp_inside = false
         for cpvals in pvals_intervals
             if extra_from >= cpvals.from && extra_to <= cpvals.to
@@ -970,6 +967,6 @@ function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), backtr
     end
 end
 
-export add_var!, add_constraint!, solve!, value, set_objective! 
+export add_var!, add_constraint!, solve!, set_objective! 
 
 end # module

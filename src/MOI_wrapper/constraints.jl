@@ -44,6 +44,25 @@ end
 
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{AllDifferentSet}) = true
     
-function MOI.add_constraint(o::Optimizer, func::MOI.VectorOfVariables, set::AllDifferentSet)
-    return MOI.ConstraintIndex{MOI.VectorOfVariables, AllDifferentSet}(1)
+function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::AllDifferentSet)
+    com = model.inner
+    
+    constraint = BasicConstraint()
+    constraint.fct = all_different
+    constraint.indices = Int[vi.value for vi in vars.variables]
+    constraint.idx = length(com.constraints)+1
+
+    push!(com.constraints, constraint)
+    for (i,ind) in enumerate(constraint.indices)
+        push!(com.subscription[ind], constraint.idx)
+    end
+
+    return MOI.ConstraintIndex{MOI.VectorOfVariables, AllDifferentSet}(length(model.inner.constraints))
+end
+
+function set_pvals!(model::CS.Optimizer)
+    com = model.inner
+    for constraint in com.constraints 
+        set_pvals!(com, constraint)
+    end
 end

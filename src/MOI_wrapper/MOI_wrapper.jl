@@ -26,9 +26,12 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     variable_info::Vector{Variable}
     sense::MOI.OptimizationSense 
     objective::Union{Nothing, ObjectiveFunction}
-    # which variable index, (:leq,:geq,:eq,:Int,:Bin), what 
-    var_constraints::Vector{Tuple{Int64,Symbol,Int64}} 
+    # which variable index, (:leq,:geq,:eq,:Int,:Bin), and lower and upper bound
+    var_constraints::Vector{Tuple{Int64,Symbol,Int64,Int64}} 
 end
+
+include("variables.jl")
+include("constraints.jl")
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "ConstraintSolver"
 
@@ -79,8 +82,18 @@ end
     MOI.optimize!(model::Optimizer)
 """ 
 function MOI.optimize!(model::Optimizer)
-    err
+    # check if every variable has bounds and is an Integer
+    check_var_bounds(model)
+    # add all variables to the search space
+    add_vars_to_model!(model)
+    # set the pvals 
+    set_pvals!(model)
+
+    solve!(model.inner)
+
+    println("Values:")
+    for var in model.inner.search_space
+        println("$(var.idx) => $(CS.value(var))")
+    end
 end
 
-include("variables.jl")
-include("constraints.jl")
