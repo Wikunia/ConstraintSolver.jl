@@ -24,7 +24,7 @@ function get_str_repr(variables::Array{CS.Variable})
             if !CS.isfixed(variables[i])
                 output *= "$(compress_var_string(variables[i])), "
             else
-                output *= "1" # $(CS.value(variables[i])), "
+                output *= "$(CS.value(variables[i])), "
             end
         end
         return [output[1:end-2]]

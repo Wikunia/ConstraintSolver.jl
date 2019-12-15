@@ -84,6 +84,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     pval_mapping = zeros(Int, length(pvals))
     vertex_mapping = zeros(Int, len_range)
     vertex_mapping_bw = zeros(Int, nindices+length(pvals))
+
     vc = 1
     for i in indices
         vertex_mapping_bw[vc] = i
@@ -98,7 +99,6 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         pvc += 1
     end
     num_nodes = vc
-
 
     # count the number of edges
     num_edges = 0

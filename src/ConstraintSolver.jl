@@ -176,7 +176,7 @@ function add_var!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     ind = length(com.search_space)+1
     changes = Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}()
     push!(changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
-    var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from, from, to, changes)
+    var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from, from, to, changes, true, true, fix !== nothing, true)
     if fix !== nothing
         fix!(com, var, fix)
     end
@@ -236,7 +236,7 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
     indices = constraint.indices
     variables = Variable[v for v in com.search_space[indices]]
     pvals_intervals = Vector{NamedTuple}()
-    push!(pvals_intervals, (from = variables[1].min, to = variables[1].max))
+    push!(pvals_intervals, (from = variables[1].lower_bound, to = variables[1].upper_bound))
     for (i,ind) in enumerate(indices)
         extra_from = variables[i].min
         extra_to   = variables[i].max
@@ -661,7 +661,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         end
 
         ind = backtrack_obj.variable_idx
-        println("Backtrack variable index: ", ind)
 
         com.c_backtrack_idx = backtrack_obj.idx
         
