@@ -12,20 +12,30 @@ function moi_tests()
     @assert MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.AllDifferentSet)
 
 
-    x1 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 3.0))
-    x2 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 3.0))
-    x3 = MOI.add_constrained_variable(optimizer, MOI.Interval(3.0, 3.0))
+    x1 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 9.0))
+    x2 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 9.0))
+    x3 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 9.0))
 
     # [1] to get the index
     MOI.add_constraint(optimizer, x1[1], MOI.Integer())
     MOI.add_constraint(optimizer, x2[1], MOI.Integer())
     MOI.add_constraint(optimizer, x3[1], MOI.Integer())
 
-    MOI.add_constraint(optimizer, MOI.VectorOfVariables([x1[1], x2[1], x3[1]]), CS.AllDifferentSet())
+    affine_terms = Vector{MOI.ScalarAffineTerm{Float64}}()
+    push!(affine_terms,  MOI.ScalarAffineTerm{Float64}(1,MOI.VariableIndex(1)))
+    push!(affine_terms,  MOI.ScalarAffineTerm{Float64}(1,MOI.VariableIndex(2)))
+    MOI.add_constraint(optimizer, MOI.ScalarAffineFunction(affine_terms,0.0), MOI.EqualTo(3.0))
+    MOI.add_constraint(optimizer, MOI.VectorOfVariables([x1[1], x2[1], x3[1]]), CS.AllDifferentSet(3))
 
     MOI.optimize!(optimizer)
     # <- works
 
+    m = Model()
+    set_optimizer(m, ConstraintSolver.Optimizer)
+    @variable(m, 1 <= x[1:3] <= 9, Int)
+    @constraint(m, x[1]+x[2] == 3)
+    @constraint(m, x in CS.AllDifferentSet(3))
+    optimize!(m)
 end
 
 function main(;benchmark=false, backtrack=true, visualize=false)
@@ -42,7 +52,8 @@ function main(;benchmark=false, backtrack=true, visualize=false)
     grid[8,:] = [0,0,0,0,0,0,0,8,1]
     grid[9,:] = [0,0,0,6,0,0,0,0,0]
   
-    m = Model(with_optimizer(ConstraintSolver.Optimizer))
+    m = Model()
+    set_optimizer(model, ConstraintSolver.Optimizer)
     @variable(m, 1 <= x[1:9] <= 9, Int)
     println("Added variables")
 

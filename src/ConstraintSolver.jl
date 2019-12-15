@@ -60,7 +60,7 @@ mutable struct BasicConstraint <: Constraint
 end
 
 struct AllDifferentSet <: MOI.AbstractVectorSet
-
+    dimension :: Int64
 end
 
 
@@ -72,7 +72,7 @@ end
 mutable struct LinearConstraint <: Constraint
     idx                 :: Int
     fct                 :: Function
-    indices             :: Vector{MOI.VariableIndex}
+    indices             :: Vector{Int}
     pvals               :: Vector{Int}
     coeffs              :: Vector{Int}
     operator            :: Symbol
@@ -661,6 +661,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         end
 
         ind = backtrack_obj.variable_idx
+        println("Backtrack variable index: ", ind)
 
         com.c_backtrack_idx = backtrack_obj.idx
         

@@ -23,8 +23,10 @@ function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.EqualTo{Float6
     end
 
     lc = LinearConstraint()
-    indices = [v.variable_index for v in func.terms]
+    indices = [v.variable_index.value for v in func.terms]
     coeffs = [v.coefficient for v in func.terms]
+    println("indices: ", indices)
+    println("rhs: ", set.value)
     lc.fct = eq_sum
     lc.indices = indices
     lc.coeffs = coeffs
@@ -36,8 +38,14 @@ function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.EqualTo{Float6
     lc.pre_mins = zeros(Int, length(indices))
     # this can be changed later in `set_in_all_different!` but needs to be initialized with false
     lc.in_all_different = false
+    lc.idx = length(model.inner.constraints)+1
 
     push!(model.inner.constraints, lc)
+
+    for (i,ind) in enumerate(lc.indices)
+        push!(model.inner.subscription[ind], lc.idx)
+    end
+
     return MOI.ConstraintIndex{SAF, MOI.EqualTo{Float64}}(length(model.inner.constraints))
 end
 
@@ -57,7 +65,7 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
         push!(com.subscription[ind], constraint.idx)
     end
 
-    return MOI.ConstraintIndex{MOI.VectorOfVariables, AllDifferentSet}(length(model.inner.constraints))
+    return MOI.ConstraintIndex{MOI.VectorOfVariables, AllDifferentSet}(length(com.constraints))
 end
 
 function set_pvals!(model::CS.Optimizer)

@@ -73,7 +73,7 @@ end
 """ 
 Copy constructor for the optimizer
 """
-MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = true
+MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = !copy_names
 function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; kws...)
     return MOI.Utilities.automatic_copy_to(model, src; kws...)
 end
@@ -89,11 +89,26 @@ function MOI.optimize!(model::Optimizer)
     # set the pvals 
     set_pvals!(model)
 
-    solve!(model.inner)
+    println("Values before solve:")
+    for var in model.inner.search_space
+        if CS.isfixed(var)
+            println("$(var.idx) => $(CS.value(var))")
+        else
+            println("$(var.idx) => $(CS.values(var))")
+        end
+    end
+
+    status = solve!(model.inner)
+    println("Status: ", status)
+    @show model.inner.info
 
     println("Values:")
     for var in model.inner.search_space
-        println("$(var.idx) => $(CS.value(var))")
+        if CS.isfixed(var)
+            println("$(var.idx) => $(CS.value(var))")
+        else
+            println("$(var.idx) => $(CS.values(var))")
+        end
     end
 end
 
