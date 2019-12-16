@@ -49,6 +49,21 @@ function add_sudoku_constr!(com, grid)
     end
 end
 
+function jump_fulfills_sudoku_constr(vals)
+    for r = 1:9
+        !allunique(vals[r,:]) && return false
+    end
+    for c = 1:9
+        !allunique(vals[:,c]) && return false
+    end
+    for br=0:2
+        for bc=0:2
+            !allunique(vec(vals[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3])) && return false
+        end
+    end
+    return true
+end
+
 function fulfills_sudoku_constr(com_grid)
     correct = true
     for rc=1:9

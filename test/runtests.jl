@@ -1,8 +1,10 @@
 using Test
 using ConstraintSolver
 using JSON
+using MathOptInterface, JuMP
 
-CS = ConstraintSolver
+const MOI = MathOptInterface
+const CS = ConstraintSolver
 
 include("fct_tests.jl")
 

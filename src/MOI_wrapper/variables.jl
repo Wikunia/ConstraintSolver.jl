@@ -27,13 +27,15 @@ function check_var_bounds(model::Optimizer)
 end
 
 """
-    add_vars_to_model!(model::Optimizer)
+addupd_var_in_inner_model(model::Optimizer, var_index::Int)
 
 Adds all variables to model.inner.search_space
 """
-function add_vars_to_model!(model::Optimizer)
-    for var in model.variable_info
-        push!(model.inner.search_space, var)
+function addupd_var_in_inner_model(model::Optimizer, var_index::Int)
+    if length(model.inner.search_space) < var_index
+        push!(model.inner.search_space, model.variable_info[var_index])
+    else
+        model.inner.search_space[var_index] = model.variable_info[var_index]
     end
 end
 
@@ -48,6 +50,7 @@ function MOI.add_variable(model::Optimizer)
     model.variable_info[index].changes = changes
     push!(model.inner.subscription, Int[])
     push!(model.inner.bt_infeasible, 0)
+    addupd_var_in_inner_model(model, index)
     return MOI.VariableIndex(index)
 end
 
@@ -78,6 +81,8 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.Integer)
 
     cindex = length(model.var_constraints)+1
     push!(model.var_constraints, (vi.value, :int, typemin(Int64), typemax(Int64)))
+
+    addupd_var_in_inner_model(model, vi.value)
     return MOI.ConstraintIndex{SVF, MOI.Integer}(cindex)
 end
 
@@ -95,6 +100,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.ZeroOne)
     model.variable_info[vi.value].indices =  1:2
     model.variable_info[vi.value].first_ptr = 1
     model.variable_info[vi.value].last_ptr = 2
+    addupd_var_in_inner_model(model, vi.value)
 
     cindex = length(model.var_constraints)+1
     push!(model.var_constraints, (vi.value, :bin, typemin(Int64), typemax(Int64)))
@@ -135,6 +141,8 @@ function MOI.add_constraint(model::Optimizer, v::SVF, interval::MOI.Interval{Flo
     model.variable_info[vi.value].first_ptr = 1
     model.variable_info[vi.value].last_ptr = num_vals
 
+    addupd_var_in_inner_model(model, vi.value)
+
     cindex = length(model.var_constraints)+1
     push!(model.var_constraints, (vi.value, :interval, interval.lower, interval.upper))
     return MOI.ConstraintIndex{SVF, MOI.Interval{Float64}}(cindex)
@@ -163,6 +171,9 @@ function MOI.add_constraint(model::Optimizer, v::SVF, lt::MOI.LessThan{Float64})
         model.variable_info[vi.value].first_ptr = 1
         model.variable_info[vi.value].last_ptr = num_vals
     end
+
+    addupd_var_in_inner_model(model, vi.value)
+
     cindex = length(model.var_constraints)+1
     push!(model.var_constraints, (vi.value, :leq, typemin(Int64), lt.upper))
     return MOI.ConstraintIndex{SVF, MOI.LessThan{Float64}}(cindex)
@@ -191,6 +202,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, gt::MOI.GreaterThan{Float6
         model.variable_info[vi.value].first_ptr = 1
         model.variable_info[vi.value].last_ptr = num_vals
     end
+    addupd_var_in_inner_model(model, vi.value)
 
     cindex = length(model.var_constraints)+1
     push!(model.var_constraints, (vi.value, :geq, gt.lower, typemax(Int64)))
@@ -221,6 +233,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, eq::MOI.EqualTo{Float64})
     model.variable_info[vi.value].indices = [1]
     model.variable_info[vi.value].first_ptr = 1
     model.variable_info[vi.value].last_ptr = 1
+    addupd_var_in_inner_model(model, vi.value)
 
     cindex = length(model.var_constraints)+1
     push!(model.var_constraints, (vi.value, :eq, eq.value, eq.value))

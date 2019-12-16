@@ -28,10 +28,12 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     objective::Union{Nothing, ObjectiveFunction}
     # which variable index, (:leq,:geq,:eq,:Int,:Bin), and lower and upper bound
     var_constraints::Vector{Tuple{Int64,Symbol,Int64,Int64}} 
+    status::MOI.TerminationStatusCode
 end
 
 include("variables.jl")
 include("constraints.jl")
+include("results.jl")
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "ConstraintSolver"
 
@@ -45,7 +47,8 @@ function Optimizer(;options...)
         [], 
         MOI.FEASIBILITY_SENSE, 
         nothing,
-        []
+        [],
+        MOI.OPTIMIZE_NOT_CALLED
     )
 end 
 
@@ -68,6 +71,7 @@ function MOI.empty!(model::Optimizer)
     model.sense = MOI.FEASIBILITY_SENSE
     model.objective = nothing
     empty!(model.var_constraints)
+    model.status = MOI.OPTIMIZE_NOT_CALLED
 end
 
 """ 
@@ -84,31 +88,19 @@ end
 function MOI.optimize!(model::Optimizer)
     # check if every variable has bounds and is an Integer
     check_var_bounds(model)
-    # add all variables to the search space
-    add_vars_to_model!(model)
     # set the pvals 
     set_pvals!(model)
 
-    println("Values before solve:")
-    for var in model.inner.search_space
-        if CS.isfixed(var)
-            println("$(var.idx) => $(CS.value(var))")
-        else
-            println("$(var.idx) => $(CS.values(var))")
-        end
-    end
-
     status = solve!(model.inner)
-    println("Status: ", status)
-    @show model.inner.info
+    set_status!(model, status)
 
-    println("Values:")
-    for var in model.inner.search_space
-        if CS.isfixed(var)
-            println("$(var.idx) => $(CS.value(var))")
-        else
-            println("$(var.idx) => $(CS.values(var))")
-        end
+    if status == :Optimal
+        model.status == MOI.OPTIMAL
+    elseif status == :Infeasible
+        model.status == MOI.INFEASIBLE_OR_UNBOUNDED
+    elseif status == :NotSolved
+        model.status == MOI.OTHER_LIMIT
     end
+   
 end
 

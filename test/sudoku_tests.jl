@@ -1,24 +1,38 @@
 @testset "Sudoku" begin
 
 @testset "Sudoku from opensourc.es" begin
-    com = CS.init()
+    grid = [0 2 1 0 7 9 0 8 5;
+            0 4 5 3 1 0 0 0 9;
+            0 7 0 0 4 0 0 1 0;
+            0 0 0 1 0 8 0 3 6;
+            0 6 0 0 0 0 2 0 8;
+            0 0 0 0 0 3 0 0 4;
+            6 0 8 0 0 0 0 0 0;
+            0 9 4 0 0 7 8 0 0;
+            2 0 0 5 0 0 0 4 0]
 
-    grid = zeros(Int, (9,9))
-    grid[1,:] = [0,2,1,0,7,9,0,8,5]
-    grid[2,:] = [0,4,5,3,1,0,0,0,9]
-    grid[3,:] = [0,7,0,0,4,0,0,1,0]
-    grid[4,:] = [0,0,0,1,0,8,0,3,6]
-    grid[5,:] = [0,6,0,0,0,0,2,0,8]
-    grid[6,:] = [0,0,0,0,0,3,0,0,4]
-    grid[7,:] = [6,0,8,0,0,0,0,0,0]
-    grid[8,:] = [0,9,4,0,0,7,8,0,0]
-    grid[9,:] = [2,0,0,5,0,0,0,4,0]
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+    # set variables
+    for r=1:9, c=1:9
+        if grid[r,c] != 0
+            @constraint(m, x[r,c] == grid[r,c])
+        end
+    end
+    # sudoku constraints
+    for rc = 1:9
+        @constraint(m, x[rc,:] in CS.AllDifferentSet(9))
+        @constraint(m, x[:,rc] in CS.AllDifferentSet(9))
+    end
+    for br=0:2
+        for bc=0:2
+            @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet(9))
+        end
+    end
 
-    com_grid = create_sudoku_grid!(com, grid)
-    add_sudoku_constr!(com, com_grid)
-
-    @test solve!(com) == :Solved
-    @test fulfills_sudoku_constr(com_grid)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test jump_fulfills_sudoku_constr(JuMP.value.(x))
 end
 
 

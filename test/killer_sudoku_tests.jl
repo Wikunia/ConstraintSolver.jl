@@ -19,28 +19,32 @@ end
 @testset "Killer Sudoku" begin
 
 @testset "Killer Sudoku from wikipedia" begin
-    com = CS.init()
-
-    grid = zeros(Int, (9,9))
-
-    com_grid = Array{CS.Variable, 2}(undef, 9, 9)
-    for (ind,val) in enumerate(grid)
-        com_grid[ind] = add_var!(com, 1, 9)
-    end
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
 
     sums = parseKillerJSON(JSON.parsefile("data/killer_wikipedia"))
 
     for s in sums
-        add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
+        @constraint(m, sum([x[ind[1],ind[2]] for ind in s.indices]) == s.result)
     end
 
-    add_sudoku_constr!(com, com_grid)
+    # sudoku constraints
+    for rc = 1:9
+        @constraint(m, x[rc,:] in CS.AllDifferentSet(9))
+        @constraint(m, x[:,rc] in CS.AllDifferentSet(9))
+    end
+    for br=0:2
+        for bc=0:2
+            @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet(9))
+        end
+    end
 
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test jump_fulfills_sudoku_constr(JuMP.value.(x))
 
-    @test solve!(com) == :Solved
-    @test fulfills_sudoku_constr(com_grid)
     for s in sums
-        @test s.result == sum([CS.value(com_grid[CartesianIndex(i)]) for i in s.indices])
+        @test s.result == sum(JuMP.value.([x[i[1],i[2]] for i in s.indices]))
     end
 end
 
