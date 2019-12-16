@@ -25,8 +25,6 @@ function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.EqualTo{Float6
     lc = LinearConstraint()
     indices = [v.variable_index.value for v in func.terms]
     coeffs = [v.coefficient for v in func.terms]
-    println("indices: ", indices)
-    println("rhs: ", set.value)
     lc.fct = eq_sum
     lc.indices = indices
     lc.coeffs = coeffs

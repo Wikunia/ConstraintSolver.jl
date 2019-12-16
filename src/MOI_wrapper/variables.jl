@@ -96,7 +96,8 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.ZeroOne)
     model.variable_info[vi.value].lower_bound = 0
     model.variable_info[vi.value].min = 0
     model.variable_info[vi.value].has_lower_bound = true
-    model.variable_info[vi.value].values =  [1,2]
+    model.variable_info[vi.value].values =  [0,1]
+    model.variable_info[vi.value].offset =  1
     model.variable_info[vi.value].indices =  1:2
     model.variable_info[vi.value].first_ptr = 1
     model.variable_info[vi.value].last_ptr = 2
@@ -132,6 +133,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, interval::MOI.Interval{Flo
     model.variable_info[vi.value].max = interval.upper
     model.variable_info[vi.value].has_upper_bound = true
     model.variable_info[vi.value].lower_bound = interval.lower
+    model.variable_info[vi.value].offset =  1-interval.lower
     model.variable_info[vi.value].min = interval.lower
     model.variable_info[vi.value].has_lower_bound = true
 
@@ -193,6 +195,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, gt::MOI.GreaterThan{Float6
     end
     model.variable_info[vi.value].lower_bound = gt.lower
     model.variable_info[vi.value].min = gt.lower
+    model.variable_info[vi.value].offset =  1-gt.lower
     model.variable_info[vi.value].has_lower_bound = true
 
     if has_upper_bound(model, vi)

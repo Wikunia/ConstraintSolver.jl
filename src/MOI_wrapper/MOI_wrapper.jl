@@ -91,6 +91,13 @@ function MOI.optimize!(model::Optimizer)
     # set the pvals 
     set_pvals!(model)
 
+    #=
+    println("Before solve")
+    for var in model.variable_info
+        println(var)
+    end
+    =#
+
     status = solve!(model.inner)
     set_status!(model, status)
 

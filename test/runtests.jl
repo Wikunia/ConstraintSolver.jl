@@ -7,6 +7,7 @@ const MOI = MathOptInterface
 const CS = ConstraintSolver
 
 include("fct_tests.jl")
+include("moi.jl")
 
 include("sudoku_fcts.jl")
 include("small_special_tests.jl")
