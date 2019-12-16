@@ -35,4 +35,23 @@ end
     @test MOI.get(optimizer, MOI.VariablePrimal(), x2[1]) == 2
     @test MOI.get(optimizer, MOI.VariablePrimal(), x3[1]) == 3
 end
+
+@testset "ErrorHandling" begin
+    optimizer = CS.Optimizer()
+    @test_throws ErrorException MOI.add_constrained_variable(optimizer, MOI.Interval(NaN, 2.0))
+    @test_throws ErrorException MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, NaN))
+
+    optimizer = CS.Optimizer()
+    x = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 2.0))
+    @test_logs (:error, r"Upper bound .* exists") MOI.add_constraint(optimizer, MOI.SingleVariable(MOI.VariableIndex(1)), MOI.LessThan(2.0))
+    @test_logs (:error, r"Lower bound .* exists") MOI.add_constraint(optimizer, MOI.SingleVariable(MOI.VariableIndex(1)), MOI.GreaterThan(1.0))
+
+    optimizer = CS.Optimizer()
+    x1 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 2.0))
+    x2 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 2.0))
+    # All should be integer
+    @test_throws ErrorException MOI.optimize!(optimizer)
+
+end
+
 end

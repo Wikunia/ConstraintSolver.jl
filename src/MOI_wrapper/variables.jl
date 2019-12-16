@@ -115,16 +115,16 @@ function MOI.add_constraint(model::Optimizer, v::SVF, interval::MOI.Interval{Flo
     vi = v.variable
     check_inbounds(model, vi)
     if isnan(interval.upper)
-        @error "Invalid upper bound value $(lt.upper)."
+        throw(ErrorException("The interval bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(interval.upper)"))
     end
     if has_upper_bound(model, vi)
-        @error "Upper bound on variable $vi already exists."
+        @error "Upper bound on variable $vi exists already."
     end
     if isnan(interval.lower)
-        @error "Invalid upper bound value $(lt.upper)."
+        throw(ErrorException("The interval bounds can not contain NaN and must be an Integer. Currently it has a lower bound of $(interval.lower)"))
     end
     if has_lower_bound(model, vi)
-        @error "Lower bound on variable $vi already exists."
+        @error "Lower bound on variable $vi exists already."
     end
     if is_fixed(model, vi)
         @error "Variable $vi is fixed. Cannot also set upper bound."
@@ -154,7 +154,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, lt::MOI.LessThan{Float64})
     vi = v.variable
     check_inbounds(model, vi)
     if isnan(lt.upper)
-        @error "Invalid upper bound value $(lt.upper)."
+        throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(lt.upper)"))
     end
     if has_upper_bound(model, vi)
         @error "Upper bound on variable $vi already exists."
@@ -185,7 +185,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, gt::MOI.GreaterThan{Float6
     vi = v.variable
     check_inbounds(model, vi)
     if isnan(gt.lower)
-        @error "Invalid lower bound value $(gt.lower)."
+        throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(gt.upper)"))
     end
     if has_lower_bound(model, vi)
         @error "Lower bound on variable $vi already exists."
