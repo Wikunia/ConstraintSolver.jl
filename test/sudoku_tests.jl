@@ -20,15 +20,7 @@
         end
     end
     # sudoku constraints
-    for rc = 1:9
-        @constraint(m, x[rc,:] in CS.AllDifferentSet(9))
-        @constraint(m, x[:,rc] in CS.AllDifferentSet(9))
-    end
-    for br=0:2
-        for bc=0:2
-            @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet(9))
-        end
-    end
+    jump_add_sudoku_constr!(m, x)
 
     optimize!(m)
     @test JuMP.termination_status(m) == MOI.OPTIMAL
@@ -58,24 +50,30 @@ end
 end
 
 @testset "Hard sudoku infeasible" begin
-    com = CS.init()
+    grid = [0 0 0 5 4 6 0 0 9;
+            0 2 0 0 0 0 0 0 7;
+            0 0 3 9 0 0 0 0 4;
+            9 0 5 0 0 0 0 7 3;
+            7 0 0 0 0 0 0 2 0;
+            0 0 0 0 9 3 0 0 0;
+            0 5 6 0 0 8 0 0 0;
+            0 1 0 0 3 9 0 0 0;
+            0 0 0 0 0 0 8 0 6]
 
-    grid = zeros(Int,(9,9))
-    grid[1,:] = [0 0 0 5 4 6 0 0 9]
-    grid[2,:] = [0 2 0 0 0 0 0 0 7]
-    grid[3,:] = [0 0 3 9 0 0 0 0 4]
-    grid[4,:] = [9 0 5 0 0 0 0 7 3]
-    grid[5,:] = [7 0 0 0 0 0 0 2 0]
-    grid[6,:] = [0 0 0 0 9 3 0 0 0]
-    grid[7,:] = [0 5 6 0 0 8 0 0 0]
-    grid[8,:] = [0 1 0 0 3 9 0 0 0]
-    grid[9,:] = [0 0 0 0 0 0 8 0 6]
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+    # set variables
+    for r=1:9, c=1:9
+        if grid[r,c] != 0
+            @constraint(m, x[r,c] == grid[r,c])
+        end
+    end
+    # sudoku constraints
+    jump_add_sudoku_constr!(m, x)
 
-    com_grid = create_sudoku_grid!(com, grid)
-    add_sudoku_constr!(com, com_grid)
-
-    @test solve!(com) == :Infeasible
-    @test !fulfills_sudoku_constr(com_grid)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.INFEASIBLE
+    @test !jump_fulfills_sudoku_constr(JuMP.value.(x))
 end
 
 
