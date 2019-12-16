@@ -99,15 +99,6 @@ function MOI.optimize!(model::Optimizer)
     =#
 
     status = solve!(model.inner)
-    set_status!(model, status)
-
-    if status == :Optimal
-        model.status == MOI.OPTIMAL
-    elseif status == :Infeasible
-        model.status == MOI.INFEASIBLE_OR_UNBOUNDED
-    elseif status == :NotSolved
-        model.status == MOI.OTHER_LIMIT
-    end
-   
+    set_status!(model, status)   
 end
 
