@@ -4,6 +4,7 @@ using MatrixNetworks
 using JSON
 using MathOptInterface
 using JuMP: @variable, @constraint, @objective, Model, with_optimizer
+import JuMP.sense_to_set
 
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
@@ -63,6 +64,9 @@ struct AllDifferentSet <: MOI.AbstractVectorSet
     dimension :: Int64
 end
 
+struct NotEqualSet{T} <: MOI.AbstractScalarSet 
+    value :: T
+end
 
 mutable struct LinearVariables
     indices             :: Vector{Int}

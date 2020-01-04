@@ -49,7 +49,7 @@ end
 
 
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{AllDifferentSet}) = true
-    
+   
 function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::AllDifferentSet)
     com = model.inner
     
@@ -66,9 +66,43 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
     return MOI.ConstraintIndex{MOI.VectorOfVariables, AllDifferentSet}(length(com.constraints))
 end
 
+MOI.supports_constraint(::Optimizer, ::Type{MOI.ScalarAffineFunction{Float64}}, ::Type{NotEqualSet{Float64}}) = true
+
+function MOI.add_constraint(model::Optimizer, aff::MOI.ScalarAffineFunction{Float64}, set::NotEqualSet{Float64})
+    if set.value != 0.0
+        error("Only constraints of the type `a != b` are supported but not `a != b-2`")
+    end
+    if length(aff.terms) != 2
+        error("Only constraints of the type `a != b` are supported but not `[a,b,...] in NotEqualSet` => only two variables. Otherwise use an AllDifferentSet constraint.")
+    end
+    if aff.terms[1].coefficient != 1.0 || aff.terms[2].coefficient != -1.0
+        error("Only constraints of the type `a != b` are supported but not `2a != b`. You used coefficients: $(aff.terms[1].coefficient) and $(aff.terms[2].coefficient) instead of `1.0` and `-1.0`")
+    end
+
+    com = model.inner
+    
+    constraint = BasicConstraint()
+    constraint.fct = not_equal
+    constraint.indices = Int[vi.variable_index.value for vi in aff.terms]
+    constraint.idx = length(com.constraints)+1
+
+    push!(com.constraints, constraint)
+    for (i,ind) in enumerate(constraint.indices)
+        push!(com.subscription[ind], constraint.idx)
+    end
+
+    return MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, NotEqualSet{Float64}}(length(com.constraints))
+end
+
 function set_pvals!(model::CS.Optimizer)
     com = model.inner
     for constraint in com.constraints 
         set_pvals!(com, constraint)
     end
 end
+
+### != 
+
+sense_to_set(::Function, ::Val{:!=}) = NotEqualSet(0.0)
+
+MOIU.shift_constant(set::NotEqualSet, value) = NotEqualSet(set.value + value)
