@@ -381,62 +381,13 @@ end
 
 @testset "49 US states + DC only 3 colors" begin
     m = Model(with_optimizer(CS.Optimizer))
-
     num_colors = 3
-    @variable(m, 1 <= washington <= num_colors, Int)
-    @variable(m, 1 <= montana <= num_colors, Int)
-    @variable(m, 1 <= maine <= num_colors, Int)
-    @variable(m, 1 <= north_dakota <= num_colors, Int)
-    @variable(m, 1 <= south_dakota <= num_colors, Int)
-    @variable(m, 1 <= wyoming <= num_colors, Int)
-    @variable(m, 1 <= wisconsin <= num_colors, Int)
-    @variable(m, 1 <= idaho <= num_colors, Int)
-    @variable(m, 1 <= vermont <= num_colors, Int)
-    @variable(m, 1 <= minnesota <= num_colors, Int)
-    @variable(m, 1 <= oregon <= num_colors, Int)
-    @variable(m, 1 <= new_hampshire <= num_colors, Int)
-    @variable(m, 1 <= iowa <= num_colors, Int)
-    @variable(m, 1 <= massachusetts <= num_colors, Int)
-    @variable(m, 1 <= nebraska <= num_colors, Int)
-    @variable(m, 1 <= new_york <= num_colors, Int)
-    @variable(m, 1 <= pennsylvania <= num_colors, Int)
-    @variable(m, 1 <= connecticut <= num_colors, Int)
-    @variable(m, 1 <= rhode_island <= num_colors, Int)
-    @variable(m, 1 <= new_jersey <= num_colors, Int)
-    @variable(m, 1 <= indiana <= num_colors, Int)
-    @variable(m, 1 <= nevada <= num_colors, Int)
-    @variable(m, 1 <= utah <= num_colors, Int)
-    @variable(m, 1 <= california <= num_colors, Int)
-    @variable(m, 1 <= ohio <= num_colors, Int)
-    @variable(m, 1 <= illinois <= num_colors, Int)
-    @variable(m, 1 <= washington_dc <= num_colors, Int)
-    @variable(m, 1 <= delaware <= num_colors, Int)
-    @variable(m, 1 <= west_virginia <= num_colors, Int)
-    @variable(m, 1 <= maryland <= num_colors, Int)
-    @variable(m, 1 <= colorado <= num_colors, Int)
-    @variable(m, 1 <= kentucky <= num_colors, Int)
-    @variable(m, 1 <= kansas <= num_colors, Int)
-    @variable(m, 1 <= virginia <= num_colors, Int)
-    @variable(m, 1 <= missouri <= num_colors, Int)
-    @variable(m, 1 <= arizona <= num_colors, Int)
-    @variable(m, 1 <= oklahoma <= num_colors, Int)
-    @variable(m, 1 <= north_carolina <= num_colors, Int)
-    @variable(m, 1 <= tennessee <= num_colors, Int)
-    @variable(m, 1 <= texas <= num_colors, Int)
-    @variable(m, 1 <= new_mexico <= num_colors, Int)
-    @variable(m, 1 <= alabama <= num_colors, Int)
-    @variable(m, 1 <= mississippi <= num_colors, Int)
-    @variable(m, 1 <= georgia <= num_colors, Int)
-    @variable(m, 1 <= south_carolina <= num_colors, Int)
-    @variable(m, 1 <= arkansas <= num_colors, Int)
-    @variable(m, 1 <= louisiana <= num_colors, Int)
-    @variable(m, 1 <= florida <= num_colors, Int)
-    @variable(m, 1 <= michigan <= num_colors, Int)
 
-    states = [washington,montana,maine,north_dakota,south_dakota,wyoming,wisconsin,idaho,vermont,minnesota,oregon,new_hampshire,
+    @variable(m, 1 <= states[1:50] <= num_colors, Int)
+    washington,montana,maine,north_dakota,south_dakota,wyoming,wisconsin,idaho,vermont,minnesota,oregon,new_hampshire,
     iowa,massachusetts,nebraska,new_york,pennsylvania,connecticut,rhode_island,new_jersey,indiana,nevada,utah,california,ohio,
     illinois,washington_dc,delaware,west_virginia,maryland,colorado,kentucky,kansas,virginia,missouri,arizona,oklahoma,north_carolina,
-    tennessee,texas,new_mexico,alabama,mississippi,georgia,south_carolina,arkansas,louisiana,florida,michigan]
+    tennessee,texas,new_mexico,alabama,mississippi,georgia,south_carolina,arkansas,louisiana,florida,michigan = states
 
     @constraint(m, washington != oregon)
     @constraint(m, washington != idaho)
