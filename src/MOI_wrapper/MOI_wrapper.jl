@@ -33,6 +33,7 @@ end
 
 include("variables.jl")
 include("constraints.jl")
+include("objective.jl")
 include("results.jl")
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "ConstraintSolver"

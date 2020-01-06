@@ -14,15 +14,15 @@ CS = ConstraintSolver
 
 mutable struct Variable
     idx                 :: Int
-    lower_bound         :: Int
-    upper_bound         :: Int
+    lower_bound         :: Int # inital lower and
+    upper_bound         :: Int # upper bound of the variable see min, max otherwise
     first_ptr           :: Int
     last_ptr            :: Int
     values              :: Vector{Int}
     indices             :: Vector{Int}
     offset              :: Int 
-    min                 :: Int
-    max                 :: Int
+    min                 :: Int # the minimum value during the solving process 
+    max                 :: Int # for initial see lower/upper_bound
     changes             :: Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}
     has_upper_bound     :: Bool # must be true to work 
     has_lower_bound     :: Bool # must be true to work 
@@ -47,9 +47,8 @@ end
 abstract type ObjectiveFunction 
 end
 
-mutable struct MinMaxObjective <: ObjectiveFunction
-    fct                 :: Function
-    indices             :: Vector{Int}
+mutable struct SingleVariableObjective <: ObjectiveFunction
+    index :: Int
 end
 
 mutable struct BasicConstraint <: Constraint
@@ -58,6 +57,17 @@ mutable struct BasicConstraint <: Constraint
     indices             :: Vector{Int}
     pvals               :: Vector{Int}
     BasicConstraint() = new()
+end
+
+# support for a <= b constraint
+mutable struct SingleVariableConstraint <: Constraint
+    idx                 :: Int
+    fct                 :: Function
+    indices             :: Vector{Int}
+    pvals               :: Vector{Int}
+    lhs                 :: Int
+    rhs                 :: Int
+    SingleVariableConstraint() = new()
 end
 
 struct AllDifferentSet <: MOI.AbstractVectorSet
@@ -123,7 +133,7 @@ mutable struct ConstraintSolverModel
     bt_infeasible       :: Vector{Int}
     c_backtrack_idx     :: Int
     backtrack_vec       :: Vector{BacktrackObj}
-    sense               :: Symbol
+    sense               :: MOI.OptimizationSense
     objective           :: ObjectiveFunction
     best_sol            :: Int # Objective of the best solution
     best_bound          :: Int # Overall best bound 
@@ -145,6 +155,7 @@ include("objective.jl")
 include("linearcombination.jl")
 include("all_different.jl")
 include("eq_sum.jl")
+include("svc.jl")
 include("equal.jl")
 include("not_equal.jl")
 
@@ -161,7 +172,7 @@ function init()
     com.search_space        = Vector{Variable}()
     com.bt_infeasible       = Vector{Int}()
     com.c_backtrack_idx     = 1
-    com.sense               = :None # means no objective
+    com.sense               = MOI.FEASIBILITY_SENSE 
     com.backtrack_vec       = Vector{BacktrackObj}()
     com.solutions           = Vector{Int}()
     com.info                = CSInfo(0, false, 0, 0, 0)
@@ -279,19 +290,6 @@ function add_constraint!(com::CS.CoM, constraint::Constraint)
     for (i,ind) in enumerate(constraint.indices)
         push!(com.subscription[ind], constraint.idx)
     end
-end
-
-"""
-    set_objective!(com::CS.CoM, sense::Symbol, objective::ObjectiveFunction)
-
-Set the objective of the model. Sense can be `:Min` or `:Max`.
-"""
-function set_objective!(com::CS.CoM, sense::Symbol, objective::ObjectiveFunction)
-    if sense != :Min && sense != :Max
-        throw(ErrorException("The objective sense must be :Min or :Max"))
-    end
-    com.sense = sense
-    com.objective = objective
 end
 
 """
@@ -491,7 +489,7 @@ Return the best bound if setting the variable with idx: `var_idx` to `val` if `v
 Without an objective function return 0.
 """
 function get_best_bound(com::CS.CoM; var_idx=0, val=0)
-    if com.sense == :None
+    if com.sense == MOI.FEASIBILITY_SENSE
         return 0
     end
     return com.objective.fct(com, var_idx, val)
@@ -599,7 +597,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
     last_backtrack_id = 0
 
     started = true
-    obj_factor = com.sense == :Min ? 1 : -1
+    obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
 
     while length(backtrack_vec) > 0
         step_nr += 1
@@ -607,7 +605,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         l = 1
         
         # if there is no objective or sorting is set to false
-        if com.sense == :None || !sorting 
+        if com.sense == MOI.FEASIBILITY_SENSE || !sorting 
             l = length(backtrack_vec)
             backtrack_obj = backtrack_vec[l]
             while backtrack_obj.status != :Open
@@ -654,10 +652,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         if l <= 0 || l > length(backtrack_vec)
             break
         end
-        if com.sense == :Min
+        if com.sense == MOI.MIN_SENSE
             max_val = typemax(Int64)
             com.best_bound = minimum([bo.status == :Open ? bo.best_bound : max_val for bo in backtrack_vec])
-        elseif com.sense == :Max
+        elseif com.sense == MOI.MAX_SENSE
             min_val = typemin(Int64)
             com.best_bound = maximum([bo.status == :Open ? bo.best_bound : min_val for bo in backtrack_vec])
         else

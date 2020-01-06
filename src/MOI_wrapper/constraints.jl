@@ -6,6 +6,8 @@ MOI constraints
 Linear constraints
 """
 MOI.supports_constraint(::Optimizer, ::Type{SAF}, ::Type{MOI.EqualTo{Float64}}) = true
+# currently only a <= b is supported
+MOI.supports_constraint(::Optimizer, ::Type{SAF}, ::Type{MOI.LessThan{Float64}}) = true
 
 function check_inbounds(model::Optimizer, aff::SAF)
 	for term in aff.terms
@@ -47,6 +49,37 @@ function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.EqualTo{Float6
     return MOI.ConstraintIndex{SAF, MOI.EqualTo{Float64}}(length(model.inner.constraints))
 end
 
+# support for a <= b which is written as a-b <= 0
+function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.LessThan{Float64})
+    check_inbounds(model, func)
+    
+    if set.upper != 0.0
+        error("Only constraints of the type `a <= b` are supported but not `a <= b-2`")
+    end
+    if length(func.terms) != 2
+        error("Only constraints of the type `a <= b` are supported but not `a+b <= c` or something with more terms")
+    end
+    if func.terms[1].coefficient != 1.0 || func.terms[2].coefficient != -1.0
+        error("Only constraints of the type `a <= b` are supported but not `2a <= b`. You used coefficients: $(func.terms[1].coefficient) and $(func.terms[2].coefficient) instead of `1.0` and `-1.0`")
+    end
+
+    com = model.inner
+
+    svc = SingleVariableConstraint()
+    svc.fct = less_than
+    svc.lhs = func.terms[1].variable_index.value
+    svc.rhs = func.terms[2].variable_index.value
+    svc.indices = [svc.lhs, svc.rhs]
+    svc.idx = length(model.inner.constraints)+1
+
+    push!(model.inner.constraints, svc)
+
+    push!(model.inner.subscription[svc.lhs], svc.idx)
+    push!(model.inner.subscription[svc.rhs], svc.idx)
+
+    return MOI.ConstraintIndex{SAF, MOI.LessThan{Float64}}(length(model.inner.constraints))
+end
+
 
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{AllDifferentSet}) = true
    
@@ -66,9 +99,9 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
     return MOI.ConstraintIndex{MOI.VectorOfVariables, AllDifferentSet}(length(com.constraints))
 end
 
-MOI.supports_constraint(::Optimizer, ::Type{MOI.ScalarAffineFunction{Float64}}, ::Type{NotEqualSet{Float64}}) = true
+MOI.supports_constraint(::Optimizer, ::Type{SAF}, ::Type{NotEqualSet{Float64}}) = true
 
-function MOI.add_constraint(model::Optimizer, aff::MOI.ScalarAffineFunction{Float64}, set::NotEqualSet{Float64})
+function MOI.add_constraint(model::Optimizer, aff::SAF, set::NotEqualSet{Float64})
     if set.value != 0.0
         error("Only constraints of the type `a != b` are supported but not `a != b-2`")
     end
