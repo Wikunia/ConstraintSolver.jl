@@ -13,6 +13,6 @@ end
 
 function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction, func::SVF)
     check_inbounds(model, func)
-    model.objective = SingleVariableObjective(func.variable.value)
+    model.inner.objective = SingleVariableObjective(CS.single_variable_objective, func.variable.value)
     return
 end

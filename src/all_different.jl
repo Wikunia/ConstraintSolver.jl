@@ -19,7 +19,7 @@ end
 
 Tries to reduce the search space by the all_different constraint. 
 Fixes values and then sets com.changed to true for the corresponding index.
-Returns a ConstraintOutput object and throws a warning if infeasible and `logs` is set
+Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set
 """
 function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     indices = constraint.indices
@@ -226,7 +226,7 @@ end
 """
     all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
 
-Returns whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
+Return whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
 """
 function all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
     indices = constraint.indices

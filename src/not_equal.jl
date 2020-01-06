@@ -53,7 +53,7 @@ end
 """
     not_equal(com::CoM, constraint::Constraint, value::Int, index::Int)
 
-Returns whether the `not_equal` constraint can be still fulfilled.
+Return whether the `not_equal` constraint can be still fulfilled.
 """
 function not_equal(com::CoM, constraint::Constraint, value::Int, index::Int)
     if index == constraint.indices[1]

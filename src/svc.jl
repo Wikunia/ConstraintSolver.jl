@@ -9,7 +9,11 @@ Support for constraints of the form a <= b where a and b are single variables.
 This function removes values which aren't possible based on this constraint.
 """
 function less_than(com::CS.CoM, constraint::CS.SingleVariableConstraint; logs = true)
-    
+    lhs = constraint.lhs
+    rhs = constraint.rhs
+    search_space = com.search_space
+    !remove_above!(com, search_space[lhs], search_space[rhs].max) && return false
+    !remove_below!(com, search_space[rhs], search_space[lhs].min) && return false
     return true
 end
 

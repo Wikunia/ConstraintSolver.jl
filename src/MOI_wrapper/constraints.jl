@@ -59,16 +59,27 @@ function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.LessThan{Float
     if length(func.terms) != 2
         error("Only constraints of the type `a <= b` are supported but not `a+b <= c` or something with more terms")
     end
+    reverse_order = false
     if func.terms[1].coefficient != 1.0 || func.terms[2].coefficient != -1.0
-        error("Only constraints of the type `a <= b` are supported but not `2a <= b`. You used coefficients: $(func.terms[1].coefficient) and $(func.terms[2].coefficient) instead of `1.0` and `-1.0`")
+        if func.terms[1].coefficient == -1.0 && func.terms[2].coefficient == 1.0
+            # rhs is lhs and other way around
+            reverse_order = true
+        else
+            error("Only constraints of the type `a <= b` are supported but not `2a <= b`. You used coefficients: $(func.terms[1].coefficient) and $(func.terms[2].coefficient) instead of `1.0` and `-1.0`")
+        end
     end
 
     com = model.inner
 
     svc = SingleVariableConstraint()
     svc.fct = less_than
-    svc.lhs = func.terms[1].variable_index.value
-    svc.rhs = func.terms[2].variable_index.value
+    if reverse_order
+        svc.lhs = func.terms[2].variable_index.value
+        svc.rhs = func.terms[1].variable_index.value
+    else
+        svc.lhs = func.terms[1].variable_index.value
+        svc.rhs = func.terms[2].variable_index.value
+    end
     svc.indices = [svc.lhs, svc.rhs]
     svc.idx = length(model.inner.constraints)+1
 

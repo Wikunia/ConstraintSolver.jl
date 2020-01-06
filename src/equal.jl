@@ -83,7 +83,7 @@ end
 """
     equal(com::CoM, constraint::Constraint, value::Int, index::Int)
 
-Returns whether the constraint can be still fulfilled.
+Return whether the constraint can be still fulfilled.
 """
 function equal(com::CoM, constraint::Constraint, value::Int, index::Int)
     indices = filter(i->i!=index, constraint.indices)

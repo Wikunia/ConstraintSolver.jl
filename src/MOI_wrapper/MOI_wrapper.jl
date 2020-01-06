@@ -25,10 +25,10 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     inner::Union{CoM, Nothing}
     variable_info::Vector{Variable}
     sense::MOI.OptimizationSense 
-    objective::Union{Nothing, ObjectiveFunction}
     # which variable index, (:leq,:geq,:eq,:Int,:Bin), and lower and upper bound
     var_constraints::Vector{Tuple{Int64,Symbol,Int64,Int64}} 
     status::MOI.TerminationStatusCode
+    options::SolverOptions
 end
 
 include("variables.jl")
@@ -43,13 +43,14 @@ Optimizer struct constructor
 """
 function Optimizer(;options...) 
     com = CS.init()
+    options = combine_options(options)
     return Optimizer(
         com, 
         [], 
         MOI.FEASIBILITY_SENSE, 
-        nothing,
         [],
-        MOI.OPTIMIZE_NOT_CALLED
+        MOI.OPTIMIZE_NOT_CALLED,
+        options
     )
 end 
 
@@ -59,7 +60,6 @@ end
 function MOI.is_empty(model::Optimizer)
     return isempty(model.variable_info) && 
            model.sense == MOI.FEASIBILITY_SENSE &&
-           model.objective === nothing &&
            isempty(model.var_constraints)
 end
 
@@ -70,9 +70,9 @@ function MOI.empty!(model::Optimizer)
     model.inner = CS.init()
     empty!(model.variable_info)
     model.sense = MOI.FEASIBILITY_SENSE
-    model.objective = nothing
     empty!(model.var_constraints)
     model.status = MOI.OPTIMIZE_NOT_CALLED
+    model.options = get_default_options()
 end
 
 """ 
@@ -98,8 +98,7 @@ function MOI.optimize!(model::Optimizer)
         println(var)
     end
     =#
-
-    status = solve!(model.inner)
+    status = solve!(model)
     set_status!(model, status)   
 end
 

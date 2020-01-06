@@ -9,6 +9,7 @@ import JuMP.sense_to_set
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
+include("options.jl")
 
 CS = ConstraintSolver
 
@@ -48,7 +49,8 @@ abstract type ObjectiveFunction
 end
 
 mutable struct SingleVariableObjective <: ObjectiveFunction
-    index :: Int
+    fct   :: Function
+    index :: Int # index of the variable
 end
 
 mutable struct BasicConstraint <: Constraint
@@ -364,7 +366,7 @@ end
     prune!(com::CS.CoM; pre_backtrack=false)
 
 Prune based on changes by initial solve or backtracking. The information for it is stored in each variable
-Returns whether it's still feasible
+Return whether it's still feasible
 """
 function prune!(com::CS.CoM; pre_backtrack=false)
     feasible = true
@@ -710,8 +712,15 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             continue
         end
 
-        # prune on changed values
-        feasible = prune!(com)
+        # check best_bound again
+        # if best bound unchanged => continue pruning 
+        # otherwise try another path but don't close the current 
+        # -> means open new paths from here even if not pruned til the end
+        new_bb = get_best_bound(com)
+        if backtrack_obj.best_bound == new_bb
+            # prune on changed values
+            feasible = prune!(com)
+        end
          
         if !feasible
             com.info.backtrack_reverses += 1
@@ -905,20 +914,26 @@ function set_in_all_different!(com::CS.CoM)
 end
 
 """
-    solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), backtrack_sorting=true, keep_logs=false)
+    solve!(com::CS.CoM)
 
-Solve the constraint model if `backtrack = true` otherwise stop before calling backtracking.
+Solve the constraint model based on the given settings.if `backtrack = true` otherwise stop before calling backtracking.
 This way the search space can be inspected after the first pruning step.
-If `max_bt_steps` is set only that many backtracking steps are performed. 
-If `backtrack_sorting` is set to `false` the same ordering is used as when used without objective this has only an effect when an objective is used.
+If `max_bt_steps` is set only that many backtracking steps are performed. If `backtrack_sorting` is set to `false` the same ordering is used as when used without objective this has only an effect when an objective is used.
 With `keep_logs` one is able to write the tree structure of the backtracking tree using `ConstraintSolver.save_logs`.
 """
-function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), backtrack_sorting=true, keep_logs=false)
+function solve!(model::Optimizer)
+    backtrack = model.options.backtrack
+    max_bt_steps = model.options.max_bt_steps
+    backtrack_sorting = model.options.backtrack_sorting
+    keep_logs = model.options.keep_logs
+
+    com = model.inner
+
     com.input[:logs] = keep_logs
     if keep_logs
         com.init_search_space = deepcopy(com.search_space)
     end
- 
+
     set_in_all_different!(com)
 
     # check for better constraints
@@ -968,7 +983,5 @@ function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), backtr
         return :NotSolved
     end
 end
-
-export add_var!, add_constraint!, solve!, set_objective! 
 
 end # module
