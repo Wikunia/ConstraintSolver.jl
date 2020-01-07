@@ -162,13 +162,23 @@ end
     grids = sudokus_from_file("data/top95")
     c = 0
     for grid in grids
-        com = CS.init()
+        m = Model(with_optimizer(CS.Optimizer))
 
-        com_grid = create_sudoku_grid!(com, grid)
-        add_sudoku_constr!(com, com_grid)
+        @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+        # set variables
+        for r=1:9, c=1:9
+            if grid[r,c] != 0
+                @constraint(m, x[r,c] == grid[r,c])
+            end
+        end
 
-        @test CS.solve!(com, CS.get_default_options()) == :Solved
-        @test fulfills_sudoku_constr(com_grid)
+        # sudoku constraints
+        jump_add_sudoku_constr!(m, x)
+
+        optimize!(m)
+
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test jump_fulfills_sudoku_constr(JuMP.value.(x))
         c += 1
     end
     # check that actually all 95 problems were tested
@@ -177,21 +187,29 @@ end
 
 
 @testset "Number 7 in top95.txt w/o backtracking" begin
-    com = CS.init()
+    m = Model(with_optimizer(CS.Optimizer, backtrack=false))
 
     grid = Int[6,0,2,0,5,0,0,0,0,0,0,0,0,0,3,0,4,0,0,0,0,0,0,0,0,0,0,4,3,0,0,0,8,0,
               0,0,0,1,0,0,0,0,2,0,0,0,0,0,0,0,0,7,0,0,5,0,0,2,7,0,0,0,0,0,0,0,0,0,
               0,0,8,1,0,0,0,6,0,0,0,0,0]
     grid = transpose(reshape(grid, (9,9)))
 
-    com_grid = create_sudoku_grid!(com, grid)
-    add_sudoku_constr!(com, com_grid)
+    @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+    # set variables
+    for r=1:9, c=1:9
+        if grid[r,c] != 0
+            @constraint(m, x[r,c] == grid[r,c])
+        end
+    end
 
-    options = Dict{Symbol, Any}()
-    options[:backtrack] = false
+    # sudoku constraints
+    jump_add_sudoku_constr!(m, x)
 
-    options = CS.combine_options(options)
-    CS.solve!(com, options)
+    optimize!(m)
+
+    com = JuMP.backend(m).optimizer.model.inner
+    @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
+
     @test !com.info.backtracked
     @test com.info.backtrack_fixes == 0
     @test com.info.in_backtrack_calls == 0

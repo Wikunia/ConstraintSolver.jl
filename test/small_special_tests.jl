@@ -564,6 +564,16 @@ end
 
 @testset "Not supported constraints" begin
     m = Model(with_optimizer(CS.Optimizer))
+    # must be an Integer upper bound
+    @variable(m, 1 <= x[1:5] <= NaN, Int)
+    @test_throws ErrorException optimize!(m)
+
+    m = Model(with_optimizer(CS.Optimizer))
+    # must be an Integer lower bound
+    @variable(m, NaN <= x[1:5] <= 2, Int)
+    @test_throws ErrorException optimize!(m)
+
+    m = Model(with_optimizer(CS.Optimizer))
     @variable(m, 1 <= x[1:5] <= 2, Int)
     # constraint not supported
     @constraint(m, x[1]-x[2] != 2)
@@ -598,6 +608,12 @@ end
     # constraint currently not supported
     @constraint(m, 2x[1]-x[2] <= 0)
     @test_throws ErrorException optimize!(m)
+end
+
+@testset "Bipartite matching" begin
+    match = CS.bipartite_cardinality_matching([2,1,3],[1,2,3], 3, 3)
+    @test match.weight == 3
+    @test match.match == [2,1,3]
 end
 
 end

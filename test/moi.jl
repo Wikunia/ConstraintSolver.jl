@@ -19,7 +19,6 @@
     @test MOI.supports(optimizer, MOI.ObjectiveFunction{MOI.SingleVariable}())
 
     @test MOI.get(optimizer, MOI.ObjectiveSense()) == MOI.FEASIBILITY_SENSE
-
 end
 
 @testset "Small MOI tests" begin
@@ -63,6 +62,8 @@ end
     # All should be integer
     @test_throws ErrorException MOI.optimize!(optimizer)
 
+    # non existing option
+    @test_logs (:warn, r"Option abc is not available") Model(with_optimizer(CS.Optimizer, abc=1))
 end
 
 end
