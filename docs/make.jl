@@ -1,5 +1,6 @@
 using Documenter
 using ConstraintSolver
+using JuMP
 
 makedocs(
     # See https://github.com/JuliaDocs/Documenter.jl/issues/868
