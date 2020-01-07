@@ -94,17 +94,30 @@ end
     m = Model(with_optimizer(CS.Optimizer))
     @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
     # set variables
+    nvars_set = 0
     for r=1:9, c=1:9
         if grid[r,c] != 0
             @constraint(m, x[r,c] == grid[r,c])
+            nvars_set += 1
         end
     end
+
+    @test nvars_set == length(filter(n -> n != 0, grid))
+
     # sudoku constraints
     jump_add_sudoku_constr!(m, x)
 
     optimize!(m)
 
     @test JuMP.termination_status(m) == MOI.OPTIMAL
+
+    # check that it actually solves the given sudoku
+    for r=1:9, c=1:9
+        if grid[r,c] != 0
+            @test JuMP.value(x[r,c]) == grid[r,c]
+        end
+    end
+
     @test jump_fulfills_sudoku_constr(JuMP.value.(x))
 end
 

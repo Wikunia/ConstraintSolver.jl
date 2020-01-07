@@ -919,6 +919,11 @@ end
 Solve the constraint model based on the given settings.
 """
 function solve!(com::CS.CoM, options::SolverOptions)
+    # no constraints => Solved
+    if length(com.constraints) == 0
+        return :Solved
+    end
+    
     backtrack = options.backtrack
     max_bt_steps = options.max_bt_steps
     backtrack_sorting = options.backtrack_sorting

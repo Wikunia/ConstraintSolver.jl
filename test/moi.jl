@@ -51,7 +51,7 @@ end
     x2 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 2.0))
     # All should be integer
     @test_throws ErrorException MOI.optimize!(optimizer)
-
+    
 end
 
 end

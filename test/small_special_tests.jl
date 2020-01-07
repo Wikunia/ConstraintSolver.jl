@@ -536,6 +536,25 @@ end
     @test_throws ErrorException CS.add_constraint!(com, !CS.all_different([v1,v2,v3]))
 end
 
+@testset "Fix variable" begin
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x <= 9, Int)
+    @variable(m, y == 2, Int)
+    # should just return optimal with any 1-9 for x and y is fixed
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test 1 <= JuMP.value(x) <= 9
+    @test JuMP.value(y) == 2
+
+    # adding a constraint should be no problem
+    @constraint(m, x+y == 10)
+    optimize!(m)
+    
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.value(x) == 8
+    @test JuMP.value(y) == 2
+end
 
 
 end

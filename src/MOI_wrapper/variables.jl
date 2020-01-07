@@ -230,6 +230,8 @@ function MOI.add_constraint(model::Optimizer, v::SVF, eq::MOI.EqualTo{Float64})
     model.variable_info[vi.value].lower_bound = eq.value
     model.variable_info[vi.value].upper_bound = eq.value
     model.variable_info[vi.value].is_fixed = true
+    model.variable_info[vi.value].has_lower_bound = true
+    model.variable_info[vi.value].has_upper_bound = true
     model.variable_info[vi.value].min = eq.value
     model.variable_info[vi.value].max = eq.value
     model.variable_info[vi.value].values = [eq.value]
