@@ -9,6 +9,11 @@
     @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.GreaterThan{Float64})
     @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.EqualTo{Float64})
     @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.Interval{Float64})
+
+    @test MOI.supports_constraint(optimizer, MOI.ScalarAffineFunction{Float64}, MOI.EqualTo{Float64})
+    @test MOI.supports_constraint(optimizer, MOI.ScalarAffineFunction{Float64}, MOI.LessThan{Float64})
+    @test MOI.supports_constraint(optimizer, MOI.ScalarAffineFunction{Float64}, CS.NotEqualSet{Float64})
+
 end
 
 @testset "Small MOI tests" begin
@@ -51,7 +56,7 @@ end
     x2 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 2.0))
     # All should be integer
     @test_throws ErrorException MOI.optimize!(optimizer)
-    
+
 end
 
 end

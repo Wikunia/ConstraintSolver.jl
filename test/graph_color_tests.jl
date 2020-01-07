@@ -1,6 +1,6 @@
 @testset "Graph coloring" begin
 
-function normal_49_states()
+function normal_49_states(;reverse_constraint = false)
     m = Model(with_optimizer(CS.Optimizer, keep_logs=true, backtrack_sorting=false))
     num_colors = 8
     @variable(m, 1 <= max_color <= num_colors, Int)
@@ -118,7 +118,11 @@ function normal_49_states()
     @constraint(m, south_carolina != georgia)
     @constraint(m, georgia != florida)
 
-    @constraint(m, max_color .>= states)
+    if reverse_constraint
+        @constraint(m, max_color .>= states)
+    else
+        @constraint(m, states .<= max_color)
+    end
 
     @objective(m, Min, max_color)
 
@@ -139,7 +143,7 @@ function normal_49_states()
 end
 
 @testset "49 US states + DC" begin
-    com1 = normal_49_states()
+    com1 = normal_49_states(;reverse_constraint=true)
     com2 = normal_49_states()
     info_1 = com1.info
     info_2 = com2.info

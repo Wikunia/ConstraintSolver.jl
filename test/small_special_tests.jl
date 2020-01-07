@@ -556,5 +556,42 @@ end
     @test JuMP.value(y) == 2
 end
 
+@testset "Not supported constraints" begin
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 2, Int)
+    # constraint not supported
+    @constraint(m, x[1]-x[2] != 2)
+    @test_throws ErrorException optimize!(m)
+
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 2, Int)
+    # constraint not supported
+    @constraint(m, x[1]-x[2]-x[3] != 0)
+    @test_throws ErrorException optimize!(m)
+
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 2, Int)
+    # constraint currently not supported
+    @constraint(m, 2x[1]-x[2] != 0)
+    @test_throws ErrorException optimize!(m)
+
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 2, Int)
+    # constraint not supported
+    @constraint(m, x[1] <= x[2]-2)
+    @test_throws ErrorException optimize!(m)
+
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 2, Int)
+    # constraint not supported
+    @constraint(m, x[1]-x[2]-x[3] <= 0)
+    @test_throws ErrorException optimize!(m)
+
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 2, Int)
+    # constraint currently not supported
+    @constraint(m, 2x[1]-x[2] <= 0)
+    @test_throws ErrorException optimize!(m)
+end
 
 end
