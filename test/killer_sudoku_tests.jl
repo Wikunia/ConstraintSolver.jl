@@ -55,23 +55,27 @@ end
 
     com_grid = Array{CS.Variable, 2}(undef, 9, 9)
     for (ind,val) in enumerate(grid)
-        com_grid[ind] = add_var!(com, 1, 9)
+        com_grid[ind] = CS.add_var!(com, 1, 9)
     end
 
     sums = parseKillerJSON(JSON.parsefile("data/killer_niallsudoku_5500"))
 
     # the upper left sum constraint is x+y+z = 10 and the solution is 2+1+7
     # here I change it to 5*x+7*y+z = 24
-    add_constraint!(com, 5*com_grid[CartesianIndex(1,1)]+7*com_grid[CartesianIndex(2,1)]+com_grid[CartesianIndex(2,2)] == 24)
+    CS.add_constraint!(com, 5*com_grid[CartesianIndex(1,1)]+7*com_grid[CartesianIndex(2,1)]+com_grid[CartesianIndex(2,2)] == 24)
 
     for s in sums[2:end]
-        add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
+        CS.add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
     end
 
     add_sudoku_constr!(com, com_grid)
 
+    options = Dict{Symbol, Any}()
+    options[:keep_logs] = true
 
-    @test solve!(com; keep_logs=true) == :Solved
+    options = CS.combine_options(options)
+
+    @test CS.solve!(com, options) == :Solved
     logs_1 = CS.get_logs(com)
     info_1 = com.info
     @test fulfills_sudoku_constr(com_grid)
@@ -87,22 +91,28 @@ end
 
     com_grid = Array{CS.Variable, 2}(undef, 9, 9)
     for (ind,val) in enumerate(grid)
-        com_grid[ind] = add_var!(com, 1, 9)
+        com_grid[ind] = CS.add_var!(com, 1, 9)
     end
 
     sums = parseKillerJSON(JSON.parsefile("data/killer_niallsudoku_5500"))
 
     # the upper left sum constraint is x+y+z = 10 and the solution is 2+1+7
     # here I change it to 5*x+7*y+z = 24
-    add_constraint!(com, 5*com_grid[CartesianIndex(1,1)]+7*com_grid[CartesianIndex(2,1)]+com_grid[CartesianIndex(2,2)] == 24)
+    CS.add_constraint!(com, 5*com_grid[CartesianIndex(1,1)]+7*com_grid[CartesianIndex(2,1)]+com_grid[CartesianIndex(2,2)] == 24)
 
     for s in sums[2:end]
-        add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
+        CS.add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
     end
 
     add_sudoku_constr!(com, com_grid)
 
-    solve!(com; keep_logs=true)
+
+    options = Dict{Symbol, Any}()
+    options[:keep_logs] = true
+
+    options = CS.combine_options(options)
+    status = CS.solve!(com, options)
+
     logs_2 = CS.get_logs(com)
     info_2 = com.info
     @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
@@ -113,35 +123,30 @@ end
 end
 
 function killer_negative()
-    com = CS.init()
+    m = Model(with_optimizer(CS.Optimizer, keep_logs=true))
 
-    grid = zeros(Int, (9,9))
-
-    com_grid = Array{CS.Variable, 2}(undef, 9, 9)
-    for (ind,val) in enumerate(grid)
-        com_grid[ind] = add_var!(com, -9, -1)
-    end
+    @variable(m, -9 <= com_grid[1:9, 1:9] <= -1, Int)
 
     sums = parseKillerJSON(JSON.parsefile("data/killer_niallsudoku_5500"))
 
     # the upper left sum constraint is x+y+z = 10 and the solution is -2 + -1 + -7
     # here I change it to 5*x-7*y-z = 4
-    add_constraint!(com, 5*com_grid[CartesianIndex(1,1)]-7*com_grid[CartesianIndex(2,1)]-com_grid[CartesianIndex(2,2)] == 4)
+    @constraint(m, 5*com_grid[1,1]-7*com_grid[2,1]-com_grid[2,2] == 4)
 
     for s in sums[2:end]
-        add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == -s.result)
+        @constraint(m, sum([com_grid[ind...] for ind in s.indices]) == -s.result)
     end
 
-    add_sudoku_constr!(com, com_grid)
+    jump_add_sudoku_constr!(m, com_grid)
+    optimize!(m)
 
-
-    @test solve!(com; keep_logs=true) == :Solved
-    @test fulfills_sudoku_constr(com_grid)
-    @test 5*CS.value(com_grid[CartesianIndex(1,1)])-7*CS.value(com_grid[CartesianIndex(2,1)])-CS.value(com_grid[CartesianIndex(2,2)]) == 4
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test jump_fulfills_sudoku_constr(com_grid)
+    @test 5*JuMP.value(com_grid[1,1])-7*JuMP.value(com_grid[2,1])-JuMP.value(com_grid[2,2]) == 4
     for s in sums[2:end]
-        @test -s.result == sum([CS.value(com_grid[CartesianIndex(i)]) for i in s.indices])
+        @test -s.result == sum([JuMP.value(com_grid[i...]) for i in s.indices])
     end
-    return com
+    return JuMP.backend(m).optimizer.model.inner
 end
 
 @testset "Killer Sudoku niallsudoku_5500 with negative coefficients and -9 to -1" begin

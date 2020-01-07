@@ -72,7 +72,7 @@ function MOI.empty!(model::Optimizer)
     model.sense = MOI.FEASIBILITY_SENSE
     empty!(model.var_constraints)
     model.status = MOI.OPTIMIZE_NOT_CALLED
-    model.options = get_default_options()
+    # !important => don't remove the options
 end
 
 """ 

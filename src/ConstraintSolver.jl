@@ -3,7 +3,7 @@ module ConstraintSolver
 using MatrixNetworks
 using JSON
 using MathOptInterface
-using JuMP: @variable, @constraint, @objective, Model, with_optimizer
+using JuMP: @variable, @constraint, @objective, Model, with_optimizer, VariableRef, backend
 import JuMP.sense_to_set
 
 const MOI = MathOptInterface
@@ -914,20 +914,15 @@ function set_in_all_different!(com::CS.CoM)
 end
 
 """
-    solve!(com::CS.CoM)
+    solve!(com::CS.CoM, options::SolverOptions)
 
-Solve the constraint model based on the given settings.if `backtrack = true` otherwise stop before calling backtracking.
-This way the search space can be inspected after the first pruning step.
-If `max_bt_steps` is set only that many backtracking steps are performed. If `backtrack_sorting` is set to `false` the same ordering is used as when used without objective this has only an effect when an objective is used.
-With `keep_logs` one is able to write the tree structure of the backtracking tree using `ConstraintSolver.save_logs`.
+Solve the constraint model based on the given settings.
 """
-function solve!(model::Optimizer)
-    backtrack = model.options.backtrack
-    max_bt_steps = model.options.max_bt_steps
-    backtrack_sorting = model.options.backtrack_sorting
-    keep_logs = model.options.keep_logs
-
-    com = model.inner
+function solve!(com::CS.CoM, options::SolverOptions)
+    backtrack = options.backtrack
+    max_bt_steps = options.max_bt_steps
+    backtrack_sorting = options.backtrack_sorting
+    keep_logs = options.keep_logs
 
     com.input[:logs] = keep_logs
     if keep_logs
@@ -982,6 +977,16 @@ function solve!(model::Optimizer)
         @info "Backtracking is turned off."
         return :NotSolved
     end
+end
+
+"""
+    solve!(com::Optimizer)
+
+Solve the constraint model based on the given settings.
+"""
+function solve!(model::Optimizer)
+    com = model.inner
+    return solve!(com, model.options)
 end
 
 end # module

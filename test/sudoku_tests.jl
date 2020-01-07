@@ -45,7 +45,7 @@ end
     com_grid = create_sudoku_grid!(com, grid)
     add_sudoku_constr!(com, com_grid)
 
-    @test solve!(com) == :Solved
+    @test CS.solve!(com, CS.get_default_options()) == :Solved
     @test fulfills_sudoku_constr(com_grid)
 end
 
@@ -91,11 +91,21 @@ end
     grid[8,:] = [0 8 0 0 7 3 0 5 0]
     grid[9,:] = [0 0 0 0 0 0 0 0 0]
 
-    com_grid = create_sudoku_grid!(com, grid)
-    add_sudoku_constr!(com, com_grid)
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+    # set variables
+    for r=1:9, c=1:9
+        if grid[r,c] != 0
+            @constraint(m, x[r,c] == grid[r,c])
+        end
+    end
+    # sudoku constraints
+    jump_add_sudoku_constr!(m, x)
 
-    @test solve!(com) == :Solved
-    @test fulfills_sudoku_constr(com_grid)
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test jump_fulfills_sudoku_constr(JuMP.value.(x))
 end
 
 @testset "Hard fsudoku repo 0-8" begin
@@ -118,20 +128,20 @@ end
         if val == -1
             if ind == 81 # bottom right
                 # some other values are possible there
-                com_grid[ind] = add_var!(com, 9, 11)
+                com_grid[ind] = CS.add_var!(com, 9, 11)
             elseif ind == 80 # one above (will be 9 in the end)
-                com_grid[ind] = add_var!(com, 7, 11)
+                com_grid[ind] = CS.add_var!(com, 7, 11)
             else
-                com_grid[ind] = add_var!(com, 0, 8)
+                com_grid[ind] = CS.add_var!(com, 0, 8)
             end
         else
-            com_grid[ind] = add_var!(com, 0, 8; fix=val)
+            com_grid[ind] = CS.add_var!(com, 0, 8; fix=val)
         end
     end
     
     add_sudoku_constr!(com, com_grid)
 
-    @test solve!(com) == :Solved
+    @test CS.solve!(com, CS.get_default_options()) == :Solved
     @test fulfills_sudoku_constr(com_grid)
 end
 
@@ -144,7 +154,7 @@ end
         com_grid = create_sudoku_grid!(com, grid)
         add_sudoku_constr!(com, com_grid)
 
-        @test solve!(com) == :Solved
+        @test CS.solve!(com, CS.get_default_options()) == :Solved
         @test fulfills_sudoku_constr(com_grid)
         c += 1
     end
@@ -164,7 +174,11 @@ end
     com_grid = create_sudoku_grid!(com, grid)
     add_sudoku_constr!(com, com_grid)
 
-    solve!(com; backtrack=false)
+    options = Dict{Symbol, Any}()
+    options[:backtrack] = false
+
+    options = CS.combine_options(options)
+    CS.solve!(com, options)
     @test !com.info.backtracked
     @test com.info.backtrack_fixes == 0
     @test com.info.in_backtrack_calls == 0

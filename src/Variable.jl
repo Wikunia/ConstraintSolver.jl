@@ -11,6 +11,11 @@ Can be used if the status is :Solved as then all variables are fixed.
 
 @inline values(v::CS.Variable) = v.values[v.first_ptr:v.last_ptr]
 
+function values(m::Model, v::VariableRef)
+    com = backend(m).optimizer.model.inner
+    return values(com.search_space[v.index.value])
+end
+
 @inline view_values(v::CS.Variable) = @views v.values[v.first_ptr:v.last_ptr]
 
 

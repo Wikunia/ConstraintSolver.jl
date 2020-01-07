@@ -23,9 +23,9 @@ function create_sudoku_grid!(com, grid)
     com_grid = Array{CS.Variable, 2}(undef, 9, 9)
     for (ind,val) in enumerate(grid)
         if val == 0
-            com_grid[ind] = add_var!(com, 1, 9)
+            com_grid[ind] = CS.add_var!(com, 1, 9)
         else
-            com_grid[ind] = add_var!(com, 1, 9; fix=val)
+            com_grid[ind] = CS.add_var!(com, 1, 9; fix=val)
         end
     end
     return com_grid
@@ -35,16 +35,16 @@ function add_sudoku_constr!(com, grid)
     for rc=1:9
         #row
         variables = grid[CartesianIndices((rc:rc,1:9))]
-        add_constraint!(com, CS.all_different([variables...]))
+        CS.add_constraint!(com, CS.all_different([variables...]))
         #col
         variables = grid[CartesianIndices((1:9,rc:rc))]
-        add_constraint!(com, CS.all_different([variables...]))
+        CS.add_constraint!(com, CS.all_different([variables...]))
     end
 
     for br=0:2
         for bc=0:2
             variables = grid[CartesianIndices((br*3+1:(br+1)*3,bc*3+1:(bc+1)*3))]
-            add_constraint!(com, CS.all_different([variables...]))
+            CS.add_constraint!(com, CS.all_different([variables...]))
         end
     end
 end

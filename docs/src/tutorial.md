@@ -15,7 +15,13 @@ Then we have to use the package with:
 
 ```
 using ConstraintSolver
-CS = ConstraintSolver
+const CS = ConstraintSolver
+```
+
+additionally we need to include the modelling package [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl) with:
+
+```
+using JuMP
 ```
 
 Solving:
@@ -51,13 +57,14 @@ grid = [6 0 2 0 5 0 0 0 0;
 `0` represents an empty cell. Then we need a variable for each cell:
 
 ```
-com = CS.init() # creating a constraint solver model
-com_grid = Array{CS.Variable, 2}(undef, 9, 9)
-for (ind,val) in enumerate(grid)
-    if val == 0
-        com_grid[ind] = add_var!(com, 1, 9)
-    else
-        com_grid[ind] = add_var!(com, 1, 9; fix=val)
+# creating a constraint solver model and setting ConstraintSolver as the optimizer.
+m = Model(with_optimizer(CS.Optimizer)) 
+# define the 81 variables
+@variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+# set variables if fixed
+for r=1:9, c=1:9
+    if grid[r,c] != 0
+        @constraint(m, x[r,c] == grid[r,c])
     end
 end
 ```
@@ -67,59 +74,61 @@ For the empty cell we create a variable with possible values `1-9` and otherwise
 Then we define the constraints:
 
 ```
-for rc=1:9
-    #row
-    variables = com_grid[CartesianIndices((rc:rc,1:9))]
-    add_constraint!(com, CS.all_different([variables...]))
-    #col
-    variables = com_grid[CartesianIndices((1:9,rc:rc))]
-    add_constraint!(com, CS.all_different([variables...]))
+for rc = 1:9
+    @constraint(m, x[rc,:] in CS.AllDifferentSet(9))
+    @constraint(m, x[:,rc] in CS.AllDifferentSet(9))
 end
 ```
+The `9` in `CS.AllDifferentSet` just specifies the number of variables in the set.
 
-For each row and column (1-9) we extract the variables from `com_grid` and create an `all_different` constraint which specifies that all the variables should have a different value in the end. As there are always nine variables and nine digits we have an exactly once constraint as we want given the rules of sudoku.
+For each row and column (1-9) we create an `AllDifferent` constraint which specifies that all the variables should have a different value in the end using `CS.AllDifferentSet()`.
+As there are always nine variables and nine digits each value 1-9 is set exactly once per row and column.
 
-The variables have to be one dimensional so we use `...` at the end to flatten the 2D array.
-
-Adding the constraints for the 3x3 blocks:
+Now we need to add the constraints for the 3x3 blocks:
 
 ```
 for br=0:2
     for bc=0:2
-        variables = com_grid[CartesianIndices((br*3+1:(br+1)*3,bc*3+1:(bc+1)*3))]
-        add_constraint!(com, CS.all_different([variables...]))
+        @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet(9))
     end
 end
 ```
 
-Then we call the solve function with the `com` model as the only parameter.
+Then we call the solve function of JuMP called `optimize` with the model as the only parameter.
 
 ```
-status = solve!(com)
+optimize!(m)
+```
+**Attention:** This might take a while for the first solve as everything needs to be compiled but the second time it will be fast.
+
+The status of the model can be extracted by:
+
+```
+status = JuMP.termination_status(m)
 ```
 
-This returns a status `:Solved` or `:Infeasible` if there is no solution.
+This returns a [MOI](https://github.com/JuliaOpt/MathOptInterface.jl) StatusCode which are explained [here](http://www.juliaopt.org/JuMP.jl/v0.19.2/solutions/#MathOptInterface.TerminationStatusCode).
 
-In our case it returns `:Solved`. If we want to get the solved sudoku we can use:
+In our case it returns `MOI.OPTIMAL`. If we want to get the solved sudoku we can use:
 
 ```
-println(com_grid)
+@show convert.(Integer,JuMP.value.(x))
 ```
 
 which outputs:
 ```
-6 9 3 4 8 2 5 7 1 
-8 5 7 3 1 9 6 2 4 
-2 1 4 7 6 5 8 9 3 
-1 7 8 5 9 4 2 3 6 
-5 6 9 2 3 1 7 4 8 
-4 3 2 8 7 6 1 5 9 
-3 8 1 9 2 7 4 6 5 
-7 4 6 1 5 3 9 8 2 
-9 2 5 6 4 8 3 1 7 
+6  8  2  1  5  4  3  7  9
+9  5  1  7  6  3  8  4  2
+3  7  4  8  9  2  1  6  5
+4  3  7  5  2  8  9  1  6
+8  1  6  9  3  7  2  5  4
+2  9  5  4  1  6  7  3  8
+5  6  8  2  7  1  4  9  3
+7  2  9  3  4  5  6  8  1
+1  4  3  6  8  9  5  2  7
 ```
 
-If you want to get a single value you can i.e use `value(com_grid[1])`.
+If you want to get a single value you can i.e use `JuMP.value(com_grid[1])`.
 
 In the next part you'll learn a different constraint type and how to include an optimization function.
 
@@ -130,15 +139,11 @@ The goal is to color a graph in such a way that neighboring nodes have a differe
 We want to find the coloring which uses the least amount of colors.
 
 ```
-com = CS.init()
+m = Model(with_optimizer(CS.Optimizer))
+num_colors = 10
 
-germany = add_var!(com, 1, 10)
-france = add_var!(com, 1, 10)
-spain = add_var!(com, 1, 10)
-switzerland = add_var!(com, 1, 10)
-italy = add_var!(com, 1, 10)
-
-countries = [germany, switzerland, france, italy, spain];
+@variable(m, 1 <= countries[1:5] <= num_colors, Int)
+germany, switzerland, france, italy, spain = countries
 ```
 
 I know this is only a small example but you can easily extend it.
@@ -147,25 +152,34 @@ In the above case we assume that we don't need more than 10 colors.
 Adding the constraints:
 
 ```
-add_constraint!(com, germany != france)
-add_constraint!(com, germany != switzerland)
-add_constraint!(com, france != spain)
-add_constraint!(com, france != switzerland)
-add_constraint!(com, france != italy)
-add_constraint!(com, switzerland != italy)
+@constraint(m, germany != france)
+@constraint(m, germany != switzerland)
+@constraint(m, france != spain)
+@constraint(m, france != switzerland)
+@constraint(m, france != italy)
+@constraint(m, switzerland != italy)
 ```
 
-If we call `status = solve!(com)` now we probably don't get a coloring with the least amount of colors.
+If we call `optimize!(m)` now we probably don't get a coloring with the least amount of colors.
 
-We can get this using:
-
-```
-set_objective!(com, :Min, CS.vars_max(countries))
-status = solve!(com)
-```
-
-We can get the value for each variable using `value(germany)` for example or as before print the values:
+We can get this by adding:
 
 ```
-println(countries)
+@variable(m, 1 <= max_color <= num_colors, Int)
+@constraint(m, max_color .>= countries)
+@objective(m, Min, max_color)
+optimize!(m)
+status = JuMP.termination_status(m)
+```
+
+We can get the value for each variable using `JuMP.value(germany)` for example or as before print the values:
+
+```
+println(JuMP.value.(countries))
+```
+
+and getting the maximum color used with 
+
+```
+println("#colors: $(JuMP.value(max_color))")
 ```
