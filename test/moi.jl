@@ -14,6 +14,12 @@
     @test MOI.supports_constraint(optimizer, MOI.ScalarAffineFunction{Float64}, MOI.LessThan{Float64})
     @test MOI.supports_constraint(optimizer, MOI.ScalarAffineFunction{Float64}, CS.NotEqualSet{Float64})
 
+    # objective
+    @test MOI.supports(optimizer, MOI.ObjectiveSense())
+    @test MOI.supports(optimizer, MOI.ObjectiveFunction{MOI.SingleVariable}())
+
+    @test MOI.get(optimizer, MOI.ObjectiveSense()) == MOI.FEASIBILITY_SENSE
+
 end
 
 @testset "Small MOI tests" begin

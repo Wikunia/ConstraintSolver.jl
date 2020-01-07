@@ -2,7 +2,7 @@
 @testset "Sum" begin
     com = CS.init()
 
-    com_grid = Array{CS.Variable, 1}(undef, 7)
+    com_grid = Array{CS.Variable, 1}(undef, 8)
     com_grid[1] = CS.add_var!(com, 1, 9)
     com_grid[2] = CS.add_var!(com, 1, 9; fix=5)
     com_grid[3] = CS.add_var!(com, 1, 9)
@@ -11,6 +11,8 @@
 
     com_grid[6] = CS.add_var!(com, 1, 2)
     com_grid[7] = CS.add_var!(com, 3, 5)
+
+    com_grid[8] = CS.add_var!(com, 3, 5)
     
 
     CS.rm!(com, com_grid[4], 5)
@@ -21,6 +23,7 @@
     CS.add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in [2,5]]) ==  6)
     # testing coefficients from left and right
     CS.add_constraint!(com, com_grid[6]*1+2*com_grid[7] ==  7)
+    CS.add_constraint!(com, com_grid[6]+com_grid[7]-com_grid[8] ==  0)
         
     options = Dict{Symbol, Any}()
     options[:backtrack] = false
@@ -35,7 +38,7 @@
     @test CS.compress_var_string(com_grid[1]) == "6"
 
     str_output = CS.get_str_repr(com_grid)
-    @test str_output[1] == "6, 5, 2:5, [2, 3, 4, 6, 7, 8, 9], 1, 1, 3"
+    @test str_output[1] == "6, 5, 2:5, [2, 3, 4, 6, 7, 8, 9], 1, 1, 3, 4"
 
     com_grid_2D = [com_grid[1] com_grid[2]; com_grid[3] com_grid[4]]
     str_output = CS.get_str_repr(com_grid_2D)
@@ -56,6 +59,9 @@
 
     @test CS.isfixed(com_grid[7])
     @test CS.value(com_grid[7]) == 3
+
+    @test CS.isfixed(com_grid[8])
+    @test CS.value(com_grid[8]) == 4
 end
 
 @testset "Reordering sum constraint" begin
