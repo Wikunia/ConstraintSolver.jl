@@ -1,11 +1,12 @@
 @testset "Graph coloring" begin
 
 function normal_49_states(;reverse_constraint = false)
-    m = Model(with_optimizer(CS.Optimizer, keep_logs=true, backtrack_sorting=false))
-    num_colors = 8
+    m = Model(with_optimizer(CS.Optimizer, keep_logs=true))
+    num_colors = 20
+    
+    @variable(m, 1 <= states[1:50] <= num_colors, Int)
     @variable(m, 1 <= max_color <= num_colors, Int)
 
-    @variable(m, 1 <= states[1:50] <= num_colors, Int)
     washington,montana,maine,north_dakota,south_dakota,wyoming,wisconsin,idaho,vermont,minnesota,oregon,new_hampshire,
     iowa,massachusetts,nebraska,new_york,pennsylvania,connecticut,rhode_island,new_jersey,indiana,nevada,utah,california,ohio,
     illinois,washington_dc,delaware,west_virginia,maryland,colorado,kentucky,kansas,virginia,missouri,arizona,oklahoma,north_carolina,
