@@ -1,6 +1,5 @@
 """
 Single variable bound constraints
-TODO: Only allow integer and binary somehow...
 """
 # MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{AbstractVector{<:MOI.AbstractScalarSet}}) = true
 MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.LessThan{Float64}}) = true
@@ -114,21 +113,12 @@ Populating Variable bounds
 function MOI.add_constraint(model::Optimizer, v::SVF, interval::MOI.Interval{Float64})
     vi = v.variable
     check_inbounds(model, vi)
-    if isnan(interval.upper)
-        throw(ErrorException("The interval bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(interval.upper)"))
-    end
-    if has_upper_bound(model, vi)
-        @error "Upper bound on variable $vi exists already."
-    end
-    if isnan(interval.lower)
-        throw(ErrorException("The interval bounds can not contain NaN and must be an Integer. Currently it has a lower bound of $(interval.lower)"))
-    end
-    if has_lower_bound(model, vi)
-        @error "Lower bound on variable $vi exists already."
-    end
-    if is_fixed(model, vi)
-        @error "Variable $vi is fixed. Cannot also set upper bound."
-    end
+    isnan(interval.upper) && throw(ErrorException("The interval bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(interval.upper)"))
+    has_upper_bound(model, vi) && @error "Upper bound on variable $vi exists already."
+    isnan(interval.lower) && throw(ErrorException("The interval bounds can not contain NaN and must be an Integer. Currently it has a lower bound of $(interval.lower)"))
+    has_lower_bound(model, vi) && @error "Lower bound on variable $vi exists already."
+    is_fixed(model, vi) && @error "Variable $vi is fixed. Cannot also set upper bound."
+
     model.variable_info[vi.value].upper_bound = interval.upper
     model.variable_info[vi.value].max = interval.upper
     model.variable_info[vi.value].has_upper_bound = true
@@ -153,15 +143,10 @@ end
 function MOI.add_constraint(model::Optimizer, v::SVF, lt::MOI.LessThan{Float64})
     vi = v.variable
     check_inbounds(model, vi)
-    if isnan(lt.upper)
-        throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(lt.upper)"))
-    end
-    if has_upper_bound(model, vi)
-        @error "Upper bound on variable $vi already exists."
-    end
-    if is_fixed(model, vi)
-        @error "Variable $vi is fixed. Cannot also set upper bound."
-    end
+    isnan(lt.upper) && throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(lt.upper)"))
+    has_upper_bound(model, vi) && @error "Upper bound on variable $vi already exists."
+    is_fixed(model, vi) && @error "Variable $vi is fixed. Cannot also set upper bound."
+
     model.variable_info[vi.value].upper_bound = lt.upper
     model.variable_info[vi.value].max = lt.upper
     model.variable_info[vi.value].has_upper_bound = true
@@ -184,15 +169,10 @@ end
 function MOI.add_constraint(model::Optimizer, v::SVF, gt::MOI.GreaterThan{Float64})
     vi = v.variable
     check_inbounds(model, vi)
-    if isnan(gt.lower)
-        throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(gt.upper)"))
-    end
-    if has_lower_bound(model, vi)
-        @error "Lower bound on variable $vi already exists."
-    end
-    if is_fixed(model, vi)
-        @error "Variable $vi is fixed. Cannot also set lower bound."
-    end
+    isnan(gt.lower) && throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(gt.upper)"))
+    has_lower_bound(model, vi) && @error "Lower bound on variable $vi already exists."
+    is_fixed(model, vi) && @error "Variable $vi is fixed. Cannot also set lower bound."
+
     model.variable_info[vi.value].lower_bound = gt.lower
     model.variable_info[vi.value].min = gt.lower
     model.variable_info[vi.value].offset =  1-gt.lower
@@ -215,18 +195,10 @@ end
 function MOI.add_constraint(model::Optimizer, v::SVF, eq::MOI.EqualTo{Float64})
     vi = v.variable
     check_inbounds(model, vi)
-    if isnan(eq.value)
-        @error "Invalid fixed value $(eq.value)."
-    end
-    if has_lower_bound(model, vi)
-        @error "Variable $vi has a lower bound. Cannot be fixed."
-    end
-    if has_upper_bound(model, vi)
-        @error "Variable $vi has an upper bound. Cannot be fixed."
-    end
-    if is_fixed(model, vi)
-        @error "Variable $vi is already fixed."
-    end
+    isnan(eq.value) && @error "Invalid fixed value $(eq.value)."
+    has_lower_bound(model, vi) && @error "Variable $vi has a lower bound. Cannot be fixed."
+    has_upper_bound(model, vi) && @error "Variable $vi has an upper bound. Cannot be fixed."
+    is_fixed(model, vi) && @error "Variable $vi is already fixed."
     model.variable_info[vi.value].lower_bound = eq.value
     model.variable_info[vi.value].upper_bound = eq.value
     model.variable_info[vi.value].is_fixed = true
