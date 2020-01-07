@@ -49,8 +49,9 @@ abstract type ObjectiveFunction
 end
 
 mutable struct SingleVariableObjective <: ObjectiveFunction
-    fct   :: Function
-    index :: Int # index of the variable
+    fct     :: Function
+    index   :: Int # index of the variable
+    indices :: Vector{Int}
 end
 
 mutable struct BasicConstraint <: Constraint
@@ -556,6 +557,47 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
 end
 
 """
+    update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraints)
+
+Check all constraints which change the objective and update the best bound of the backtrack_obj accordingly.
+Pruning should not be continued if the new best bound has changed.
+Return feasible and if pruning should be continued.
+"""
+function update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraints)
+    further_pruning = true
+    feasible = true
+    for constraint in constraints
+        relevant = false
+        for obj_index in com.objective.indices
+            if obj_index in constraint.indices
+                relevant = true
+                break
+            end
+        end
+        if relevant
+            feasible = constraint.fct(com, constraint; logs = false)
+            if !feasible
+                return false, false
+            end
+        end
+    end
+    if !feasible
+        com.info.backtrack_reverses += 1
+        return false, false
+    end
+    
+    # check best_bound again
+    # if best bound unchanged => continue pruning 
+    # otherwise try another path but don't close the current 
+    # -> means open new paths from here even if not pruned til the end
+    new_bb = get_best_bound(com)
+    if backtrack_obj.best_bound != new_bb
+        further_pruning = false
+    end
+    return true, further_pruning
+end
+
+"""
     backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
 Start backtracking and stop after `max_bt_steps`.
@@ -700,31 +742,35 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         # value is still possible => set it
         fix!(com, com.search_space[ind], pval)
 
-        for constraint in constraints
-            feasible = constraint.fct(com, constraint; logs = false)
-            if !feasible
-                feasible = false
-                break
-            end
+        further_pruning = true
+        # first update the best bound (only constraints which have an index in the objective function)
+        if com.sense != MOI.FEASIBILITY_SENSE 
+            feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
         end
         if !feasible
             com.info.backtrack_reverses += 1
             continue
         end
 
-        # check best_bound again
-        # if best bound unchanged => continue pruning 
-        # otherwise try another path but don't close the current 
-        # -> means open new paths from here even if not pruned til the end
-        new_bb = get_best_bound(com)
-        if backtrack_obj.best_bound == new_bb
-            # prune on changed values
+        if further_pruning
+            for constraint in constraints
+                feasible = constraint.fct(com, constraint; logs = false)
+                if !feasible
+                    feasible = false
+                    break
+                end
+            end
+            if !feasible
+                com.info.backtrack_reverses += 1
+                continue
+            end
+
+    
             feasible = prune!(com)
-        end
-         
-        if !feasible
-            com.info.backtrack_reverses += 1
-            continue
+            if !feasible
+                com.info.backtrack_reverses += 1
+                continue
+            end
         end
 
         found, ind = get_weak_ind(com)
