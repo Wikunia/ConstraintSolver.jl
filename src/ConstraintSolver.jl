@@ -746,10 +746,11 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         # first update the best bound (only constraints which have an index in the objective function)
         if com.sense != MOI.FEASIBILITY_SENSE 
             feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
-        end
-        if !feasible
-            com.info.backtrack_reverses += 1
-            continue
+
+            if !feasible
+                com.info.backtrack_reverses += 1
+                continue
+            end
         end
 
         if further_pruning
@@ -765,7 +766,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                 continue
             end
 
-    
+            # prune based on the changes as far as possible
             feasible = prune!(com)
             if !feasible
                 com.info.backtrack_reverses += 1

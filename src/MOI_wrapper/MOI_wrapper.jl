@@ -24,7 +24,6 @@ Optimizer struct
 mutable struct Optimizer <: MOI.AbstractOptimizer
     inner::Union{CoM, Nothing}
     variable_info::Vector{Variable}
-    sense::MOI.OptimizationSense 
     # which variable index, (:leq,:geq,:eq,:Int,:Bin), and lower and upper bound
     var_constraints::Vector{Tuple{Int64,Symbol,Int64,Int64}} 
     status::MOI.TerminationStatusCode
@@ -47,7 +46,6 @@ function Optimizer(;options...)
     return Optimizer(
         com, 
         [], 
-        MOI.FEASIBILITY_SENSE, 
         [],
         MOI.OPTIMIZE_NOT_CALLED,
         options
@@ -58,8 +56,7 @@ end
     MOI.is_empty(model::Optimizer)
 """
 function MOI.is_empty(model::Optimizer)
-    return isempty(model.variable_info) && 
-           model.sense == MOI.FEASIBILITY_SENSE &&
+    return isempty(model.variable_info) &&
            isempty(model.var_constraints)
 end
 
@@ -69,7 +66,6 @@ end
 function MOI.empty!(model::Optimizer)
     model.inner = CS.init()
     empty!(model.variable_info)
-    model.sense = MOI.FEASIBILITY_SENSE
     empty!(model.var_constraints)
     model.status = MOI.OPTIMIZE_NOT_CALLED
     # !important => don't remove the options
