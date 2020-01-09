@@ -10,6 +10,7 @@ function all_different(variables::Vector{Variable})
     constraint = BasicConstraint()
     constraint.fct = all_different
     constraint.indices = Int[v.idx for v in variables]
+    constraint.hash = constraint_hash(constraint)
     return constraint
 end
 

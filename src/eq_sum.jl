@@ -18,6 +18,7 @@ function Base.:(==)(x::LinearVariables, y::Int)
     lc.pre_mins = zeros(Int, length(indices))
     # this can be changed later in `set_in_all_different!` but needs to be initialized with false
     lc.in_all_different = false
+    lc.hash = constraint_hash(lc)
     return lc
 end
 
