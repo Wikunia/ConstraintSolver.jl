@@ -388,7 +388,7 @@ function prune!(com::CS.CoM; pre_backtrack=false, all=false, only_once=false, in
         # will be changed or b_open_constraint => false
         open_pos, ci = find_best_constraint(com, constraint_idxs_vec)
         # no open values => don't need to call again
-        if open_pos == 0 && !initial_check && !all
+        if open_pos == 0 && !initial_check
             constraint_idxs_vec[ci] = N
             continue
         end
@@ -701,14 +701,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         fix!(com, com.search_space[ind], pval)
         com.info.backtrack_fixes   += 1
 
-        feasible = prune!(com; all=true, only_once=true)
-    
-        if !feasible
-            com.info.backtrack_reverses += 1
-            continue
-        end
-
-        # prune on changed values
+        # prune completely start with all that changed by the fix
         feasible = prune!(com)
          
         if !feasible
