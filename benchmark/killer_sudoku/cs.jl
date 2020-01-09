@@ -26,18 +26,17 @@ function solve_all(filenames; benchmark=false, single_times=true)
         grid = zeros(Int, (9,9))
 
         com_grid = create_sudoku_grid!(com, grid)
-
+        
+        add_sudoku_constr!(com, com_grid)
         for s in sums
             add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
             # add_constraint!(com, CS.all_different([com_grid[CartesianIndex(ind)] for ind in s.indices]))
         end
 
-        add_sudoku_constr!(com, com_grid)
-
         if single_times
             GC.enable(false)
             t = time()
-            status = solve!(com);
+            status = solve!(com; backtrack=true);
             t = time()-t
             GC.enable(true)
             println(i-1,", ", t)
@@ -51,6 +50,8 @@ function solve_all(filenames; benchmark=false, single_times=true)
             println("Status: ", status)
             @assert fulfills_sudoku_constr(com_grid)
         end
+        com = nothing
+        GC.gc()
     end
     println("")
     tt = time()-ct
