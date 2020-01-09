@@ -59,6 +59,7 @@ mutable struct BasicConstraint <: Constraint
     fct                 :: Function
     indices             :: Vector{Int}
     pvals               :: Vector{Int}
+    hash                :: UInt64
     BasicConstraint() = new()
 end
 
@@ -99,6 +100,7 @@ mutable struct LinearConstraint <: Constraint
     maxs                :: Vector{Int}
     pre_mins            :: Vector{Int}
     pre_maxs            :: Vector{Int}
+    hash                :: UInt64
     LinearConstraint() = new()
 end
 
@@ -153,6 +155,7 @@ const CoM = ConstraintSolverModel
 include("MOI_wrapper/MOI_wrapper.jl")
 include("printing.jl")
 include("logs.jl")
+include("hashes.jl")
 include("Variable.jl")
 include("objective.jl")
 include("linearcombination.jl")
@@ -363,23 +366,39 @@ function open_possibilities(search_space, indices)
     return open
 end
 
+function find_best_constraint(com::CS.CoM, constraint_idxs_vec)
+    best_ci = 0
+    best_open = typemax(Int64)
+    best_hash = typemax(UInt64)
+    for ci = 1:length(constraint_idxs_vec)
+        if constraint_idxs_vec[ci] <= best_open
+            if constraint_idxs_vec[ci] < best_open || com.constraints[ci].hash < best_hash
+                best_ci = ci
+                best_open = constraint_idxs_vec[ci]
+                best_hash = com.constraints[ci].hash
+            end
+        end
+    end
+    return best_open, best_ci
+end
+
 """
     prune!(com::CS.CoM; pre_backtrack=false)
 
 Prune based on changes by initial solve or backtracking. The information for it is stored in each variable
 Return whether it's still feasible
 """
-function prune!(com::CS.CoM; pre_backtrack=false)
+function prune!(com::CS.CoM; pre_backtrack=false, all=false, only_once=false, initial_check=false)
     feasible = true
-    N = 10000
+    N = typemax(Int64)
     search_space = com.search_space
     prev_var_length = zeros(Int, length(search_space))
-    constraint_idxs_vec = N .* ones(Int, length(com.constraints))
+    constraint_idxs_vec = fill(N, length(com.constraints))
     # get all constraints which need to be called (only once)
     current_backtrack_id = com.c_backtrack_idx
     for var in search_space
         new_var_length = length(var.changes[current_backtrack_id])
-        if new_var_length > 0
+        if new_var_length > 0 || all || initial_check
             prev_var_length[var.idx] = new_var_length
             inner_constraints = com.constraints[com.subscription[var.idx]]
             for ci in com.subscription[var.idx]
@@ -393,11 +412,13 @@ function prune!(com::CS.CoM; pre_backtrack=false)
     while true
         b_open_constraint = false
         # will be changed or b_open_constraint => false
-        open_pos, ci = findmin(constraint_idxs_vec)
-        if open_pos == 0
+        open_pos, ci = find_best_constraint(com, constraint_idxs_vec)
+        # no open values => don't need to call again
+        if open_pos == 0 && !initial_check
             constraint_idxs_vec[ci] = N
             continue
         end
+        # checked all
         if open_pos == N
             break
         end
@@ -425,6 +446,10 @@ function prune!(com::CS.CoM; pre_backtrack=false)
                 for ci in com.subscription[var.idx]
                     if ci != constraint.idx
                         inner_constraint = com.constraints[ci]
+                        # if initial check or don't add constraints => update only those which already have open possibilities
+                        if (only_once || initial_check) && constraint_idxs_vec[inner_constraint.idx] == N
+                            continue
+                        end
                         constraint_idxs_vec[inner_constraint.idx] = open_possibilities(search_space, inner_constraint.indices)
                     end
                 end
@@ -741,6 +766,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         end
         # value is still possible => set it
         fix!(com, com.search_space[ind], pval)
+        com.info.backtrack_fixes   += 1
 
         further_pruning = true
         # first update the best bound (only constraints which have an index in the objective function)
@@ -754,25 +780,15 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         end
 
         if further_pruning
-            for constraint in constraints
-                feasible = constraint.fct(com, constraint; logs = false)
-                if !feasible
-                    feasible = false
-                    break
-                end
-            end
-            if !feasible
-                com.info.backtrack_reverses += 1
-                continue
-            end
-
-            # prune based on the changes as far as possible
+            # prune completely start with all that changed by the fix or by updating best bound
             feasible = prune!(com)
+            
             if !feasible
                 com.info.backtrack_reverses += 1
                 continue
             end
         end
+     
 
         found, ind = get_weak_ind(com)
         # no index found => solution found
@@ -797,11 +813,11 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             end
         end
 
-        if com.info.backtrack_fixes + 1 > max_bt_steps
+        if com.info.backtrack_fixes > max_bt_steps
             return :NotSolved
         end
 
-        com.info.backtrack_fixes   += 1
+        
 
         if com.input[:logs]
             com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr)
@@ -987,20 +1003,11 @@ function solve!(com::CS.CoM, options::SolverOptions)
     simplify!(com)
 
     # check if all feasible even if for example everything is fixed
-    feasible = true
-    for constraint in com.constraints
-        com.info.pre_backtrack_calls += 1
-        feasible = constraint.fct(com, constraint)
-        if !feasible
-            feasible = false
-            break
-        end
-    end
+    feasible = prune!(com; pre_backtrack=true, initial_check=true)
 
     if !feasible
         return :Infeasible
     end
-
     
     if all(v->isfixed(v), com.search_space)
         com.best_bound = get_best_bound(com)

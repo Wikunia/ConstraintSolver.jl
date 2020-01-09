@@ -53,6 +53,8 @@ function solve_all(filenames; benchmark=false, single_times=true)
             println("Status: ", status)
             @assert jump_fulfills_sudoku_constr(JuMP.value.(x))
         end
+        com = nothing
+        GC.gc()
     end
     println("")
     tt = time()-ct

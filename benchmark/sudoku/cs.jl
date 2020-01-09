@@ -70,7 +70,7 @@ function solve_one(grid)
 end
 
 function main(; benchmark=false, single_times=true)
-    solve_all(from_file("benchmark/sudoku/data/top95.txt"); benchmark=benchmark, single_times=single_times)
+    solve_all(from_file("data/top95.txt"); benchmark=benchmark, single_times=single_times)
     # solve_all(from_file("hardest.txt"), "hardest")
 end
 

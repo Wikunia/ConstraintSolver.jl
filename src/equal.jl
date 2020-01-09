@@ -8,6 +8,7 @@ function equal(variables::Vector{Variable})
     constraint = BasicConstraint()
     constraint.fct = equal
     constraint.indices = Int[v.idx for v in variables]
+    constraint.hash = constraint_hash(constraint)
     return constraint
 end
 
@@ -21,6 +22,7 @@ function Base.:(==)(x::Variable, y::Variable)
     bc = BasicConstraint()
     bc.fct = equal
     bc.indices = Int[x.idx, y.idx]
+    bc.hash = constraint_hash(bc)
     return bc
 end
 
