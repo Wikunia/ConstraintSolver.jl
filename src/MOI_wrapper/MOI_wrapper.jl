@@ -85,8 +85,9 @@ end
 function MOI.optimize!(model::Optimizer)
     # check if every variable has bounds and is an Integer
     check_var_bounds(model)
-    # set the pvals 
+
     set_pvals!(model)
+    set_constraint_hashes!(model)
 
     status = solve!(model)
     set_status!(model, status)   

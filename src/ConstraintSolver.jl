@@ -71,6 +71,7 @@ mutable struct SingleVariableConstraint <: Constraint
     pvals               :: Vector{Int}
     lhs                 :: Int
     rhs                 :: Int
+    hash                :: UInt64
     SingleVariableConstraint() = new()
 end
 

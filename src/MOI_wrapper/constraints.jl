@@ -145,6 +145,13 @@ function set_pvals!(model::CS.Optimizer)
     end
 end
 
+function set_constraint_hashes!(model::CS.Optimizer)
+    com = model.inner
+    for ci=1:length(com.constraints)
+        com.constraints[ci].hash = constraint_hash(com.constraints[ci])
+    end
+end
+
 ### != 
 
 sense_to_set(::Function, ::Val{:!=}) = NotEqualSet(0.0)
