@@ -2,6 +2,20 @@ function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
 	return model.status
 end
 
+function MOI.get(model::Optimizer, ::MOI.ObjectiveValue)
+    if model.status == MOI.OPTIMIZE_NOT_CALLED
+        @error "optimize! not called"
+    end
+    return model.inner.best_sol
+end
+
+function MOI.get(model::Optimizer, ::MOI.ObjectiveBound)
+    if model.status == MOI.OPTIMIZE_NOT_CALLED
+        @error "optimize! not called"
+    end
+    return model.inner.best_bound
+end
+
 function MOI.get(model::Optimizer, ::MOI.VariablePrimal, vi::MOI.VariableIndex)
     if model.status == MOI.OPTIMIZE_NOT_CALLED
         @error "optimize! not called"

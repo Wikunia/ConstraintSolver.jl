@@ -137,8 +137,8 @@ function normal_49_states(;reverse_constraint = false)
     rm("graph_color_optimize.json")
 
     @test status == MOI.OPTIMAL
-    @test com.best_sol == 4
-    @test maximum([JuMP.value(var) for var in states]) == 4
+    @test com.best_sol == 4 == JuMP.objective_value(m) == JuMP.objective_bound(m)
+    @test maximum([JuMP.value(var) for var in states]) == 4 == JuMP.value(max_color)
 
     return com
 end

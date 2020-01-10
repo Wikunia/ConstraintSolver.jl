@@ -21,7 +21,7 @@ end
 function solve_all(filenames; benchmark=false, single_times=true)
     ct = time()
     for (i,filename) in enumerate(filenames)
-        sums = parseJSON(JSON.parsefile("./benchmark/killer_sudoku/data/$(filename)"))
+        sums = parseJSON(JSON.parsefile("data/$(filename)"))
 
         m = Model(with_optimizer(CS.Optimizer))
         @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
