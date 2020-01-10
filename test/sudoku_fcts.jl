@@ -23,9 +23,9 @@ function create_sudoku_grid!(com, grid)
     com_grid = Array{CS.Variable, 2}(undef, 9, 9)
     for (ind,val) in enumerate(grid)
         if val == 0
-            com_grid[ind] = add_var!(com, 1, 9)
+            com_grid[ind] = CS.add_var!(com, 1, 9)
         else
-            com_grid[ind] = add_var!(com, 1, 9; fix=val)
+            com_grid[ind] = CS.add_var!(com, 1, 9; fix=val)
         end
     end
     return com_grid
@@ -35,18 +35,45 @@ function add_sudoku_constr!(com, grid)
     for rc=1:9
         #row
         variables = grid[CartesianIndices((rc:rc,1:9))]
-        add_constraint!(com, CS.all_different([variables...]))
+        CS.add_constraint!(com, CS.all_different([variables...]))
         #col
         variables = grid[CartesianIndices((1:9,rc:rc))]
-        add_constraint!(com, CS.all_different([variables...]))
+        CS.add_constraint!(com, CS.all_different([variables...]))
     end
 
     for br=0:2
         for bc=0:2
             variables = grid[CartesianIndices((br*3+1:(br+1)*3,bc*3+1:(bc+1)*3))]
-            add_constraint!(com, CS.all_different([variables...]))
+            CS.add_constraint!(com, CS.all_different([variables...]))
         end
     end
+end
+
+function jump_add_sudoku_constr!(m, x)
+    for rc = 1:9
+        @constraint(m, x[rc,:] in CS.AllDifferentSet(9))
+        @constraint(m, x[:,rc] in CS.AllDifferentSet(9))
+    end
+    for br=0:2
+        for bc=0:2
+            @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet(9))
+        end
+    end
+end
+
+function jump_fulfills_sudoku_constr(vals)
+    for r = 1:9
+        !allunique(vals[r,:]) && return false
+    end
+    for c = 1:9
+        !allunique(vals[:,c]) && return false
+    end
+    for br=0:2
+        for bc=0:2
+            !allunique(vec(vals[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3])) && return false
+        end
+    end
+    return true
 end
 
 function fulfills_sudoku_constr(com_grid)
@@ -56,14 +83,14 @@ function fulfills_sudoku_constr(com_grid)
         if any(v->!CS.isfixed(v), row)
             return false
         end
-        vals = unique([value(v) for v in row])
+        vals = unique([CS.value(v) for v in row])
         correct = length(vals) != 9 ? false : correct
 
         col = com_grid[CartesianIndices((1:9, rc:rc))]
         if any(v->!CS.isfixed(v), col)
             return false
         end
-        vals = unique([value(v) for v in col])
+        vals = unique([CS.value(v) for v in col])
         correct = length(vals) != 9 ? false : correct
     end
 
@@ -73,7 +100,7 @@ function fulfills_sudoku_constr(com_grid)
             if any(v->!CS.isfixed(v), box)
                 return false
             end
-            vals = unique([value(v) for v in box])
+            vals = unique([CS.value(v) for v in box])
             correct = length(vals) != 9 ? false : correct
         end
     end
@@ -99,7 +126,7 @@ function print_search_space(com_grid; max_length=:default)
                 space_right = ceil(Int, (max_length-length(pstr))/2)
                 line *= repeat(" ", space_left)*pstr*repeat(" ", space_right)
             else
-                pstr = string(value(com_grid[y,x]))
+                pstr = string(CS.value(com_grid[y,x]))
                 space_left  = floor(Int, (max_length-length(pstr))/2)
                 space_right = ceil(Int, (max_length-length(pstr))/2)
                 line *= repeat(" ", space_left)*pstr*repeat(" ", space_right)

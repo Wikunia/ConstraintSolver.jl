@@ -59,7 +59,7 @@ function equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
         if !fixed_v1 && !fixed_v2
             return true
         elseif fixed_v1 && fixed_v2
-            if value(v1) != value(v2)
+            if CS.value(v1) != CS.value(v2)
                 return false
             end
             return true
@@ -67,12 +67,12 @@ function equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
         # one is fixed and one isn't
         if fixed_v1
             fix_v = 2
-            feasible = fix!(com, v2, value(v1))
+            feasible = fix!(com, v2, CS.value(v1))
             if !feasible
                 return false
             end
         else 
-            feasible = fix!(com, v1, value(v2))
+            feasible = fix!(com, v1, CS.value(v2))
             if !feasible
                 return false
             end
@@ -85,7 +85,7 @@ end
 """
     equal(com::CoM, constraint::Constraint, value::Int, index::Int)
 
-Returns whether the constraint can be still fulfilled.
+Return whether the constraint can be still fulfilled.
 """
 function equal(com::CoM, constraint::Constraint, value::Int, index::Int)
     indices = filter(i->i!=index, constraint.indices)

@@ -1,3 +1,4 @@
+using JuMP
 using ConstraintSolver
 using JSON
 
@@ -22,33 +23,35 @@ function solve_all(filenames; benchmark=false, single_times=true)
     for (i,filename) in enumerate(filenames)
         sums = parseJSON(JSON.parsefile("data/$(filename)"))
 
-        com = CS.init()
-        grid = zeros(Int, (9,9))
+        m = Model(with_optimizer(CS.Optimizer))
+        @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
 
-        com_grid = create_sudoku_grid!(com, grid)
-        
-        add_sudoku_constr!(com, com_grid)
         for s in sums
-            add_constraint!(com, sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result)
-            # add_constraint!(com, CS.all_different([com_grid[CartesianIndex(ind)] for ind in s.indices]))
+            @constraint(m, sum([x[ind...] for ind in s.indices]) == s.result)
+            # @constraint(m, [x[ind...] for ind in s.indices] in CS.AllDifferentSet(length(s.indices)))
         end
+
+        # sudoku constraints
+        jump_add_sudoku_constr!(m, x)
 
         if single_times
             GC.enable(false)
             t = time()
-            status = solve!(com; backtrack=true);
+            optimize!(m)
+            status = JuMP.termination_status(m)
             t = time()-t
             GC.enable(true)
             println(i-1,", ", t)
         else
             GC.enable(false)
-            status = solve!(com);
+            optimize!(m)
+            status = JuMP.termination_status(m)
             GC.enable(true)
         end
         if !benchmark
-            @show com.info
+            @show JuMP.backend(m).optimizer.model.inner.info
             println("Status: ", status)
-            @assert fulfills_sudoku_constr(com_grid)
+            @assert jump_fulfills_sudoku_constr(JuMP.value.(x))
         end
         com = nothing
         GC.gc()

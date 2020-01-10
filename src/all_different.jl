@@ -20,7 +20,7 @@ end
 
 Tries to reduce the search space by the all_different constraint. 
 Fixes values and then sets com.changed to true for the corresponding index.
-Returns a ConstraintOutput object and throws a warning if infeasible and `logs` is set
+Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set
 """
 function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     indices = constraint.indices
@@ -56,7 +56,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
                         end
 
                         if nvalues(c_search_space) == 1
-                            only_value = value(c_search_space)
+                            only_value = CS.value(c_search_space)
                             push!(fixed_vals, only_value)
                             push!(new_fixed_vals, only_value)
                             bfixed = true
@@ -85,6 +85,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     pval_mapping = zeros(Int, length(pvals))
     vertex_mapping = zeros(Int, len_range)
     vertex_mapping_bw = zeros(Int, nindices+length(pvals))
+
     vc = 1
     for i in indices
         vertex_mapping_bw[vc] = i
@@ -99,7 +100,6 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         pvc += 1
     end
     num_nodes = vc
-
 
     # count the number of edges
     num_edges = 0
@@ -118,7 +118,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         if isfixed(search_space[i])
             edge_counter += 1
             di_ei[edge_counter] = vc
-            di_ej[edge_counter] = vertex_mapping[value(search_space[i])-min_pvals_m1]-nindices
+            di_ej[edge_counter] = vertex_mapping[CS.value(search_space[i])-min_pvals_m1]-nindices
         else
             for pv in view_values(search_space[i])
                 edge_counter += 1
@@ -142,7 +142,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         if isfixed(search_space[i])
             edge_counter += 1
             di_ei[edge_counter] = vc
-            di_ej[edge_counter] = vertex_mapping[value(search_space[i])-min_pvals_m1]
+            di_ej[edge_counter] = vertex_mapping[CS.value(search_space[i])-min_pvals_m1]
         else
             for pv in view_values(search_space[i])
                 edge_counter += 1
@@ -217,7 +217,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
 
         # if only one value possible make it fixed
         if nvalues(search_space[cind]) == 1
-            only_value = value(search_space[cind])
+            only_value = CS.value(search_space[cind])
         end
     end
 
@@ -227,7 +227,7 @@ end
 """
     all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
 
-Returns whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
+Return whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
 """
 function all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
     indices = constraint.indices

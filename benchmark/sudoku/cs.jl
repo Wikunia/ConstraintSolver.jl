@@ -1,4 +1,4 @@
-using ConstraintSolver
+using ConstraintSolver, JuMP
 
 CS = ConstraintSolver
 include("../../test/sudoku_fcts.jl")
@@ -22,27 +22,35 @@ function solve_all(grids; benchmark=false, single_times=true)
     ct = time()
     grids = grids
     for (i,grid) in enumerate(grids)
-        com = CS.init()
-
-        com_grid = create_sudoku_grid!(com, grid)
-        add_sudoku_constr!(com, com_grid)
+        m = Model(with_optimizer(CS.Optimizer))
+        @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+        # set variables
+        for r=1:9, c=1:9
+            if grid[r,c] != 0
+                @constraint(m, x[r,c] == grid[r,c])
+            end
+        end
+        # sudoku constraints
+        jump_add_sudoku_constr!(m, x)
 
         if single_times
             GC.enable(false)
             t = time()
-            status = solve!(com);
+            optimize!(m)
+            status = JuMP.termination_status(m)
             t = time()-t
             GC.enable(true)
             println(i-1,", ", t)
         else
             GC.enable(false)
-            status = solve!(com);
+            optimize!(m)
+            status = JuMP.termination_status(m)
             GC.enable(true)
         end
         if !benchmark
-            @show com.info
+            @show JuMP.backend(m).optimizer.model.inner.info
             println("Status: ", status)
-            @assert fulfills_sudoku_constr(com_grid)
+            @assert jump_fulfills_sudoku_constr(JuMP.value.(x))
         end
     end
     println("")

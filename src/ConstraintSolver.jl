@@ -2,22 +2,37 @@ module ConstraintSolver
 
 using MatrixNetworks
 using JSON
+using MathOptInterface
+using JuMP: @variable, @constraint, @objective, Model, with_optimizer, VariableRef, backend
+import JuMP.sense_to_set
+
+const MOI = MathOptInterface
+const MOIU = MOI.Utilities
+
+include("options.jl")
 
 CS = ConstraintSolver
 
 mutable struct Variable
-    idx         :: Int
-    from        :: Int
-    to          :: Int
-    first_ptr   :: Int
-    last_ptr    :: Int
-    values      :: Vector{Int}
-    indices     :: Vector{Int}
-    offset      :: Int 
-    min         :: Int
-    max         :: Int
-    changes     :: Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}
+    idx                 :: Int
+    lower_bound         :: Int # inital lower and
+    upper_bound         :: Int # upper bound of the variable see min, max otherwise
+    first_ptr           :: Int
+    last_ptr            :: Int
+    values              :: Vector{Int}
+    indices             :: Vector{Int}
+    offset              :: Int 
+    min                 :: Int # the minimum value during the solving process 
+    max                 :: Int # for initial see lower/upper_bound
+    changes             :: Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}
+    has_upper_bound     :: Bool # must be true to work 
+    has_lower_bound     :: Bool # must be true to work 
+    is_fixed            :: Bool
+    is_integer          :: Bool # must be true to work 
+
 end
+
+Variable(idx) = Variable(idx,0,0,0,0,[],[],0,0,0,Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}(), false, false, false, false)
 
 mutable struct CSInfo
     pre_backtrack_calls :: Int
@@ -33,9 +48,10 @@ end
 abstract type ObjectiveFunction 
 end
 
-mutable struct MinMaxObjective <: ObjectiveFunction
-    fct                 :: Function
-    indices             :: Vector{Int}
+mutable struct SingleVariableObjective <: ObjectiveFunction
+    fct     :: Function
+    index   :: Int # index of the variable
+    indices :: Vector{Int}
 end
 
 mutable struct BasicConstraint <: Constraint
@@ -45,6 +61,26 @@ mutable struct BasicConstraint <: Constraint
     pvals               :: Vector{Int}
     hash                :: UInt64
     BasicConstraint() = new()
+end
+
+# support for a <= b constraint
+mutable struct SingleVariableConstraint <: Constraint
+    idx                 :: Int
+    fct                 :: Function
+    indices             :: Vector{Int}
+    pvals               :: Vector{Int}
+    lhs                 :: Int
+    rhs                 :: Int
+    hash                :: UInt64
+    SingleVariableConstraint() = new()
+end
+
+struct AllDifferentSet <: MOI.AbstractVectorSet
+    dimension :: Int64
+end
+
+struct NotEqualSet{T} <: MOI.AbstractScalarSet 
+    value :: T
 end
 
 mutable struct LinearVariables
@@ -95,7 +131,7 @@ mutable struct TreeLogNode
     TreeLogNode(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children) = new(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children)
 end
 
-mutable struct CoM
+mutable struct ConstraintSolverModel
     init_search_space   :: Vector{Variable}
     search_space        :: Vector{Variable}
     subscription        :: Vector{Vector{Int}} 
@@ -103,7 +139,7 @@ mutable struct CoM
     bt_infeasible       :: Vector{Int}
     c_backtrack_idx     :: Int
     backtrack_vec       :: Vector{BacktrackObj}
-    sense               :: Symbol
+    sense               :: MOI.OptimizationSense
     objective           :: ObjectiveFunction
     best_sol            :: Int # Objective of the best solution
     best_bound          :: Int # Overall best bound 
@@ -112,9 +148,12 @@ mutable struct CoM
     input               :: Dict{Symbol,Any}
     logs                :: Vector{TreeLogNode}
 
-    CoM() = new()
+    ConstraintSolverModel() = new()
 end
 
+const CoM = ConstraintSolverModel
+
+include("MOI_wrapper/MOI_wrapper.jl")
 include("printing.jl")
 include("logs.jl")
 include("hashes.jl")
@@ -123,6 +162,7 @@ include("objective.jl")
 include("linearcombination.jl")
 include("all_different.jl")
 include("eq_sum.jl")
+include("svc.jl")
 include("equal.jl")
 include("not_equal.jl")
 
@@ -139,7 +179,7 @@ function init()
     com.search_space        = Vector{Variable}()
     com.bt_infeasible       = Vector{Int}()
     com.c_backtrack_idx     = 1
-    com.sense               = :None # means no objective
+    com.sense               = MOI.FEASIBILITY_SENSE 
     com.backtrack_vec       = Vector{BacktrackObj}()
     com.solutions           = Vector{Int}()
     com.info                = CSInfo(0, false, 0, 0, 0)
@@ -158,7 +198,7 @@ function add_var!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     ind = length(com.search_space)+1
     changes = Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}()
     push!(changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
-    var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from, from, to, changes)
+    var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from, from, to, changes, true, true, fix !== nothing, true)
     if fix !== nothing
         fix!(com, var, fix)
     end
@@ -201,7 +241,7 @@ function fixed_vs_unfixed(search_space, indices)
     unfixed_indices = Int[]
     for (i,ind) in enumerate(indices)
         if isfixed(search_space[ind])
-            push!(fixed_vals, value(search_space[ind]))
+            push!(fixed_vals, CS.value(search_space[ind]))
         else
             push!(unfixed_indices, i)
         end
@@ -218,10 +258,10 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
     indices = constraint.indices
     variables = Variable[v for v in com.search_space[indices]]
     pvals_intervals = Vector{NamedTuple}()
-    push!(pvals_intervals, (from = variables[1].from, to = variables[1].to))
+    push!(pvals_intervals, (from = variables[1].lower_bound, to = variables[1].upper_bound))
     for (i,ind) in enumerate(indices)
-        extra_from = variables[i].from
-        extra_to   = variables[i].to
+        extra_from = variables[i].min
+        extra_to   = variables[i].max
         comp_inside = false
         for cpvals in pvals_intervals
             if extra_from >= cpvals.from && extra_to <= cpvals.to
@@ -257,19 +297,6 @@ function add_constraint!(com::CS.CoM, constraint::Constraint)
     for (i,ind) in enumerate(constraint.indices)
         push!(com.subscription[ind], constraint.idx)
     end
-end
-
-"""
-    set_objective!(com::CS.CoM, sense::Symbol, objective::ObjectiveFunction)
-
-Set the objective of the model. Sense can be `:Min` or `:Max`.
-"""
-function set_objective!(com::CS.CoM, sense::Symbol, objective::ObjectiveFunction)
-    if sense != :Min && sense != :Max
-        throw(ErrorException("The objective sense must be :Min or :Max"))
-    end
-    com.sense = sense
-    com.objective = objective
 end
 
 """
@@ -357,10 +384,16 @@ function find_best_constraint(com::CS.CoM, constraint_idxs_vec)
 end
 
 """
-    prune!(com::CS.CoM; pre_backtrack=false)
+    prune!(com::CS.CoM; pre_backtrack=false, all=false, only_once=false, initial_check=false)
 
-Prune based on changes by initial solve or backtracking. The information for it is stored in each variable
-Returns whether it's still feasible
+Prune based on changes by initial solve or backtracking. The information for it is stored in each variable.
+There are several parameters:
+`pre_backtrack` when set to true `com.info.in_backtrack_calls` is incremented
+`all` instead of only looking at changes each constraint is check at least once (if there are open values)
+`only_once` Just run on the changed constraints or `all` once instead of repeatedly until nothing can be pruned
+`initial_check` Checks on `all` constraints and also checks if variables are set for the whole constraint
+    whether the constraint is fulfilled or the problem is infeasible.
+Return whether it's still feasible
 """
 function prune!(com::CS.CoM; pre_backtrack=false, all=false, only_once=false, initial_check=false)
     feasible = true
@@ -491,7 +524,7 @@ Return the best bound if setting the variable with idx: `var_idx` to `val` if `v
 Without an objective function return 0.
 """
 function get_best_bound(com::CS.CoM; var_idx=0, val=0)
-    if com.sense == :None
+    if com.sense == MOI.FEASIBILITY_SENSE
         return 0
     end
     return com.objective.fct(com, var_idx, val)
@@ -556,6 +589,47 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
 end
 
 """
+    update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraints)
+
+Check all constraints which change the objective and update the best bound of the backtrack_obj accordingly.
+Pruning should not be continued if the new best bound has changed.
+Return feasible and if pruning should be continued.
+"""
+function update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraints)
+    further_pruning = true
+    feasible = true
+    for constraint in constraints
+        relevant = false
+        for obj_index in com.objective.indices
+            if obj_index in constraint.indices
+                relevant = true
+                break
+            end
+        end
+        if relevant
+            feasible = constraint.fct(com, constraint; logs = false)
+            if !feasible
+                return false, false
+            end
+        end
+    end
+    if !feasible
+        com.info.backtrack_reverses += 1
+        return false, false
+    end
+    
+    # check best_bound again
+    # if best bound unchanged => continue pruning 
+    # otherwise try another path but don't close the current 
+    # -> means open new paths from here even if not pruned til the end
+    new_bb = get_best_bound(com)
+    if backtrack_obj.best_bound != new_bb
+        further_pruning = false
+    end
+    return true, further_pruning
+end
+
+"""
     backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
 Start backtracking and stop after `max_bt_steps`.
@@ -599,7 +673,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
     last_backtrack_id = 0
 
     started = true
-    obj_factor = com.sense == :Min ? 1 : -1
+    obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
 
     while length(backtrack_vec) > 0
         step_nr += 1
@@ -607,7 +681,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         l = 1
         
         # if there is no objective or sorting is set to false
-        if com.sense == :None || !sorting 
+        if com.sense == MOI.FEASIBILITY_SENSE || !sorting 
             l = length(backtrack_vec)
             backtrack_obj = backtrack_vec[l]
             while backtrack_obj.status != :Open
@@ -654,10 +728,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         if l <= 0 || l > length(backtrack_vec)
             break
         end
-        if com.sense == :Min
+        if com.sense == MOI.MIN_SENSE
             max_val = typemax(Int64)
             com.best_bound = minimum([bo.status == :Open ? bo.best_bound : max_val for bo in backtrack_vec])
-        elseif com.sense == :Max
+        elseif com.sense == MOI.MAX_SENSE
             min_val = typemin(Int64)
             com.best_bound = maximum([bo.status == :Open ? bo.best_bound : min_val for bo in backtrack_vec])
         else
@@ -701,13 +775,27 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         fix!(com, com.search_space[ind], pval)
         com.info.backtrack_fixes   += 1
 
-        # prune completely start with all that changed by the fix
-        feasible = prune!(com)
-         
-        if !feasible
-            com.info.backtrack_reverses += 1
-            continue
+        further_pruning = true
+        # first update the best bound (only constraints which have an index in the objective function)
+        if com.sense != MOI.FEASIBILITY_SENSE 
+            feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
+
+            if !feasible
+                com.info.backtrack_reverses += 1
+                continue
+            end
         end
+
+        if further_pruning
+            # prune completely start with all that changed by the fix or by updating best bound
+            feasible = prune!(com)
+            
+            if !feasible
+                com.info.backtrack_reverses += 1
+                continue
+            end
+        end
+     
 
         found, ind = get_weak_ind(com)
         # no index found => solution found
@@ -896,20 +984,26 @@ function set_in_all_different!(com::CS.CoM)
 end
 
 """
-    solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), backtrack_sorting=true, keep_logs=false)
+    solve!(com::CS.CoM, options::SolverOptions)
 
-Solve the constraint model if `backtrack = true` otherwise stop before calling backtracking.
-This way the search space can be inspected after the first pruning step.
-If `max_bt_steps` is set only that many backtracking steps are performed. 
-If `backtrack_sorting` is set to `false` the same ordering is used as when used without objective this has only an effect when an objective is used.
-With `keep_logs` one is able to write the tree structure of the backtracking tree using `ConstraintSolver.save_logs`.
+Solve the constraint model based on the given settings.
 """
-function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), backtrack_sorting=true, keep_logs=false)
+function solve!(com::CS.CoM, options::SolverOptions)
+    # no constraints => Solved
+    if length(com.constraints) == 0
+        return :Solved
+    end
+    
+    backtrack = options.backtrack
+    max_bt_steps = options.max_bt_steps
+    backtrack_sorting = options.backtrack_sorting
+    keep_logs = options.keep_logs
+
     com.input[:logs] = keep_logs
     if keep_logs
         com.init_search_space = deepcopy(com.search_space)
     end
- 
+
     set_in_all_different!(com)
 
     # check for better constraints
@@ -951,6 +1045,14 @@ function solve!(com::CS.CoM; backtrack=true, max_bt_steps=typemax(Int64), backtr
     end
 end
 
-export add_var!, add_constraint!, solve!, value, set_objective! 
+"""
+    solve!(com::Optimizer)
+
+Solve the constraint model based on the given settings.
+"""
+function solve!(model::Optimizer)
+    com = model.inner
+    return solve!(com, model.options)
+end
 
 end # module

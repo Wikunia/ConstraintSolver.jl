@@ -18,9 +18,9 @@ function plot_search_space(grid, com_grid, fname)
             x = ind[2]-0.5
             y = 10-ind[1]-0.5
             if grid[ind] != 0
-                annotate!(x, y, text(value(com_grid[ind]),20, :black))
+                annotate!(x, y, text(CS.value(com_grid[ind]),20, :black))
             else
-                annotate!(x, y, text(value(com_grid[ind]),20, :blue))
+                annotate!(x, y, text(CS.value(com_grid[ind]),20, :blue))
             end
         else
             vals = values(com_grid[ind])

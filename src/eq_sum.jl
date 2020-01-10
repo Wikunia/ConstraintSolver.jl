@@ -140,7 +140,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 end
             end
         else
-            unfixed_rhs -= value(search_space[i])*constraint.coeffs[li]
+            unfixed_rhs -= CS.value(search_space[i])*constraint.coeffs[li]
         end
     end
 
@@ -229,7 +229,7 @@ function eq_sum(com::CoM, constraint::LinearConstraint, val::Int, index::Int)
             continue
         end
         if isfixed(search_space[idx])
-            csum += value(search_space[idx])*constraint.coeffs[i]
+            csum += CS.value(search_space[idx])*constraint.coeffs[i]
         else
             num_not_fixed += 1
             if constraint.coeffs[i] >= 0
