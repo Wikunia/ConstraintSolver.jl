@@ -384,9 +384,15 @@ function find_best_constraint(com::CS.CoM, constraint_idxs_vec)
 end
 
 """
-    prune!(com::CS.CoM; pre_backtrack=false)
+    prune!(com::CS.CoM; pre_backtrack=false, all=false, only_once=false, initial_check=false)
 
-Prune based on changes by initial solve or backtracking. The information for it is stored in each variable
+Prune based on changes by initial solve or backtracking. The information for it is stored in each variable.
+There are several parameters:
+`pre_backtrack` when set to true `com.info.in_backtrack_calls` is incremented
+`all` instead of only looking at changes each constraint is check at least once (if there are open values)
+`only_once` Just run on the changed constraints or `all` once instead of repeatedly until nothing can be pruned
+`initial_check` Checks on `all` constraints and also checks if variables are set for the whole constraint
+    whether the constraint is fulfilled or the problem is infeasible.
 Return whether it's still feasible
 """
 function prune!(com::CS.CoM; pre_backtrack=false, all=false, only_once=false, initial_check=false)
