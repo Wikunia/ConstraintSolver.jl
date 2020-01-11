@@ -49,7 +49,7 @@ end
 end
 
 @testset "Killer Sudoku niallsudoku_5500 with coefficients" begin
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     grid = zeros(Int, (9,9))
 
@@ -85,7 +85,7 @@ end
     end
 
     # test if deterministic by running it again
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     grid = zeros(Int, (9,9))
 

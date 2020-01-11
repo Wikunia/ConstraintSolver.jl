@@ -144,8 +144,6 @@ mutable struct ConstraintSolverModel
     info                :: CSInfo
     input               :: Dict{Symbol,Any}
     logs                :: Vector{TreeLogNode}
-
-    ConstraintSolverModel() = new()
 end
 
 const CoM = ConstraintSolverModel

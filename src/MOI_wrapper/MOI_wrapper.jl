@@ -41,7 +41,7 @@ MOI.get(::Optimizer, ::MOI.SolverName) = "ConstraintSolver"
 Optimizer struct constructor
 """
 function Optimizer(;options...)
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
     options = combine_options(options)
     return Optimizer(
         com,
@@ -64,7 +64,7 @@ end
     MOI.empty!(model::Optimizer)
 """
 function MOI.empty!(model::Optimizer)
-    model.inner = CS.init()
+    model.inner = CS.ConstraintSolverModel()
     empty!(model.variable_info)
     empty!(model.var_constraints)
     model.status = MOI.OPTIMIZE_NOT_CALLED
