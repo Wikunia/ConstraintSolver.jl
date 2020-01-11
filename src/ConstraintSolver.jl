@@ -51,6 +51,9 @@ mutable struct SingleVariableObjective <: ObjectiveFunction
     indices :: Vector{Int}
 end
 
+# used to designate a feasibility sense
+struct NoObjective <: ObjectiveFunction end
+
 mutable struct BasicConstraint <: Constraint
     idx                 :: Int
     fct                 :: Function
@@ -167,20 +170,23 @@ include("not_equal.jl")
 Create the constraint model object.
 """
 function ConstraintSolverModel()
-    com = CoM()
-    com.constraints         = Vector{Constraint}()
-    com.subscription        = Vector{Vector{Int}}()
-    com.init_search_space   = Vector{Variable}()
-    com.search_space        = Vector{Variable}()
-    com.bt_infeasible       = Vector{Int}()
-    com.c_backtrack_idx     = 1
-    com.sense               = MOI.FEASIBILITY_SENSE
-    com.backtrack_vec       = Vector{BacktrackObj}()
-    com.solutions           = Vector{Int}()
-    com.info                = CSInfo(0, false, 0, 0, 0)
-    com.input               = Dict{Symbol, Bool}()
-    com.logs                = Vector{TreeLogNode}()
-    return com
+    ConstraintSolverModel(
+        Vector{Variable}(), # init_search_space
+        Vector{Variable}(), # search_space
+        Vector{Vector{Int}}(), # subscription
+        Vector{Constraint}(), # constraints
+        Vector{Int}(), # bt_infeasible
+        1, # c_backtrack_idx
+        Vector{BacktrackObj}(), # backtrack_vec
+        MOI.FEASIBILITY_SENSE, #
+        NoObjective(), #
+        0, # best_sol,
+        0, # best_bound
+        Vector{Int}(), # solutions
+        CSInfo(0, false, 0, 0, 0), # info
+        Dict{Symbol,Any}(), # input
+        Vector{TreeLogNode}() # logs
+    )
 end
 
 @deprecate init() ConstraintSolverModel()
