@@ -39,7 +39,7 @@ function log_one_node(com, nvars, back_idx, step_nr)
         if !changed
             push!(com.logs[parent_idx].children, tree_log_node)
         end
-    end 
+    end
     return tree_log_node
 end
 

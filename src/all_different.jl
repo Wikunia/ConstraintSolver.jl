@@ -18,13 +18,13 @@ end
 """
     all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
 
-Tries to reduce the search space by the all_different constraint. 
+Tries to reduce the search space by the all_different constraint.
 Fixes values and then sets com.changed to true for the corresponding index.
 Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set
 """
 function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     indices = constraint.indices
-    pvals = constraint.pvals 
+    pvals = constraint.pvals
     nindices = length(indices)
 
     search_space = com.search_space
@@ -39,7 +39,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
 
     bfixed = true
     current_fixed_vals = fixed_vals
-    
+
     while bfixed
         new_fixed_vals = Int[]
         bfixed = false
@@ -147,7 +147,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
             for pv in view_values(search_space[i])
                 edge_counter += 1
                 if pv == pval_mapping[maximum_matching.match[vc]]
-                    di_ei[edge_counter] = vc 
+                    di_ei[edge_counter] = vc
                     di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1]
                 else
                     di_ei[edge_counter] = vertex_mapping[pv-min_pvals_m1]
@@ -161,7 +161,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
     if length(pvals) > nindices
         # add extra node which has all values as input which are used in the maximum matching
         # and the ones in maximum matching as inputs see: http://www.minicp.org (Part 6)
-        # the direction is opposite to that of minicp 
+        # the direction is opposite to that of minicp
         used_in_maximum_matching = Dict{Int, Bool}()
         for pval in pvals
             used_in_maximum_matching[pval] = false
@@ -182,7 +182,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
             if !kv.second
                 push!(di_ei, new_vertex)
                 push!(di_ej, vertex_mapping[kv.first-min_pvals_m1])
-            else 
+            else
                 push!(di_ei, vertex_mapping[kv.first-min_pvals_m1])
                 push!(di_ej, new_vertex)
             end
@@ -207,7 +207,7 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         if src <= nindices && dst == vertex_mapping[pval_mapping[maximum_matching.match[src]]-min_pvals_m1]
             continue
         end
-      
+
 
         cind = vmb[dst]
         if !rm!(com, search_space[cind], vmb[src])
@@ -237,7 +237,7 @@ function all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
         end
         if issetto(com.search_space[indices[i]], value)
             return false
-        end 
+        end
     end
     return true
 end
