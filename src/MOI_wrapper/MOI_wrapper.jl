@@ -7,25 +7,25 @@ const CI = MOI.ConstraintIndex
 
 # sets
 const BOUNDS = Union{
-    MOI.EqualTo{Float64}, 
+    MOI.EqualTo{Float64},
     MOI.GreaterThan{Float64},
-    MOI.LessThan{Float64}, 
+    MOI.LessThan{Float64},
     MOI.Interval{Float64}
 }
 
 const VAR_TYPES = Union{
-    MOI.ZeroOne, 
+    MOI.ZeroOne,
     MOI.Integer
 }
 
 """
 Optimizer struct
-"""  
+"""
 mutable struct Optimizer <: MOI.AbstractOptimizer
     inner::Union{CoM, Nothing}
     variable_info::Vector{Variable}
     # which variable index, (:leq,:geq,:eq,:Int,:Bin), and lower and upper bound
-    var_constraints::Vector{Tuple{Int64,Symbol,Int64,Int64}} 
+    var_constraints::Vector{Tuple{Int64,Symbol,Int64,Int64}}
     status::MOI.TerminationStatusCode
     options::SolverOptions
 end
@@ -38,19 +38,19 @@ include("results.jl")
 MOI.get(::Optimizer, ::MOI.SolverName) = "ConstraintSolver"
 
 """
-Optimizer struct constructor 
+Optimizer struct constructor
 """
-function Optimizer(;options...) 
-    com = CS.init()
+function Optimizer(;options...)
+    com = CS.ConstraintSolverModel()
     options = combine_options(options)
     return Optimizer(
-        com, 
-        [], 
+        com,
+        [],
         [],
         MOI.OPTIMIZE_NOT_CALLED,
         options
     )
-end 
+end
 
 """
     MOI.is_empty(model::Optimizer)
@@ -64,14 +64,14 @@ end
     MOI.empty!(model::Optimizer)
 """
 function MOI.empty!(model::Optimizer)
-    model.inner = CS.init()
+    model.inner = CS.ConstraintSolverModel()
     empty!(model.variable_info)
     empty!(model.var_constraints)
     model.status = MOI.OPTIMIZE_NOT_CALLED
     # !important => don't remove the options
 end
 
-""" 
+"""
 Copy constructor for the optimizer
 """
 MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = !copy_names
@@ -81,7 +81,7 @@ end
 
 """
     MOI.optimize!(model::Optimizer)
-""" 
+"""
 function MOI.optimize!(model::Optimizer)
     # check if every variable has bounds and is an Integer
     check_var_bounds(model)
@@ -90,6 +90,5 @@ function MOI.optimize!(model::Optimizer)
     set_constraint_hashes!(model)
 
     status = solve!(model)
-    set_status!(model, status)   
+    set_status!(model, status)
 end
-

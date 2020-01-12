@@ -14,11 +14,11 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
         l = l_in[perm]
         r = r_in[perm]
     end
-    
+
     len = length(l)
     matching_l = zeros(Int, m)
     matching_r = zeros(Int, n)
-    
+
     # create initial matching
     match_len = 0
     for (li,ri) in zip(l,r)
@@ -72,7 +72,7 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
             while pstart <= pend
                 node = process_nodes[pstart]
                 depth = depths[pstart]
-                
+
                 # from left to right
                 if depth % 2 == 1
                     used_l[node] = true
@@ -106,7 +106,7 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
                         c = 0
                         while parent != 0
                             current = process_nodes[parent]
-                            if last != 0 
+                            if last != 0
                                 if c % 2 == 1
                                     matching_r[last] = current
                                     matching_l[current] = last
@@ -130,7 +130,7 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
                     used_r .= false
                 end
                 found = false
-            else 
+            else
                 break
             end
             end
@@ -138,4 +138,3 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
     end
     return BipartiteMatching(match_len, matching_l)
 end
-

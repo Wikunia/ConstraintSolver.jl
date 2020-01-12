@@ -62,16 +62,16 @@ function check_inbounds(model::Optimizer, vi::VI)
 	end
 	return
 end
-	
+
 check_inbounds(model::Optimizer, var::SVF) = check_inbounds(model, var.variable)
 
-has_upper_bound(model::Optimizer, vi::VI) = 
+has_upper_bound(model::Optimizer, vi::VI) =
     model.variable_info[vi.value].has_upper_bound
-	
-has_lower_bound(model::Optimizer, vi::VI) = 
+
+has_lower_bound(model::Optimizer, vi::VI) =
     model.variable_info[vi.value].has_lower_bound
-	
-is_fixed(model::Optimizer, vi::VI) = 
+
+is_fixed(model::Optimizer, vi::VI) =
     model.variable_info[vi.value].is_fixed
 
 function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.Integer)
@@ -108,7 +108,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.ZeroOne)
 end
 
 #=
-Populating Variable bounds 
+Populating Variable bounds
 =#
 function MOI.add_constraint(model::Optimizer, v::SVF, interval::MOI.Interval{Float64})
     vi = v.variable

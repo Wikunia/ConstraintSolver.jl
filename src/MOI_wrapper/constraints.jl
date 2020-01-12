@@ -52,7 +52,7 @@ end
 # support for a <= b which is written as a-b <= 0
 function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.LessThan{Float64})
     check_inbounds(model, func)
-    
+
     if set.upper != 0.0
         error("Only constraints of the type `a <= b` are supported but not `a <= b-2`")
     end
@@ -93,10 +93,10 @@ end
 
 
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{AllDifferentSet}) = true
-   
+
 function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::AllDifferentSet)
     com = model.inner
-    
+
     constraint = BasicConstraint()
     constraint.fct = all_different
     constraint.indices = Int[vi.value for vi in vars.variables]
@@ -124,7 +124,7 @@ function MOI.add_constraint(model::Optimizer, aff::SAF, set::NotEqualSet{Float64
     end
 
     com = model.inner
-    
+
     constraint = BasicConstraint()
     constraint.fct = not_equal
     constraint.indices = Int[vi.variable_index.value for vi in aff.terms]
@@ -140,7 +140,7 @@ end
 
 function set_pvals!(model::CS.Optimizer)
     com = model.inner
-    for constraint in com.constraints 
+    for constraint in com.constraints
         set_pvals!(com, constraint)
     end
 end
@@ -152,7 +152,7 @@ function set_constraint_hashes!(model::CS.Optimizer)
     end
 end
 
-### != 
+### !=
 
 sense_to_set(::Function, ::Val{:!=}) = NotEqualSet(0.0)
 

@@ -25,7 +25,7 @@ end
 
 
 function issetto(v::CS.Variable, x::Int)
-    if !isfixed(v) 
+    if !isfixed(v)
         return false
     else
         return x == value(v)
@@ -61,10 +61,10 @@ function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several=false, chang
     v.indices[x+v.offset], v.indices[v.values[v.last_ptr]+v.offset] = v.indices[v.values[v.last_ptr]+v.offset], v.indices[x+v.offset]
     v.values[ind], v.values[v.last_ptr] = v.values[v.last_ptr], v.values[ind]
     v.last_ptr -= 1
-    if !in_remove_several 
+    if !in_remove_several
         vals = values(v)
         if length(vals) > 0
-            if x == v.min 
+            if x == v.min
                 v.min = minimum(vals)
             end
             if x == v.max

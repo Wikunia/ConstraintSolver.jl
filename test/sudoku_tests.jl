@@ -29,7 +29,7 @@ end
 
 
 @testset "Hard sudoku" begin
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     grid = zeros(Int,(9,9))
     grid[1,:] = [0 0 0 5 4 6 0 0 9]
@@ -78,7 +78,7 @@ end
 
 
 @testset "Hard fsudoku repo" begin
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     grid = zeros(Int,(9,9))
     grid[1,:] = [0 0 0 0 0 0 0 0 0]
@@ -122,7 +122,7 @@ end
 end
 
 @testset "Hard fsudoku repo 0-8" begin
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     grid = zeros(Int,(9,9))
     grid[1,:] = [0 0 0 0 0 0 0 0 0]

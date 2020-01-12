@@ -30,7 +30,7 @@ function equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
     indices = constraint.indices
 
     search_space = com.search_space
-    # is only needed if we want to set more 
+    # is only needed if we want to set more
     if length(indices) > 2
         fixed_vals, unfixed_indices = fixed_vs_unfixed(search_space, indices)
 
@@ -71,7 +71,7 @@ function equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
             if !feasible
                 return false
             end
-        else 
+        else
             feasible = fix!(com, v1, CS.value(v2))
             if !feasible
                 return false

@@ -2,7 +2,7 @@ using ConstraintSolver
 CS = ConstraintSolver
 
 function main(filename; benchmark=false)
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     lines = readlines(filename)
     num_colors = 0

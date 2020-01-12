@@ -60,7 +60,7 @@ function solve_all(grids; benchmark=false, single_times=true)
 end
 
 function solve_one(grid)
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
     add_sudoku_constr!(com, grid)

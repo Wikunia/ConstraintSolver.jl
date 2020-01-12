@@ -74,17 +74,17 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
         com.bt_infeasible[indices] .+= 1
         return false
     end
-    
+
     for (i,idx) in enumerate(indices)
         if isfixed(search_space[idx])
             continue
         end
         # minimum without current index
         c_min = full_min-mins[i]
-        
+
         # maximum without current index
         c_max = full_max-maxs[i]
-        
+
         p_max = -c_min
         if p_max < maxs[i]
             maxs[i] = p_max
@@ -96,14 +96,14 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
         end
     end
 
-    # update all 
+    # update all
     for (i,idx) in enumerate(indices)
         if maxs[i] < pre_maxs[i]
             if constraint.coeffs[i] > 0
                 still_feasible = remove_above!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
             else
                 still_feasible = remove_below!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
-            end            
+            end
             if !still_feasible
                 return false
             end
@@ -126,7 +126,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     unfixed_local_ind_1, unfixed_local_ind_2 = 0,0
     unfixed_rhs = constraint.rhs
     li = 0
-    for i in indices 
+    for i in indices
         li += 1
         if !isfixed(search_space[i])
             n_unfixed += 1
@@ -149,7 +149,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
         if unfixed_rhs % constraint.coeffs[unfixed_local_ind_1] != 0
             com.bt_infeasible[unfixed_ind_1] += 1
             return false
-        else 
+        else
             # divide rhs such that it is comparable with the variable directly without coefficient
             unfixed_rhs = fld(unfixed_rhs, constraint.coeffs[unfixed_local_ind_1])
         end
@@ -182,7 +182,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 other, local_other = unfixed_ind_1, unfixed_local_ind_1
                 this, local_this = unfixed_ind_2, unfixed_local_ind_2
             end
-    
+
             for val in values(search_space[this])
                 # if we choose this value but the other wouldn't be an integer => remove this value
                 if (unfixed_rhs-val*constraint.coeffs[local_this]) % constraint.coeffs[local_other] != 0
@@ -193,7 +193,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 end
 
                 check_other_val = fld(unfixed_rhs-val*constraint.coeffs[local_this], constraint.coeffs[local_other])
-                # if all different but those two are the same 
+                # if all different but those two are the same
                 if is_all_different && check_other_val == val
                     if !rm!(com, search_space[this], val)
                         return false

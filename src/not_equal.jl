@@ -36,11 +36,11 @@ function not_equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
     if fixed_v1
         prune_v = v2
         prune_v_idx = 2
-        other_val = CS.value(v1)       
-    else 
+        other_val = CS.value(v1)
+    else
         prune_v = v1
         prune_v_idx = 1
-        other_val = CS.value(v2) 
+        other_val = CS.value(v2)
     end
     if has(prune_v, other_val)
         if !rm!(com, prune_v, other_val)
@@ -57,9 +57,9 @@ Return whether the `not_equal` constraint can be still fulfilled.
 """
 function not_equal(com::CoM, constraint::Constraint, value::Int, index::Int)
     if index == constraint.indices[1]
-        other_var = com.search_space[constraint.indices[2]] 
+        other_var = com.search_space[constraint.indices[2]]
     else
-        other_var = com.search_space[constraint.indices[1]] 
+        other_var = com.search_space[constraint.indices[1]]
     end
     return !issetto(other_var, value)
 end

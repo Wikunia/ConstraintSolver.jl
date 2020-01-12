@@ -14,7 +14,7 @@ function compress_var_string(variable::CS.Variable)
     if sorted_vals[1]+length(CS.values(variable))-1 == sorted_vals[end]
         return "$(sorted_vals[1]):$(sorted_vals[end])"
     end
-    return string(sort(CS.values(variable))) 
+    return string(sort(CS.values(variable)))
 end
 
 function get_str_repr(variables::Array{CS.Variable})
@@ -51,9 +51,9 @@ function get_str_repr(variables::Array{CS.Variable})
             for i=1:size(variables)[1]
                 pstr = ""
                 if !CS.isfixed(variables[i,j])
-                    pstr = compress_var_string(variables[i,j])      
-                else 
-                    pstr = string(CS.value(variables[i,j]))     
+                    pstr = compress_var_string(variables[i,j])
+                else
+                    pstr = string(CS.value(variables[i,j]))
                 end
                 space_left  = floor(Int, (max_length-length(pstr))/2)
                 space_right = ceil(Int, (max_length-length(pstr))/2)

@@ -1,6 +1,6 @@
 @testset "Small special tests" begin
 @testset "Sum" begin
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     com_grid = Array{CS.Variable, 1}(undef, 8)
     com_grid[1] = CS.add_var!(com, 1, 9)
@@ -65,7 +65,7 @@
 end
 
 @testset "Reordering sum constraint" begin
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     x = CS.add_var!(com, 0, 9)
     y = CS.add_var!(com, 0, 9)
@@ -92,7 +92,7 @@ end
 end
 
 @testset "Infeasible coeff sum" begin
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     com_grid = Array{CS.Variable, 1}(undef, 3)
     com_grid[1] = CS.add_var!(com, 1, 9)
@@ -116,7 +116,7 @@ end
 end
 
 @testset "Negative coeff sum" begin
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     com_grid = Array{CS.Variable, 1}(undef, 3)
     com_grid[1] = CS.add_var!(com, 1, 9)
@@ -138,7 +138,7 @@ end
     @test CS.isfixed(com_grid[2]) && CS.value(com_grid[2]) == 2
     @test CS.isfixed(com_grid[3]) && CS.value(com_grid[3]) == 3
 
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     com_grid = Array{CS.Variable, 1}(undef, 3)
     com_grid[1] = CS.add_var!(com, 1, 5)
@@ -157,7 +157,7 @@ end
     @test CS.isfixed(com_grid[2]) && CS.value(com_grid[2]) == 2
     @test CS.isfixed(com_grid[3]) && CS.value(com_grid[3]) == 3
 
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 5)
     v2 = CS.add_var!(com, 5, 10)
@@ -176,7 +176,7 @@ end
 
 @testset "Equal constraint" begin
     # nothing to do
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2; fix=2)
     v2 = CS.add_var!(com, 1, 2; fix=2)
@@ -194,7 +194,7 @@ end
     @test CS.isfixed(v2) && CS.value(v2) == 2
 
     # normal
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2)
     v2 = CS.add_var!(com, 1, 2; fix=2)
@@ -212,7 +212,7 @@ end
     @test CS.isfixed(v2) && CS.value(v2) == 2
 
     # set but infeasible
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2)
     v2 = CS.add_var!(com, 1, 2; fix=2)
@@ -229,7 +229,7 @@ end
     @test !com.info.backtracked
 
     # set but infeasible reversed
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2)
     v2 = CS.add_var!(com, 1, 2; fix=2)
@@ -246,7 +246,7 @@ end
     @test !com.info.backtracked
 
     # reversed
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2)
     v2 = CS.add_var!(com, 1, 2; fix=2)
@@ -264,7 +264,7 @@ end
     @test CS.isfixed(v2) && CS.value(v2) == 2
 
     # test with more
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2)
     v2 = CS.add_var!(com, 1, 2; fix=2)
@@ -290,7 +290,7 @@ end
 
 @testset "NotSolved or infeasible" begin
     # NotSolved without backtracking
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2)
     v2 = CS.add_var!(com, 1, 2)
@@ -307,7 +307,7 @@ end
     @test !com.info.backtracked
 
     # Infeasible without backtracking
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2; fix=1)
     v2 = CS.add_var!(com, 1, 2; fix=2)
@@ -323,7 +323,7 @@ end
     @test !com.info.backtracked
 
     # Infeasible without backtracking reverse
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2; fix=1)
     v2 = CS.add_var!(com, 1, 2; fix=2)
@@ -341,7 +341,7 @@ end
 
 @testset "Test Equals()" begin
     # test using equal
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2)
     v2 = CS.add_var!(com, 1, 2; fix=2)
@@ -365,7 +365,7 @@ end
 
 @testset "Test Equals() NotSolved/Infeasible" begin
     # test using equal
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2)
     v2 = CS.add_var!(com, 1, 2; fix=2)
@@ -385,7 +385,7 @@ end
     @test CS.isfixed(v4) && CS.value(v4) == 3
 
     # test using equal
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2)
     v2 = CS.add_var!(com, 1, 2)
@@ -407,7 +407,7 @@ end
 end
 
 @testset "Graph coloring small" begin
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     # cover from numberphile video
     v1 = CS.add_var!(com, 1, 4)
@@ -452,7 +452,7 @@ end
     @test com.info.backtracked
 
     # Infeasible with 3 colors
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
     v1 = CS.add_var!(com, 1, 3)
     v2 = CS.add_var!(com, 1, 3)
     v3 = CS.add_var!(com, 1, 3)
@@ -496,7 +496,7 @@ end
 
 
     # very simple
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2; fix=1)
     v2 = CS.add_var!(com, 1, 2)
@@ -515,7 +515,7 @@ end
     @test CS.isfixed(v2) && CS.value(v2) == 2
 
     # infeasible at beginning
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2; fix=1)
     v2 = CS.add_var!(com, 1, 2; fix=1)
@@ -532,7 +532,7 @@ end
     @test !com.info.backtracked
 
     # Error not implemented
-    com = CS.init()
+    com = CS.ConstraintSolverModel()
 
     v1 = CS.add_var!(com, 1, 2; fix=1)
     v2 = CS.add_var!(com, 1, 2)
