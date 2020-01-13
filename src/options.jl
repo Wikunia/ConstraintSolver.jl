@@ -3,6 +3,8 @@ mutable struct SolverOptions
     max_bt_steps        :: Int64
     backtrack_sorting   :: Bool
     keep_logs           :: Bool
+    rtol                :: Float64
+    atol                :: Float64
 end
 
 function get_default_options()
@@ -10,8 +12,10 @@ function get_default_options()
     max_bt_steps        = typemax(Int64)
     backtrack_sorting   = true
     keep_logs           = false
+    rtol                = 1e-6
+    atol                = 1e-6
 
-    return SolverOptions(backtrack, max_bt_steps, backtrack_sorting, keep_logs)
+    return SolverOptions(backtrack, max_bt_steps, backtrack_sorting, keep_logs, rtol, atol)
 end
 
 function combine_options(options)

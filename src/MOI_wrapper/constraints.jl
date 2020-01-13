@@ -32,10 +32,10 @@ function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.EqualTo{Float6
     lc.coeffs = coeffs
     lc.operator = :(==)
     lc.rhs = set.value
-    lc.maxs = zeros(Int, length(indices))
-    lc.mins = zeros(Int, length(indices))
-    lc.pre_maxs = zeros(Int, length(indices))
-    lc.pre_mins = zeros(Int, length(indices))
+    lc.maxs = zeros(Real, length(indices))
+    lc.mins = zeros(Real, length(indices))
+    lc.pre_maxs = zeros(Real, length(indices))
+    lc.pre_mins = zeros(Real, length(indices))
     # this can be changed later in `set_in_all_different!` but needs to be initialized with false
     lc.in_all_different = false
     lc.idx = length(model.inner.constraints)+1
