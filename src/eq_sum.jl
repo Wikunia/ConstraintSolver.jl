@@ -195,11 +195,8 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                     continue
                 end
 
-                # non discrete value
+                # get discrete other value
                 check_other_val_float = (unfixed_rhs-val*constraint.coeffs[local_this])/constraint.coeffs[local_other]
-                if !isapprox_discrete(com, check_other_val_float)
-                    return false
-                end
                 check_other_val = get_approx_discrete(check_other_val_float)
 
                 # if all different but those two are the same
