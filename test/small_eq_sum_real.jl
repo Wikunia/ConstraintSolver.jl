@@ -66,4 +66,20 @@ end
     @test JuMP.value.(x) == [0,1,1,1]
 end
 
+@testset "Getting safe upper/lower bounds" begin
+    # must use negative coefficient for optimum
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, x[1:4], Bin)
+    @variable(m, z, Bin)
+
+    weights = [0.1, 0.2, 0.4, -1.3]
+    @variable(m, 0 <= max_val <= 10, Int)
+    @constraint(m, sum(weights.*x) == 0.3*max_val)
+    @objective(m, Max, max_val)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.objective_value(m) == 2
+    @test JuMP.value.(x) == [0,1,1,0]
+end
+
 end
