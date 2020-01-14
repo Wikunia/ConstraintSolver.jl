@@ -7,7 +7,7 @@ mutable struct SolverOptions
     atol                :: Float64
 end
 
-function get_default_options()
+function SolverOptions()
     backtrack           = true
     max_bt_steps        = typemax(Int64)
     backtrack_sorting   = true
@@ -19,7 +19,7 @@ function get_default_options()
 end
 
 function combine_options(options)
-    defaults = get_default_options()
+    defaults = SolverOptions()
     options_dict = Dict{Symbol,Any}()
     for kv in options
         if !in(kv[1], fieldnames(SolverOptions))

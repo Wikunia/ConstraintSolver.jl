@@ -188,7 +188,7 @@ function ConstraintSolverModel()
         CSInfo(0, false, 0, 0, 0), # info
         Dict{Symbol,Any}(), # input
         Vector{TreeLogNode}(), # logs
-        get_default_options() # options
+        SolverOptions() # options
     )
 end
 

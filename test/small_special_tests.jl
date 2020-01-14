@@ -83,7 +83,7 @@ end
     CS.add_constraint!(com, z-2 == x)
     CS.add_constraint!(com, 2x+x == z+3y-6)
 
-    options = CS.get_default_options()
+    options = CS.SolverOptions()
     status = CS.solve!(com, options)
     @test status == :Solved 
     @test CS.isfixed(x) && CS.value(x) == 1
