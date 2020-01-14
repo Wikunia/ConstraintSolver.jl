@@ -81,5 +81,4 @@ end
     @test JuMP.objective_value(m) == 2
     @test JuMP.value.(x) == [0,1,1,0]
 end
-
 end
