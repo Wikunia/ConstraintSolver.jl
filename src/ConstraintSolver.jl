@@ -83,26 +83,60 @@ struct NotEqualSet{T} <: MOI.AbstractScalarSet
     value :: T
 end
 
-mutable struct LinearVariables
+mutable struct LinearCombination{T <: Real}
     indices             :: Vector{Int}
-    coeffs              :: Vector{Real}
+    coeffs              :: Vector{T}
 end
 
-mutable struct LinearConstraint <: Constraint
+mutable struct LinearConstraint{T <: Real} <: Constraint
     idx                 :: Int
     fct                 :: Function
     indices             :: Vector{Int}
     pvals               :: Vector{Int}
-    coeffs              :: Vector{Real}
+    coeffs              :: Vector{T}
     operator            :: Symbol
-    rhs                 :: Int
+    rhs                 :: T
     in_all_different    :: Bool
-    mins                :: Vector{Real}
-    maxs                :: Vector{Real}
-    pre_mins            :: Vector{Real}
-    pre_maxs            :: Vector{Real}
+    mins                :: Vector{T}
+    maxs                :: Vector{T}
+    pre_mins            :: Vector{T}
+    pre_maxs            :: Vector{T}
     hash                :: UInt64
-    LinearConstraint() = new()
+end
+
+function LinearConstraint(fct::Function, operator::Symbol, indices::Vector{Int}, coeffs::Vector{T}, rhs::Real) where T <: Real
+    # get common type for rhs and coeffs
+    promote_T = promote_type(typeof(rhs), eltype(coeffs))
+    if promote_T != eltype(coeffs)
+        coeffs = convert.(promote_T, coeffs)
+    end
+    if promote_T != typeof(rhs)
+        rhs = convert(promote_T, rhs)
+    end
+    maxs = zeros(promote_T, length(indices))
+    mins = zeros(promote_T, length(indices))
+    pre_maxs = zeros(promote_T, length(indices))
+    pre_mins = zeros(promote_T, length(indices))
+    # this can be changed later in `set_in_all_different!` but needs to be initialized with false
+    in_all_different = false
+    pvals = Int[]
+
+    lc = LinearConstraint(
+        0, # idx will be filled later
+        fct,
+        indices,
+        pvals, 
+        coeffs,
+        operator,
+        rhs,
+        in_all_different,
+        mins,
+        maxs,
+        pre_mins,
+        pre_maxs,
+        zero(UInt64)
+    )
+    return lc
 end
 
 mutable struct BacktrackObj

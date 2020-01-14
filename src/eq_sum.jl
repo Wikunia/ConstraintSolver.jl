@@ -1,44 +1,39 @@
 """
-    Base.:(==)(x::LinearVariables, y::Int)
+    Base.:(==)(x::LinearCombination, y::Real)
 
-Create a linear constraint with `LinearVariables` and an integer rhs `y`. \n
+Create a linear constraint with `LinearCombination` and an integer rhs `y`. \n
 Can be used i.e by `add_constraint!(com, x+y = 2)`.
 """
-function Base.:(==)(x::LinearVariables, y::Int)
-    lc = LinearConstraint()
+function Base.:(==)(x::LinearCombination, y::Real)
     indices, coeffs, constant_lhs = simplify(x)
-    lc.fct = eq_sum
-    lc.indices = indices
-    lc.coeffs = coeffs
-    lc.operator = :(==)
-    lc.rhs = y-constant_lhs
-    lc.maxs = zeros(Real, length(indices))
-    lc.mins = zeros(Real, length(indices))
-    lc.pre_maxs = zeros(Real, length(indices))
-    lc.pre_mins = zeros(Real, length(indices))
-    # this can be changed later in `set_in_all_different!` but needs to be initialized with false
-    lc.in_all_different = false
+    
+    rhs = y-constant_lhs
+    fct = eq_sum
+    operator = :(==)
+    rhs = y-constant_lhs
+    lc = LinearConstraint(fct, operator, indices, coeffs, rhs)
+    
     lc.hash = constraint_hash(lc)
     return lc
 end
 
 """
-    Base.:(==)(x::LinearVariables, y::Variable)
+    Base.:(==)(x::LinearCombination, y::Variable)
 
-Create a linear constraint with `LinearVariables` and a variable rhs `y`. \n
+Create a linear constraint with `LinearCombination` and a variable rhs `y`. \n
 Can be used i.e by `add_constraint!(com, x+y = z)`.
 """
-function Base.:(==)(x::LinearVariables, y::Variable)
-    return x == LinearVariables([y.idx], [1])
+function Base.:(==)(x::LinearCombination, y::Variable)
+    return x == LinearCombination([y.idx], [1])
 end
 
 """
-    Base.:(==)(x::LinearVariables, y::LinearVariables)
+    Base.:(==)(x::LinearCombination, y::LinearCombination)
 
-Create a linear constraint with `LinearVariables` on the left and right hand side. \n
+Create a linear constraint with `LinearCombination` on the left and right hand side. \n
 Can be used i.e by `add_constraint!(com, x+y = a+b)`.
 """
-function Base.:(==)(x::LinearVariables, y::LinearVariables)
+function Base.:(==)(x::LinearCombination, y::LinearCombination)
     return x-y == 0
 end
 

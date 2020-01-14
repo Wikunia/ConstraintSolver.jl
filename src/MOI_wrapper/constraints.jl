@@ -23,21 +23,14 @@ function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.EqualTo{Float6
         fix!(model.inner, model.variable_info[func.terms[1].variable_index.value], convert(Int64, set.value/func.terms[1].coefficient))
         return MOI.ConstraintIndex{SAF, MOI.EqualTo{Float64}}(0)
     end
-
-    lc = LinearConstraint()
+   
     indices = [v.variable_index.value for v in func.terms]
     coeffs = [v.coefficient for v in func.terms]
-    lc.fct = eq_sum
-    lc.indices = indices
-    lc.coeffs = coeffs
-    lc.operator = :(==)
-    lc.rhs = set.value
-    lc.maxs = zeros(Real, length(indices))
-    lc.mins = zeros(Real, length(indices))
-    lc.pre_maxs = zeros(Real, length(indices))
-    lc.pre_mins = zeros(Real, length(indices))
-    # this can be changed later in `set_in_all_different!` but needs to be initialized with false
-    lc.in_all_different = false
+    fct = eq_sum
+    operator = :(==)
+    rhs = set.value
+    
+    lc = LinearConstraint(fct, operator, indices, coeffs, rhs)
     lc.idx = length(model.inner.constraints)+1
 
     push!(model.inner.constraints, lc)
