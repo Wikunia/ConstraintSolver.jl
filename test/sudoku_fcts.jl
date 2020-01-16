@@ -1,5 +1,3 @@
-using ConstraintSolver
-CS = ConstraintSolver
 
 function sudokus_from_file(filename, sep='\n')
     s = open(filename) do file
@@ -57,6 +55,26 @@ function jump_add_sudoku_constr!(m, x)
     for br=0:2
         for bc=0:2
             @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet(9))
+        end
+    end
+end
+
+function moi_add_sudoku_constr!(m, x)
+    for r = 1:9
+        MOI.add_constraint(m, MOI.VectorOfVariables([x[r][c][1] for c =1:9]), CS.AllDifferentSet(9))
+    end
+    for c = 1:9
+        MOI.add_constraint(m, MOI.VectorOfVariables([x[r][c][1] for r =1:9]), CS.AllDifferentSet(9))
+    end
+    variables = [MOI.VariableIndex(0) for _ = 1:9]
+    for br=0:2
+        for bc=0:2
+            variables_i = 1
+            for i=br*3+1:(br+1)*3, j=bc*3+1:(bc+1)*3
+                variables[variables_i] = x[i][j][1]
+                variables_i += 1
+            end
+            MOI.add_constraint(m, variables, CS.AllDifferentSet(9))
         end
     end
 end
