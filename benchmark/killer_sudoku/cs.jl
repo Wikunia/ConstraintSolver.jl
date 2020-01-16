@@ -1,4 +1,4 @@
-using ConstraintSolver, MathOptInterface, JSON
+using ConstraintSolver, JuMP, MathOptInterface, JSON
 
 if !@isdefined CS 
     const CS = ConstraintSolver
@@ -57,8 +57,8 @@ function solve_all(filenames; benchmark=false, single_times=true)
             GC.enable(true)
         end
         if !benchmark
-            @show m.inner.info
             println("Status: ", status)
+            @show m.inner.info
             solution = zeros(Int, 9, 9)
             for r=1:9
                 solution[r,:] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c=1:9]
