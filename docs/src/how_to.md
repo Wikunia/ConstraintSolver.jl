@@ -36,8 +36,14 @@ Besides specifying the model you need to specify whether it's a minimization `Mi
 ```
 @objective(m, Min, x)
 ```
+or for linear functions you would have something like:
+```
+@variable(m, x[1:4], Bin)
+weights = [0.2, -0.1, 0.4, -0.8]
+@objective(m, Min, sum(weights.*x))
+```
 
-Currently the only objective is to minimize or maximize a single variable.
+Currently the only objective is to minimize or maximize a single variables and linear functions.
 
 More will come in the future ;)
 
