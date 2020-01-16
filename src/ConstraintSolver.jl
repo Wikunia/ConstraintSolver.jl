@@ -660,10 +660,6 @@ function update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraint
             end
         end
     end
-    if !feasible
-        com.info.backtrack_reverses += 1
-        return false, false
-    end
 
     # check best_bound again
     # if best bound unchanged => continue pruning
@@ -983,22 +979,24 @@ function simplify!(com)
                             end
                             sub_constraint = com.constraints[sub_constraint_idx]
                             # it must be an equal constraint and all coefficients must be 1 otherwise we can't add a constraint
-                            if isa(constraint.fct, SAF) && isa(constraint.set, MOI.EqualTo) && all(c->c==1, sub_constraint.coeffs)
-                                found_sum_constraint = true
-                                total_sum += sub_constraint.rhs
-                                all_inside = true
-                                for sub_variable_idx in sub_constraint.indices
-                                    if !haskey(cons_indices_dict, sub_variable_idx)
-                                        all_inside = false
-                                        push!(outside_indices, sub_variable_idx)
-                                    else
-                                        delete!(cons_indices_dict, sub_variable_idx)
+                            if isa(sub_constraint.fct, SAF) && isa(sub_constraint.set, MOI.EqualTo)
+                                if all(t.coefficient == 1 for t in sub_constraint.fct.terms)
+                                    found_sum_constraint = true
+                                    total_sum += sub_constraint.set.value-sub_constraint.fct.constant
+                                    all_inside = true
+                                    for sub_variable_idx in sub_constraint.indices
+                                        if !haskey(cons_indices_dict, sub_variable_idx)
+                                            all_inside = false
+                                            push!(outside_indices, sub_variable_idx)
+                                        else
+                                            delete!(cons_indices_dict, sub_variable_idx)
+                                        end
                                     end
+                                    if all_inside
+                                        in_sum += sub_constraint.set.value-sub_constraint.fct.constant
+                                    end
+                                    break
                                 end
-                                if all_inside
-                                    in_sum += sub_constraint.rhs
-                                end
-                                break
                             end
                         end
                         if !found_sum_constraint
