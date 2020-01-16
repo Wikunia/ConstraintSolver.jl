@@ -1,6 +1,8 @@
-using ConstraintSolver, MathOptInterface
+using ConstraintSolver, JuMP, MathOptInterface
 
-const CS = ConstraintSolver
+if !@isdefined CS 
+    const CS = ConstraintSolver
+end
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 include("../../test/sudoku_fcts.jl")
@@ -57,8 +59,8 @@ function solve_all(grids; benchmark=false, single_times=true)
             GC.enable(true)
         end
         if !benchmark
-            @show m.inner.info
             println("Status: ", status)
+            @show m.inner.info
             solution = zeros(Int, 9, 9)
             for r=1:9
                 solution[r,:] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c=1:9]

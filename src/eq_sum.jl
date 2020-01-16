@@ -1,50 +1,46 @@
 """
-    Base.:(==)(x::LinearVariables, y::Int)
+    Base.:(==)(x::LinearCombination, y::Real)
 
-Create a linear constraint with `LinearVariables` and an integer rhs `y`. \n
+Create a linear constraint with `LinearCombination` and an integer rhs `y`. \n
 Can be used i.e by `add_constraint!(com, x+y = 2)`.
 """
-function Base.:(==)(x::LinearVariables, y::Int)
-    lc = LinearConstraint()
+function Base.:(==)(x::LinearCombination, y::Real)
     indices, coeffs, constant_lhs = simplify(x)
-    lc.fct = eq_sum
-    lc.indices = indices
-    lc.coeffs = coeffs
-    lc.operator = :(==)
-    lc.rhs = y-constant_lhs
-    lc.maxs = zeros(Int, length(indices))
-    lc.mins = zeros(Int, length(indices))
-    lc.pre_maxs = zeros(Int, length(indices))
-    lc.pre_mins = zeros(Int, length(indices))
-    # this can be changed later in `set_in_all_different!` but needs to be initialized with false
-    lc.in_all_different = false
+    
+    rhs = y-constant_lhs
+    fct = eq_sum
+    operator = :(==)
+    rhs = y-constant_lhs
+    lc = LinearConstraint(fct, operator, indices, coeffs, rhs)
+    
     lc.hash = constraint_hash(lc)
     return lc
 end
 
 """
-    Base.:(==)(x::LinearVariables, y::Variable)
+    Base.:(==)(x::LinearCombination, y::Variable)
 
-Create a linear constraint with `LinearVariables` and a variable rhs `y`. \n
+Create a linear constraint with `LinearCombination` and a variable rhs `y`. \n
 Can be used i.e by `add_constraint!(com, x+y = z)`.
 """
-function Base.:(==)(x::LinearVariables, y::Variable)
-    return x == LinearVariables([y.idx], [1])
+function Base.:(==)(x::LinearCombination, y::Variable)
+    return x == LinearCombination([y.idx], [1])
 end
 
 """
-    Base.:(==)(x::LinearVariables, y::LinearVariables)
+    Base.:(==)(x::LinearCombination, y::LinearCombination)
 
-Create a linear constraint with `LinearVariables` on the left and right hand side. \n
+Create a linear constraint with `LinearCombination` on the left and right hand side. \n
 Can be used i.e by `add_constraint!(com, x+y = a+b)`.
 """
-function Base.:(==)(x::LinearVariables, y::LinearVariables)
+function Base.:(==)(x::LinearCombination, y::LinearCombination)
     return x-y == 0
 end
 
 function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     indices = constraint.indices
     search_space = com.search_space
+    # println("constraint: ", constraint)
 
     # compute max and min values for each index
     maxs = constraint.maxs
@@ -99,20 +95,22 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     # update all
     for (i,idx) in enumerate(indices)
         if maxs[i] < pre_maxs[i]
+            threshold = get_safe_upper_threshold(com, maxs[i], constraint.coeffs[i])
             if constraint.coeffs[i] > 0
-                still_feasible = remove_above!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
+                still_feasible = remove_above!(com, search_space[idx], threshold)
             else
-                still_feasible = remove_below!(com, search_space[idx], fld(maxs[i], constraint.coeffs[i]))
+                still_feasible = remove_below!(com, search_space[idx], threshold)
             end
             if !still_feasible
                 return false
             end
         end
         if mins[i] > pre_mins[i]
+            threshold = get_safe_lower_threshold(com, mins[i], constraint.coeffs[i])
             if constraint.coeffs[i] > 0
-                still_feasible = remove_below!(com, search_space[idx], cld(mins[i], constraint.coeffs[i]))
+                still_feasible = remove_below!(com, search_space[idx], threshold)
             else
-                still_feasible = remove_above!(com, search_space[idx], cld(mins[i], constraint.coeffs[i]))
+                still_feasible = remove_above!(com, search_space[idx], threshold)
             end
             if !still_feasible
                 return false
@@ -146,12 +144,12 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
 
     # only a single one left
     if n_unfixed == 1
-        if unfixed_rhs % constraint.coeffs[unfixed_local_ind_1] != 0
+        if !isapprox_discrete(com, unfixed_rhs % constraint.coeffs[unfixed_local_ind_1])
             com.bt_infeasible[unfixed_ind_1] += 1
             return false
         else
             # divide rhs such that it is comparable with the variable directly without coefficient
-            unfixed_rhs = fld(unfixed_rhs, constraint.coeffs[unfixed_local_ind_1])
+            unfixed_rhs = get_approx_discrete(unfixed_rhs / constraint.coeffs[unfixed_local_ind_1])
         end
         if !has(search_space[unfixed_ind_1], unfixed_rhs)
             com.bt_infeasible[unfixed_ind_1] += 1
@@ -185,14 +183,17 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
 
             for val in values(search_space[this])
                 # if we choose this value but the other wouldn't be an integer => remove this value
-                if (unfixed_rhs-val*constraint.coeffs[local_this]) % constraint.coeffs[local_other] != 0
+                if !isapprox_divisible(com, (unfixed_rhs-val*constraint.coeffs[local_this]), constraint.coeffs[local_other])
                     if !rm!(com, search_space[this], val)
                         return false
                     end
                     continue
                 end
 
-                check_other_val = fld(unfixed_rhs-val*constraint.coeffs[local_this], constraint.coeffs[local_other])
+                # get discrete other value
+                check_other_val_float = (unfixed_rhs-val*constraint.coeffs[local_this])/constraint.coeffs[local_other]
+                check_other_val = get_approx_discrete(check_other_val_float)
+
                 # if all different but those two are the same
                 if is_all_different && check_other_val == val
                     if !rm!(com, search_space[this], val)
@@ -241,15 +242,15 @@ function eq_sum(com::CoM, constraint::LinearConstraint, val::Int, index::Int)
             end
         end
     end
-    if num_not_fixed == 0 && csum + val != constraint.rhs
+    if num_not_fixed == 0 && !isapprox(csum + val, constraint.rhs; atol=com.options.atol, rtol=com.options.rtol)
         return false
     end
 
-    if csum + val + min_extra > constraint.rhs
+    if csum + val + min_extra > constraint.rhs+com.options.atol
         return false
     end
 
-    if csum + val + max_extra < constraint.rhs
+    if csum + val + max_extra < constraint.rhs-com.options.atol
         return false
     end
 

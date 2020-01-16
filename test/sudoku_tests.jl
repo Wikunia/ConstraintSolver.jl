@@ -57,7 +57,7 @@ end
     com_grid = create_sudoku_grid!(com, grid)
     add_sudoku_constr!(com, com_grid)
 
-    @test CS.solve!(com, CS.get_default_options()) == :Solved
+    @test CS.solve!(com, CS.SolverOptions()) == :Solved
     @test fulfills_sudoku_constr(com_grid)
 end
 
@@ -166,7 +166,7 @@ end
     
     add_sudoku_constr!(com, com_grid)
 
-    @test CS.solve!(com, CS.get_default_options()) == :Solved
+    @test CS.solve!(com, CS.SolverOptions()) == :Solved
     @test fulfills_sudoku_constr(com_grid)
 end
 
