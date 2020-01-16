@@ -33,3 +33,12 @@ function get_safe_lower_threshold(com::CS.CoM, val, divider)
     end
     return threshold
 end
+
+"""
+    var_vector_to_moi(vars::Vector{Variable})
+
+Convert a vector of variables to MOI.VectorOfVariables
+"""
+function var_vector_to_moi(vars::Vector{Variable})
+    return MOI.VectorOfVariables([MOI.VariableIndex(v.idx) for v in vars])
+end

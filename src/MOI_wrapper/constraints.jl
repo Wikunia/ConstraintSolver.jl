@@ -90,10 +90,14 @@ MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{AllDi
 function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::AllDifferentSet)
     com = model.inner
 
-    constraint = BasicConstraint()
-    constraint.fct = all_different
-    constraint.indices = Int[vi.value for vi in vars.variables]
-    constraint.idx = length(com.constraints)+1
+    constraint = BasicConstraint(
+        length(com.constraints)+1, # idx will be changed later
+        vars,
+        set,
+        Int[v.value for v in vars.variables],
+        Int[], # pvals will be filled later
+        zero(UInt64), # hash will be filled later
+    )
 
     push!(com.constraints, constraint)
     for (i,ind) in enumerate(constraint.indices)
