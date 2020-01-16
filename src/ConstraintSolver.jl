@@ -91,7 +91,7 @@ end
 
 mutable struct LinearConstraint{T <: Real} <: Constraint
     idx                 :: Int
-    fct                 :: MOI.AbstractScalarFunction
+    fct                 :: MOI.ScalarAffineFunction
     set                 :: MOI.AbstractScalarSet
     indices             :: Vector{Int}
     pvals               :: Vector{Int}
@@ -103,8 +103,15 @@ mutable struct LinearConstraint{T <: Real} <: Constraint
     hash                :: UInt64
 end
 
-function LinearConstraint(fct::MOI.AbstractScalarFunction, set::MOI.AbstractScalarSet, indices::Vector{Int})
+function LinearConstraint(fct::MOI.ScalarAffineFunction, set::MOI.AbstractScalarSet, indices::Vector{Int})
     # get common type for rhs and coeffs
+    # use the first value (can be .upper, .lower, .value) and subtract left constant
+    rhs = -fct.constant 
+    if isa(set, MOI.EqualTo)
+        rhs += set.value
+    end
+    # TODO: for LessThan/GreaterThan
+    coeffs = [t.coefficient for t in fct.terms]
     promote_T = promote_type(typeof(rhs), eltype(coeffs))
     if promote_T != eltype(coeffs)
         coeffs = convert.(promote_T, coeffs)
@@ -126,8 +133,6 @@ function LinearConstraint(fct::MOI.AbstractScalarFunction, set::MOI.AbstractScal
         set,
         indices,
         pvals, 
-        coeffs,
-        rhs,
         in_all_different,
         mins,
         maxs,
@@ -958,7 +963,7 @@ function simplify!(com)
         for constraint_idx in 1:length(com.constraints)
             constraint = com.constraints[constraint_idx]
 
-            if nameof(constraint.fct) == :all_different
+            if isa(constraint.set, AllDifferentSet)
                 add_sum_constraint = true
                 if length(constraint.indices) == length(constraint.pvals)
                     all_diff_sum = sum(constraint.pvals)
@@ -975,7 +980,7 @@ function simplify!(com)
                             end
                             sub_constraint = com.constraints[sub_constraint_idx]
                             # it must be an equal constraint and all coefficients must be 1 otherwise we can't add a constraint
-                            if nameof(sub_constraint.fct) == :eq_sum && all(c->c==1, sub_constraint.coeffs)
+                            if isa(constraint.fct, MOI.ScalarAffineFunction) && isa(constraint.set, MOI.EqualTo) && all(c->c==1, sub_constraint.coeffs)
                                 found_sum_constraint = true
                                 total_sum += sub_constraint.rhs
                                 all_inside = true
@@ -1022,7 +1027,7 @@ function set_in_all_different!(com::CS.CoM)
                 intersects = intersect(subscriptions_idxs...)
 
                 for i in intersects
-                    if nameof(com.constraints[i].fct) == :all_different
+                    if isa(com.constraints[i].set, AllDifferentSet)
                         constraint.in_all_different = true
                         break
                     end
