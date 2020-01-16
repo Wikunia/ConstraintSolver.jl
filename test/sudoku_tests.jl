@@ -1,6 +1,6 @@
 @testset "Sudoku" begin
 
-@testset "Sudoku from opensourc.es" begin
+@testset "Sudoku from opensourc.es using MOI" begin
     grid = [0 2 1 0 7 9 0 8 5;
             0 4 5 3 1 0 0 0 9;
             0 7 0 0 4 0 0 1 0;
@@ -11,20 +11,32 @@
             0 9 4 0 0 7 8 0 0;
             2 0 0 5 0 0 0 4 0]
 
-    m = Model(with_optimizer(CS.Optimizer))
-    @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+    m = CS.Optimizer()
+
+    x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i=1:9] for j=1:9]
+    for r=1:9, c=1:9
+        MOI.add_constraint(m, x[r][c][1], MOI.GreaterThan(1.0))
+        MOI.add_constraint(m, x[r][c][1], MOI.LessThan(9.0))
+    end
+
     # set variables
     for r=1:9, c=1:9
         if grid[r,c] != 0
-            @constraint(m, x[r,c] == grid[r,c])
+            sat = [MOI.ScalarAffineTerm(1.0, x[r][c][1])]
+            MOI.add_constraint(m, MOI.ScalarAffineFunction{Float64}(sat, 0.0), MOI.EqualTo(convert(Float64,grid[r,c])))
         end
     end
-    # sudoku constraints
-    jump_add_sudoku_constr!(m, x)
 
-    optimize!(m)
-    @test JuMP.termination_status(m) == MOI.OPTIMAL
-    @test jump_fulfills_sudoku_constr(JuMP.value.(x))
+    # sudoku constraints
+    moi_add_sudoku_constr!(m, x)
+
+    MOI.optimize!(m)
+    @test MOI.get(m, MOI.TerminationStatus()) == MOI.OPTIMAL
+    solution = zeros(Int, 9, 9)
+    for r=1:9
+        solution[r,:] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c=1:9]
+    end
+    @test jump_fulfills_sudoku_constr(solution)
 end
 
 

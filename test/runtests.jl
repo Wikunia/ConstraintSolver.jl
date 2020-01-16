@@ -5,6 +5,7 @@ using MathOptInterface, JuMP
 
 const MOI = MathOptInterface
 const CS = ConstraintSolver
+const MOIU = MOI.Utilities
 
 include("fct_tests.jl")
 include("moi.jl")
