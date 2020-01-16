@@ -1,5 +1,6 @@
 MOI.supports(::Optimizer, ::MOI.ObjectiveSense) = true
 MOI.supports(::Optimizer, ::MOI.ObjectiveFunction{SVF}) = true
+MOI.supports(::Optimizer, ::MOI.ObjectiveFunction{SAF}) = true
 
 """
 set and get function overloads

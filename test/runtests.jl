@@ -10,10 +10,10 @@ const MOIU = MOI.Utilities
 include("fcts.jl")
 include("moi.jl")
 
+include("stable_set.jl")
 include("sudoku_fcts.jl")
 include("small_special.jl")
 include("small_eq_sum_real.jl")
 include("sudoku.jl")
 include("killer_sudoku.jl")
 include("graph_color.jl")
-include("stable_set.jl")
