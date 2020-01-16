@@ -21,6 +21,9 @@ I'm just a MSc student in computer science so I don't have much knowledge on how
 - [First step in graph coloring](https://opensourc.es/blog/constraint-solver-simple-graph-coloring)
 - [Comarison with MIP using graph coloring](https://opensourc.es/blog/constraint-solver-mip-graph-coloring)
 - [Documentation with Documenter.jl and newest Benchmarking results](https://opensourc.es/blog/constraint-solver-docs-and-benchmarking)
+- [How to profile Julia code](https://opensourc.es/blog/constraint-solver-profiling)
+- [Second take on bipartite matchings](https://opensourc.es/blog/constraint-solver-bipartite-matching)
+- [Making it a JuMP solver](https://opensourc.es/blog/constraint-solver-jump)
 
 ## Installation
 You can install this julia package using 
