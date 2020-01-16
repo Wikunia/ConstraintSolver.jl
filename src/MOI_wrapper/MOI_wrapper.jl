@@ -1,5 +1,5 @@
 const SVF = MOI.SingleVariable
-const SAF = MOI.ScalarAffineFunction{Float64}
+const SAF = MOI.ScalarAffineFunction
 
 # indices
 const VI = MOI.VariableIndex

@@ -3,12 +3,12 @@
 =#
 
 """
-    less_than(com::CS.CoM, constraint::SingleVariableConstraint; logs = true)
+prune_constraint!(com::CS.CoM, constraint::CS.SingleVariableConstraint, fct::MOI.ScalarAffineFunction{T}, set::MOI.LessThan{T}; logs = true) where T <: Real
 
 Support for constraints of the form a <= b where a and b are single variables.
 This function removes values which aren't possible based on this constraint.
 """
-function less_than(com::CS.CoM, constraint::CS.SingleVariableConstraint; logs = true)
+function prune_constraint!(com::CS.CoM, constraint::CS.SingleVariableConstraint, fct::SAF{T}, set::MOI.LessThan{T}; logs = true) where T <: Real
     lhs = constraint.lhs
     rhs = constraint.rhs
     search_space = com.search_space
@@ -22,7 +22,7 @@ end
 
 Checks whether setting an `index` to `val` fulfills `constraint`
 """
-function less_than(com::CoM, constraint::CS.SingleVariableConstraint, val::Int, index::Int)
+function still_feasible(com::CoM, constraint::CS.SingleVariableConstraint, fct::SAF{T}, set::MOI.LessThan{T}, val::Int, index::Int) where T <: Real
     if constraint.lhs == index
         # if a > maximum possible value of rhs => Infeasible
         if val > com.search_space[constraint.rhs].max

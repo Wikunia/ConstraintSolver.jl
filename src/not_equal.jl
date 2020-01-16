@@ -1,21 +1,22 @@
 """
     Base.:!(bc::CS.BasicConstraint)
 
-Change the `BasicConstraint` to describe the opposite of it. Only works with a `equal` basic constraint. \n
+Change the `BasicConstraint` to describe the opposite of it. Only works with a `equal` basic constraint and two indices. \n
 Can be used i.e by `add_constraint!(com, x != y)`.
 """
 function Base.:!(bc::CS.BasicConstraint)
-    if bc.fct != equal
+    if !isa(bc.set, EqualSet)
         throw(ErrorException("!BasicConstraint is only implemented for !equal"))
     end
     if length(bc.indices) != 2
         throw(ErrorException("!BasicConstraint is only implemented for !equal with exactly 2 variables"))
     end
-    bc.fct = not_equal
+    bc.fct, T = linear_combination_to_saf(LinearCombination(bc.indices, [1,-1]))
+    bc.set = NotEqualSet{T}(zero(T))
     return bc
 end
 
-function not_equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
+function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualSet{T}; logs = true) where T <: Real
     indices = constraint.indices
 
     search_space = com.search_space
@@ -51,11 +52,11 @@ function not_equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
 end
 
 """
-    not_equal(com::CoM, constraint::Constraint, value::Int, index::Int)
+still_feasible(com::CoM, constraint::Constraint, fct::MOI.ScalarAffineFunction{T}, set::NotEqualSet{T}, value::Int, index::Int) where T <: Real
 
 Return whether the `not_equal` constraint can be still fulfilled.
 """
-function not_equal(com::CoM, constraint::Constraint, value::Int, index::Int)
+function still_feasible(com::CoM, constraint::Constraint, fct::SAF{T}, set::NotEqualSet{T}, value::Int, index::Int) where T <: Real
     if index == constraint.indices[1]
         other_var = com.search_space[constraint.indices[2]]
     else

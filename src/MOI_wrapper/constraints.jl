@@ -5,23 +5,23 @@ MOI constraints
 """
 Linear constraints
 """
-MOI.supports_constraint(::Optimizer, ::Type{SAF}, ::Type{MOI.EqualTo{Float64}}) = true
+MOI.supports_constraint(::Optimizer, ::Type{SAF{T}}, ::Type{MOI.EqualTo{T}}) where T <: Real = true
 # currently only a <= b is supported
-MOI.supports_constraint(::Optimizer, ::Type{SAF}, ::Type{MOI.LessThan{Float64}}) = true
+MOI.supports_constraint(::Optimizer, ::Type{SAF{T}}, ::Type{MOI.LessThan{T}}) where T <: Real = true
 
-function check_inbounds(model::Optimizer, aff::SAF)
+function check_inbounds(model::Optimizer, aff::SAF{T}) where T <: Real
 	for term in aff.terms
 	    check_inbounds(model, term.variable_index)
 	end
 	return
 end
 
-function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.EqualTo{Float64})
+function MOI.add_constraint(model::Optimizer, func::SAF{T}, set::MOI.EqualTo{T}) where T <: Real
     check_inbounds(model, func)
 
     if length(func.terms) == 1
         fix!(model.inner, model.variable_info[func.terms[1].variable_index.value], convert(Int64, set.value/func.terms[1].coefficient))
-        return MOI.ConstraintIndex{SAF, MOI.EqualTo{Float64}}(0)
+        return MOI.ConstraintIndex{SAF{T}, MOI.EqualTo{T}}(0)
     end
    
     indices = [v.variable_index.value for v in func.terms]
@@ -36,11 +36,11 @@ function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.EqualTo{Float6
         push!(model.inner.subscription[ind], lc.idx)
     end
 
-    return MOI.ConstraintIndex{SAF, MOI.EqualTo{Float64}}(length(model.inner.constraints))
+    return MOI.ConstraintIndex{SAF{T}, MOI.EqualTo{T}}(length(model.inner.constraints))
 end
 
 # support for a <= b which is written as a-b <= 0
-function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.LessThan{Float64})
+function MOI.add_constraint(model::Optimizer, func::SAF{T}, set::MOI.LessThan{T}) where T <: Real
     check_inbounds(model, func)
 
     if set.upper != 0.0
@@ -61,34 +61,41 @@ function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.LessThan{Float
 
     com = model.inner
 
-    svc = SingleVariableConstraint()
-    svc.fct = less_than
     if reverse_order
-        svc.lhs = func.terms[2].variable_index.value
-        svc.rhs = func.terms[1].variable_index.value
+        lhs = func.terms[2].variable_index.value
+        rhs = func.terms[1].variable_index.value
     else
-        svc.lhs = func.terms[1].variable_index.value
-        svc.rhs = func.terms[2].variable_index.value
+        lhs = func.terms[1].variable_index.value
+        rhs = func.terms[2].variable_index.value
     end
-    svc.indices = [svc.lhs, svc.rhs]
-    svc.idx = length(model.inner.constraints)+1
+
+    svc = SingleVariableConstraint(
+        length(model.inner.constraints)+1, # idx
+        func,
+        set, 
+        [lhs, rhs],
+        Int[], # pvals
+        lhs,
+        rhs,
+        zero(UInt64) # will be filled later
+    )
 
     push!(model.inner.constraints, svc)
 
     push!(model.inner.subscription[svc.lhs], svc.idx)
     push!(model.inner.subscription[svc.rhs], svc.idx)
 
-    return MOI.ConstraintIndex{SAF, MOI.LessThan{Float64}}(length(model.inner.constraints))
+    return MOI.ConstraintIndex{SAF{T}, MOI.LessThan{T}}(length(model.inner.constraints))
 end
 
-
+MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{EqualSet}) = true
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{AllDifferentSet}) = true
 
-function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::AllDifferentSet)
+function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::Union{EqualSet, AllDifferentSet})
     com = model.inner
 
     constraint = BasicConstraint(
-        length(com.constraints)+1, # idx will be changed later
+        length(com.constraints)+1,
         vars,
         set,
         Int[v.value for v in vars.variables],
@@ -104,9 +111,9 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
     return MOI.ConstraintIndex{MOI.VectorOfVariables, AllDifferentSet}(length(com.constraints))
 end
 
-MOI.supports_constraint(::Optimizer, ::Type{SAF}, ::Type{NotEqualSet{Float64}}) = true
+MOI.supports_constraint(::Optimizer, ::Type{SAF{T}}, ::Type{NotEqualSet{T}}) where T <: Real = true
 
-function MOI.add_constraint(model::Optimizer, aff::SAF, set::NotEqualSet{Float64})
+function MOI.add_constraint(model::Optimizer, aff::SAF{T}, set::NotEqualSet{T}) where T <: Real
     if set.value != 0.0
         error("Only constraints of the type `a != b` are supported but not `a != b-2`")
     end
@@ -119,17 +126,21 @@ function MOI.add_constraint(model::Optimizer, aff::SAF, set::NotEqualSet{Float64
 
     com = model.inner
 
-    constraint = BasicConstraint()
-    constraint.fct = not_equal
-    constraint.indices = Int[vi.variable_index.value for vi in aff.terms]
-    constraint.idx = length(com.constraints)+1
+    constraint = BasicConstraint(
+        length(com.constraints)+1,
+        aff,
+        set,
+        Int[t.variable_index.value for t in aff.terms],
+        Int[], # pvals will be filled later
+        zero(UInt64), # hash will be filled later
+    )
 
     push!(com.constraints, constraint)
     for (i,ind) in enumerate(constraint.indices)
         push!(com.subscription[ind], constraint.idx)
     end
 
-    return MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}, NotEqualSet{Float64}}(length(com.constraints))
+    return MOI.ConstraintIndex{SAF{T}, NotEqualSet{T}}(length(com.constraints))
 end
 
 function set_pvals!(model::CS.Optimizer)

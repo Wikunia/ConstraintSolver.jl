@@ -73,10 +73,13 @@ mutable struct SingleVariableConstraint <: Constraint
     lhs                 :: Int
     rhs                 :: Int
     hash                :: UInt64
-    SingleVariableConstraint() = new()
 end
 
 struct AllDifferentSet <: MOI.AbstractVectorSet
+    dimension :: Int64
+end
+
+struct EqualSet <: MOI.AbstractVectorSet
     dimension :: Int64
 end
 
@@ -651,7 +654,7 @@ function update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraint
             end
         end
         if relevant
-            feasible = constraint.fct(com, constraint; logs = false)
+            feasible = prune_constraint!(com, constraint, constraint.fct, constraint.set; logs = false)
             if !feasible
                 return false, false
             end
@@ -949,7 +952,7 @@ function simplify!(com)
             if length(constraint.indices) == length(constraint.pvals)
                 b_all_different_sum = true
             end
-        elseif isa(constraint.fct, MOI.ScalarAffineFunction) && isa(constraint.set, MOI.EqualTo)
+        elseif isa(constraint.fct, SAF) && isa(constraint.set, MOI.EqualTo)
             b_eq_sum = true
         end
     end
@@ -980,7 +983,7 @@ function simplify!(com)
                             end
                             sub_constraint = com.constraints[sub_constraint_idx]
                             # it must be an equal constraint and all coefficients must be 1 otherwise we can't add a constraint
-                            if isa(constraint.fct, MOI.ScalarAffineFunction) && isa(constraint.set, MOI.EqualTo) && all(c->c==1, sub_constraint.coeffs)
+                            if isa(constraint.fct, SAF) && isa(constraint.set, MOI.EqualTo) && all(c->c==1, sub_constraint.coeffs)
                                 found_sum_constraint = true
                                 total_sum += sub_constraint.rhs
                                 all_inside = true

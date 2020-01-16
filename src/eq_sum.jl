@@ -35,7 +35,7 @@ function Base.:(==)(x::LinearCombination, y::LinearCombination)
     return x-y == 0
 end
 
-function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::MOI.ScalarAffineFunction{T}, set::MOI.EqualTo{T}; logs = true) where T <: Real
+function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}; logs = true) where T <: Real
     indices = constraint.indices
     search_space = com.search_space
     rhs = set.value - fct.constant
@@ -217,7 +217,7 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::MOI.S
     return true
 end
 
-function still_feasible(com::CoM, constraint::LinearConstraint, fct::MOI.ScalarAffineFunction{T}, set::MOI.EqualTo{T}, val::Int, index::Int) where T <: Real
+function still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}, val::Int, index::Int) where T <: Real
     search_space = com.search_space
     rhs = set.value - fct.constant
     csum = 0

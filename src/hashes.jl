@@ -11,5 +11,6 @@ function constraint_hash(constraint::LinearConstraint)
 end
 
 function constraint_hash(constraint::SingleVariableConstraint)
-    return hash([nameof(constraint.fct), constraint.rhs, constraint.lhs])
+    # TODO: Needs to change if we have coefficients but then we probably support all `<=` constraints anyway
+    return hash([typeof(constraint.set), constraint.indices])
 end
