@@ -7,12 +7,13 @@ const MOI = MathOptInterface
 const CS = ConstraintSolver
 const MOIU = MOI.Utilities
 
-include("fct_tests.jl")
+include("fcts.jl")
 include("moi.jl")
 
 include("sudoku_fcts.jl")
-include("small_special_tests.jl")
+include("small_special.jl")
 include("small_eq_sum_real.jl")
-include("sudoku_tests.jl")
-include("killer_sudoku_tests.jl")
-include("graph_color_tests.jl")
+include("sudoku.jl")
+include("killer_sudoku.jl")
+include("graph_color.jl")
+include("stable_set.jl")

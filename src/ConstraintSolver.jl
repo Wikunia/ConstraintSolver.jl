@@ -51,6 +51,7 @@ mutable struct SingleVariableObjective <: ObjectiveFunction
     indices :: Vector{Int}
 end
 
+
 # used to designate a feasibility sense
 struct NoObjective <: ObjectiveFunction end
 
@@ -104,6 +105,13 @@ mutable struct LinearConstraint{T <: Real} <: Constraint
     hash                :: UInt64
 end
 
+mutable struct LinearCombinationObjective{T <: Real} <: ObjectiveFunction
+    fct      :: Function
+    lc       :: LinearCombination{T}
+    constant :: T
+    indices  :: Vector{Int} # must exist to update the objective only if one of these changed
+end
+
 function LinearConstraint(fct::Function, operator::Symbol, indices::Vector{Int}, coeffs::Vector{T}, rhs::Real) where T <: Real
     # get common type for rhs and coeffs
     promote_T = promote_type(typeof(rhs), eltype(coeffs))
@@ -146,7 +154,7 @@ mutable struct BacktrackObj
     status              :: Symbol
     variable_idx        :: Int
     pval                :: Int
-    best_bound          :: Int
+    best_bound          :: Float64
 
     BacktrackObj() = new()
 end
@@ -175,8 +183,8 @@ mutable struct ConstraintSolverModel
     backtrack_vec       :: Vector{BacktrackObj}
     sense               :: MOI.OptimizationSense
     objective           :: ObjectiveFunction
-    best_sol            :: Int # Objective of the best solution
-    best_bound          :: Int # Overall best bound
+    best_sol            :: Float64 # Objective of the best solution
+    best_bound          :: Float64 # Overall best bound
     solutions           :: Vector{Int} # saves only the id to the BacktrackObj
     info                :: CSInfo
     input               :: Dict{Symbol,Any}
