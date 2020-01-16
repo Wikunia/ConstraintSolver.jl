@@ -1,8 +1,10 @@
-using JuMP
-using ConstraintSolver
-using JSON
+using ConstraintSolver, MathOptInterface, JSON
 
-CS = ConstraintSolver
+if !@isdefined CS 
+    const CS = ConstraintSolver
+end
+const MOI = MathOptInterface
+const MOIU = MOI.Utilities
 include("../../test/sudoku_fcts.jl")
 
 function parseJSON(json_sums)
@@ -23,35 +25,45 @@ function solve_all(filenames; benchmark=false, single_times=true)
     for (i,filename) in enumerate(filenames)
         sums = parseJSON(JSON.parsefile("data/$(filename)"))
 
-        m = Model(with_optimizer(CS.Optimizer))
-        @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+        m = CS.Optimizer()
+        
+        x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i=1:9] for j=1:9]
+        for r=1:9, c=1:9
+            MOI.add_constraint(m, x[r][c][1], MOI.GreaterThan(1.0))
+            MOI.add_constraint(m, x[r][c][1], MOI.LessThan(9.0))
+        end
 
         for s in sums
-            @constraint(m, sum([x[ind...] for ind in s.indices]) == s.result)
+            saf = MOI.ScalarAffineFunction{Float64}([MOI.ScalarAffineTerm(1.0, x[ind[1]][ind[2]][1]) for ind in s.indices], 0.0)
+            MOI.add_constraint(m, saf, MOI.EqualTo(convert(Float64,s.result)))
             # @constraint(m, [x[ind...] for ind in s.indices] in CS.AllDifferentSet(length(s.indices)))
         end
 
         # sudoku constraints
-        jump_add_sudoku_constr!(m, x)
+        moi_add_sudoku_constr!(m, x)
 
         if single_times
             GC.enable(false)
             t = time()
-            optimize!(m)
-            status = JuMP.termination_status(m)
+            MOI.optimize!(m)
+            status = MOI.get(m, MOI.TerminationStatus())
             t = time()-t
             GC.enable(true)
             println(i-1,", ", t)
         else
             GC.enable(false)
-            optimize!(m)
-            status = JuMP.termination_status(m)
+            MOI.optimize!(m)
+            status = MOI.get(m, MOI.TerminationStatus())
             GC.enable(true)
         end
         if !benchmark
-            @show JuMP.backend(m).optimizer.model.inner.info
+            @show m.inner.info
             println("Status: ", status)
-            @assert jump_fulfills_sudoku_constr(JuMP.value.(x))
+            solution = zeros(Int, 9, 9)
+            for r=1:9
+                solution[r,:] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c=1:9]
+            end
+            @assert jump_fulfills_sudoku_constr(solution)
         end
         com = nothing
         GC.gc()
