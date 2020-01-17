@@ -80,7 +80,7 @@ struct AllDifferentSet <: MOI.AbstractVectorSet
 end
 
 struct EqualSet <: MOI.AbstractVectorSet
-    dimension :: Int64
+    dimension :: Int
 end
 
 struct NotEqualSet{T} <: MOI.AbstractScalarSet
