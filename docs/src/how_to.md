@@ -43,7 +43,7 @@ weights = [0.2, -0.1, 0.4, -0.8]
 @objective(m, Min, sum(weights.*x))
 ```
 
-Currently the only objective is to minimize or maximize a single variables and linear functions.
+Currently the only objective is to minimize or maximize a single variable or linear function.
 
 More will come in the future ;)
 
@@ -74,7 +74,6 @@ m = Model(with_optimizer(CS.Optimizer, backtrack=false))
 ```
 
 and then check the variables using `CS.values(m, x)` or `CS.values(m, y)` this returns an array of possible values.
-
 
 
 
