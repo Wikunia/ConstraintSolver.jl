@@ -25,7 +25,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     inner::Union{CoM, Nothing}
     variable_info::Vector{Variable}
     # which variable index, (:leq,:geq,:eq,:Int,:Bin), and lower and upper bound
-    var_constraints::Vector{Tuple{Int64,Symbol,Int64,Int64}}
+    var_constraints::Vector{Tuple{Int,Symbol,Int,Int}}
     status::MOI.TerminationStatusCode
     options::SolverOptions
 end

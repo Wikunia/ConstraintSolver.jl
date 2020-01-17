@@ -1,6 +1,6 @@
 mutable struct SolverOptions
     backtrack           :: Bool
-    max_bt_steps        :: Int64
+    max_bt_steps        :: Int
     backtrack_sorting   :: Bool
     keep_logs           :: Bool
     rtol                :: Float64
@@ -9,7 +9,7 @@ end
 
 function SolverOptions()
     backtrack           = true
-    max_bt_steps        = typemax(Int64)
+    max_bt_steps        = typemax(Int)
     backtrack_sorting   = true
     keep_logs           = false
     rtol                = 1e-6

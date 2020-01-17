@@ -21,8 +21,8 @@ function log_one_node(com, nvars, back_idx, step_nr)
         step_nr,
         var_idx,
         set_val,
-        Dict{Int64,Vector{Int64}}(), # var_states
-        Dict{Int64,Vector{Tuple{Symbol, Int64, Int64, Int64}}}(), # var_changes
+        Dict{Int,Vector{Int}}(), # var_states
+        Dict{Int,Vector{Tuple{Symbol, Int, Int, Int}}}(), # var_changes
         Vector{TreeLogNode{typeof(best_bound)}}() # children
     )
 
@@ -116,7 +116,7 @@ function get_logs(com::CS.CoM)
     logs = Dict{Symbol, Any}()
     nvars = length(com.search_space)
 
-    logs[:init] = Vector{Vector{Int64}}(undef, nvars)
+    logs[:init] = Vector{Vector{Int}}(undef, nvars)
     for var in com.init_search_space
         logs[:init][var.idx] = values(var)
     end

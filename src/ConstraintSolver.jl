@@ -24,14 +24,14 @@ mutable struct Variable
     offset              :: Int
     min                 :: Int # the minimum value during the solving process
     max                 :: Int # for initial see lower/upper_bound
-    changes             :: Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}
+    changes             :: Vector{Vector{Tuple{Symbol,Int,Int,Int}}}
     has_upper_bound     :: Bool # must be true to work
     has_lower_bound     :: Bool # must be true to work
     is_fixed            :: Bool
     is_integer          :: Bool # must be true to work
 end
 
-Variable(idx) = Variable(idx,0,0,0,0,[],[],0,0,0,Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}(), false, false, false, false)
+Variable(idx) = Variable(idx,0,0,0,0,[],[],0,0,0,Vector{Vector{Tuple{Symbol,Int,Int,Int}}}(), false, false, false, false)
 
 mutable struct CSInfo
     pre_backtrack_calls :: Int
@@ -77,7 +77,7 @@ mutable struct SingleVariableConstraint <: Constraint
 end
 
 struct AllDifferentSet <: MOI.AbstractVectorSet
-    dimension :: Int64
+    dimension :: Int
 end
 
 struct NotEqualSet{T} <: MOI.AbstractScalarSet
@@ -166,8 +166,8 @@ mutable struct TreeLogNode{T <: Real}
     step_nr         :: Int
     var_idx         :: Int
     set_val         :: Int
-    var_states      :: Dict{Int64,Vector{Int64}}
-    var_changes     :: Dict{Int64,Vector{Tuple{Symbol, Int64, Int64, Int64}}}
+    var_states      :: Dict{Int,Vector{Int}}
+    var_changes     :: Dict{Int,Vector{Tuple{Symbol, Int, Int, Int}}}
     children        :: Vector{TreeLogNode{T}}
 end
 
@@ -242,8 +242,8 @@ If the variable should be fixed to something one can use the `fix` keyword i.e `
 """
 function add_var!(com::CS.CoM, from::Int, to::Int; fix=nothing)
     ind = length(com.search_space)+1
-    changes = Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}()
-    push!(changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
+    changes = Vector{Vector{Tuple{Symbol,Int,Int,Int}}}()
+    push!(changes, Vector{Tuple{Symbol,Int,Int,Int}}())
     var = Variable(ind, from, to, 1, to-from+1, from:to, 1:to-from+1, 1-from, from, to, changes, true, true, fix !== nothing, true)
     if fix !== nothing
         fix!(com, var, fix)
@@ -415,7 +415,7 @@ end
 
 function find_best_constraint(com::CS.CoM, constraint_idxs_vec)
     best_ci = 0
-    best_open = typemax(Int64)
+    best_open = typemax(Int)
     best_hash = typemax(UInt64)
     for ci = 1:length(constraint_idxs_vec)
         if constraint_idxs_vec[ci] <= best_open
@@ -443,7 +443,7 @@ Return whether it's still feasible
 """
 function prune!(com::CS.CoM; pre_backtrack=false, all=false, only_once=false, initial_check=false)
     feasible = true
-    N = typemax(Int64)
+    N = typemax(Int)
     search_space = com.search_space
     prev_var_length = zeros(Int, length(search_space))
     constraint_idxs_vec = fill(N, length(com.constraints))
@@ -683,10 +683,10 @@ end
 
 function update_best_bound!(com::CS.CoM)
     if com.sense == MOI.MIN_SENSE
-        max_val = typemax(Int64)
+        max_val = typemax(Int)
         com.best_bound = minimum([bo.status == :Open ? bo.best_bound : max_val for bo in com.backtrack_vec])
     elseif com.sense == MOI.MAX_SENSE
-        min_val = typemin(Int64)
+        min_val = typemin(Int)
         com.best_bound = maximum([bo.status == :Open ? bo.best_bound : min_val for bo in com.backtrack_vec])
     else
         com.best_bound = 0
@@ -739,7 +739,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         backtrack_obj.pval = pval
         push!(backtrack_vec, backtrack_obj)
         for v in com.search_space
-            push!(v.changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
+            push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
         end
         if com.input[:logs]
             push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, -1))
@@ -770,7 +770,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             # don't actually sort => just get the best backtrack idx
             # the one with the best bound and if same best bound choose the one with higher depth
             l = 0
-            best_fac_bound = typemax(Int64)
+            best_fac_bound = typemax(Int)
             best_depth = 0
             found_sol = length(com.solutions) > 0
             nopen_nodes = 0
@@ -914,7 +914,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             if backtrack_obj.best_bound*obj_factor < com.best_sol || length(com.solutions) == 0
                 push!(backtrack_vec, backtrack_obj)
                 for v in com.search_space
-                    push!(v.changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
+                    push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
                 end
                 if com.input[:logs]
                     push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, -1))

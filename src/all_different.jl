@@ -107,8 +107,8 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
         num_edges += nvalues(search_space[i])
     end
 
-    di_ei = Vector{Int64}(undef,num_edges)
-    di_ej = Vector{Int64}(undef,num_edges)
+    di_ei = Vector{Int}(undef,num_edges)
+    di_ej = Vector{Int}(undef,num_edges)
 
     # add edge from each index to the possible values
     edge_counter = 0

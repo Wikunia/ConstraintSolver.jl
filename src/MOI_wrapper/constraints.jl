@@ -20,7 +20,7 @@ function MOI.add_constraint(model::Optimizer, func::SAF, set::MOI.EqualTo{Float6
     check_inbounds(model, func)
 
     if length(func.terms) == 1
-        fix!(model.inner, model.variable_info[func.terms[1].variable_index.value], convert(Int64, set.value/func.terms[1].coefficient))
+        fix!(model.inner, model.variable_info[func.terms[1].variable_index.value], convert(Int, set.value/func.terms[1].coefficient))
         return MOI.ConstraintIndex{SAF, MOI.EqualTo{Float64}}(0)
     end
    

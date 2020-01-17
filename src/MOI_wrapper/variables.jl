@@ -44,8 +44,8 @@ end
 function MOI.add_variable(model::Optimizer)
     index = length(model.variable_info)+1
     push!(model.variable_info, Variable(index))
-    changes = changes = Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}()
-    push!(changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
+    changes = changes = Vector{Vector{Tuple{Symbol,Int,Int,Int}}}()
+    push!(changes, Vector{Tuple{Symbol,Int,Int,Int}}())
     model.variable_info[index].changes = changes
     push!(model.inner.subscription, Int[])
     push!(model.inner.bt_infeasible, 0)
@@ -79,7 +79,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.Integer)
     model.variable_info[vi.value].is_integer = true
 
     cindex = length(model.var_constraints)+1
-    push!(model.var_constraints, (vi.value, :int, typemin(Int64), typemax(Int64)))
+    push!(model.var_constraints, (vi.value, :int, typemin(Int), typemax(Int)))
 
     addupd_var_in_inner_model(model, vi.value)
     return MOI.ConstraintIndex{SVF, MOI.Integer}(cindex)
@@ -103,7 +103,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.ZeroOne)
     addupd_var_in_inner_model(model, vi.value)
 
     cindex = length(model.var_constraints)+1
-    push!(model.var_constraints, (vi.value, :bin, typemin(Int64), typemax(Int64)))
+    push!(model.var_constraints, (vi.value, :bin, typemin(Int), typemax(Int)))
     return MOI.ConstraintIndex{SVF, MOI.ZeroOne}(cindex)
 end
 
@@ -162,7 +162,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, lt::MOI.LessThan{Float64})
     addupd_var_in_inner_model(model, vi.value)
 
     cindex = length(model.var_constraints)+1
-    push!(model.var_constraints, (vi.value, :leq, typemin(Int64), lt.upper))
+    push!(model.var_constraints, (vi.value, :leq, typemin(Int), lt.upper))
     return MOI.ConstraintIndex{SVF, MOI.LessThan{Float64}}(cindex)
 end
 
@@ -188,7 +188,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, gt::MOI.GreaterThan{Float6
     addupd_var_in_inner_model(model, vi.value)
 
     cindex = length(model.var_constraints)+1
-    push!(model.var_constraints, (vi.value, :geq, gt.lower, typemax(Int64)))
+    push!(model.var_constraints, (vi.value, :geq, gt.lower, typemax(Int)))
     return MOI.ConstraintIndex{SVF, MOI.GreaterThan{Float64}}(cindex)
 end
 
