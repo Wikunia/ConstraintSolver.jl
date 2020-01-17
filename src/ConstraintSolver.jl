@@ -159,18 +159,16 @@ mutable struct BacktrackObj
     BacktrackObj() = new()
 end
 
-mutable struct TreeLogNode
+mutable struct TreeLogNode{T <: Real}
     id              :: Int
     status          :: Symbol
-    best_bound      :: Int
+    best_bound      :: T
     step_nr         :: Int
     var_idx         :: Int
     set_val         :: Int
     var_states      :: Dict{Int64,Vector{Int64}}
     var_changes     :: Dict{Int64,Vector{Tuple{Symbol, Int64, Int64, Int64}}}
-    children        :: Vector{TreeLogNode}
-    TreeLogNode() = new()
-    TreeLogNode(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children) = new(id, status, best_bound, step_nr, var_idx, set_val, var_states, var_changes, children)
+    children        :: Vector{TreeLogNode{T}}
 end
 
 mutable struct ConstraintSolverModel

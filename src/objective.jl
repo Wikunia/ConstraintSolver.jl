@@ -25,8 +25,7 @@ function linear_combination_objective(com::CS.CoM, var_idx::Int, val::Int)
     objective = com.objective
     indices = objective.lc.indices
     coeffs = objective.lc.coeffs
-    constant = objective.constant
-    objval = 0.0
+    objval = objective.constant
     if com.sense == MOI.MIN_SENSE
         for i=1:length(indices)
             if coeffs[i] >= 0
