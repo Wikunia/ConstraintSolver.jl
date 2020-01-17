@@ -108,7 +108,8 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
         push!(com.subscription[ind], constraint.idx)
     end
 
-    return MOI.ConstraintIndex{MOI.VectorOfVariables, AllDifferentSet}(length(com.constraints))
+    T = typeof(set)
+    return MOI.ConstraintIndex{MOI.VectorOfVariables, T}(length(com.constraints))
 end
 
 MOI.supports_constraint(::Optimizer, ::Type{SAF{T}}, ::Type{NotEqualSet{T}}) where T <: Real = true
