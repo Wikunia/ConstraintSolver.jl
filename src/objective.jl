@@ -5,14 +5,15 @@
 Return the best objective if `var_idx` is set to `val`
 """
 function single_variable_objective(com::CS.CoM, var_idx::Int, val::Int)
+    returnType = typeof(com.best_bound)
     if com.objective.index != var_idx
         if com.sense == MOI.MIN_SENSE
-            return com.search_space[com.objective.index].min
+            return convert(returnType, com.search_space[com.objective.index].min)
         else # MAX
-            return com.search_space[com.objective.index].max
+            return convert(returnType, com.search_space[com.objective.index].max)
         end
     else
-        return val
+        return convert(returnType, val)
     end
 end
 
@@ -43,5 +44,5 @@ function linear_combination_objective(com::CS.CoM, var_idx::Int, val::Int)
             end
         end
     end
-    return objval
+    return convert(typeof(com.best_bound), objval)
 end

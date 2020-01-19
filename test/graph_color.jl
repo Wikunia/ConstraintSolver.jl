@@ -290,7 +290,7 @@ end
     rm("graph_color_optimize.json")
 
     @test status == MOI.OPTIMAL
-    @test com.best_sol == 5.1
+    @test com.best_sol ≈ 5.1
     @test all([length(CS.values(m, var)) == 1 for var in states])
     @test maximum([JuMP.value(var) for var in states]) == JuMP.value(max_color) == 4
 
@@ -551,5 +551,4 @@ end
     @test com.best_sol == 17
     @test minimum([JuMP.value(var) for var in states]) == 17 == JuMP.value(max_color)
 end
-
 end

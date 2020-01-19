@@ -147,16 +147,14 @@ function LinearConstraint(fct::Function, operator::Symbol, indices::Vector{Int},
     return lc
 end
 
-mutable struct BacktrackObj
+mutable struct BacktrackObj{T <: Real}
     idx                 :: Int
     parent_idx          :: Int
     depth               :: Int
     status              :: Symbol
     variable_idx        :: Int
     pval                :: Int
-    best_bound          :: Float64
-
-    BacktrackObj() = new()
+    best_bound          :: T
 end
 
 mutable struct TreeLogNode{T <: Real}
@@ -171,22 +169,22 @@ mutable struct TreeLogNode{T <: Real}
     children        :: Vector{TreeLogNode{T}}
 end
 
-mutable struct ConstraintSolverModel
+mutable struct ConstraintSolverModel{T <: Real}
     init_search_space   :: Vector{Variable}
     search_space        :: Vector{Variable}
     subscription        :: Vector{Vector{Int}}
     constraints         :: Vector{Constraint}
     bt_infeasible       :: Vector{Int}
     c_backtrack_idx     :: Int
-    backtrack_vec       :: Vector{BacktrackObj}
+    backtrack_vec       :: Vector{BacktrackObj{T}}
     sense               :: MOI.OptimizationSense
     objective           :: ObjectiveFunction
-    best_sol            :: Float64 # Objective of the best solution
-    best_bound          :: Float64 # Overall best bound
+    best_sol            :: T # Objective of the best solution
+    best_bound          :: T # Overall best bound
     solutions           :: Vector{Int} # saves only the id to the BacktrackObj
     info                :: CSInfo
     input               :: Dict{Symbol,Any}
-    logs                :: Vector{TreeLogNode}
+    logs                :: Vector{TreeLogNode{T}}
     options             :: SolverOptions
 end
 
@@ -207,11 +205,11 @@ include("equal.jl")
 include("not_equal.jl")
 
 """
-    ConstraintSolverModel()
+    ConstraintSolverModel(T::DataType=Float64)
 
-Create the constraint model object.
+Create the constraint model object and specify the type of the solution
 """
-function ConstraintSolverModel()
+function ConstraintSolverModel(T::DataType=Float64)
     ConstraintSolverModel(
         Vector{Variable}(), # init_search_space
         Vector{Variable}(), # search_space
@@ -219,15 +217,15 @@ function ConstraintSolverModel()
         Vector{Constraint}(), # constraints
         Vector{Int}(), # bt_infeasible
         1, # c_backtrack_idx
-        Vector{BacktrackObj}(), # backtrack_vec
+        Vector{BacktrackObj{T}}(), # backtrack_vec
         MOI.FEASIBILITY_SENSE, #
         NoObjective(), #
-        0, # best_sol,
-        0, # best_bound
-        Vector{Int}(), # solutions
+        zero(T), # best_sol,
+        zero(T), # best_bound
+        Vector{Int}(), # save backtrack id to solution
         CSInfo(0, false, 0, 0, 0), # info
         Dict{Symbol,Any}(), # input
-        Vector{TreeLogNode}(), # logs
+        Vector{TreeLogNode{T}}(), # logs
         SolverOptions() # options
     )
 end
@@ -571,7 +569,7 @@ Without an objective function return 0.
 """
 function get_best_bound(com::CS.CoM; var_idx=0, val=0)
     if com.sense == MOI.FEASIBILITY_SENSE
-        return 0
+        return zero(com.best_bound)
     end
     return com.objective.fct(com, var_idx, val)
 end
@@ -688,9 +686,7 @@ function update_best_bound!(com::CS.CoM)
     elseif com.sense == MOI.MAX_SENSE
         min_val = typemin(Int)
         com.best_bound = maximum([bo.status == :Open ? bo.best_bound : min_val for bo in com.backtrack_vec])
-    else
-        com.best_bound = 0
-    end 
+    end # otherwise no update is needed 
 end
 
 function set_state_to_best_sol!(com::CS.CoM, last_backtrack_id::Int)
@@ -716,10 +712,15 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
     com.info.backtrack_fixes   = 1
 
     pvals = reverse!(values(com.search_space[ind]))
-    dummy_backtrack_obj = BacktrackObj()
-    dummy_backtrack_obj.status = :Close
-    dummy_backtrack_obj.idx = 1
-    dummy_backtrack_obj.variable_idx = 1
+    dummy_backtrack_obj = BacktrackObj(
+        1, # idx
+        0, # parent
+        0, # depth
+        :Close, # status
+        0, # variable_idx
+        0, # pval
+        com.sense == MOI.MIN_SENSE ? typemax(com.best_bound) : typemin(com.best_bound)
+    )
 
     backtrack_vec = com.backtrack_vec
     push!(backtrack_vec, dummy_backtrack_obj)
@@ -728,15 +729,16 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
     num_backtrack_objs = 1
     step_nr = 1
     for pval in pvals
-        backtrack_obj = BacktrackObj()
         num_backtrack_objs += 1
-        backtrack_obj.idx = num_backtrack_objs
-        backtrack_obj.parent_idx = 1
-        backtrack_obj.depth = 1
-        backtrack_obj.status = :Open
-        backtrack_obj.best_bound = get_best_bound(com; var_idx=ind, val=pval)
-        backtrack_obj.variable_idx = ind
-        backtrack_obj.pval = pval
+        backtrack_obj = BacktrackObj(
+            num_backtrack_objs,
+            1,
+            1,
+            :Open,
+            ind, 
+            pval,
+            get_best_bound(com; var_idx=ind, val=pval)
+        )
         push!(backtrack_vec, backtrack_obj)
         for v in com.search_space
             push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
@@ -900,15 +902,16 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         pvals = reverse!(values(com.search_space[ind]))
         last_backtrack_obj = backtrack_vec[last_backtrack_id]
         for pval in pvals
-            backtrack_obj = BacktrackObj()
             num_backtrack_objs += 1
-            backtrack_obj.parent_idx = last_backtrack_obj.idx
-            backtrack_obj.depth = last_backtrack_obj.depth + 1
-            backtrack_obj.idx = num_backtrack_objs
-            backtrack_obj.status = :Open
-            backtrack_obj.best_bound = get_best_bound(com; var_idx=ind, val=pval)
-            backtrack_obj.variable_idx = ind
-            backtrack_obj.pval = pval
+            backtrack_obj = BacktrackObj(
+                num_backtrack_objs, # idx
+                last_backtrack_obj.idx, # parent    
+                last_backtrack_obj.depth + 1, 
+                :Open,
+                ind,
+                pval,
+                get_best_bound(com; var_idx=ind, val=pval)
+            )
 
             # only include nodes which have a better objective than the current best solution if one was found already
             if backtrack_obj.best_bound*obj_factor < com.best_sol || length(com.solutions) == 0
