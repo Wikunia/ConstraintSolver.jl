@@ -1,6 +1,10 @@
-using ConstraintSolver, JuMP
+using ConstraintSolver, JuMP, MathOptInterface
 
-CS = ConstraintSolver
+if !@isdefined CS 
+    const CS = ConstraintSolver
+end
+const MOI = MathOptInterface
+const MOIU = MOI.Utilities
 include("../../test/sudoku_fcts.jl")
 
 function from_file(filename, sep='\n')
@@ -22,35 +26,46 @@ function solve_all(grids; benchmark=false, single_times=true)
     ct = time()
     grids = grids
     for (i,grid) in enumerate(grids)
-        m = Model(with_optimizer(CS.Optimizer))
-        @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+        m = CS.Optimizer()
+        
+        x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i=1:9] for j=1:9]
+        for r=1:9, c=1:9
+            MOI.add_constraint(m, x[r][c][1], MOI.GreaterThan(1.0))
+            MOI.add_constraint(m, x[r][c][1], MOI.LessThan(9.0))
+        end
+
         # set variables
         for r=1:9, c=1:9
             if grid[r,c] != 0
-                @constraint(m, x[r,c] == grid[r,c])
+                sat = [MOI.ScalarAffineTerm(1.0, x[r][c][1])]
+                MOI.add_constraint(m, MOI.ScalarAffineFunction{Float64}(sat, 0.0), MOI.EqualTo(convert(Float64,grid[r,c])))
             end
         end
         # sudoku constraints
-        jump_add_sudoku_constr!(m, x)
+        moi_add_sudoku_constr!(m, x)
 
         if single_times
             GC.enable(false)
             t = time()
-            optimize!(m)
-            status = JuMP.termination_status(m)
+            MOI.optimize!(m)
+            status = MOI.get(m, MOI.TerminationStatus())
             t = time()-t
             GC.enable(true)
             println(i-1,", ", t)
         else
             GC.enable(false)
-            optimize!(m)
-            status = JuMP.termination_status(m)
+            MOI.optimize!(m)
+            status = MOI.get(m, MOI.TerminationStatus())
             GC.enable(true)
         end
         if !benchmark
-            @show JuMP.backend(m).optimizer.model.inner.info
             println("Status: ", status)
-            @assert jump_fulfills_sudoku_constr(JuMP.value.(x))
+            @show m.inner.info
+            solution = zeros(Int, 9, 9)
+            for r=1:9
+                solution[r,:] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c=1:9]
+            end
+            @assert jump_fulfills_sudoku_constr(solution)
         end
     end
     println("")

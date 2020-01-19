@@ -866,22 +866,20 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                 com.best_sol = new_sol
                 if com.best_sol == com.best_bound
                     return :Solved
-                else
-                    # set all nodes to :Worse if they can't achieve a better solution
-                    for bo in backtrack_vec
-                        if bo.status == :Open && obj_factor*bo.best_bound >= com.best_sol
-                            bo.status = :Worse
-                        end
-                    end
-                    continue
                 end
+                # set all nodes to :Worse if they can't achieve a better solution
+                for bo in backtrack_vec
+                    if bo.status == :Open && obj_factor*bo.best_bound >= com.best_sol
+                        bo.status = :Worse
+                    end
+                end
+                continue
             else
                 if com.best_sol == com.best_bound
                     set_state_to_best_sol!(com, last_backtrack_id)
                     return :Solved
-                else
-                    continue
                 end
+                continue
             end
         end
 
@@ -889,12 +887,9 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             return :NotSolved
         end
 
-
-
         if com.input[:logs]
             com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr)
         end
-
         
         pvals = reverse!(values(com.search_space[ind]))
         last_backtrack_obj = backtrack_vec[last_backtrack_id]
