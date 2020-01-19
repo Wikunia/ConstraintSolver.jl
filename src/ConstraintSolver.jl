@@ -681,10 +681,10 @@ end
 
 function update_best_bound!(com::CS.CoM)
     if com.sense == MOI.MIN_SENSE
-        max_val = typemax(Int)
+        max_val = typemax(com.best_bound)
         com.best_bound = minimum([bo.status == :Open ? bo.best_bound : max_val for bo in com.backtrack_vec])
     elseif com.sense == MOI.MAX_SENSE
-        min_val = typemin(Int)
+        min_val = typemin(com.best_bound)
         com.best_bound = maximum([bo.status == :Open ? bo.best_bound : min_val for bo in com.backtrack_vec])
     end # otherwise no update is needed 
 end

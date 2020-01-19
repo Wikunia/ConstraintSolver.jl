@@ -1,7 +1,7 @@
 @testset "Sudoku" begin
 
-@testset "Sudoku from opensourc.es using MOI" begin
-    grid = [0 2 1 0 7 9 0 8 5;
+@testset "Sudoku from opensourc.es using MOI and Int8" begin
+    grid = Int8[0 2 1 0 7 9 0 8 5;
             0 4 5 3 1 0 0 0 9;
             0 7 0 0 4 0 0 1 0;
             0 0 0 1 0 8 0 3 6;
@@ -15,15 +15,15 @@
 
     x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i=1:9] for j=1:9]
     for r=1:9, c=1:9
-        MOI.add_constraint(m, x[r][c][1], MOI.GreaterThan(1.0))
-        MOI.add_constraint(m, x[r][c][1], MOI.LessThan(9.0))
+        MOI.add_constraint(m, x[r][c][1], MOI.GreaterThan(1))
+        MOI.add_constraint(m, x[r][c][1], MOI.LessThan(9))
     end
 
     # set variables
     for r=1:9, c=1:9
         if grid[r,c] != 0
-            sat = [MOI.ScalarAffineTerm(1.0, x[r][c][1])]
-            MOI.add_constraint(m, MOI.ScalarAffineFunction{Float64}(sat, 0.0), MOI.EqualTo(convert(Float64,grid[r,c])))
+            sat = [MOI.ScalarAffineTerm(Int8(1), x[r][c][1])]
+            MOI.add_constraint(m, MOI.ScalarAffineFunction{Int8}(sat, 0), MOI.EqualTo(grid[r,c]))
         end
     end
 
@@ -223,7 +223,7 @@ end
     grids = sudokus_from_file("data/top95")
     c = 0
     for grid in grids
-        m = Model(with_optimizer(CS.Optimizer))
+        m = Model(with_optimizer(CS.Optimizer, solution_type=Int8))
 
         @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
         # set variables
@@ -235,9 +235,13 @@ end
 
         # sudoku constraints
         jump_add_sudoku_constr!(m, x)
-
+        @objective(m, Min, x[1,1])
+        
         optimize!(m)
-
+        com = JuMP.backend(m).optimizer.model.inner
+        
+        @test typeof(com.best_sol) == Int8
+        @test JuMP.objective_value(m) == JuMP.value(x[1,1]) == com.best_sol
         @test JuMP.termination_status(m) == MOI.OPTIMAL
         @test jump_fulfills_sudoku_constr(JuMP.value.(x))
         c += 1

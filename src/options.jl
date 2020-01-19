@@ -5,6 +5,7 @@ mutable struct SolverOptions
     keep_logs           :: Bool
     rtol                :: Float64
     atol                :: Float64
+    solution_type       :: DataType
 end
 
 function SolverOptions()
@@ -14,8 +15,9 @@ function SolverOptions()
     keep_logs           = false
     rtol                = 1e-6
     atol                = 1e-6
+    solution_type       = Float64
 
-    return SolverOptions(backtrack, max_bt_steps, backtrack_sorting, keep_logs, rtol, atol)
+    return SolverOptions(backtrack, max_bt_steps, backtrack_sorting, keep_logs, rtol, atol, solution_type)
 end
 
 function combine_options(options)

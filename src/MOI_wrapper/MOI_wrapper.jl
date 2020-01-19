@@ -1,17 +1,9 @@
 const SVF = MOI.SingleVariable
-const SAF = MOI.ScalarAffineFunction{Float64}
+const SAF = MOI.ScalarAffineFunction
 
 # indices
 const VI = MOI.VariableIndex
 const CI = MOI.ConstraintIndex
-
-# sets
-const BOUNDS = Union{
-    MOI.EqualTo{Float64},
-    MOI.GreaterThan{Float64},
-    MOI.LessThan{Float64},
-    MOI.Interval{Float64}
-}
 
 const VAR_TYPES = Union{
     MOI.ZeroOne,
@@ -41,8 +33,8 @@ MOI.get(::Optimizer, ::MOI.SolverName) = "ConstraintSolver"
 Optimizer struct constructor
 """
 function Optimizer(;options...)
-    com = CS.ConstraintSolverModel()
     options = combine_options(options)
+    com = CS.ConstraintSolverModel(options.solution_type)
     return Optimizer(
         com,
         [],
@@ -64,7 +56,7 @@ end
     MOI.empty!(model::Optimizer)
 """
 function MOI.empty!(model::Optimizer)
-    model.inner = CS.ConstraintSolverModel()
+    model.inner = CS.ConstraintSolverModel(model.options.solution_type)
     empty!(model.variable_info)
     empty!(model.var_constraints)
     model.status = MOI.OPTIMIZE_NOT_CALLED
