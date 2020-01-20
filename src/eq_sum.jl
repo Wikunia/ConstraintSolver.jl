@@ -69,7 +69,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     # if the maximum is smaller than 0 (and not even near zero)
     # or if the minimum is bigger than 0 (and not even near zero)
     # the equation can't sum to 0 => infeasible
-    if full_max < 0-com.options.atol || full_min > 0+com.options.atol
+    if full_max < -com.options.atol || full_min > com.options.atol
         com.bt_infeasible[indices] .+= 1
         return false
     end
