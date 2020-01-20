@@ -13,23 +13,23 @@ function get_approx_discrete(val)
 end
 
 function get_safe_upper_threshold(com::CS.CoM, val, divider)
-    floor_threshold = fld(val, divider)
     float_threshold = val/divider
+    floor_threshold = floor(float_threshold)
     threshold = convert(Int, floor_threshold)
     # if the difference is almost 1 we round in the other direction to provide a safe upper bound
     if isapprox(float_threshold-floor_threshold, 1.0; rtol=com.options.rtol, atol=com.options.atol)
-        threshold = convert(Int, cld(val, divider))
+        threshold += 1
     end
     return threshold
 end
 
 function get_safe_lower_threshold(com::CS.CoM, val, divider)
-    ceil_threshold = cld(val, divider)
     float_threshold = val/divider
+    ceil_threshold = ceil(float_threshold)
     threshold = convert(Int, ceil_threshold)
     # if the difference is almost 1 we round in the other direction to provide a safe lower bound
     if isapprox(ceil_threshold-float_threshold, 1.0; rtol=com.options.rtol, atol=com.options.atol)
-        threshold = convert(Int, fld(val, divider))
+        threshold -= 1
     end
     return threshold
 end

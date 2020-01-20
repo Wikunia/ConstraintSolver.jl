@@ -40,7 +40,6 @@ end
 function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     indices = constraint.indices
     search_space = com.search_space
-    # println("constraint: ", constraint)
 
     # compute max and min values for each index
     maxs = constraint.maxs
@@ -66,7 +65,10 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
     full_max = sum(maxs)-constraint.rhs
     full_min = sum(mins)-constraint.rhs
 
-    if full_max < 0 || full_min > 0
+    # if the maximum is smaller than 0 (and not even near zero)
+    # or if the minimum is bigger than 0 (and not even near zero)
+    # the equation can't sum to 0 => infeasible
+    if full_max < -com.options.atol || full_min > com.options.atol
         com.bt_infeasible[indices] .+= 1
         return false
     end
@@ -94,6 +96,8 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
 
     # update all
     for (i,idx) in enumerate(indices)
+        # if the maximum of coefficient * variable got reduced
+        # get a safe threshold because of floating point errors
         if maxs[i] < pre_maxs[i]
             threshold = get_safe_upper_threshold(com, maxs[i], constraint.coeffs[i])
             if constraint.coeffs[i] > 0
@@ -105,6 +109,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
                 return false
             end
         end
+        # same if a better minimum value could be achieved
         if mins[i] > pre_mins[i]
             threshold = get_safe_lower_threshold(com, mins[i], constraint.coeffs[i])
             if constraint.coeffs[i] > 0
@@ -118,7 +123,7 @@ function eq_sum(com::CS.CoM, constraint::LinearConstraint; logs = true)
         end
     end
 
-    # if there are only two left check all options
+    # if there are at most two unfixed variables left check all options
     n_unfixed = 0
     unfixed_ind_1, unfixed_ind_2 = 0, 0
     unfixed_local_ind_1, unfixed_local_ind_2 = 0,0
