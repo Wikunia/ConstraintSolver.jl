@@ -81,4 +81,18 @@ end
     @test JuMP.objective_value(m) == 2
     @test JuMP.value.(x) == [0,1,1,0]
 end
+
+@testset "Test where min sum is a bit bigger than 0" begin
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:2] <= 3, Int)
+    weights = [0.2, 0.1]
+    @variable(m, 1 <= min_val <= 2, Int)
+    @constraint(m, sum(weights.*x) == 0.15*min_val)
+    @objective(m, Min, min_val)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.objective_value(m) == 2
+    @test JuMP.value.(x) == [1,1]
+    @test JuMP.value.(min_val) == 2
+end
 end
