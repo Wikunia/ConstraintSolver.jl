@@ -205,11 +205,12 @@ include("hashes.jl")
 include("Variable.jl")
 include("objective.jl")
 include("linearcombination.jl")
-include("all_different.jl")
-include("eq_sum.jl")
-include("svc.jl")
-include("equal.jl")
-include("not_equal.jl")
+include("constraints/all_different.jl")
+include("constraints/eq_sum.jl")
+include("constraints/less_than.jl")
+include("constraints/svc.jl")
+include("constraints/equal.jl")
+include("constraints/not_equal.jl")
 
 """
     ConstraintSolverModel(T::DataType=Float64)
@@ -854,7 +855,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         if further_pruning
             # prune completely start with all that changed by the fix or by updating best bound
             feasible = prune!(com)
-        
             if !feasible
                 com.info.backtrack_reverses += 1
                 continue

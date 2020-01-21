@@ -25,7 +25,6 @@ function MOI.add_constraint(model::Optimizer, func::SAF{T}, set::MOI.EqualTo{T})
     end
    
     indices = [v.variable_index.value for v in func.terms]
-    operator = :(==)
     
     lc = LinearConstraint(func, set, indices)
     lc.idx = length(model.inner.constraints)+1
@@ -39,23 +38,12 @@ function MOI.add_constraint(model::Optimizer, func::SAF{T}, set::MOI.EqualTo{T})
     return MOI.ConstraintIndex{SAF{T}, MOI.EqualTo{T}}(length(model.inner.constraints))
 end
 
-# support for a <= b which is written as a-b <= 0
-function MOI.add_constraint(model::Optimizer, func::SAF{T}, set::MOI.LessThan{T}) where T <: Real
-    check_inbounds(model, func)
-
-    if set.upper != 0.0
-        error("Only constraints of the type `a <= b` are supported but not `a <= b-2`")
-    end
-    if length(func.terms) != 2
-        error("Only constraints of the type `a <= b` are supported but not `a+b <= c` or something with more terms")
-    end
+function add_variable_less_than_variable_constraint(model::Optimizer, func::SAF{T}, set::MOI.LessThan{T}) where T <: Real
     reverse_order = false
     if func.terms[1].coefficient != 1.0 || func.terms[2].coefficient != -1.0
         if func.terms[1].coefficient == -1.0 && func.terms[2].coefficient == 1.0
             # rhs is lhs and other way around
             reverse_order = true
-        else
-            error("Only constraints of the type `a <= b` are supported but not `2a <= b`. You used coefficients: $(func.terms[1].coefficient) and $(func.terms[2].coefficient) instead of `1.0` and `-1.0`")
         end
     end
 
@@ -84,6 +72,30 @@ function MOI.add_constraint(model::Optimizer, func::SAF{T}, set::MOI.LessThan{T}
 
     push!(model.inner.subscription[svc.lhs], svc.idx)
     push!(model.inner.subscription[svc.rhs], svc.idx)
+
+    return MOI.ConstraintIndex{SAF{T}, MOI.LessThan{T}}(length(model.inner.constraints))
+end
+
+
+function MOI.add_constraint(model::Optimizer, func::SAF{T}, set::MOI.LessThan{T}) where T <: Real
+    check_inbounds(model, func)
+
+    # support for a <= b which is written as a-b <= 0
+    if set.upper == 0.0 && length(func.terms) == 2 && abs(func.terms[1].coefficient) == 1.0 && func.terms[2].coefficient != -func.terms[2].coefficient
+        return add_variable_less_than_variable_constraint(model, func, set)
+    end
+
+    # for normal <= constraints 
+    indices = [v.variable_index.value for v in func.terms]
+    
+    lc = LinearConstraint(func, set, indices)
+    lc.idx = length(model.inner.constraints)+1
+
+    push!(model.inner.constraints, lc)
+
+    for (i,ind) in enumerate(lc.indices)
+        push!(model.inner.subscription[ind], lc.idx)
+    end
 
     return MOI.ConstraintIndex{SAF{T}, MOI.LessThan{T}}(length(model.inner.constraints))
 end

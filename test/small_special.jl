@@ -562,6 +562,58 @@ end
     @test JuMP.value(y) == 2
 end
 
+@testset "LessThan constraints JuMP" begin
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) <= 25)
+    @constraint(m, sum(x) >= 20)
+    weights = [1,2,3,4,5]
+    @objective(m, Max, sum(weights .* x))
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.value.(x) == [1,1,5,9,9]
+    @test JuMP.objective_value(m) == 99
+
+    # minimize
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) <= 25)
+    @constraint(m, sum(x) >= 20)
+    weights = [1,2,3,4,5]
+    @objective(m, Min, sum(weights .* x))
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.value.(x) == [9,8,1,1,1]
+    @test JuMP.objective_value(m) == 37
+
+    # minimize with negative and positive real weights
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) <= 25)
+    weights = [-0.1,0.2,-0.3,0.4,0.5]
+    @constraint(m, sum(x[i] for i=1:5 if weights[i] > 0) >= 15)
+    @objective(m, Min, sum(weights .* x))
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.value.(x) == [1,9,9,5,1]
+    @test JuMP.objective_value(m) ≈ 1.5
+end
+
+@testset "LessThan constraints CS" begin
+    com = CS.ConstraintSolverModel()
+
+    x = [CS.add_var!(com, 1, 9) for i = 1:5]
+    CS.add_constraint!(com, sum(x) <= 25)
+    CS.add_constraint!(com, sum(x) >= 20)
+    status = CS.solve!(com, CS.SolverOptions())
+
+    @test status == :Solved
+    @test 20 <= sum(CS.value.(x)) <= 25
+end
+
 @testset "Not supported constraints" begin
     m = Model(with_optimizer(CS.Optimizer))
     # must be an Integer upper bound
@@ -589,24 +641,6 @@ end
     @variable(m, 1 <= x[1:5] <= 2, Int)
     # constraint currently not supported
     @constraint(m, 2x[1]-x[2] != 0)
-    @test_throws ErrorException optimize!(m)
-
-    m = Model(with_optimizer(CS.Optimizer))
-    @variable(m, 1 <= x[1:5] <= 2, Int)
-    # constraint not supported
-    @constraint(m, x[1] <= x[2]-2)
-    @test_throws ErrorException optimize!(m)
-
-    m = Model(with_optimizer(CS.Optimizer))
-    @variable(m, 1 <= x[1:5] <= 2, Int)
-    # constraint not supported
-    @constraint(m, x[1]-x[2]-x[3] <= 0)
-    @test_throws ErrorException optimize!(m)
-
-    m = Model(with_optimizer(CS.Optimizer))
-    @variable(m, 1 <= x[1:5] <= 2, Int)
-    # constraint currently not supported
-    @constraint(m, 2x[1]-x[2] <= 0)
     @test_throws ErrorException optimize!(m)
 end
 

@@ -231,7 +231,7 @@ function still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set
     min_extra = 0
     for (i,idx) in enumerate(constraint.indices)
         if idx == index
-            val = val*fct.terms[i].coefficient
+            csum += val*fct.terms[i].coefficient
             continue
         end
         if isfixed(search_space[idx])
@@ -247,15 +247,15 @@ function still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set
             end
         end
     end
-    if num_not_fixed == 0 && !isapprox(csum + val, rhs; atol=com.options.atol, rtol=com.options.rtol)
+    if num_not_fixed == 0 && !isapprox(csum, rhs; atol=com.options.atol, rtol=com.options.rtol)
         return false
     end
 
-    if csum + val + min_extra > rhs+com.options.atol
+    if csum + min_extra > rhs+com.options.atol
         return false
     end
 
-    if csum + val + max_extra < rhs-com.options.atol
+    if csum + max_extra < rhs-com.options.atol
         return false
     end
 
