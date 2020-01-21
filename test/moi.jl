@@ -18,6 +18,7 @@
     # objective
     @test MOI.supports(optimizer, MOI.ObjectiveSense())
     @test MOI.supports(optimizer, MOI.ObjectiveFunction{MOI.SingleVariable}())
+    @test MOI.supports(optimizer, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}())
 
     @test MOI.get(optimizer, MOI.ObjectiveSense()) == MOI.FEASIBILITY_SENSE
 end

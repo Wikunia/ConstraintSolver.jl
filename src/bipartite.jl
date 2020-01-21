@@ -1,6 +1,6 @@
 struct BipartiteMatching
-    weight :: Int64
-    match  :: Vector{Int64}
+    weight :: Int
+    match  :: Vector{Int}
 end
 
 

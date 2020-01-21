@@ -20,7 +20,7 @@ function MOI.add_constraint(model::Optimizer, func::SAF{T}, set::MOI.EqualTo{T})
     check_inbounds(model, func)
 
     if length(func.terms) == 1
-        fix!(model.inner, model.variable_info[func.terms[1].variable_index.value], convert(Int64, set.value/func.terms[1].coefficient))
+        fix!(model.inner, model.variable_info[func.terms[1].variable_index.value], convert(Int, set.value/func.terms[1].coefficient))
         return MOI.ConstraintIndex{SAF{T}, MOI.EqualTo{T}}(0)
     end
    
@@ -114,7 +114,7 @@ end
 
 MOI.supports_constraint(::Optimizer, ::Type{SAF{T}}, ::Type{NotEqualSet{T}}) where T <: Real = true
 
-function MOI.add_constraint(model::Optimizer, aff::SAF{T}, set::NotEqualSet{T}) where T <: Real
+function MOI.add_constraint(model::Optimizer, aff::SAF{T}, set::NotEqualSet{T}) where T <: Real 
     if set.value != 0.0
         error("Only constraints of the type `a != b` are supported but not `a != b-2`")
     end

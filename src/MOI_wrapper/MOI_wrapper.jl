@@ -5,14 +5,6 @@ const SAF = MOI.ScalarAffineFunction
 const VI = MOI.VariableIndex
 const CI = MOI.ConstraintIndex
 
-# sets
-const BOUNDS = Union{
-    MOI.EqualTo{Float64},
-    MOI.GreaterThan{Float64},
-    MOI.LessThan{Float64},
-    MOI.Interval{Float64}
-}
-
 const VAR_TYPES = Union{
     MOI.ZeroOne,
     MOI.Integer
@@ -25,7 +17,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     inner::Union{CoM, Nothing}
     variable_info::Vector{Variable}
     # which variable index, (:leq,:geq,:eq,:Int,:Bin), and lower and upper bound
-    var_constraints::Vector{Tuple{Int64,Symbol,Int64,Int64}}
+    var_constraints::Vector{Tuple{Int,Symbol,Int,Int}}
     status::MOI.TerminationStatusCode
     options::SolverOptions
 end
@@ -41,8 +33,8 @@ MOI.get(::Optimizer, ::MOI.SolverName) = "ConstraintSolver"
 Optimizer struct constructor
 """
 function Optimizer(;options...)
-    com = CS.ConstraintSolverModel()
     options = combine_options(options)
+    com = CS.ConstraintSolverModel(options.solution_type)
     return Optimizer(
         com,
         [],
@@ -64,7 +56,7 @@ end
     MOI.empty!(model::Optimizer)
 """
 function MOI.empty!(model::Optimizer)
-    model.inner = CS.ConstraintSolverModel()
+    model.inner = CS.ConstraintSolverModel(model.options.solution_type)
     empty!(model.variable_info)
     empty!(model.var_constraints)
     model.status = MOI.OPTIMIZE_NOT_CALLED
