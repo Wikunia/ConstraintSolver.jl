@@ -2,10 +2,10 @@
 Single variable bound constraints
 """
 # MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{AbstractVector{<:MOI.AbstractScalarSet}}) = true
-MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.LessThan{Float64}}) = true
-MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.GreaterThan{Float64}}) = true
-MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.EqualTo{Float64}}) = true
-MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.Interval{Float64}}) = true
+MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.LessThan{T}}) where T <: Real = true
+MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.GreaterThan{T}}) where T <: Real = true
+MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.EqualTo{T}}) where T <: Real = true
+MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.Interval{T}}) where T <: Real = true
 
 """
 Binary/Integer variable support
@@ -44,8 +44,8 @@ end
 function MOI.add_variable(model::Optimizer)
     index = length(model.variable_info)+1
     push!(model.variable_info, Variable(index))
-    changes = changes = Vector{Vector{Tuple{Symbol,Int64,Int64,Int64}}}()
-    push!(changes, Vector{Tuple{Symbol,Int64,Int64,Int64}}())
+    changes = changes = Vector{Vector{Tuple{Symbol,Int,Int,Int}}}()
+    push!(changes, Vector{Tuple{Symbol,Int,Int,Int}}())
     model.variable_info[index].changes = changes
     push!(model.inner.subscription, Int[])
     push!(model.inner.bt_infeasible, 0)
@@ -79,7 +79,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.Integer)
     model.variable_info[vi.value].is_integer = true
 
     cindex = length(model.var_constraints)+1
-    push!(model.var_constraints, (vi.value, :int, typemin(Int64), typemax(Int64)))
+    push!(model.var_constraints, (vi.value, :int, typemin(Int), typemax(Int)))
 
     addupd_var_in_inner_model(model, vi.value)
     return MOI.ConstraintIndex{SVF, MOI.Integer}(cindex)
@@ -103,14 +103,14 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.ZeroOne)
     addupd_var_in_inner_model(model, vi.value)
 
     cindex = length(model.var_constraints)+1
-    push!(model.var_constraints, (vi.value, :bin, typemin(Int64), typemax(Int64)))
+    push!(model.var_constraints, (vi.value, :bin, typemin(Int), typemax(Int)))
     return MOI.ConstraintIndex{SVF, MOI.ZeroOne}(cindex)
 end
 
 #=
 Populating Variable bounds
 =#
-function MOI.add_constraint(model::Optimizer, v::SVF, interval::MOI.Interval{Float64})
+function MOI.add_constraint(model::Optimizer, v::SVF, interval::MOI.Interval{T}) where T <: Real
     vi = v.variable
     check_inbounds(model, vi)
     isnan(interval.upper) && throw(ErrorException("The interval bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(interval.upper)"))
@@ -137,10 +137,10 @@ function MOI.add_constraint(model::Optimizer, v::SVF, interval::MOI.Interval{Flo
 
     cindex = length(model.var_constraints)+1
     push!(model.var_constraints, (vi.value, :interval, interval.lower, interval.upper))
-    return MOI.ConstraintIndex{SVF, MOI.Interval{Float64}}(cindex)
+    return MOI.ConstraintIndex{SVF, MOI.Interval{T}}(cindex)
 end
 
-function MOI.add_constraint(model::Optimizer, v::SVF, lt::MOI.LessThan{Float64})
+function MOI.add_constraint(model::Optimizer, v::SVF, lt::MOI.LessThan{T}) where T <: Real
     vi = v.variable
     check_inbounds(model, vi)
     isnan(lt.upper) && throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(lt.upper)"))
@@ -162,11 +162,11 @@ function MOI.add_constraint(model::Optimizer, v::SVF, lt::MOI.LessThan{Float64})
     addupd_var_in_inner_model(model, vi.value)
 
     cindex = length(model.var_constraints)+1
-    push!(model.var_constraints, (vi.value, :leq, typemin(Int64), lt.upper))
-    return MOI.ConstraintIndex{SVF, MOI.LessThan{Float64}}(cindex)
+    push!(model.var_constraints, (vi.value, :leq, typemin(Int), lt.upper))
+    return MOI.ConstraintIndex{SVF, MOI.LessThan{T}}(cindex)
 end
 
-function MOI.add_constraint(model::Optimizer, v::SVF, gt::MOI.GreaterThan{Float64})
+function MOI.add_constraint(model::Optimizer, v::SVF, gt::MOI.GreaterThan{T}) where T <: Real
     vi = v.variable
     check_inbounds(model, vi)
     isnan(gt.lower) && throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(gt.upper)"))
@@ -188,11 +188,11 @@ function MOI.add_constraint(model::Optimizer, v::SVF, gt::MOI.GreaterThan{Float6
     addupd_var_in_inner_model(model, vi.value)
 
     cindex = length(model.var_constraints)+1
-    push!(model.var_constraints, (vi.value, :geq, gt.lower, typemax(Int64)))
-    return MOI.ConstraintIndex{SVF, MOI.GreaterThan{Float64}}(cindex)
+    push!(model.var_constraints, (vi.value, :geq, gt.lower, typemax(Int)))
+    return MOI.ConstraintIndex{SVF, MOI.GreaterThan{T}}(cindex)
 end
 
-function MOI.add_constraint(model::Optimizer, v::SVF, eq::MOI.EqualTo{Float64})
+function MOI.add_constraint(model::Optimizer, v::SVF, eq::MOI.EqualTo{T}) where T <: Real
     vi = v.variable
     check_inbounds(model, vi)
     isnan(eq.value) && @error "Invalid fixed value $(eq.value)."
@@ -214,5 +214,5 @@ function MOI.add_constraint(model::Optimizer, v::SVF, eq::MOI.EqualTo{Float64})
 
     cindex = length(model.var_constraints)+1
     push!(model.var_constraints, (vi.value, :eq, eq.value, eq.value))
-    return MOI.ConstraintIndex{SVF, MOI.EqualTo{Float64}}(cindex)
+    return MOI.ConstraintIndex{SVF, MOI.EqualTo{T}}(cindex)
 end

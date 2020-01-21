@@ -74,16 +74,6 @@ function solve_all(grids; benchmark=false, single_times=true)
     println("avg: ", tt/length(grids))
 end
 
-function solve_one(grid)
-    com = CS.ConstraintSolverModel()
-
-    CS.build_search_space!(com, grid,[1,2,3,4,5,6,7,8,9],0)
-    add_sudoku_constr!(com, grid)
-
-    status = solve!(com; backtrack=false);
-    return com
-end
-
 function main(; benchmark=false, single_times=true)
     solve_all(from_file("data/top95.txt"); benchmark=benchmark, single_times=single_times)
     # solve_all(from_file("hardest.txt"), "hardest")
