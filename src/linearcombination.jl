@@ -7,8 +7,7 @@ function Base.:-(x::Variable, y::Variable)
 end
 
 function Base.:-(x::LinearCombination)
-    lv = LinearCombination(x.indices, -x.coeffs)
-    return lv
+    return LinearCombination(x.indices, -x.coeffs)
 end
 
 function Base.:+(x::LinearCombination, y::Variable)
