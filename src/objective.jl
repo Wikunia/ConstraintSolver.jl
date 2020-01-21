@@ -29,6 +29,10 @@ function linear_combination_objective(com::CS.CoM, var_idx::Int, val::Int)
     objval = objective.constant
     if com.sense == MOI.MIN_SENSE
         for i=1:length(indices)
+            if indices[i] == var_idx
+                objval += coeffs[i]*val
+                continue
+            end
             if coeffs[i] >= 0
                 objval += coeffs[i]*com.search_space[indices[i]].min
             else
@@ -37,6 +41,10 @@ function linear_combination_objective(com::CS.CoM, var_idx::Int, val::Int)
         end
     else # MAX Sense
         for i=1:length(indices)
+            if indices[i] == var_idx
+                objval += coeffs[i]*val
+                continue
+            end
             if coeffs[i] >= 0
                 objval += coeffs[i]*com.search_space[indices[i]].max
             else
