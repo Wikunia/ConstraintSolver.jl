@@ -7,7 +7,7 @@ Linear constraints
 """
 MOI.supports_constraint(::Optimizer, ::Type{SAF{T}}, ::Type{MOI.EqualTo{T}}) where T <: Real = true
 # currently only a <= b is supported
-MOI.supports_constraint(::Optimizer, ::Type{SAF{T}}, ::Type{MOI.LessThan{T}}) where T <: Real= true
+MOI.supports_constraint(::Optimizer, ::Type{SAF{T}}, ::Type{MOI.LessThan{T}}) where T <: Real = true
 
 function check_inbounds(model::Optimizer, aff::SAF{T}) where T <: Real
 	for term in aff.terms
@@ -25,12 +25,9 @@ function MOI.add_constraint(model::Optimizer, func::SAF{T}, set::MOI.EqualTo{T})
     end
    
     indices = [v.variable_index.value for v in func.terms]
-    coeffs = [v.coefficient for v in func.terms]
-    fct = eq_sum
     operator = :(==)
-    rhs = set.value
     
-    lc = LinearConstraint(fct, operator, indices, coeffs, rhs)
+    lc = LinearConstraint(func, set, indices)
     lc.idx = length(model.inner.constraints)+1
 
     push!(model.inner.constraints, lc)
@@ -64,17 +61,24 @@ function MOI.add_constraint(model::Optimizer, func::SAF{T}, set::MOI.LessThan{T}
 
     com = model.inner
 
-    svc = SingleVariableConstraint()
-    svc.fct = less_than
     if reverse_order
-        svc.lhs = func.terms[2].variable_index.value
-        svc.rhs = func.terms[1].variable_index.value
+        lhs = func.terms[2].variable_index.value
+        rhs = func.terms[1].variable_index.value
     else
-        svc.lhs = func.terms[1].variable_index.value
-        svc.rhs = func.terms[2].variable_index.value
+        lhs = func.terms[1].variable_index.value
+        rhs = func.terms[2].variable_index.value
     end
-    svc.indices = [svc.lhs, svc.rhs]
-    svc.idx = length(model.inner.constraints)+1
+
+    svc = SingleVariableConstraint(
+        length(model.inner.constraints)+1, # idx
+        func,
+        set, 
+        [lhs, rhs],
+        Int[], # pvals
+        lhs,
+        rhs,
+        zero(UInt64) # will be filled later
+    )
 
     push!(model.inner.constraints, svc)
 
@@ -84,23 +88,28 @@ function MOI.add_constraint(model::Optimizer, func::SAF{T}, set::MOI.LessThan{T}
     return MOI.ConstraintIndex{SAF{T}, MOI.LessThan{T}}(length(model.inner.constraints))
 end
 
-
+MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{EqualSet}) = true
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{AllDifferentSet}) = true
 
-function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::AllDifferentSet)
+function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::Union{EqualSet, AllDifferentSet})
     com = model.inner
 
-    constraint = BasicConstraint()
-    constraint.fct = all_different
-    constraint.indices = Int[vi.value for vi in vars.variables]
-    constraint.idx = length(com.constraints)+1
+    constraint = BasicConstraint(
+        length(com.constraints)+1,
+        vars,
+        set,
+        Int[v.value for v in vars.variables],
+        Int[], # pvals will be filled later
+        zero(UInt64), # hash will be filled later
+    )
 
     push!(com.constraints, constraint)
     for (i,ind) in enumerate(constraint.indices)
         push!(com.subscription[ind], constraint.idx)
     end
 
-    return MOI.ConstraintIndex{MOI.VectorOfVariables, AllDifferentSet}(length(com.constraints))
+    T = typeof(set)
+    return MOI.ConstraintIndex{MOI.VectorOfVariables, T}(length(com.constraints))
 end
 
 MOI.supports_constraint(::Optimizer, ::Type{SAF{T}}, ::Type{NotEqualSet{T}}) where T <: Real = true
@@ -118,10 +127,14 @@ function MOI.add_constraint(model::Optimizer, aff::SAF{T}, set::NotEqualSet{T}) 
 
     com = model.inner
 
-    constraint = BasicConstraint()
-    constraint.fct = not_equal
-    constraint.indices = Int[vi.variable_index.value for vi in aff.terms]
-    constraint.idx = length(com.constraints)+1
+    constraint = BasicConstraint(
+        length(com.constraints)+1,
+        aff,
+        set,
+        Int[t.variable_index.value for t in aff.terms],
+        Int[], # pvals will be filled later
+        zero(UInt64), # hash will be filled later
+    )
 
     push!(com.constraints, constraint)
     for (i,ind) in enumerate(constraint.indices)

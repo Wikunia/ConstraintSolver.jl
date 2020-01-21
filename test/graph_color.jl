@@ -157,7 +157,7 @@ end
     @test CS.same_logs(logs_1[:tree], logs_2[:tree])
 end
 
-@testset "49 US states + DC without sorting" begin
+@testset "49 US states + DC without sorting + some states same color" begin
     m = Model(with_optimizer(CS.Optimizer, keep_logs=true, backtrack_sorting=false))
     num_colors = 8
     @variable(m, 1 <= max_color <= num_colors, Int)
@@ -275,6 +275,9 @@ end
     @constraint(m, south_carolina != georgia)
     @constraint(m, georgia != florida)
 
+    # test for EqualSet constraint
+    @constraint(m, [california, new_york, florida] in CS.EqualSet(3))
+
     @constraint(m, max_color .>= states)
 
     # test for constant in objective
@@ -290,6 +293,9 @@ end
     rm("graph_color_optimize.json")
 
     @test status == MOI.OPTIMAL
+    
+    @test all(v->v==JuMP.value(california), JuMP.value.([california, new_york, florida]))
+    # all values fixed
     @test com.best_sol ≈ 5.1
     @test all([length(CS.values(m, var)) == 1 for var in states])
     @test maximum([JuMP.value(var) for var in states]) == JuMP.value(max_color) == 4

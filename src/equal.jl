@@ -5,9 +5,14 @@ Create a BasicConstraint which will later be used by `equal(com, constraint)` \n
 Can be used i.e by `add_constraint!(com, CS.equal([x,y,z])`.
 """
 function equal(variables::Vector{Variable})
-    constraint = BasicConstraint()
-    constraint.fct = equal
-    constraint.indices = Int[v.idx for v in variables]
+    constraint = BasicConstraint(
+        0, # idx will be changed later
+        var_vector_to_moi(variables),
+        EqualSet(length(variables)),
+        Int[v.idx for v in variables],
+        Int[], # pvals will be filled later
+        zero(UInt64), # hash will be filled in the next step
+    )
     constraint.hash = constraint_hash(constraint)
     return constraint
 end
@@ -19,14 +24,20 @@ Create a BasicConstraint which will later be used by `equal(com, constraint)` \n
 Can be used i.e by `add_constraint!(com, x == y)`.
 """
 function Base.:(==)(x::Variable, y::Variable)
-    bc = BasicConstraint()
-    bc.fct = equal
-    bc.indices = Int[x.idx, y.idx]
+    variables = [x,y]
+    bc = BasicConstraint(
+        0, # idx will be changed later
+        var_vector_to_moi(variables),
+        EqualSet(2),
+        Int[x.idx, y.idx],
+        Int[], # pvals will be filled later
+        zero(UInt64), # hash will be filled in the next step
+    )
     bc.hash = constraint_hash(bc)
     return bc
 end
 
-function equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
+function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::EqualSet; logs = true)
     indices = constraint.indices
 
     search_space = com.search_space
@@ -83,11 +94,11 @@ function equal(com::CS.CoM, constraint::BasicConstraint; logs = true)
 end
 
 """
-    equal(com::CoM, constraint::Constraint, value::Int, index::Int)
+    still_feasible(com::CoM, constraint::Constraint, fct::MOI.VectorOfVariables, set::EqualSet, value::Int, index::Int)
 
 Return whether the constraint can be still fulfilled.
 """
-function equal(com::CoM, constraint::Constraint, value::Int, index::Int)
+function still_feasible(com::CoM, constraint::Constraint, fct::MOI.VectorOfVariables, set::EqualSet, value::Int, index::Int)
     indices = filter(i->i!=index, constraint.indices)
     return all(v->issetto(v,value) || !isfixed(v), com.search_space[indices])
 end

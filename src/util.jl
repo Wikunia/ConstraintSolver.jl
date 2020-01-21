@@ -33,3 +33,23 @@ function get_safe_lower_threshold(com::CS.CoM, val, divider)
     end
     return threshold
 end
+
+"""
+    var_vector_to_moi(vars::Vector{Variable})
+
+Convert a vector of variables to MOI.VectorOfVariables
+"""
+function var_vector_to_moi(vars::Vector{Variable})
+    return MOI.VectorOfVariables([MOI.VariableIndex(v.idx) for v in vars])
+end
+
+"""
+    linear_combination_to_saf(lc::LinearCombination)
+
+Convert a LinearCombination to a ScalarAffineFunction and return the SAF + the used type
+"""
+function linear_combination_to_saf(lc::LinearCombination)
+    T = eltype(lc.coeffs)
+    sat = [MOI.ScalarAffineTerm{T}(lc.coeffs[i],MOI.VariableIndex(lc.indices[i])) for i=1:length(lc.indices)]
+    return SAF{T}(sat, zero(T)), T
+end

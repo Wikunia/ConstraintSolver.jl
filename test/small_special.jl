@@ -74,8 +74,8 @@ end
     c1 = 2x+3x == 5
     @test length(c1.indices) == 1
     @test c1.indices[1] == 1
-    @test c1.coeffs[1] == 5
-    @test c1.rhs == 5
+    @test c1.fct.terms[1].coefficient == 5
+    @test c1.set.value == 5
     
     CS.add_constraint!(com, 2x+3x == 5)
     CS.add_constraint!(com, 2x-3y+6+x == z)

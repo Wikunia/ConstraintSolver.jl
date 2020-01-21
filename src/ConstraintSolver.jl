@@ -57,26 +57,30 @@ struct NoObjective <: ObjectiveFunction end
 
 mutable struct BasicConstraint <: Constraint
     idx                 :: Int
-    fct                 :: Function
+    fct                 :: Union{MOI.AbstractScalarFunction, MOI.AbstractVectorFunction}
+    set                 :: Union{MOI.AbstractScalarSet, MOI.AbstractVectorSet}
     indices             :: Vector{Int}
     pvals               :: Vector{Int}
     hash                :: UInt64
-    BasicConstraint() = new()
 end
 
 # support for a <= b constraint
 mutable struct SingleVariableConstraint <: Constraint
     idx                 :: Int
-    fct                 :: Function
+    fct                 :: MOI.AbstractScalarFunction
+    set                 :: MOI.AbstractScalarSet
     indices             :: Vector{Int}
     pvals               :: Vector{Int}
     lhs                 :: Int
     rhs                 :: Int
     hash                :: UInt64
-    SingleVariableConstraint() = new()
 end
 
 struct AllDifferentSet <: MOI.AbstractVectorSet
+    dimension :: Int
+end
+
+struct EqualSet <: MOI.AbstractVectorSet
     dimension :: Int
 end
 
@@ -91,12 +95,10 @@ end
 
 mutable struct LinearConstraint{T <: Real} <: Constraint
     idx                 :: Int
-    fct                 :: Function
+    fct                 :: MOI.ScalarAffineFunction
+    set                 :: MOI.AbstractScalarSet
     indices             :: Vector{Int}
     pvals               :: Vector{Int}
-    coeffs              :: Vector{T}
-    operator            :: Symbol
-    rhs                 :: T
     in_all_different    :: Bool
     mins                :: Vector{T}
     maxs                :: Vector{T}
@@ -112,8 +114,15 @@ mutable struct LinearCombinationObjective{T <: Real} <: ObjectiveFunction
     indices  :: Vector{Int} # must exist to update the objective only if one of these changed
 end
 
-function LinearConstraint(fct::Function, operator::Symbol, indices::Vector{Int}, coeffs::Vector{T}, rhs::Real) where T <: Real
+function LinearConstraint(fct::MOI.ScalarAffineFunction, set::MOI.AbstractScalarSet, indices::Vector{Int})
     # get common type for rhs and coeffs
+    # use the first value (can be .upper, .lower, .value) and subtract left constant
+    rhs = -fct.constant 
+    if isa(set, MOI.EqualTo)
+        rhs += set.value
+    end
+    # TODO: for LessThan/GreaterThan
+    coeffs = [t.coefficient for t in fct.terms]
     promote_T = promote_type(typeof(rhs), eltype(coeffs))
     if promote_T != eltype(coeffs)
         coeffs = convert.(promote_T, coeffs)
@@ -132,11 +141,9 @@ function LinearConstraint(fct::Function, operator::Symbol, indices::Vector{Int},
     lc = LinearConstraint(
         0, # idx will be filled later
         fct,
+        set,
         indices,
         pvals, 
-        coeffs,
-        operator,
-        rhs,
         in_all_different,
         mins,
         maxs,
@@ -265,7 +272,7 @@ function fulfills_constraints(com::CS.CoM, index, value)
     feasible = true
     for ci in com.subscription[index]
         constraint = com.constraints[ci]
-        feasible = constraint.fct(com, constraint, value, index)
+        feasible = still_feasible(com, constraint, constraint.fct, constraint.set, value, index)
         if !feasible
             break
         end
@@ -476,7 +483,7 @@ function prune!(com::CS.CoM; pre_backtrack=false, all=false, only_once=false, in
         constraint_idxs_vec[ci] = N
         constraint = com.constraints[ci]
 
-        feasible = constraint.fct(com, constraint; logs = false)
+        feasible = prune_constraint!(com, constraint, constraint.fct, constraint.set; logs = false)
         if !pre_backtrack
             com.info.in_backtrack_calls += 1
         else
@@ -651,15 +658,11 @@ function update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraint
             end
         end
         if relevant
-            feasible = constraint.fct(com, constraint; logs = false)
+            feasible = prune_constraint!(com, constraint, constraint.fct, constraint.set; logs = false)
             if !feasible
                 return false, false
             end
         end
-    end
-    if !feasible
-        com.info.backtrack_reverses += 1
-        return false, false
     end
 
     # check best_bound again
@@ -830,13 +833,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
         # check if this value is still possible
         constraints = com.constraints[com.subscription[ind]]
-        feasible = true
-        for constraint in constraints
-            feasible = constraint.fct(com, constraint, pval, ind)
-            if !feasible
-                break
-            end
-        end
+        feasible = fulfills_constraints(com, ind, pval)
         if !feasible
             continue
         end
@@ -953,18 +950,18 @@ function simplify!(com)
     # (all different where every value is used)
     b_all_different = false
     b_all_different_sum = false
-    b_sum = false
+    b_eq_sum = false
     for constraint in com.constraints
-        if nameof(constraint.fct) == :all_different
+        if isa(constraint.set, AllDifferentSet)
             b_all_different = true
             if length(constraint.indices) == length(constraint.pvals)
                 b_all_different_sum = true
             end
-        elseif nameof(constraint.fct) == :eq_sum
-            b_sum = true
+        elseif isa(constraint.fct, SAF) && isa(constraint.set, MOI.EqualTo)
+            b_eq_sum = true
         end
     end
-    if b_all_different_sum && b_sum
+    if b_all_different_sum && b_eq_sum
         # for each all_different constraint
         # which can be formulated as a sum constraint
         # check which sum constraints are completely inside all different
@@ -974,7 +971,7 @@ function simplify!(com)
         for constraint_idx in 1:length(com.constraints)
             constraint = com.constraints[constraint_idx]
 
-            if nameof(constraint.fct) == :all_different
+            if isa(constraint.set, AllDifferentSet)
                 add_sum_constraint = true
                 if length(constraint.indices) == length(constraint.pvals)
                     all_diff_sum = sum(constraint.pvals)
@@ -991,22 +988,24 @@ function simplify!(com)
                             end
                             sub_constraint = com.constraints[sub_constraint_idx]
                             # it must be an equal constraint and all coefficients must be 1 otherwise we can't add a constraint
-                            if nameof(sub_constraint.fct) == :eq_sum && all(c->c==1, sub_constraint.coeffs)
-                                found_sum_constraint = true
-                                total_sum += sub_constraint.rhs
-                                all_inside = true
-                                for sub_variable_idx in sub_constraint.indices
-                                    if !haskey(cons_indices_dict, sub_variable_idx)
-                                        all_inside = false
-                                        push!(outside_indices, sub_variable_idx)
-                                    else
-                                        delete!(cons_indices_dict, sub_variable_idx)
+                            if isa(sub_constraint.fct, SAF) && isa(sub_constraint.set, MOI.EqualTo)
+                                if all(t.coefficient == 1 for t in sub_constraint.fct.terms)
+                                    found_sum_constraint = true
+                                    total_sum += sub_constraint.set.value-sub_constraint.fct.constant
+                                    all_inside = true
+                                    for sub_variable_idx in sub_constraint.indices
+                                        if !haskey(cons_indices_dict, sub_variable_idx)
+                                            all_inside = false
+                                            push!(outside_indices, sub_variable_idx)
+                                        else
+                                            delete!(cons_indices_dict, sub_variable_idx)
+                                        end
                                     end
+                                    if all_inside
+                                        in_sum += sub_constraint.set.value-sub_constraint.fct.constant
+                                    end
+                                    break
                                 end
-                                if all_inside
-                                    in_sum += sub_constraint.rhs
-                                end
-                                break
                             end
                         end
                         if !found_sum_constraint
@@ -1038,7 +1037,7 @@ function set_in_all_different!(com::CS.CoM)
                 intersects = intersect(subscriptions_idxs...)
 
                 for i in intersects
-                    if nameof(com.constraints[i].fct) == :all_different
+                    if isa(com.constraints[i].set, AllDifferentSet)
                         constraint.in_all_different = true
                         break
                     end

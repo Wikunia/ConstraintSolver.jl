@@ -36,7 +36,7 @@ function solve_all(filenames; benchmark=false, single_times=true)
         for s in sums
             saf = MOI.ScalarAffineFunction{Float64}([MOI.ScalarAffineTerm(1.0, x[ind[1]][ind[2]][1]) for ind in s.indices], 0.0)
             MOI.add_constraint(m, saf, MOI.EqualTo(convert(Float64,s.result)))
-            # @constraint(m, [x[ind...] for ind in s.indices] in CS.AllDifferentSet(length(s.indices)))
+            # MOI.add_constraint(m, [x[ind[1]][ind[2]][1] for ind in s.indices], CS.AllDifferentSet(length(s.indices)))
         end
 
         # sudoku constraints

@@ -7,22 +7,27 @@ Create a BasicConstraint which will later be used by `all_different(com, constra
 Can be used i.e by `add_constraint!(com, CS.all_different(variables))`.
 """
 function all_different(variables::Vector{Variable})
-    constraint = BasicConstraint()
-    constraint.fct = all_different
-    constraint.indices = Int[v.idx for v in variables]
+    constraint = BasicConstraint(
+        0, # idx will be changed later
+        var_vector_to_moi(variables),
+        AllDifferentSet(length(variables)),
+        Int[v.idx for v in variables],
+        Int[], # pvals will be filled later
+        zero(UInt64), # hash will be filled in the next step
+    )
     constraint.hash = constraint_hash(constraint)
     return constraint
 end
 
 
 """
-    all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
+    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet; logs = true)
 
 Tries to reduce the search space by the all_different constraint.
 Fixes values and then sets com.changed to true for the corresponding index.
 Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set
 """
-function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
+function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet; logs = true)
     indices = constraint.indices
     pvals = constraint.pvals
     nindices = length(indices)
@@ -225,11 +230,11 @@ function all_different(com::CS.CoM, constraint::BasicConstraint; logs = true)
 end
 
 """
-    all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
+    still_feasible(com::CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet, value::Int, index::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
 """
-function all_different(com::CoM, constraint::Constraint, value::Int, index::Int)
+function still_feasible(com::CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet, value::Int, index::Int)
     indices = constraint.indices
     for i=1:length(indices)
         if indices[i] == index
