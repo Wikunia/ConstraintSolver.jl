@@ -115,17 +115,27 @@ end
 MOI.supports_constraint(::Optimizer, ::Type{SAF{T}}, ::Type{NotEqualSet{T}}) where T <: Real = true
 
 function MOI.add_constraint(model::Optimizer, aff::SAF{T}, set::NotEqualSet{T}) where T <: Real 
-    if set.value != 0.0
+    if set.value != 0.0 && length(aff.terms) != 1
         error("Only constraints of the type `a != b` are supported but not `a != b-2`")
     end
-    if length(aff.terms) != 2
+    if length(aff.terms) > 2
         error("Only constraints of the type `a != b` are supported but not `[a,b,...] in NotEqualSet` => only two variables. Otherwise use an AllDifferentSet constraint.")
     end
-    if aff.terms[1].coefficient != 1.0 || aff.terms[2].coefficient != -1.0
+    if length(aff.terms) == 2 && (aff.terms[1].coefficient != 1.0 || aff.terms[2].coefficient != -1.0)
         error("Only constraints of the type `a != b` are supported but not `2a != b`. You used coefficients: $(aff.terms[1].coefficient) and $(aff.terms[2].coefficient) instead of `1.0` and `-1.0`")
     end
-
     com = model.inner
+
+    # support for cx != a where a and c are constants
+    if length(aff.terms) == 1
+        # reformulate to x != a where x is variable and a a constant
+        rhs = set.value/aff.terms[1].coefficient
+        if isapprox_discrete(com, rhs)
+            rhs = get_approx_discrete(rhs)
+            rm!(com, com.search_space[aff.terms[1].variable_index.value], rhs; changes = false)
+        end
+        return MOI.ConstraintIndex{SAF{T}, NotEqualSet{T}}(0)
+    end
 
     constraint = BasicConstraint(
         length(com.constraints)+1,
