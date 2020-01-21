@@ -16,19 +16,27 @@ function Base.:(<=)(x::LinearCombination, y::Real)
 end
 
 function Base.:(<=)(x::Real, y::LinearCombination)
-    indices = y.indices
-    coeffs = -y.coeffs
-    return LinearCombination(indices, coeffs) <= -x
+    return -y <= -x
 end
 
 """
-    Base.:(==)(x::LinearCombination, y::Variable)
+    Base.:(<=)(x::LinearCombination, y::Variable)
 
 Create a linear constraint with `LinearCombination` and a variable rhs `y`. \n
 Can be used i.e by `add_constraint!(com, x+y <= z)`.
 """
 function Base.:(<=)(x::LinearCombination, y::Variable)
     return x - LinearCombination([y.idx], [1]) <= 0
+end
+
+"""
+    Base.:(<=)(x::Variable, y::LinearCombination)
+
+Create a linear constraint with a variable `x` and a `LinearCombination` rhs `y`. \n
+Can be used i.e by `add_constraint!(com, x <= y+z)`.
+"""
+function Base.:(<=)(x::Variable, y::LinearCombination)
+    return LinearCombination([x.idx], [1]) - y <= 0
 end
 
 """

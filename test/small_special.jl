@@ -608,10 +608,15 @@ end
     x = [CS.add_var!(com, 1, 9) for i = 1:5]
     CS.add_constraint!(com, sum(x) <= 25)
     CS.add_constraint!(com, sum(x) >= 20)
+    CS.add_constraint!(com, x[1]+x[2] >= x[3])
+    CS.add_constraint!(com, x[1]+x[2] >= x[4]+x[5])
     status = CS.solve!(com, CS.SolverOptions())
 
     @test status == :Solved
     @test 20 <= sum(CS.value.(x)) <= 25
+    x_vals = CS.value.(x)
+    @test x_vals[1]+x_vals[2] >= x_vals[3]
+    @test x_vals[1]+x_vals[2] >= x_vals[4]+x_vals[5]
 end
 
 @testset "Not supported constraints" begin

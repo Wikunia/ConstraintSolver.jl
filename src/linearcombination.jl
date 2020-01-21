@@ -6,6 +6,11 @@ function Base.:-(x::Variable, y::Variable)
     return LinearCombination([x.idx,y.idx],[1,-1])
 end
 
+function Base.:-(x::LinearCombination)
+    lv = LinearCombination(x.indices, -x.coeffs)
+    return lv
+end
+
 function Base.:+(x::LinearCombination, y::Variable)
     lv = LinearCombination(x.indices, x.coeffs)
     push!(lv.indices, y.idx)
