@@ -117,7 +117,7 @@ end
 function LinearConstraint(fct::MOI.ScalarAffineFunction, set::MOI.AbstractScalarSet, indices::Vector{Int})
     # get common type for rhs and coeffs
     # use the first value (can be .upper, .lower, .value) and subtract left constant
-    rhs = -fct.constant 
+    rhs = -fct.constant
     if isa(set, MOI.EqualTo)
         rhs += set.value
     end
@@ -143,7 +143,7 @@ function LinearConstraint(fct::MOI.ScalarAffineFunction, set::MOI.AbstractScalar
         fct,
         set,
         indices,
-        pvals, 
+        pvals,
         in_all_different,
         mins,
         maxs,
@@ -162,6 +162,18 @@ mutable struct BacktrackObj{T <: Real}
     variable_idx        :: Int
     pval                :: Int
     best_bound          :: T
+end
+
+function Base.convert(::Type{B}, obj::BacktrackObj{T2}) where {T1, T2, B <: BacktrackObj{T1}}
+    return BacktrackObj{T1}(
+        obj.idx,
+        obj.parent_idx,
+        obj.depth,
+        obj.status,
+        obj.variable_idx,
+        obj.pval,
+        convert(T1, obj.best_bound)
+    )
 end
 
 mutable struct TreeLogNode{T <: Real}
@@ -216,7 +228,7 @@ include("not_equal.jl")
 
 Create the constraint model object and specify the type of the solution
 """
-function ConstraintSolverModel(T::DataType=Float64)
+function ConstraintSolverModel(::Type{T}=Float64) where {T}
     ConstraintSolverModel(
         Vector{Variable}(), # init_search_space
         Vector{Variable}(), # search_space
@@ -676,7 +688,7 @@ function update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraint
     if backtrack_obj.best_bound == com.best_bound
         backtrack_obj.best_bound = new_bb
         update_best_bound!(com)
-    else 
+    else
         backtrack_obj.best_bound = new_bb
     end
     return true, further_pruning
@@ -689,7 +701,7 @@ function update_best_bound!(com::CS.CoM)
     elseif com.sense == MOI.MAX_SENSE
         min_val = typemin(com.best_bound)
         com.best_bound = maximum([bo.status == :Open ? bo.best_bound : min_val for bo in com.backtrack_vec])
-    end # otherwise no update is needed 
+    end # otherwise no update is needed
 end
 
 function set_state_to_best_sol!(com::CS.CoM, last_backtrack_id::Int)
@@ -738,7 +750,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             1,
             1,
             :Open,
-            ind, 
+            ind,
             pval,
             get_best_bound(com; var_idx=ind, val=pval)
         )
@@ -854,7 +866,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         if further_pruning
             # prune completely start with all that changed by the fix or by updating best bound
             feasible = prune!(com)
-        
+
             if !feasible
                 com.info.backtrack_reverses += 1
                 continue
@@ -895,15 +907,15 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         if com.input[:logs]
             com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr)
         end
-        
+
         pvals = reverse!(values(com.search_space[ind]))
         last_backtrack_obj = backtrack_vec[last_backtrack_id]
         for pval in pvals
             num_backtrack_objs += 1
             backtrack_obj = BacktrackObj(
                 num_backtrack_objs, # idx
-                last_backtrack_obj.idx, # parent    
-                last_backtrack_obj.depth + 1, 
+                last_backtrack_obj.idx, # parent
+                last_backtrack_obj.depth + 1,
                 :Open,
                 ind,
                 pval,
