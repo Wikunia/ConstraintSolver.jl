@@ -6,6 +6,8 @@ import MathOptInterface
 const MOI = MathOptInterface
 
 import ForwardDiff
+using JuMP
+using LinearAlgebra: dot
 
 @testset "Weighted stable set" begin
     matrix = [
@@ -29,10 +31,8 @@ import ForwardDiff
                 ], 0.0
             )
             MOI.add_constraint(model, f, MOI.EqualTo(1.0))
-            # ConstraintSolver.add_constraint!(model, x[i] + x[j] <= 1)
         end
     end
-    # sum(w[i] * x[i] for i in V) - stable_set == 0
     weights = [0.2, 0.1, 0.2, 0.1]
     terms = [MOI.ScalarAffineTerm(weights[i], x[i][1]) for i in eachindex(x)]
     objective = MOI.ScalarAffineFunction(terms, 0.0)
@@ -42,6 +42,32 @@ import ForwardDiff
     @test MOI.get(model, MOI.VariablePrimal(), x[4][1]) == 1
     @test MOI.get(model, MOI.VariablePrimal(), x[1][1]) == 1
     @test MOI.get(model, MOI.ObjectiveValue()) ≈ 0.3
+end
+
+@testset "Weighted stable set JuMP" begin
+    matrix = [
+        0 1 1 0
+        1 0 1 0
+        1 1 0 1
+        0 0 1 0
+    ]
+    m = Model(with_optimizer(CS.Optimizer))
+    x = @variable(m, x[1:4], Bin)
+    for i in 1:4, j in i+1:4
+        if matrix[i,j] == 1
+            zcomp = @variable(m)
+            JuMP.set_binary(zcomp)
+            @constraint(m, x[i] + x[j] + zcomp == 1)
+        end
+    end
+    w = [0.2, 0.1, 0.2, 0.1]
+    @objective(m, Max, dot(w, x))
+    optimize!(m)
+    @test JuMP.value(x[4]) ≈ 1
+    @test JuMP.value(x[1]) ≈ 1
+    @test JuMP.value(x[2]) ≈ 0
+    @test JuMP.value(x[3]) ≈ 0
+    @test JuMP.objective_value(m) ≈ 0.3
 end
 
 
@@ -89,7 +115,7 @@ end
     weights = [0.2, 0.1, 0.2, 0.1]
     # ∇w = Zygote.gradient(weighted_stable_set, weights)
     ∇w = ForwardDiff.gradient(weighted_stable_set, weights)
-    @test ∇w[1] > 0
-    @test ∇w[4] > 0
+    @test ∇w[1] ≈ 1
+    @test ∇w[4] ≈ 1
     @test ∇w[2] ≈ ∇w[3] ≈ 0
 end
