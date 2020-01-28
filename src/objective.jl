@@ -51,5 +51,25 @@ function get_best_bound(com::CS.CoM, obj_fct::LinearCombinationObjective, var_id
             end
         end
     end
+
+    # check each constraint which has `check_in_best_bound = true` for a better bound
+    # if all variables are fixed we don't have to compute several bounds
+    if all(v->isfixed(v), com.search_space)
+        return objval
+    end
+    # println("objval: $objval")
+    for constraint in com.constraints
+        if constraint.check_in_best_bound
+            constrained_bound = get_constrained_best_bound(com, constraint, constraint.fct, constraint.set, com.objective, var_idx, val)
+            # println("constrained_bound: $constrained_bound")
+            if com.sense == MOI.MIN_SENSE && constrained_bound > objval
+                objval = constrained_bound
+            elseif com.sense == MOI.MAX_SENSE && constrained_bound < objval
+                objval = constrained_bound
+            end
+        end
+    end
+    # println("=========================")
+    # err
     return objval
 end

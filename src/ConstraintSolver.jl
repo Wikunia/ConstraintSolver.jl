@@ -911,6 +911,12 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr)
         end
 
+        leafs_best_bound = get_best_bound(com)
+        # if the objective can't get better we don't have to test all options
+        if leafs_best_bound*obj_factor >= com.best_sol && length(com.solutions) > 0
+            continue
+        end
+
         pvals = reverse!(values(com.search_space[ind]))
         last_backtrack_obj = backtrack_vec[last_backtrack_id]
         for pval in pvals
