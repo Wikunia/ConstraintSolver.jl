@@ -550,10 +550,12 @@ end
     optimize!(m)
 
     @test JuMP.termination_status(m) == MOI.OPTIMAL
-    @test 1 <= JuMP.value(x) <= 9
+    @test 1 <= JuMP.value(x) <= 9 && length(CS.values(m, x)) == 1
     @test JuMP.value(y) == 2
 
-    # adding a constraint should be no problem
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x <= 9, Int)
+    @variable(m, y == 2, Int)
     @constraint(m, x+y == 10)
     optimize!(m)
     
@@ -614,6 +616,23 @@ end
     match = CS.bipartite_cardinality_matching([2,1,3],[1,2,3], 3, 3)
     @test match.weight == 3
     @test match.match == [2,1,3]
+end
+
+@testset "Not equal constant" begin
+    m = Model(with_optimizer(CS.Optimizer))
+
+    @variable(m, 1 <= x <= 10, Int)
+    @constraint(m, x != 2-1) # != 1
+    @constraint(m, 2x != 4) # != 2
+    @constraint(m, π/3*x != π) # != 3
+    @constraint(m, 2.2x != 8.8) # != 4
+    @objective(m, Min, x)
+    optimize!(m)
+
+    @test JuMP.objective_value(m) == 5
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.value(x) == 5
+    @test length(CS.values(m,x)) == 1 # the value should be fixed
 end
 
 end

@@ -1065,11 +1065,6 @@ end
 Solve the constraint model based on the given settings.
 """
 function solve!(com::CS.CoM, options::SolverOptions)
-    # no constraints => Solved
-    if length(com.constraints) == 0
-        return :Solved
-    end
-
     com.options = options
     backtrack = options.backtrack
     max_bt_steps = options.max_bt_steps
@@ -1092,7 +1087,6 @@ function solve!(com::CS.CoM, options::SolverOptions)
     if !feasible
         return :Infeasible
     end
-
     if all(v->isfixed(v), com.search_space)
         com.best_bound = get_best_bound(com)
         com.best_sol = com.best_bound
