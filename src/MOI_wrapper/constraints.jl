@@ -65,6 +65,7 @@ function add_variable_less_than_variable_constraint(model::Optimizer, func::SAF{
         Int[], # pvals
         lhs,
         rhs,
+        false, # `check_in_best_bound` can be changed later but should be set to false by default
         zero(UInt64) # will be filled later
     )
 
@@ -112,6 +113,7 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
         set,
         Int[v.value for v in vars.variables],
         Int[], # pvals will be filled later
+        false, # `check_in_best_bound` can be changed later but should be set to false by default
         zero(UInt64), # hash will be filled later
     )
 
@@ -155,6 +157,7 @@ function MOI.add_constraint(model::Optimizer, aff::SAF{T}, set::NotEqualSet{T}) 
         set,
         Int[t.variable_index.value for t in aff.terms],
         Int[], # pvals will be filled later
+        false, # `check_in_best_bound` can be changed later but should be set to false by default
         zero(UInt64), # hash will be filled later
     )
 
@@ -178,6 +181,16 @@ function set_constraint_hashes!(model::CS.Optimizer)
     for ci=1:length(com.constraints)
         com.constraints[ci].hash = constraint_hash(com.constraints[ci])
     end
+end
+
+"""
+    set_check_in_best_bound!(model::CS.Optimizer)
+
+Sets `check_in_best_bound` in each constraint if we have an objective function and:
+- the constraint type has a function `get_constrained_best_bound`
+"""
+function set_check_in_best_bound!(model::CS.Optimizer)
+   # 
 end
 
 ### !=

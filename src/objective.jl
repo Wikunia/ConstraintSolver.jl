@@ -1,16 +1,16 @@
 
 """
-    single_variable_objective(com::CS.CoM, var_idx::Int, val::Int)
+    get_best_bound(com::CS.CoM, obj_fct::SingleVariableObjective, var_idx::Int, val::Int)
 
-Return the best objective if `var_idx` is set to `val`
+Return the best objective if `var_idx` is set to `val` and we have a SingleVariableObjective
 """
-function single_variable_objective(com::CS.CoM, var_idx::Int, val::Int)
+function get_best_bound(com::CS.CoM, obj_fct::SingleVariableObjective, var_idx::Int, val::Int)
     returnType = typeof(com.best_bound)
-    if com.objective.index != var_idx
+    if obj_fct.index != var_idx
         if com.sense == MOI.MIN_SENSE
-            return convert(returnType, com.search_space[com.objective.index].min)
+            return convert(returnType, com.search_space[obj_fct.index].min)
         else # MAX
-            return convert(returnType, com.search_space[com.objective.index].max)
+            return convert(returnType, com.search_space[obj_fct.index].max)
         end
     else
         return convert(returnType, val)
@@ -18,15 +18,14 @@ function single_variable_objective(com::CS.CoM, var_idx::Int, val::Int)
 end
 
 """
-    linear_combination_objective(com::CS.CoM, var_idx::Int, val::Int)
+    get_best_bound(com::CS.CoM, obj_fct::LinearCombinationObjective, var_idx::Int, val::Int)
 
-Return the best objective if `var_idx` is set to `val`
+Return the best objective if `var_idx` is set to `val` and we have a linear function as our objective
 """
-function linear_combination_objective(com::CS.CoM, var_idx::Int, val::Int)
-    objective = com.objective
-    indices = objective.lc.indices
-    coeffs = objective.lc.coeffs
-    objval = objective.constant
+function get_best_bound(com::CS.CoM, obj_fct::LinearCombinationObjective, var_idx::Int, val::Int)
+    indices = obj_fct.lc.indices
+    coeffs = obj_fct.lc.coeffs
+    objval = obj_fct.constant
     if com.sense == MOI.MIN_SENSE
         for i=1:length(indices)
             if indices[i] == var_idx
