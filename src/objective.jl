@@ -52,5 +52,5 @@ function linear_combination_objective(com::CS.CoM, var_idx::Int, val::Int)
             end
         end
     end
-    return convert(typeof(com.best_bound), objval)
+    return objval
 end

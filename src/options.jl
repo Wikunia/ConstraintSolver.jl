@@ -5,7 +5,7 @@ mutable struct SolverOptions
     keep_logs           :: Bool
     rtol                :: Float64
     atol                :: Float64
-    solution_type       :: DataType
+    solution_type       :: Type
 end
 
 function SolverOptions()
