@@ -228,7 +228,7 @@ include("not_equal.jl")
 
 Create the constraint model object and specify the type of the solution
 """
-function ConstraintSolverModel(::Type{T}=Float64) where {T}
+function ConstraintSolverModel(::Type{T}=Float64) where {T <: Real}
     ConstraintSolverModel(
         Vector{Variable}(), # init_search_space
         Vector{Variable}(), # search_space
