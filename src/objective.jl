@@ -5,15 +5,14 @@
 Return the best objective if `var_idx` is set to `val` and we have a SingleVariableObjective
 """
 function get_best_bound(com::CS.CoM, obj_fct::SingleVariableObjective, var_idx::Int, val::Int)
-    returnType = typeof(com.best_bound)
     if obj_fct.index != var_idx
         if com.sense == MOI.MIN_SENSE
-            return convert(returnType, com.search_space[obj_fct.index].min)
+            return com.search_space[obj_fct.index].min
         else # MAX
-            return convert(returnType, com.search_space[obj_fct.index].max)
+            return com.search_space[obj_fct.index].max
         end
     else
-        return convert(returnType, val)
+        return val
     end
 end
 
@@ -68,5 +67,6 @@ function get_best_bound(com::CS.CoM, obj_fct::LinearCombinationObjective, var_id
             end
         end
     end
+
     return objval
 end

@@ -116,34 +116,17 @@ end
 Using the greedy knapsack method for obtaining a best bound given this constraint. 
 Returns the best bound
 """
-function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, con_fct::SAF{T}, set::MOI.LessThan{T}, obj_fct::LinearCombinationObjective, var_idx::Int, val::Int; log=false)  where T <: Real
+function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, con_fct::SAF{T}, set::MOI.LessThan{T}, obj_fct::LinearCombinationObjective, var_idx::Int, val::Int)  where T <: Real
     capacity = set.upper
     costs = [t.coefficient for t in con_fct.terms]
-    
-    # only check if it is a <= constraint with at least one positive coefficient
-    if capacity < 0 && all(c->c < 0, costs) && com.sense == MOI.MAX_SENSE
-        return typemax(T)
-    end
-    # or return the minimum if the opposite happens in the minimize case
-    if capacity > 0 && all(c->c > 0, costs) && com.sense == MOI.MIN_SENSE
-        return typemin(T)
-    end
-    
+      
     gains = obj_fct.lc.coeffs
     cost_indices = [t.variable_index.value for t in con_fct.terms]
     gain_indices = obj_fct.lc.indices
 
     ad = get_idx_array_diff(cost_indices, gain_indices)
-
+   
     relevant_costs = costs[ad.same_left_idx]
-
-    # only check if it is a <= constraint with positive coefficients for the relevant costs
-    if capacity < 0 && all(c->c < 0, relevant_costs) && com.sense == MOI.MAX_SENSE
-        return typemax(T)
-    end
-    if capacity > 0 && all(c->c > 0, relevant_costs) && com.sense == MOI.MIN_SENSE
-        return typemin(T)
-    end
 
     # best bound starts with constant term
     best_bound = obj_fct.constant
@@ -174,7 +157,7 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
         # trying to minimize the costs to have a lot of capacity left
         for ci in ad.only_left_idx
             if cost_indices[ci] == var_idx
-                threshold -= anti_costs[ci]*val
+                capacity -= costs[ci]*val
                 continue
             end
             if costs[ci] >= 0
@@ -184,7 +167,6 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             end
         end
     end
-
 
     # 2) Optimize packing where the index is both in the cost function as well as in the objective
     if com.sense == MOI.MIN_SENSE
@@ -206,9 +188,17 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             anti_cost = anti_costs_ordered[i]
             gain = gains_ordered[i]
             v_idx = vars_ordered[i]
+            # we could have added less in 1) => don't compute worse best_bound than possible
+            if anti_cost < 0 && length(ad.only_left_idx) > 0
+                continue
+            end
+            # don't compute wrong threshold/anti_cost
+            if anti_cost < 0 && threshold < 0
+                continue
+            end
             if v_idx == var_idx
                 amount = val
-            elseif  gain < 0 && anti_cost > 0
+            elseif gain < 0 && anti_cost > 0
                 if gain >= 0
                     amount = com.search_space[v_idx].min
                 else 
@@ -232,6 +222,10 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
         for i=1:length(ad.same_left_idx)
             cost = costs_ordered[i]
             gain = gains_ordered[i]
+            # we could have added more in 1) => don't compute worse best_bound than possible
+            if gain < 0 && length(ad.only_left_idx) > 0
+                continue
+            end
             v_idx = vars_ordered[i]
             if v_idx == var_idx
                 amount = val
