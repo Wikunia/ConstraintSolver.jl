@@ -66,4 +66,23 @@
     @test !CS.same_logs(l1,l2) 
 end
 
+@testset "get_idx_array_diff" begin
+    ad = CS.get_idx_array_diff([3,5,7], [7,5,2,9])
+    @test ad.only_left_idx == [1]
+    @test ad.same_left_idx == [2,3]
+    @test ad.same_right_idx == [2,1]
+    @test ad.only_right_idx == [3,4]
+
+    ad = CS.get_idx_array_diff([1,2,3,4], [5,4,6])
+    @test ad.only_left_idx == [1,2,3]
+    @test ad.same_left_idx == [4]
+    @test ad.same_right_idx == [2]
+    @test ad.only_right_idx == [1,3]
+
+    ad = CS.get_idx_array_diff([5,10,6], [17,20,13,10])
+    @test ad.only_left_idx == [1,3]
+    @test ad.same_left_idx == [2]
+    @test ad.same_right_idx == [4]
+    @test ad.only_right_idx == [3,1,2]
+end
 end

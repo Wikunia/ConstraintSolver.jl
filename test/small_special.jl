@@ -623,7 +623,7 @@ end
     @test x_vals[1]+x_vals[2] >= x_vals[4]+x_vals[5]
 end
 
-@testset "Knapsack problem" begin
+@testset "Knapsack problems" begin
     m = Model(with_optimizer(CS.Optimizer))
 
     @variable(m, 1 <= x[1:5] <= 9, Int)
@@ -642,6 +642,46 @@ end
     @test x_vals[4] ≈ 9
     @test x_vals[5] ≈ 9
     @test JuMP.objective_value(m) ≈ 80.4
+
+    # minimize
+    m = Model(with_optimizer(CS.Optimizer))
+
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) >= 25)
+    @constraint(m, x[2]+1.2*x[4] >= 12)
+    weights = [1.2, 3.0, 0.3, 5.2, 2.7]
+    @objective(m, Min, dot(weights, x))
+
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    x_vals = JuMP.value.(x)
+    @test x_vals[1] ≈ 3
+    @test x_vals[2] ≈ 9
+    @test x_vals[3] ≈ 9
+    @test x_vals[4] ≈ 3
+    @test x_vals[5] ≈ 1
+    @test JuMP.objective_value(m) ≈ 51.6
+
+    # minimize only part of the weights and some are negative
+    m = Model(with_optimizer(CS.Optimizer))
+
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) >= 25)
+    @constraint(m, x[2]+1.2*x[4]-x[1] >= 12)
+    @constraint(m, x[5] <= 7)
+    @objective(m, Min, 3x[2]+5x[1]-2x[3])
+
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    x_vals = JuMP.value.(x)
+    @test x_vals[1] ≈ 1
+    @test x_vals[2] ≈ 3
+    @test x_vals[3] ≈ 9
+    @test x_vals[4] ≈ 9
+    @test sum(x_vals) >= 25
+    @test JuMP.objective_value(m) ≈ -4
 end
 
 @testset "Not supported constraints" begin

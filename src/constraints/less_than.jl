@@ -49,66 +49,94 @@ function Base.:(<=)(x::LinearCombination, y::LinearCombination)
     return x-y <= 0
 end
 
+mutable struct ArrayDiff
+    only_left_idx    :: Vector{Int} # which indices are only left
+    same_left_idx    :: Vector{Int} # in both indicating the position in left
+    same_right_idx   :: Vector{Int} # in both indicating the position in left
+    only_right_idx   :: Vector{Int} # only right
+end
+
+"""
+    get_idx_array_diff(left::Vector{Int}, right::Vector{Int})
+
+Given two vectors of indices the indices are computed which are only left/right or in both.
+The result is of type `ArrayDiff` and holds the local indices pointing to the position in the given vectors.
+
+i.e `get_idx_array_diff([3,5,7], [7,5,2,9])` results in:
+
+```
+ArrayDiff(
+    [1], [2,3], [2,1], [3,4]
+)
+```
+"""
+function get_idx_array_diff(left::Vector{Int}, right::Vector{Int})
+    left_perm = sortperm(left)
+    right_perm = sortperm(right)
+    left_sorted = left[left_perm]
+    right_sorted = right[right_perm]
+
+    li = 1
+    ri = 1
+    ln = length(left)
+    rn = length(right)
+
+    ad_left_idx = Int[]
+    ad_right_idx = Int[]
+    ad_same_left_idx = Int[]
+    ad_same_right_idx = Int[]
+
+    while li <= ln && ri <= rn
+        if left_sorted[li] == right_sorted[ri]
+            push!(ad_same_left_idx, left_perm[li])
+            push!(ad_same_right_idx, right_perm[ri])
+            li += 1
+            ri += 1
+        elseif left_sorted[li] < right_sorted[ri]
+            push!(ad_left_idx, left_perm[li])
+            li += 1
+        else
+            push!(ad_right_idx, right_perm[ri])
+            ri += 1
+        end
+    end
+
+    for i=li:ln
+        push!(ad_left_idx, left_perm[i])
+    end
+    for i=ri:rn
+        push!(ad_right_idx, right_perm[i])
+    end
+    return ArrayDiff(ad_left_idx, ad_same_left_idx, ad_same_right_idx, ad_right_idx)
+end
+
 """
     get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, con_fct::SAF{T}, set::MOI.LessThan{T}, obj_fct::LinearCombinationObjective, var_idx, val)  where T <: Real
 
 Using the greedy knapsack method for obtaining a best bound given this constraint. 
 Returns the best bound
 """
-function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, con_fct::SAF{T}, set::MOI.LessThan{T}, obj_fct::LinearCombinationObjective, var_idx::Int, val::Int)  where T <: Real
+function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, con_fct::SAF{T}, set::MOI.LessThan{T}, obj_fct::LinearCombinationObjective, var_idx::Int, val::Int; log=false)  where T <: Real
     capacity = set.upper
     costs = [t.coefficient for t in con_fct.terms]
     
-    # only check if it is a <= constraint with positive coefficients
+    # only check if it is a <= constraint with at least one positive coefficient
     if capacity < 0 && all(c->c < 0, costs) && com.sense == MOI.MAX_SENSE
         return typemax(T)
     end
+    # or return the minimum if the opposite happens in the minimize case
     if capacity > 0 && all(c->c > 0, costs) && com.sense == MOI.MIN_SENSE
         return typemin(T)
     end
     
     gains = obj_fct.lc.coeffs
-    if com.sense == MOI.MIN_SENSE
-        gains = -gains
-    end
-
     cost_indices = [t.variable_index.value for t in con_fct.terms]
     gain_indices = obj_fct.lc.indices
 
-    # line up the indices such that only the indices that exist in both are considered
-    cost_sort_order = sortperm(cost_indices)
-    gain_sort_order = sortperm(gain_indices)
+    ad = get_idx_array_diff(cost_indices, gain_indices)
+    log && println("ad: $ad")
 
-    cost_indices_sorted = cost_indices[cost_sort_order]
-    gain_indices_sorted = gain_indices[gain_sort_order]
-    # println("cost_indices_sorted: $cost_indices_sorted")
-    # println("gain_indices_sorted: $gain_indices_sorted")
-
-    costs_sorted = costs[cost_sort_order]
-    gains_sorted = gains[gain_sort_order]
-
-    gain_i = 1
-    cost_i = 1
-
-    add_gain_local_indices = Int[]
-    relevant_costs = Vector{T}()
-    relevant_gains = Vector{T}()
-    relevant_indices = Int[]
-
-    while cost_i <= length(cost_indices_sorted) && gain_i <= length(gain_indices_sorted)
-        if cost_indices_sorted[cost_i] == gain_indices_sorted[gain_i]
-            push!(relevant_costs, costs_sorted[cost_i])
-            push!(relevant_gains, gains_sorted[gain_i])
-            push!(relevant_indices, gain_i)
-            cost_i += 1
-            gain_i += 1
-        elseif cost_indices_sorted[cost_i] < gain_indices_sorted[gain_i]
-            cost_i += 1
-        else
-            push!(add_gain_local_indices, gain_i)
-            gain_i += 1
-        end
-    end
+    relevant_costs = costs[ad.same_left_idx]
 
     # only check if it is a <= constraint with positive coefficients for the relevant costs
     if capacity < 0 && all(c->c < 0, relevant_costs) && com.sense == MOI.MAX_SENSE
@@ -118,79 +146,133 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
         return typemin(T)
     end
 
-    # all costs and the capacity > 0 
-    best_bound = zero(T)
 
-    for i=gain_i:length(gain_indices_sorted)
-        push!(add_gain_local_indices, gain_i)
-    end
 
-    # add unbounded variables directly  
-    var_in_relevant = true
-    for i=1:length(add_gain_local_indices)
-        local_idx = add_gain_local_indices[i]
-        v_idx = gain_indices_sorted[local_idx]
-        if v_idx == var_idx
-            best_bound += gains_sorted[local_idx]*val
-            var_in_relevant = false
-        else
-            # we always have a maximization problem now
-            if gains_sorted[local_idx] >= 0
-                best_bound += gains_sorted[local_idx]*com.search_space[v_idx].max
-            else
-                best_bound += gains_sorted[local_idx]*com.search_space[v_idx].min
-            end
-        end
-    end
+    # best bound starts with constant term
+    best_bound = obj_fct.constant
 
-    # println("com.search_space: $(com.search_space)")
-    # println("best_bound before knapsack calculation: $best_bound")
-
-    # println("capacity: $capacity")
-    # println("add_gain_local_indices: $add_gain_local_indices")
-    # println("relevant_costs: $relevant_costs")
-    # println("relevant_gains: $relevant_gains")
-
-    # order by gain per cost desc  
-    gain_per_cost = relevant_gains ./ relevant_costs
-    gain_per_cost_perm = sortperm(gain_per_cost; rev=true)
-    relevant_costs_sorted = relevant_costs[gain_per_cost_perm]
-    gain_per_cost_sorted = relevant_gains[gain_per_cost_perm]
-    relevant_indices_sorted = relevant_indices[gain_per_cost_perm]
-
-    # println("var_idx: $var_idx")
-    # println("val: $val")
-
-    if var_in_relevant
-        for i=1:length(relevant_indices_sorted)
-            v_idx = relevant_indices_sorted[i]
-            if v_idx == var_idx
-                best_bound += val*gain_per_cost_sorted[i]
-                capacity -= val*relevant_costs_sorted[i]
-                break
-            end
-        end
-    end
-
-    i = 1
-    while capacity > 0 && i <= length(relevant_indices_sorted)
-        v_idx = relevant_indices_sorted[i]
-        # already added
-        if v_idx == var_idx
-            i += 1
-            continue
-        end
-        load_number = min(capacity/relevant_costs_sorted[i], com.search_space[v_idx].max)
-        # println("$load_number from $v_idx")
-        capacity -= load_number*relevant_costs_sorted[i]
-        best_bound += load_number*gain_per_cost_sorted[i]
-        i += 1
-    end
-
-    # println("best_bound after knapsack calculation: $best_bound")
+    # if we want to minimize we want to have a look at >= constraints
+    # => costs = -costs and capacity = -capacity and renaming to be sure that we don't mess it up
+    log && println("Gains: $gains")
     if com.sense == MOI.MIN_SENSE
-        return -best_bound
+        anti_costs = -costs
+        threshold = -capacity
+        log && println("AntiCosts: $anti_costs")
+        log && println("Threshold: $threshold")
+    else
+        log && println("Costs: $costs")
+        log && println("Capacity: $capacity")
     end
+
+
+    # 1) Updating threshold by looking at entries which are only in costs (not changing the best bound)
+    if com.sense == MOI.MIN_SENSE
+        # trying to maximize the anti_costs to get over the threshold
+        for ci in ad.only_left_idx
+            if anti_costs[ci] >= 0
+                threshold -= anti_costs[ci]*com.search_space[cost_indices[ci]].max
+            else
+                threshold -= anti_costs[ci]*com.search_space[cost_indices[ci]].min
+            end
+        end
+        log && println("Threshold after 1): ", threshold)
+    else
+        # trying to minimize the costs to have a lot of capacity left
+        for ci in ad.only_left_idx
+            if costs[ci] >= 0
+                capacity -= costs[ci]*com.search_space[cost_indices[ci]].min
+            else
+                capacity -= costs[ci]*com.search_space[cost_indices[ci]].max
+            end
+        end
+        log && println("Capacity after 1): ", capacity)
+    end
+
+    log && println("Best bound before 2): $best_bound")
+
+    # 2) Optimize packing where the index is both in the cost function as well as in the objective
+    if com.sense == MOI.MIN_SENSE
+        anti_cost_per_gain = anti_costs[ad.same_left_idx]./gains[ad.same_right_idx]
+        # indices where gains is negative and anti_cost_per_gain as well
+        # are best so they have a gain in our ordering of Inf
+        for i=1:length(anti_cost_per_gain)
+            if anti_cost_per_gain[i] < 0 && gains[ad.same_right_idx][i] < 0
+                anti_cost_per_gain[i] = typemax(T)
+            end
+        end
+        
+        ordering = sortperm(anti_cost_per_gain; rev=true)
+
+        gains_ordered = gains[ad.same_right_idx][ordering]
+        anti_costs_ordered = anti_costs[ad.same_left_idx][ordering]
+        vars_ordered = cost_indices[ad.same_left_idx][ordering]
+        for i=1:length(ad.same_left_idx)
+            anti_cost = anti_costs_ordered[i]
+            gain = gains_ordered[i]
+            v_idx = vars_ordered[i]
+            log && println("v_idx: $v_idx")
+            log && println("gain: $gain")
+            log && println("anti_cost: $anti_cost")
+            log && println("threshold: $threshold")
+            if  gain < 0 && anti_cost > 0
+                if gain >= 0
+                    amount = com.search_space[v_idx].min
+                else 
+                    amount = com.search_space[v_idx].max
+                end
+            else
+                amount = min(threshold/anti_cost, com.search_space[v_idx].max) 
+            end
+            log && println("amount: $amount")
+            log && println("---------------")
+            threshold -= amount*anti_cost
+            best_bound += amount*gain
+            threshold <= com.options.atol && break
+        end
+    else
+        gain_per_cost = gains[ad.same_right_idx]./costs[ad.same_left_idx]
+        ordering = sortperm(gain_per_cost; rev=true)
+
+        gains_ordered = gains[ad.same_right_idx][ordering]
+        costs_ordered = costs[ad.same_left_idx][ordering]
+        vars_ordered = cost_indices[ad.same_left_idx][ordering]
+
+        for i=1:length(ad.same_left_idx)
+            cost = costs_ordered[i]
+            gain = gains_ordered[i]
+            v_idx = vars_ordered[i]
+            amount = min(capacity/cost, com.search_space[v_idx].max) 
+            amount = max(amount, com.search_space[v_idx].min) 
+            capacity -= amount*cost
+            best_bound += amount*gain
+            capacity <= com.options.atol && break
+        end
+    end
+    log && println("Best bound after 2): $best_bound")
+    
+    # 3) Use the variables which have no cost but only gains
+    if com.sense == MOI.MIN_SENSE
+        # trying to minimize the additions to the best bound
+        for ci in ad.only_right_idx
+            if gains[ci] >= 0
+                best_bound += gains[ci]*com.search_space[gain_indices[ci]].min
+            else
+                best_bound += gains[ci]*com.search_space[gain_indices[ci]].max
+            end
+        end
+    else
+        # trying to maximize the additions to the best bound
+        for ci=1:length(ad.only_right_idx)
+            if gains[ci] >= 0
+                best_bound += gains[ci]*com.search_space[gain_indices[ci]].max
+            else
+                best_bound += gains[ci]*com.search_space[gain_indices[ci]].min
+            end
+        end
+    end
+
+    log && println("best_bound after knapsack calculation: $best_bound")
+    log && println("-------------------------------------")
     return best_bound
 end
 
