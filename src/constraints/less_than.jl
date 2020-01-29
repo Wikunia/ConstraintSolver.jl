@@ -146,8 +146,6 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
         return typemin(T)
     end
 
-
-
     # best bound starts with constant term
     best_bound = obj_fct.constant
 
@@ -169,6 +167,10 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
     if com.sense == MOI.MIN_SENSE
         # trying to maximize the anti_costs to get over the threshold
         for ci in ad.only_left_idx
+            if cost_indices[ci] == var_idx
+                threshold -= anti_costs[ci]*val
+                continue
+            end
             if anti_costs[ci] >= 0
                 threshold -= anti_costs[ci]*com.search_space[cost_indices[ci]].max
             else
@@ -179,6 +181,10 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
     else
         # trying to minimize the costs to have a lot of capacity left
         for ci in ad.only_left_idx
+            if cost_indices[ci] == var_idx
+                threshold -= anti_costs[ci]*val
+                continue
+            end
             if costs[ci] >= 0
                 capacity -= costs[ci]*com.search_space[cost_indices[ci]].min
             else
@@ -214,7 +220,9 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             log && println("gain: $gain")
             log && println("anti_cost: $anti_cost")
             log && println("threshold: $threshold")
-            if  gain < 0 && anti_cost > 0
+            if v_idx == var_idx
+                amount = val
+            elseif  gain < 0 && anti_cost > 0
                 if gain >= 0
                     amount = com.search_space[v_idx].min
                 else 
@@ -241,8 +249,12 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             cost = costs_ordered[i]
             gain = gains_ordered[i]
             v_idx = vars_ordered[i]
-            amount = min(capacity/cost, com.search_space[v_idx].max) 
-            amount = max(amount, com.search_space[v_idx].min) 
+            if v_idx == var_idx
+                amount = val
+            else
+                amount = min(capacity/cost, com.search_space[v_idx].max) 
+                amount = max(amount, com.search_space[v_idx].min)
+            end 
             capacity -= amount*cost
             best_bound += amount*gain
             capacity <= com.options.atol && break
@@ -254,6 +266,10 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
     if com.sense == MOI.MIN_SENSE
         # trying to minimize the additions to the best bound
         for ci in ad.only_right_idx
+            if gain_indices[ci] == var_idx
+                best_bound += gains[ci]*val
+                continue
+            end
             if gains[ci] >= 0
                 best_bound += gains[ci]*com.search_space[gain_indices[ci]].min
             else
@@ -263,6 +279,10 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
     else
         # trying to maximize the additions to the best bound
         for ci=1:length(ad.only_right_idx)
+            if gain_indices[ci] == var_idx
+                best_bound += gains[ci]*val
+                continue
+            end
             if gains[ci] >= 0
                 best_bound += gains[ci]*com.search_space[gain_indices[ci]].max
             else

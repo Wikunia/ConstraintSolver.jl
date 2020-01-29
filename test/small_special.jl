@@ -628,8 +628,8 @@ end
 
     @variable(m, 1 <= x[1:5] <= 9, Int)
     @constraint(m, sum(x) <= 25)
-    @constraint(m, x[2]+1.2*x[4] <= 12)
-    weights = [1.2, 3.0, 0.3, 5.2, 2.7]
+    @constraint(m, x[2]+1.2*x[4]-x[5] <= 12)
+    weights = [1.2, 3.0, -0.3, -5.2, 2.7]
     @objective(m, Max, dot(weights, x))
 
     optimize!(m)
@@ -637,11 +637,11 @@ end
     @test JuMP.termination_status(m) == MOI.OPTIMAL
     x_vals = JuMP.value.(x)
     @test x_vals[1] ≈ 5
-    @test x_vals[2] ≈ 1
+    @test x_vals[2] ≈ 9
     @test x_vals[3] ≈ 1
-    @test x_vals[4] ≈ 9
+    @test x_vals[4] ≈ 1
     @test x_vals[5] ≈ 9
-    @test JuMP.objective_value(m) ≈ 80.4
+    @test JuMP.objective_value(m) ≈ 51.8
 
     # minimize
     m = Model(with_optimizer(CS.Optimizer))

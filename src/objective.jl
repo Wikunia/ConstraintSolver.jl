@@ -64,7 +64,7 @@ function get_best_bound(com::CS.CoM, obj_fct::LinearCombinationObjective, var_id
         com.search_space[4].min <= 9 <= com.search_space[4].max &&
         com.search_space[5].min <= 7 <= com.search_space[5].max
        
-       log = true
+       log = false
     end
     log && println(">>>>>>>>>>>>>>>>>>>>>>>>>>>")
     log && println("objval: $objval")
