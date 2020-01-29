@@ -188,26 +188,23 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             anti_cost = anti_costs_ordered[i]
             gain = gains_ordered[i]
             v_idx = vars_ordered[i]
-            # we could have added less in 1) => don't compute worse best_bound than possible
-            if anti_cost < 0 && length(ad.only_left_idx) > 0
-                continue
-            end
-            # don't compute wrong threshold/anti_cost
-            if anti_cost < 0 && threshold < 0
+            # don't compute wrong threshold/anti_cost can only happen for i=1
+            # but if gain is negative we want to update our best bound
+            if anti_cost < 0 && threshold < 0 && gain > 0
                 continue
             end
             if v_idx == var_idx
                 amount = val
             elseif gain < 0 && anti_cost > 0
-                if gain >= 0
-                    amount = com.search_space[v_idx].min
-                else 
-                    amount = com.search_space[v_idx].max
-                end
+                amount = com.search_space[v_idx].max
             else
                 amount = min(threshold/anti_cost, com.search_space[v_idx].max) 
             end
-            threshold -= amount*anti_cost
+            # don't update threshold if we used negative gain but maybe a wrong amount 
+            # which could screw up our threshold
+            if anti_cost >= 0 || threshold >= 0
+                threshold -= amount*anti_cost
+            end
             best_bound += amount*gain
             threshold <= com.options.atol && break
         end

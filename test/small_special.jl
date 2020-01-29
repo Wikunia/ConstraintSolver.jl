@@ -700,6 +700,20 @@ end
     @test x_vals[4] ≈ 9
     @test sum(x_vals) >= 25
     @test JuMP.objective_value(m) ≈ -4
+
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) <= 25)
+    @constraint(m, -x[1]-x[2]-x[3]+x[4]+x[5] >= 5)
+    weights = [-1,2,3,4,5]
+    @objective(m, Min, sum(weights[1:3] .* x[1:3]))
+
+    optimize!(m)
+    
+    x_vals = JuMP.value.(x)
+    @test sum(x_vals) <= 25
+    @test -x_vals[1]-x_vals[2]-x_vals[3]+x_vals[4]+x_vals[5] >= 5
+    @test JuMP.objective_value(m) ≈ -3
 end
 
 @testset "Not supported constraints" begin

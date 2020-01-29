@@ -25,7 +25,6 @@ end
         end
     end
     for i=1:n
-        println(sum(x[min(i,j), max(i,j)] for j in neighbors(weight_matrix, i)))
         @constraint(m, sum(x[min(i,j), max(i,j)] for j in neighbors(weight_matrix, i)) <= 1)
     end
 
