@@ -134,7 +134,6 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
     gain_indices = obj_fct.lc.indices
 
     ad = get_idx_array_diff(cost_indices, gain_indices)
-    log && println("ad: $ad")
 
     relevant_costs = costs[ad.same_left_idx]
 
@@ -151,15 +150,9 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
 
     # if we want to minimize we want to have a look at >= constraints
     # => costs = -costs and capacity = -capacity and renaming to be sure that we don't mess it up
-    log && println("Gains: $gains")
     if com.sense == MOI.MIN_SENSE
         anti_costs = -costs
         threshold = -capacity
-        log && println("AntiCosts: $anti_costs")
-        log && println("Threshold: $threshold")
-    else
-        log && println("Costs: $costs")
-        log && println("Capacity: $capacity")
     end
 
 
@@ -177,7 +170,6 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
                 threshold -= anti_costs[ci]*com.search_space[cost_indices[ci]].min
             end
         end
-        log && println("Threshold after 1): ", threshold)
     else
         # trying to minimize the costs to have a lot of capacity left
         for ci in ad.only_left_idx
@@ -191,10 +183,8 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
                 capacity -= costs[ci]*com.search_space[cost_indices[ci]].max
             end
         end
-        log && println("Capacity after 1): ", capacity)
     end
 
-    log && println("Best bound before 2): $best_bound")
 
     # 2) Optimize packing where the index is both in the cost function as well as in the objective
     if com.sense == MOI.MIN_SENSE
@@ -216,10 +206,6 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             anti_cost = anti_costs_ordered[i]
             gain = gains_ordered[i]
             v_idx = vars_ordered[i]
-            log && println("v_idx: $v_idx")
-            log && println("gain: $gain")
-            log && println("anti_cost: $anti_cost")
-            log && println("threshold: $threshold")
             if v_idx == var_idx
                 amount = val
             elseif  gain < 0 && anti_cost > 0
@@ -231,8 +217,6 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             else
                 amount = min(threshold/anti_cost, com.search_space[v_idx].max) 
             end
-            log && println("amount: $amount")
-            log && println("---------------")
             threshold -= amount*anti_cost
             best_bound += amount*gain
             threshold <= com.options.atol && break
@@ -260,7 +244,6 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             capacity <= com.options.atol && break
         end
     end
-    log && println("Best bound after 2): $best_bound")
     
     # 3) Use the variables which have no cost but only gains
     if com.sense == MOI.MIN_SENSE
@@ -291,8 +274,6 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
         end
     end
 
-    log && println("best_bound after knapsack calculation: $best_bound")
-    log && println("-------------------------------------")
     return best_bound
 end
 

@@ -57,31 +57,16 @@ function get_best_bound(com::CS.CoM, obj_fct::LinearCombinationObjective, var_id
     if all(v->isfixed(v), com.search_space)
         return objval
     end
-    log = false
-    if com.search_space[1].min <= 1 <= com.search_space[1].max && 
-        com.search_space[2].min <= 7 <= com.search_space[2].max &&
-        com.search_space[3].min <= 1 <= com.search_space[3].max &&
-        com.search_space[4].min <= 9 <= com.search_space[4].max &&
-        com.search_space[5].min <= 7 <= com.search_space[5].max
-       
-       log = false
-    end
-    log && println(">>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    log && println("objval: $objval")
-    log && println(com.search_space)
+
     for constraint in com.constraints
         if constraint.check_in_best_bound
-            constrained_bound = get_constrained_best_bound(com, constraint, constraint.fct, constraint.set, com.objective, var_idx, val; log=log)
-            log && println("constrained_bound: $constrained_bound")
+            constrained_bound = get_constrained_best_bound(com, constraint, constraint.fct, constraint.set, com.objective, var_idx, val)
             if com.sense == MOI.MIN_SENSE && constrained_bound > objval
                 objval = constrained_bound
-                # err()
             elseif com.sense == MOI.MAX_SENSE && constrained_bound < objval
                 objval = constrained_bound
             end
         end
     end
-    log && println("<<<<<<<<<<<<<<<<<<<<<<<<<")
-    # err
     return objval
 end
