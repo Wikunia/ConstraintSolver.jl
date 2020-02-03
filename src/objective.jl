@@ -67,6 +67,5 @@ function get_best_bound(com::CS.CoM, obj_fct::LinearCombinationObjective, var_id
             end
         end
     end
-
     return objval
 end

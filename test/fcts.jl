@@ -85,4 +85,172 @@ end
     @test ad.same_right_idx == [4]
     @test ad.only_right_idx == [3,1,2]
 end
+
+@testset "get_constrained_best_bound" begin 
+    ##################################
+    # negative values
+    ##################################
+    com = CS.ConstraintSolverModel()
+    x = [CS.add_var!(com, -5, 5) for i=1:5]
+
+    terms = MOI.ScalarAffineTerm{Float64}[]
+    indices = Int[]
+    for i=1:5
+        push!(terms, MOI.ScalarAffineTerm(1.0,MOI.VariableIndex(i)))
+        push!(indices, i)
+    end
+    fct = MOI.ScalarAffineFunction(terms, 2.0)
+    set = MOI.LessThan(10.0)
+    lc = CS.LinearConstraint(
+        0, fct, set, indices, Int[], false, 
+        Float64[], Float64[], Float64[], Float64[], true, zero(UInt64)
+    )
+    # constraint sum(x)+2.0 <= 10
+    obj_fct = CS.LinearCombinationObjective(
+        CS.LinearCombination([1,2,3,4,5], [1.0,2,3,4,5]),
+        5.0,
+        [1,2,3,4,5]
+    )
+    # objective x[1]+2x[2]+3x[3]+4x[4]+5x[5]+5
+    com.sense = MOI.MAX_SENSE
+    # optimal value is 51
+    @test CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, 0) >= 51
+
+    ##################################
+    # positive values 
+    ##################################
+    com = CS.ConstraintSolverModel()
+    x = [CS.add_var!(com, 0, 5) for i=1:5]
+
+    terms = MOI.ScalarAffineTerm{Float64}[]
+    indices = Int[]
+    for i=1:5
+        push!(terms, MOI.ScalarAffineTerm(-1.0,MOI.VariableIndex(i)))
+        push!(indices, i)
+    end
+    fct = MOI.ScalarAffineFunction(terms, 2.0)
+    set = MOI.LessThan(-6.0)
+    lc = CS.LinearConstraint(
+        0, fct, set, indices, Int[], false, 
+        Float64[], Float64[], Float64[], Float64[], true, zero(UInt64)
+    )
+    # constraint sum(x)-2.0 >= 6
+    obj_fct = CS.LinearCombinationObjective(
+        CS.LinearCombination([1,2,3,4,5], [1.0,2,3,4,5]),
+        5.0,
+        [1,2,3,4,5]
+    )
+    # objective x[1]+2x[2]+3x[3]+4x[4]+5x[5]+5
+    com.sense = MOI.MIN_SENSE
+    # optimal value is 16
+    computed_bound = CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, 0)
+    @test computed_bound <= 16 && computed_bound > typemin(Float64)
+
+    ##################################
+    # positive relevant values 
+    ##################################
+    com = CS.ConstraintSolverModel()
+    x = [CS.add_var!(com, 0, 5) for i=1:5]
+    y = CS.add_var!(com, -5, 5)
+
+    terms = MOI.ScalarAffineTerm{Float64}[]
+    indices = Int[]
+    for i=1:5
+        push!(terms, MOI.ScalarAffineTerm(-1.0,MOI.VariableIndex(i)))
+        push!(indices, i)
+    end
+    push!(terms, MOI.ScalarAffineTerm(-1.0,MOI.VariableIndex(6)))
+    push!(indices, 6)
+    fct = MOI.ScalarAffineFunction(terms, 0.0)
+    set = MOI.LessThan(20.0)
+    lc = CS.LinearConstraint(
+        0, fct, set, indices, Int[], false, 
+        Float64[], Float64[], Float64[], Float64[], true, zero(UInt64)
+    )
+    # y can be negative but it's not part of the objective anyway
+    # constraint sum(x)+y >= 20
+    obj_fct = CS.LinearCombinationObjective(
+        CS.LinearCombination([1,2,3,4,5], [5.0,4,3,2,1]),
+        5.0,
+        [1,2,3,4,5]
+    )
+    # objective 5x[1]+4x[2]+3x[3]+2x[4]+1x[5]+5
+    com.sense = MOI.MIN_SENSE
+    # optimal value is 35
+    computed_bound = CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, 0)
+    @test computed_bound <= 35 && computed_bound > typemin(Float64)
+
+    ##################################
+    # positive relevant values  Max
+    ##################################
+    com = CS.ConstraintSolverModel()
+    x = [CS.add_var!(com, 0, 5) for i=1:3]
+    y = CS.add_var!(com, -5, 5)
+
+    terms = MOI.ScalarAffineTerm{Float64}[]
+    indices = Int[]
+    for i=1:3
+        push!(terms, MOI.ScalarAffineTerm(1.0,MOI.VariableIndex(i)))
+        push!(indices, i)
+    end
+    push!(terms, MOI.ScalarAffineTerm(1.0,MOI.VariableIndex(4)))
+    push!(indices, 4)
+    fct = MOI.ScalarAffineFunction(terms, 0.0)
+    set = MOI.LessThan(7.0)
+    lc = CS.LinearConstraint(
+        0, fct, set, indices, Int[], false, 
+        Float64[], Float64[], Float64[], Float64[], true, zero(UInt64)
+    )
+    # y can be negative but it's not part of the objective anyway
+    # constraint sum(x)+y <= 7
+    obj_fct = CS.LinearCombinationObjective(
+        CS.LinearCombination([1,2,3], [5.0,4.9,3.2]),
+        -5.0,
+        [1,2,3]
+    )
+    # objective 5x[1]+4.9x[2]+3.2x[3]
+    com.sense = MOI.MAX_SENSE
+    # optimal value is 50.9
+    computed_bound = CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, 0)
+    @test computed_bound >= 50.9-1e-6 && computed_bound < typemax(Float64)
+
+
+    ##################################
+    # negative values so bad bound
+    ##################################
+    com = CS.ConstraintSolverModel()
+    x = [CS.add_var!(com, -1, 5) for i=1:3]
+    y = CS.add_var!(com, -5, 5)
+
+    terms = MOI.ScalarAffineTerm{Float64}[]
+    indices = Int[]
+    push!(terms, MOI.ScalarAffineTerm(-1.0,MOI.VariableIndex(1)))
+    push!(indices, 1)
+    push!(terms, MOI.ScalarAffineTerm(-1.0,MOI.VariableIndex(2)))
+    push!(indices, 2)
+    push!(terms, MOI.ScalarAffineTerm(1.0,MOI.VariableIndex(3)))
+    push!(indices, 3)
+    
+    push!(terms, MOI.ScalarAffineTerm(-1.0,MOI.VariableIndex(4)))
+    push!(indices, 4)
+    fct = MOI.ScalarAffineFunction(terms, 0.0)
+    set = MOI.LessThan(7.0)
+    lc = CS.LinearConstraint(
+        0, fct, set, indices, Int[], false, 
+        Float64[], Float64[], Float64[], Float64[], true, zero(UInt64)
+    )
+    # y can be negative but it's not part of the objective anyway
+    # constraint x[1]+x[2]-x[3] >= 7
+    obj_fct = CS.LinearCombinationObjective(
+        CS.LinearCombination([1,2,3], [5.0,4.9,3.2]),
+        -5.0,
+        [1,2,3]
+    )
+    # objective 5x[1]+4.9x[2]+3.2x[3]
+    com.sense = MOI.MIN_SENSE
+    # optimal value is 1.6
+    computed_bound = CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, 0)
+    @test computed_bound <= 1.6+1e-6
+
+end
 end

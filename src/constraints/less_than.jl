@@ -114,10 +114,12 @@ end
     get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, con_fct::SAF{T}, set::MOI.LessThan{T}, obj_fct::LinearCombinationObjective, var_idx, val)  where T <: Real
 
 Using the greedy knapsack method for obtaining a best bound given this constraint. 
-Returns the best bound
+The greedy method does not work for negative numbers => if a variable can be negative or a negative coefficient is present:
+    returns typemax(T) or typemin(T) to indicate that no good bound could be found.
+Returns the a bound which might be tight or not
 """
 function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, con_fct::SAF{T}, set::MOI.LessThan{T}, obj_fct::LinearCombinationObjective, var_idx::Int, val::Int)  where T <: Real
-    capacity = set.upper
+    capacity = set.upper-con_fct.constant
     costs = [t.coefficient for t in con_fct.terms]
       
     gains = obj_fct.lc.coeffs
@@ -126,8 +128,6 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
 
     ad = get_idx_array_diff(cost_indices, gain_indices)
    
-    relevant_costs = costs[ad.same_left_idx]
-
     # best bound starts with constant term
     best_bound = obj_fct.constant
 
@@ -136,6 +136,38 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
     if com.sense == MOI.MIN_SENSE
         anti_costs = -costs
         threshold = -capacity
+    end
+
+    # if negative values for the overlapping values are present 
+    # or they have negative coefficients => don't use the greedy method and just return the worst bound :D 
+    if com.sense == MOI.MIN_SENSE
+        for i=1:length(ad.same_left_idx)
+            ci = ad.same_left_idx[i]
+            oi = ad.same_right_idx[i]
+            if anti_costs[ci] < 0
+                return typemin(T)
+            end
+            if gains[oi] < 0
+                return typemin(T)
+            end
+            if com.search_space[cost_indices[ci]].min < 0
+                return typemin(T)
+            end
+        end
+    else
+        for i=1:length(ad.same_left_idx)
+            ci = ad.same_left_idx[i]
+            oi = ad.same_right_idx[i]
+            if costs[ci] < 0
+                return typemax(T)
+            end
+            if gains[oi] < 0
+                return typemax(T)
+            end
+            if com.search_space[cost_indices[ci]].min < 0
+                return typemax(T)
+            end
+        end
     end
 
 
@@ -167,18 +199,14 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             end
         end
     end
+    # println("Before 2)")
+    # println("capacity: $capacity")
+    # println("best_bound: $best_bound")
 
     # 2) Optimize packing where the index is both in the cost function as well as in the objective
     if com.sense == MOI.MIN_SENSE
         anti_cost_per_gain = anti_costs[ad.same_left_idx]./gains[ad.same_right_idx]
-        # indices where gains is negative and anti_cost_per_gain as well
-        # are best so they have a gain in our ordering of Inf
-        for i=1:length(anti_cost_per_gain)
-            if anti_cost_per_gain[i] < 0 && gains[ad.same_right_idx][i] < 0
-                anti_cost_per_gain[i] = typemax(T)
-            end
-        end
-        
+              
         ordering = sortperm(anti_cost_per_gain; rev=true)
 
         gains_ordered = gains[ad.same_right_idx][ordering]
@@ -188,11 +216,7 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             anti_cost = anti_costs_ordered[i]
             gain = gains_ordered[i]
             v_idx = vars_ordered[i]
-            # don't compute wrong threshold/anti_cost can only happen for i=1
-            # but if gain is negative we want to update our best bound
-            if anti_cost < 0 && threshold < 0 && gain > 0
-                continue
-            end
+           
             if v_idx == var_idx
                 amount = val
             elseif gain < 0 && anti_cost > 0
@@ -200,16 +224,13 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             else
                 amount = min(threshold/anti_cost, com.search_space[v_idx].max) 
             end
-            # don't update threshold if we used negative gain but maybe a wrong amount 
-            # which could screw up our threshold
-            if anti_cost >= 0 || threshold >= 0
-                threshold -= amount*anti_cost
-            end
+            threshold -= amount*anti_cost
             best_bound += amount*gain
             threshold <= com.options.atol && break
         end
     else
         gain_per_cost = gains[ad.same_right_idx]./costs[ad.same_left_idx]
+
         ordering = sortperm(gain_per_cost; rev=true)
 
         gains_ordered = gains[ad.same_right_idx][ordering]
@@ -219,22 +240,23 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
         for i=1:length(ad.same_left_idx)
             cost = costs_ordered[i]
             gain = gains_ordered[i]
-            # we could have added more in 1) => don't compute worse best_bound than possible
-            if gain < 0 && length(ad.only_left_idx) > 0
-                continue
-            end
+          
             v_idx = vars_ordered[i]
+            # println("v_idx: $v_idx")
             if v_idx == var_idx
                 amount = val
             else
                 amount = min(capacity/cost, com.search_space[v_idx].max) 
                 amount = max(amount, com.search_space[v_idx].min)
             end 
-            capacity -= amount*cost
             best_bound += amount*gain
+            capacity -= amount*cost
             capacity <= com.options.atol && break
         end
     end
+    # println("After 2)")
+    # println("capacity: $capacity")
+    # println("best_bound: $best_bound")
     
     # 3) Use the variables which have no cost but only gains
     if com.sense == MOI.MIN_SENSE
