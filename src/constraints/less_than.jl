@@ -199,9 +199,6 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             end
         end
     end
-    # println("Before 2)")
-    # println("capacity: $capacity")
-    # println("best_bound: $best_bound")
 
     # 2) Optimize packing where the index is both in the cost function as well as in the objective
     if com.sense == MOI.MIN_SENSE
@@ -219,8 +216,6 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
            
             if v_idx == var_idx
                 amount = val
-            elseif gain < 0 && anti_cost > 0
-                amount = com.search_space[v_idx].max
             else
                 amount = min(threshold/anti_cost, com.search_space[v_idx].max) 
             end
@@ -242,21 +237,16 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             gain = gains_ordered[i]
           
             v_idx = vars_ordered[i]
-            # println("v_idx: $v_idx")
             if v_idx == var_idx
                 amount = val
             else
                 amount = min(capacity/cost, com.search_space[v_idx].max) 
-                amount = max(amount, com.search_space[v_idx].min)
             end 
             best_bound += amount*gain
             capacity -= amount*cost
             capacity <= com.options.atol && break
         end
     end
-    # println("After 2)")
-    # println("capacity: $capacity")
-    # println("best_bound: $best_bound")
     
     # 3) Use the variables which have no cost but only gains
     if com.sense == MOI.MIN_SENSE
