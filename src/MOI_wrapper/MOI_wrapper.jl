@@ -80,6 +80,8 @@ function MOI.optimize!(model::Optimizer)
 
     set_pvals!(model)
     set_constraint_hashes!(model)
+    # sets check_in_best_bound per constraint if an objective function exists
+    set_check_in_best_bound!(model)
 
     status = solve!(model)
     set_status!(model, status)

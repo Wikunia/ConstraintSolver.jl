@@ -46,7 +46,6 @@ abstract type Constraint end
 abstract type ObjectiveFunction end
 
 mutable struct SingleVariableObjective <: ObjectiveFunction
-    fct     :: Function
     index   :: Int # index of the variable
     indices :: Vector{Int}
 end
@@ -61,6 +60,7 @@ mutable struct BasicConstraint <: Constraint
     set                 :: Union{MOI.AbstractScalarSet, MOI.AbstractVectorSet}
     indices             :: Vector{Int}
     pvals               :: Vector{Int}
+    check_in_best_bound :: Bool
     hash                :: UInt64
 end
 
@@ -73,6 +73,7 @@ mutable struct SingleVariableConstraint <: Constraint
     pvals               :: Vector{Int}
     lhs                 :: Int
     rhs                 :: Int
+    check_in_best_bound :: Bool
     hash                :: UInt64
 end
 
@@ -104,11 +105,11 @@ mutable struct LinearConstraint{T <: Real} <: Constraint
     maxs                :: Vector{T}
     pre_mins            :: Vector{T}
     pre_maxs            :: Vector{T}
+    check_in_best_bound :: Bool
     hash                :: UInt64
 end
 
 mutable struct LinearCombinationObjective{T <: Real} <: ObjectiveFunction
-    fct      :: Function
     lc       :: LinearCombination{T}
     constant :: T
     indices  :: Vector{Int} # must exist to update the objective only if one of these changed
@@ -149,6 +150,7 @@ function LinearConstraint(fct::MOI.ScalarAffineFunction, set::MOI.AbstractScalar
         maxs,
         pre_mins,
         pre_maxs,
+        false, # `check_in_best_bound` can be changed later but should be set to false by default
         zero(UInt64)
     )
     return lc
@@ -217,11 +219,12 @@ include("hashes.jl")
 include("Variable.jl")
 include("objective.jl")
 include("linearcombination.jl")
-include("all_different.jl")
-include("eq_sum.jl")
-include("svc.jl")
-include("equal.jl")
-include("not_equal.jl")
+include("constraints/all_different.jl")
+include("constraints/eq_sum.jl")
+include("constraints/less_than.jl")
+include("constraints/svc.jl")
+include("constraints/equal.jl")
+include("constraints/not_equal.jl")
 
 """
     ConstraintSolverModel(T::DataType=Float64)
@@ -590,7 +593,7 @@ function get_best_bound(com::CS.CoM; var_idx=0, val=0)
     if com.sense == MOI.FEASIBILITY_SENSE
         return zero(com.best_bound)
     end
-    return com.objective.fct(com, var_idx, val)
+    return get_best_bound(com, com.objective, var_idx, val)
 end
 
 function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
@@ -906,6 +909,12 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
         if com.input[:logs]
             com.logs[backtrack_obj.idx] = log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr)
+        end
+
+        leafs_best_bound = get_best_bound(com)
+        # if the objective can't get better we don't have to test all options
+        if leafs_best_bound*obj_factor >= com.best_sol && length(com.solutions) > 0
+            continue
         end
 
         pvals = reverse!(values(com.search_space[ind]))

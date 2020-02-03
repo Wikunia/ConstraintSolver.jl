@@ -564,6 +564,158 @@ end
     @test JuMP.value(y) == 2
 end
 
+@testset "LessThan constraints JuMP" begin
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) <= 25)
+    @constraint(m, sum(x) >= 20)
+    weights = [1,2,3,4,5]
+    @objective(m, Max, sum(weights .* x))
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.value.(x) == [1,1,5,9,9]
+    @test JuMP.objective_value(m) == 99
+
+    # minimize
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) <= 25)
+    @constraint(m, sum(x) >= 20)
+    weights = [1,2,3,4,5]
+    @objective(m, Min, sum(weights .* x))
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.value.(x) == [9,8,1,1,1]
+    @test JuMP.objective_value(m) == 37
+
+    # minimize with negative and positive real weights
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) <= 25)
+    weights = [-0.1,0.2,-0.3,0.4,0.5]
+    @constraint(m, sum(x[i] for i=1:5 if weights[i] > 0) >= 15)
+    @objective(m, Min, sum(weights .* x))
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.value.(x) == [1,9,9,5,1]
+    @test JuMP.objective_value(m) ≈ 1.5
+end
+
+@testset "LessThan constraints CS" begin
+    com = CS.ConstraintSolverModel()
+
+    x = [CS.add_var!(com, 1, 9) for i = 1:5]
+    CS.add_constraint!(com, sum(x) <= 25)
+    CS.add_constraint!(com, sum(x) >= 20)
+    CS.add_constraint!(com, x[1]+x[2] >= x[3])
+    CS.add_constraint!(com, x[1]-x[2] <= x[3])
+    CS.add_constraint!(com, x[1]+x[2] >= x[4]+x[5])
+    status = CS.solve!(com, CS.SolverOptions())
+
+    @test status == :Solved
+    @test 20 <= sum(CS.value.(x)) <= 25
+    x_vals = CS.value.(x)
+    @test x_vals[1]+x_vals[2] >= x_vals[3]
+    @test x_vals[1]-x_vals[2] <= x_vals[3]
+    @test x_vals[1]+x_vals[2] >= x_vals[4]+x_vals[5]
+end
+
+@testset "Knapsack problems" begin
+    m = Model(with_optimizer(CS.Optimizer))
+
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) <= 25)
+    @constraint(m, x[2]+1.2*x[4]-x[5] <= 12)
+    weights = [1.2, 3.0, -0.3, -5.2, 2.7]
+    @objective(m, Max, dot(weights, x))
+
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    x_vals = JuMP.value.(x)
+    @test x_vals[1] ≈ 5
+    @test x_vals[2] ≈ 9
+    @test x_vals[3] ≈ 1
+    @test x_vals[4] ≈ 1
+    @test x_vals[5] ≈ 9
+    @test JuMP.objective_value(m) ≈ 51.8
+
+    # less variables in the objective
+    m = Model(with_optimizer(CS.Optimizer))
+
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) <= 25)
+    @constraint(m, x[2]+1.2*x[4]-x[5] <= 12)
+    @constraint(m, -x[3]-1.2*x[4]+x[5] <= 12)
+    weights = [1.2, 3.0, -0.3, -5.2, 2.7]
+    @objective(m, Max, x[3]+2.7x[4]-x[1])
+
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    x_vals = JuMP.value.(x)
+    @test sum(x_vals) <= 25
+    @test x_vals[2]+1.2*x_vals[4]-x_vals[5] <= 12
+    @test JuMP.objective_value(m) ≈ 32.3
+
+    # minimize
+    m = Model(with_optimizer(CS.Optimizer))
+
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) >= 25)
+    @constraint(m, x[2]+1.2*x[4] >= 12)
+    weights = [1.2, 3.0, 0.3, 5.2, 2.7]
+    @objective(m, Min, dot(weights, x))
+
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    x_vals = JuMP.value.(x)
+    @test x_vals[1] ≈ 3
+    @test x_vals[2] ≈ 9
+    @test x_vals[3] ≈ 9
+    @test x_vals[4] ≈ 3
+    @test x_vals[5] ≈ 1
+    @test JuMP.objective_value(m) ≈ 51.6
+
+    # minimize only part of the weights and some are negative
+    m = Model(with_optimizer(CS.Optimizer))
+
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) >= 25)
+    @constraint(m, x[2]+1.2*x[4]-x[1] >= 12)
+    @constraint(m, x[5] <= 7)
+    @objective(m, Min, 3x[2]+5x[1]-2x[3])
+
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    x_vals = JuMP.value.(x)
+    @test x_vals[1] ≈ 1
+    @test x_vals[2] ≈ 3
+    @test x_vals[3] ≈ 9
+    @test x_vals[4] ≈ 9
+    @test sum(x_vals) >= 25
+    @test JuMP.objective_value(m) ≈ -4
+
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:5] <= 9, Int)
+    @constraint(m, sum(x) <= 25)
+    @constraint(m, -x[1]-x[2]-x[3]+x[4]+x[5] >= 5)
+    weights = [-1,2,3,4,5]
+    @objective(m, Min, sum(weights[1:3] .* x[1:3]))
+
+    optimize!(m)
+    
+    x_vals = JuMP.value.(x)
+    @test sum(x_vals) <= 25
+    @test -x_vals[1]-x_vals[2]-x_vals[3]+x_vals[4]+x_vals[5] >= 5
+    @test JuMP.objective_value(m) ≈ -3
+end
+
 @testset "Not supported constraints" begin
     m = Model(with_optimizer(CS.Optimizer))
     # must be an Integer upper bound
@@ -591,24 +743,6 @@ end
     @variable(m, 1 <= x[1:5] <= 2, Int)
     # constraint currently not supported
     @constraint(m, 2x[1]-x[2] != 0)
-    @test_throws ErrorException optimize!(m)
-
-    m = Model(with_optimizer(CS.Optimizer))
-    @variable(m, 1 <= x[1:5] <= 2, Int)
-    # constraint not supported
-    @constraint(m, x[1] <= x[2]-2)
-    @test_throws ErrorException optimize!(m)
-
-    m = Model(with_optimizer(CS.Optimizer))
-    @variable(m, 1 <= x[1:5] <= 2, Int)
-    # constraint not supported
-    @constraint(m, x[1]-x[2]-x[3] <= 0)
-    @test_throws ErrorException optimize!(m)
-
-    m = Model(with_optimizer(CS.Optimizer))
-    @variable(m, 1 <= x[1:5] <= 2, Int)
-    # constraint currently not supported
-    @constraint(m, 2x[1]-x[2] <= 0)
     @test_throws ErrorException optimize!(m)
 end
 

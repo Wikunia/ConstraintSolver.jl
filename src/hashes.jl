@@ -7,6 +7,9 @@ function constraint_hash(constraint::LinearConstraint)
     if isa(constraint.set, MOI.EqualTo)
         rhs = constraint.set.value-constraint.fct.constant
     end
+    if isa(constraint.set, MOI.LessThan)
+        rhs = constraint.set.upper-constraint.fct.constant
+    end
     return hash([typeof(constraint.set), constraint.indices, coeffs, rhs])
 end
 

@@ -11,6 +11,7 @@ function equal(variables::Vector{Variable})
         EqualSet(length(variables)),
         Int[v.idx for v in variables],
         Int[], # pvals will be filled later
+        false, # `check_in_best_bound` can be changed later but should be set to false by default
         zero(UInt64), # hash will be filled in the next step
     )
     constraint.hash = constraint_hash(constraint)
@@ -31,6 +32,7 @@ function Base.:(==)(x::Variable, y::Variable)
         EqualSet(2),
         Int[x.idx, y.idx],
         Int[], # pvals will be filled later
+        false, # `check_in_best_bound` can be changed later but should be set to false by default
         zero(UInt64), # hash will be filled in the next step
     )
     bc.hash = constraint_hash(bc)
