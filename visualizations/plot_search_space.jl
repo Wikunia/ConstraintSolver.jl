@@ -1,3 +1,4 @@
+using Plots
 rectangle(w, h, x, y) = Shape(x .+ [0,w,w,0], y .+ [0,0,h,h])
 
 function plot_search_space(grid, com_grid, fname)
@@ -111,5 +112,5 @@ function plot_killer(grid, sums, fname; fill=true, mark=nothing)
         end
     end
 
-    png("visualizations/images/$(fname)")
+    png("/home/ole/Julia/ConstraintSolver/visualizations/images/$(fname)")
 end
