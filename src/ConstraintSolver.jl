@@ -3,6 +3,7 @@ module ConstraintSolver
 using MatrixNetworks
 using JSON
 using MathOptInterface
+using Statistics
 using JuMP: @variable, @constraint, @objective, Model, with_optimizer, VariableRef, backend
 import JuMP.sense_to_set
 
@@ -162,9 +163,11 @@ mutable struct BacktrackObj{T <: Real}
     depth               :: Int
     status              :: Symbol
     variable_idx        :: Int
-    pval                :: Int
+    left_side           :: Bool # indicates whether we branch left or right: true => ≤ var_bound, false => ≥ var_bound
+    var_bound           :: Int
     best_bound          :: T
 end
+
 
 function Base.convert(::Type{B}, obj::BacktrackObj{T2}) where {T1, T2, B <: BacktrackObj{T1}}
     return BacktrackObj{T1}(
@@ -173,7 +176,8 @@ function Base.convert(::Type{B}, obj::BacktrackObj{T2}) where {T1, T2, B <: Back
         obj.depth,
         obj.status,
         obj.variable_idx,
-        obj.pval,
+        obj.left_side,
+        obj.var_bound,
         convert(T1, obj.best_bound)
     )
 end
@@ -184,7 +188,8 @@ mutable struct TreeLogNode{T <: Real}
     best_bound      :: T
     step_nr         :: Int
     var_idx         :: Int
-    set_val         :: Int
+    left_side       :: Bool
+    var_bound       :: Int
     var_states      :: Dict{Int,Vector{Int}}
     var_changes     :: Dict{Int,Vector{Tuple{Symbol, Int, Int, Int}}}
     children        :: Vector{TreeLogNode{T}}
@@ -584,16 +589,18 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
 end
 
 """
-    get_best_bound(com::CS.CoM; var_idx=0, val=0)
+    get_best_bound(com::CS.CoM; var_idx=0, left_side=true, var_bound=0)
 
-Return the best bound if setting the variable with idx: `var_idx` to `val` if `var_idx != 0`.
+Return the best bound if setting the variable with idx: `var_idx` to 
+    <= `var_bound` if `var_idx != 0` and `left_side` 
+    >= `var_bound` if `var_idx != 0` and `!left_side` 
 Without an objective function return 0.
 """
-function get_best_bound(com::CS.CoM; var_idx=0, val=0)
+function get_best_bound(com::CS.CoM; var_idx=0, left_side=true, var_bound=0)
     if com.sense == MOI.FEASIBILITY_SENSE
         return zero(com.best_bound)
     end
-    return get_best_bound(com, com.objective, var_idx, val)
+    return get_best_bound(com, com.objective, var_idx, left_side, var_bound)
 end
 
 function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
@@ -698,13 +705,15 @@ function update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraint
 end
 
 function update_best_bound!(com::CS.CoM)
-    if com.sense == MOI.MIN_SENSE
-        max_val = typemax(com.best_bound)
-        com.best_bound = minimum([bo.status == :Open ? bo.best_bound : max_val for bo in com.backtrack_vec])
-    elseif com.sense == MOI.MAX_SENSE
-        min_val = typemin(com.best_bound)
-        com.best_bound = maximum([bo.status == :Open ? bo.best_bound : min_val for bo in com.backtrack_vec])
-    end # otherwise no update is needed
+    if any(bo -> bo.status == :Open, com.backtrack_vec)
+        if com.sense == MOI.MIN_SENSE
+            max_val = typemax(com.best_bound)
+            com.best_bound = minimum([bo.status == :Open ? bo.best_bound : max_val for bo in com.backtrack_vec])
+        elseif com.sense == MOI.MAX_SENSE
+            min_val = typemin(com.best_bound)
+            com.best_bound = maximum([bo.status == :Open ? bo.best_bound : min_val for bo in com.backtrack_vec])
+        end # otherwise no update is needed
+    end
 end
 
 function set_state_to_best_sol!(com::CS.CoM, last_backtrack_id::Int)
@@ -719,6 +728,84 @@ function set_state_to_best_sol!(com::CS.CoM, last_backtrack_id::Int)
 end
 
 """
+    get_split_pvals(pvals::Vector{Int})
+
+Splits the possible values into two by obtaining the mean value.
+Return the biggest int in pvals which is ≤ the mean and the smallest int in pvals which is bigger than mean
+"""
+function get_split_pvals(pvals::Vector{Int})
+    @assert length(pvals) >= 2
+    mean_val = mean(pvals)
+    leq = typemin(Int)
+    geq = typemax(Int)
+    for pval in pvals
+        if pval <= mean_val && pval > leq 
+            leq = pval
+        elseif pval > mean_val && pval < geq 
+            geq = pval
+        end
+    end
+    return leq, geq
+end
+
+function addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com::CS.CoM, num_backtrack_objs, step_nr)
+    push!(backtrack_vec, backtrack_obj)
+    for v in com.search_space
+        push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
+    end
+    if com.input[:logs]
+        push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, step_nr))
+    end
+end
+
+"""
+    backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{T},num_backtrack_objs, parent_idx, depth, step_nr, ind, pvals; check_bound=false)
+
+Create two branches with two additional BacktrackObj and add them to backtrack_vec 
+"""
+function add2backtrack_vec!(backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{T}, num_backtrack_objs, parent_idx, depth, step_nr, ind, pvals; check_bound=false) where T <: Real
+    obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
+    leq_val, geq_val = get_split_pvals(pvals)
+    num_backtrack_objs += 1
+    backtrack_obj = BacktrackObj(
+        num_backtrack_objs,
+        parent_idx,
+        depth,
+        :Open,
+        ind,
+        true, # left branch
+        leq_val,
+        get_best_bound(com; var_idx=ind, left_side=true, var_bound=leq_val)
+    )
+    # only include nodes which have a better objective than the current best solution if one was found already
+    if !check_bound || (backtrack_obj.best_bound*obj_factor < com.best_sol || length(com.solutions) == 0)
+        addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com, num_backtrack_objs, step_nr)
+    else
+        num_backtrack_objs -= 1
+    end
+
+    # right branch
+    num_backtrack_objs += 1
+    backtrack_obj = BacktrackObj(
+        num_backtrack_objs,
+        parent_idx,
+        depth,
+        :Open,
+        ind,
+        false, # right branch
+        geq_val,
+        get_best_bound(com; var_idx=ind, left_side=false, var_bound=geq_val)
+    )
+    if !check_bound || (backtrack_obj.best_bound*obj_factor < com.best_sol || length(com.solutions) == 0)
+        addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com, num_backtrack_objs, step_nr)
+    else
+        num_backtrack_objs -= 1
+    end
+
+    return num_backtrack_objs
+end
+
+"""
     backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
 Start backtracking and stop after `max_bt_steps`.
@@ -729,14 +816,15 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
     found, ind = get_weak_ind(com)
     com.info.backtrack_fixes   = 1
 
-    pvals = reverse!(values(com.search_space[ind]))
+    pvals = values(com.search_space[ind])
     dummy_backtrack_obj = BacktrackObj(
         1, # idx
         0, # parent
         0, # depth
         :Close, # status
         0, # variable_idx
-        0, # pval
+        true, # left_side (is dummy anyway)
+        0, # var_bound
         com.sense == MOI.MIN_SENSE ? typemax(com.best_bound) : typemin(com.best_bound)
     )
 
@@ -746,25 +834,8 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
     # the first solve (before backtrack) has idx 1
     num_backtrack_objs = 1
     step_nr = 1
-    for pval in pvals
-        num_backtrack_objs += 1
-        backtrack_obj = BacktrackObj(
-            num_backtrack_objs,
-            1,
-            1,
-            :Open,
-            ind,
-            pval,
-            get_best_bound(com; var_idx=ind, val=pval)
-        )
-        push!(backtrack_vec, backtrack_obj)
-        for v in com.search_space
-            push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
-        end
-        if com.input[:logs]
-            push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, -1))
-        end
-    end
+    
+    num_backtrack_objs = add2backtrack_vec!(backtrack_vec, com, num_backtrack_objs, 1, 1, step_nr, ind, pvals)
     last_backtrack_id = 0
 
     started = true
@@ -844,16 +915,13 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
         backtrack_obj.status = :Closed
 
-        pval = backtrack_obj.pval
-
-        # check if this value is still possible
-        constraints = com.constraints[com.subscription[ind]]
-        feasible = fulfills_constraints(com, ind, pval)
-        if !feasible
-            continue
+        # limit the variable bounds
+        if backtrack_obj.left_side
+            !remove_above!(com, com.search_space[ind], backtrack_obj.var_bound) && continue
+        else
+            !remove_below!(com, com.search_space[ind], backtrack_obj.var_bound) && continue
         end
-        # value is still possible => set it
-        fix!(com, com.search_space[ind], pval)
+        constraints = com.constraints[com.subscription[ind]]
         com.info.backtrack_fixes   += 1
 
         further_pruning = true
@@ -917,36 +985,13 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             continue
         end
 
-        pvals = reverse!(values(com.search_space[ind]))
+        pvals = values(com.search_space[ind])
         last_backtrack_obj = backtrack_vec[last_backtrack_id]
-        for pval in pvals
-            num_backtrack_objs += 1
-            backtrack_obj = BacktrackObj(
-                num_backtrack_objs, # idx
-                last_backtrack_obj.idx, # parent
-                last_backtrack_obj.depth + 1,
-                :Open,
-                ind,
-                pval,
-                get_best_bound(com; var_idx=ind, val=pval)
-            )
-
-            # only include nodes which have a better objective than the current best solution if one was found already
-            if backtrack_obj.best_bound*obj_factor < com.best_sol || length(com.solutions) == 0
-                push!(backtrack_vec, backtrack_obj)
-                for v in com.search_space
-                    push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
-                end
-                if com.input[:logs]
-                    push!(com.logs, log_one_node(com, length(com.search_space), num_backtrack_objs, -1))
-                end
-            else
-                num_backtrack_objs -= 1
-            end
-        end
+        num_backtrack_objs = add2backtrack_vec!(backtrack_vec, com, num_backtrack_objs, last_backtrack_obj.idx, last_backtrack_obj.depth + 1, step_nr, ind, pvals; check_bound=true)
     end
     if length(com.solutions) > 0
         set_state_to_best_sol!(com, last_backtrack_id)
+        com.best_bound = com.best_sol
         return :Solved
     end
     return :Infeasible
