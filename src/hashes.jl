@@ -1,5 +1,5 @@
 function constraint_hash(constraint::BasicConstraint)
-    return hash([typeof(constraint.set), constraint.indices])
+    return hash([string(typeof(constraint.set)), constraint.indices])
 end
 
 function constraint_hash(constraint::LinearConstraint)
@@ -10,10 +10,9 @@ function constraint_hash(constraint::LinearConstraint)
     if isa(constraint.set, MOI.LessThan)
         rhs = constraint.set.upper-constraint.fct.constant
     end
-    return hash([typeof(constraint.set), constraint.indices, coeffs, rhs])
+    return hash([string(typeof(constraint.set)), constraint.indices, coeffs, rhs])
 end
 
 function constraint_hash(constraint::SingleVariableConstraint)
-    # TODO: Needs to change if we have coefficients but then we probably support all `<=` constraints anyway
-    return hash([typeof(constraint.set), constraint.indices])
+    return hash([string(typeof(constraint.set)), constraint.indices])
 end
