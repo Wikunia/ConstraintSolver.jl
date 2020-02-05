@@ -3,16 +3,22 @@ include("../bipartite.jl")
 """
     all_different(variables::Vector{Variable})
 
-Create a BasicConstraint which will later be used by `all_different(com, constraint)`. \n
+Create a AllDifferentConstraint which will later be used by `all_different(com, constraint)`. \n
 Can be used i.e by `add_constraint!(com, CS.all_different(variables))`.
 """
 function all_different(variables::Vector{Variable})
-    constraint = BasicConstraint(
+    constraint = AllDifferentConstraint(
         0, # idx will be changed later
         var_vector_to_moi(variables),
         AllDifferentSet(length(variables)),
         Int[v.idx for v in variables],
         Int[], # pvals will be filled later
+        Int[], 
+        Int[],
+        Int[],
+        Int[],
+        Int[],
+        MatchingInit(), 
         false, # `check_in_best_bound` can be changed later but should be set to false by default
         zero(UInt64), # hash will be filled in the next step
     )
@@ -20,15 +26,41 @@ function all_different(variables::Vector{Variable})
     return constraint
 end
 
+"""
+    init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet)
+
+Initialize the AllDifferentConstraint by filling 
+"""
+function init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet)
+    pvals = constraint.pvals
+    nindices = length(constraint.indices)
+
+    min_pvals, max_pvals = extrema(pvals)
+    len_range = max_pvals-min_pvals+1
+
+    num_edges = length(pvals)*nindices
+
+    constraint.pval_mapping = zeros(Int, length(pvals))
+    constraint.vertex_mapping = zeros(Int, len_range)
+    constraint.vertex_mapping_bw = zeros(Int, nindices+length(pvals))
+    constraint.di_ei = zeros(Int, num_edges)
+    constraint.di_ej = zeros(Int, num_edges)
+
+    # fill matching_init
+    m = nindices
+    n = len_range
+    constraint.matching_init = MatchingInit(0, zeros(Int, m), zeros(Int, n), zeros(Int, m+1),
+                                            zeros(Int, m+n), zeros(Int, m+n), zeros(Int, m+n), zeros(Bool, m), zeros(Bool, n))
+end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet; logs = true)
+    prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet; logs = true)
 
 Tries to reduce the search space by the all_different constraint.
 Fixes values and then sets com.changed to true for the corresponding index.
 Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set
 """
-function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet; logs = true)
+function prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet; logs = true)
     indices = constraint.indices
     pvals = constraint.pvals
     nindices = length(indices)
@@ -88,9 +120,9 @@ function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.Ve
     # i.e ei=[1,2,1] ej = [1,2,2] => 1->[1,2], 2->[2]
     min_pvals_m1 = min_pvals-1
 
-    pval_mapping = zeros(Int, length(pvals))
-    vertex_mapping = zeros(Int, len_range)
-    vertex_mapping_bw = zeros(Int, nindices+length(pvals))
+    pval_mapping = constraint.pval_mapping
+    vertex_mapping = constraint.vertex_mapping
+    vertex_mapping_bw = constraint.vertex_mapping_bw
 
     vc = 1
     for i in indices
@@ -113,8 +145,10 @@ function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.Ve
         num_edges += nvalues(search_space[i])
     end
 
-    di_ei = Vector{Int}(undef,num_edges)
-    di_ej = Vector{Int}(undef,num_edges)
+    di_ei = constraint.di_ei
+    di_ej = constraint.di_ej
+    di_ei .= 0
+    di_ej .= 0
 
     # add edge from each index to the possible values
     edge_counter = 0
@@ -134,7 +168,9 @@ function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.Ve
         end
     end
 
-    maximum_matching = bipartite_cardinality_matching(di_ei, di_ej, vc, len_range; l_sorted=true)
+    matching_init = constraint.matching_init
+    matching_init.l_in_len = num_edges
+    maximum_matching = bipartite_cardinality_matching(di_ei, di_ej, vc, len_range; l_sorted=true, matching_init=matching_init)
     if maximum_matching.weight != nindices
         logs && @warn "Infeasible (No maximum matching was found)"
         return false
@@ -185,21 +221,36 @@ function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.Ve
         new_vertex = num_nodes+1
         for kv in used_in_maximum_matching
             # not in maximum matching
-            if !kv.second
-                push!(di_ei, new_vertex)
-                push!(di_ej, vertex_mapping[kv.first-min_pvals_m1])
+            if length(di_ei) > edge_counter
+                edge_counter += 1
+                if !kv.second
+                    di_ei[edge_counter] = new_vertex
+                    di_ej[edge_counter] = vertex_mapping[kv.first-min_pvals_m1]
+                else
+                    di_ei[edge_counter] = vertex_mapping[kv.first-min_pvals_m1]
+                    di_ej[edge_counter] = new_vertex
+                end
             else
-                push!(di_ei, vertex_mapping[kv.first-min_pvals_m1])
-                push!(di_ej, new_vertex)
-            end
+                if !kv.second
+                    push!(di_ei, new_vertex)
+                    push!(di_ej, vertex_mapping[kv.first-min_pvals_m1])
+                else
+                    push!(di_ei, vertex_mapping[kv.first-min_pvals_m1])
+                    push!(di_ej, new_vertex)
+                end
+            end            
         end
     end
 
-    sccs_map = strong_components_map(di_ei, di_ej)
+    sccs_map = strong_components_map(di_ei[1:edge_counter], di_ej[1:edge_counter])
 
     # remove the left over edges from the search space
     vmb = vertex_mapping_bw
     for (src,dst) in zip(di_ei, di_ej)
+        # only zeros coming afterwards
+        if src == 0 
+            break
+        end
         # edges to the extra node don't count
         if src > num_nodes || dst > num_nodes
             continue
@@ -231,11 +282,11 @@ function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.Ve
 end
 
 """
-    still_feasible(com::CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet, value::Int, index::Int)
+    still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet, value::Int, index::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
 """
-function still_feasible(com::CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet, value::Int, index::Int)
+function still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet, value::Int, index::Int)
     indices = constraint.indices
     for i=1:length(indices)
         if indices[i] == index

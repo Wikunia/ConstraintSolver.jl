@@ -104,7 +104,7 @@ end
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{EqualSet}) = true
 MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{AllDifferentSet}) = true
 
-function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::Union{EqualSet, AllDifferentSet})
+function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::EqualSet)
     com = model.inner
 
     constraint = BasicConstraint(
@@ -122,8 +122,34 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
         push!(com.subscription[ind], constraint.idx)
     end
 
-    T = typeof(set)
-    return MOI.ConstraintIndex{MOI.VectorOfVariables, T}(length(com.constraints))
+    return MOI.ConstraintIndex{MOI.VectorOfVariables, EqualSet}(length(com.constraints))
+end
+
+function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::AllDifferentSet)
+    com = model.inner
+
+    constraint = AllDifferentConstraint(
+        length(com.constraints)+1,
+        vars,
+        set,
+        Int[v.value for v in vars.variables],
+        Int[], # pvals will be filled later
+        Int[], # pval_mapping will be filled later
+        Int[], # vertex_mapping => later
+        Int[], # vertex_mapping_bw => later
+        Int[], # di_ei => later
+        Int[], # di_ej => later
+        MatchingInit(), 
+        false, # `check_in_best_bound` can be changed later but should be set to false by default
+        zero(UInt64), # hash will be filled later
+    )
+
+    push!(com.constraints, constraint)
+    for (i,ind) in enumerate(constraint.indices)
+        push!(com.subscription[ind], constraint.idx)
+    end
+
+    return MOI.ConstraintIndex{MOI.VectorOfVariables, AllDifferentSet}(length(com.constraints))
 end
 
 MOI.supports_constraint(::Optimizer, ::Type{SAF{T}}, ::Type{NotEqualSet{T}}) where T <: Real = true
@@ -176,21 +202,19 @@ function set_pvals!(model::CS.Optimizer)
     end
 end
 
-function set_constraint_hashes!(model::CS.Optimizer)
-    com = model.inner
+function set_constraint_hashes!(com::CS.CoM)
     for ci=1:length(com.constraints)
         com.constraints[ci].hash = constraint_hash(com.constraints[ci])
     end
 end
 
 """
-    set_check_in_best_bound!(model::CS.Optimizer)
+    set_check_in_best_bound!(com::CS.CoM)
 
 Sets `check_in_best_bound` in each constraint if we have an objective function and:
 - the constraint type has a function `get_constrained_best_bound`
 """
-function set_check_in_best_bound!(model::CS.Optimizer)
-    com = model.inner
+function set_check_in_best_bound!(com::CS.CoM)
     if com.sense == MOI.FEASIBILITY_SENSE
         return
     end
@@ -204,6 +228,18 @@ function set_check_in_best_bound!(model::CS.Optimizer)
             constraint.check_in_best_bound = true
         else # just to be sure => set it to false otherwise
             constraint.check_in_best_bound = false
+        end
+    end
+end
+
+function init_constraints!(com::CS.CoM)
+    for ci=1:length(com.constraints)
+        constraint = com.constraints[ci]
+        c_type = typeof(constraint)
+        c_fct_type = typeof(constraint.fct)
+        c_set_type = typeof(constraint.set)
+        if hasmethod(init_constraint!, (CS.CoM, c_type, c_fct_type, c_set_type))
+            init_constraint!(com, constraint, constraint.fct, constraint.set)
         end
     end
 end

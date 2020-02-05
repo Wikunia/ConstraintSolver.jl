@@ -539,7 +539,6 @@ end
     v3 = CS.add_var!(com, 1, 2)
 
     @test_throws ErrorException CS.add_constraint!(com, !CS.equal([v1,v2,v3]))
-    @test_throws ErrorException CS.add_constraint!(com, !CS.all_different([v1,v2,v3]))
 end
 
 @testset "Fix variable" begin
