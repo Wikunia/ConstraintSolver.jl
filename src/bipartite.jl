@@ -17,12 +17,13 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
         end
         l = l_in[perm]
         r = r_in[perm]
-    elseif matching_init !== nothing 
-        @views l = l_in[1:matching_init.l_in_len]
-        @views r = r_in[1:matching_init.l_in_len]
     end
 
-    len = length(l)
+    if matching_init === nothing
+        len = length(l)
+    else
+        len = matching_init.l_in_len
+    end
     if matching_init === nothing
         matching_l = zeros(Int, m)
         matching_r = zeros(Int, n)
@@ -35,7 +36,8 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
 
     # create initial matching
     match_len = 0
-    for (li,ri) in zip(l,r)
+    for i = 1:len
+        li, ri = l[i], r[i]
         if matching_l[li] == 0 && matching_r[ri] == 0
             matching_l[li] = ri
             matching_r[ri] = li
@@ -61,7 +63,7 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
             end
             c += 1
         end
-        index_l[l[end]+1] = c
+        index_l[l[len]+1] = c
 
         index_l[1] = 1
 
@@ -89,7 +91,8 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
         while match_len < m
             pend = 1
             pstart = 1
-            for li in l
+            for i=1:len
+                li = l[i]
                 # free vertex
                 if matching_l[li] == 0
                     process_nodes[pstart] = li
@@ -98,7 +101,6 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
                 end
             end
 
-            begin
             while pstart <= pend
                 node = process_nodes[pstart]
                 depth = depths[pstart]
@@ -162,7 +164,6 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
                 found = false
             else
                 break
-            end
             end
         end
     end

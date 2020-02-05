@@ -221,8 +221,8 @@ function prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct:
         new_vertex = num_nodes+1
         for kv in used_in_maximum_matching
             # not in maximum matching
-            if length(di_ei) > edge_counter
-                edge_counter += 1
+            edge_counter += 1
+            if length(di_ei) >= edge_counter
                 if !kv.second
                     di_ei[edge_counter] = new_vertex
                     di_ej[edge_counter] = vertex_mapping[kv.first-min_pvals_m1]

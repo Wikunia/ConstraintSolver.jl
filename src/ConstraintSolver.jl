@@ -503,7 +503,6 @@ function prune!(com::CS.CoM; pre_backtrack=false, all=false, only_once=false, in
         new_var_length = length(var.changes[current_backtrack_id])
         if new_var_length > 0 || all || initial_check
             prev_var_length[var.idx] = new_var_length
-            inner_constraints = com.constraints[com.subscription[var.idx]]
             for ci in com.subscription[var.idx]
                 inner_constraint = com.constraints[ci]
                 constraint_idxs_vec[inner_constraint.idx] = open_possibilities(search_space, inner_constraint.indices)
@@ -545,7 +544,6 @@ function prune!(com::CS.CoM; pre_backtrack=false, all=false, only_once=false, in
             new_var_length = length(var.changes[current_backtrack_id])
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
-                inner_constraints = com.constraints[com.subscription[var.idx]]
                 for ci in com.subscription[var.idx]
                     if ci != constraint.idx
                         inner_constraint = com.constraints[ci]
