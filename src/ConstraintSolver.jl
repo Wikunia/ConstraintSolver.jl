@@ -64,6 +64,36 @@ mutable struct BasicConstraint <: Constraint
     hash                :: UInt64
 end
 
+mutable struct MatchingInit
+    l_in_len            :: Int
+    matching_l          :: Vector{Int}
+    matching_r          :: Vector{Int}
+    index_l             :: Vector{Int}
+    process_nodes       :: Vector{Int}
+    depths              :: Vector{Int}
+    parents             :: Vector{Int}
+    used_l              :: Vector{Bool}
+    used_r              :: Vector{Bool}
+end
+
+MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[], Bool[])
+
+mutable struct AllDifferentConstraint <: Constraint
+    idx                 :: Int
+    fct                 :: Union{MOI.AbstractScalarFunction, MOI.AbstractVectorFunction}
+    set                 :: Union{MOI.AbstractScalarSet, MOI.AbstractVectorSet}
+    indices             :: Vector{Int}
+    pvals               :: Vector{Int}
+    pval_mapping        :: Vector{Int}
+    vertex_mapping      :: Vector{Int}
+    vertex_mapping_bw   :: Vector{Int}
+    di_ei               :: Vector{Int}
+    di_ej               :: Vector{Int}
+    matching_init       :: MatchingInit
+    check_in_best_bound :: Bool
+    hash                :: UInt64
+end
+
 # support for a <= b constraint
 mutable struct SingleVariableConstraint <: Constraint
     idx                 :: Int
@@ -473,7 +503,6 @@ function prune!(com::CS.CoM; pre_backtrack=false, all=false, only_once=false, in
         new_var_length = length(var.changes[current_backtrack_id])
         if new_var_length > 0 || all || initial_check
             prev_var_length[var.idx] = new_var_length
-            inner_constraints = com.constraints[com.subscription[var.idx]]
             for ci in com.subscription[var.idx]
                 inner_constraint = com.constraints[ci]
                 constraint_idxs_vec[inner_constraint.idx] = open_possibilities(search_space, inner_constraint.indices)
@@ -515,7 +544,6 @@ function prune!(com::CS.CoM; pre_backtrack=false, all=false, only_once=false, in
             new_var_length = length(var.changes[current_backtrack_id])
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
-                inner_constraints = com.constraints[com.subscription[var.idx]]
                 for ci in com.subscription[var.idx]
                     if ci != constraint.idx
                         inner_constraint = com.constraints[ci]
@@ -1079,6 +1107,13 @@ function solve!(com::CS.CoM, options::SolverOptions)
     max_bt_steps = options.max_bt_steps
     backtrack_sorting = options.backtrack_sorting
     keep_logs = options.keep_logs
+
+    set_constraint_hashes!(com)
+    # sets check_in_best_bound per constraint if an objective function exists
+    set_check_in_best_bound!(com)
+
+    # initialize constraints if `init_constraint!` exists for the constraint
+    init_constraints!(com)
 
     com.input[:logs] = keep_logs
     if keep_logs

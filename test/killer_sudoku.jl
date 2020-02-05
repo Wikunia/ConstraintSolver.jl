@@ -48,6 +48,37 @@ end
     end
 end
 
+@testset "Killer Sudoku from wikipedia with normal rules" begin
+    m = Model(with_optimizer(CS.Optimizer))
+    @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+
+    sums = parseKillerJSON(JSON.parsefile("data/killer_wikipedia"))
+
+    for s in sums
+        @constraint(m, sum([x[ind[1],ind[2]] for ind in s.indices]) == s.result)
+        @constraint(m, [x[ind[1],ind[2]] for ind in s.indices] in CS.AllDifferentSet(length(s.indices)))
+    end
+
+    # sudoku constraints
+    for rc = 1:9
+        @constraint(m, x[rc,:] in CS.AllDifferentSet(9))
+        @constraint(m, x[:,rc] in CS.AllDifferentSet(9))
+    end
+    for br=0:2
+        for bc=0:2
+            @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet(9))
+        end
+    end
+
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test jump_fulfills_sudoku_constr(JuMP.value.(x))
+
+    for s in sums
+        @test s.result == sum(JuMP.value.([x[i[1],i[2]] for i in s.indices]))
+    end
+end
+
 @testset "Killer Sudoku niallsudoku_5500 with coefficients" begin
     com = CS.ConstraintSolverModel()
 
