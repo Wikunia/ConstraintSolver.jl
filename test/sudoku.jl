@@ -59,6 +59,7 @@ end
 
     @test CS.solve!(com, CS.SolverOptions()) == :Solved
     @test fulfills_sudoku_constr(com_grid)
+    @test 0 < com.solve_time < 1
 end
 
 @testset "Hard sudoku infeasible" begin

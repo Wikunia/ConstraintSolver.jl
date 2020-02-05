@@ -237,6 +237,8 @@ mutable struct ConstraintSolverModel{T <: Real}
     input               :: Dict{Symbol,Any}
     logs                :: Vector{TreeLogNode{T}}
     options             :: SolverOptions
+    start_time          :: Float64 
+    solve_time          :: Float64 # seconds spend in solve
 end
 
 const CoM = ConstraintSolverModel
@@ -278,7 +280,9 @@ function ConstraintSolverModel(::Type{T}=Float64) where {T <: Real}
         CSInfo(0, false, 0, 0, 0), # info
         Dict{Symbol,Any}(), # input
         Vector{TreeLogNode{T}}(), # logs
-        SolverOptions() # options
+        SolverOptions(), # options,
+        -1.0, # solve start time
+        -1.0 # solve time will be overwritten
     )
 end
 
@@ -1108,6 +1112,8 @@ function solve!(com::CS.CoM, options::SolverOptions)
     backtrack_sorting = options.backtrack_sorting
     keep_logs = options.keep_logs
 
+    com.start_time = time()
+
     set_constraint_hashes!(com)
     # sets check_in_best_bound per constraint if an objective function exists
     set_check_in_best_bound!(com)
@@ -1129,11 +1135,13 @@ function solve!(com::CS.CoM, options::SolverOptions)
     feasible = prune!(com; pre_backtrack=true, initial_check=true)
 
     if !feasible
+        com.solve_time = time()-com.start_time
         return :Infeasible
     end
     if all(v->isfixed(v), com.search_space)
         com.best_bound = get_best_bound(com)
         com.best_sol = com.best_bound
+        com.solve_time = time()-com.start_time
         return :Solved
     end
     feasible = prune!(com; pre_backtrack=true)
@@ -1144,18 +1152,23 @@ function solve!(com::CS.CoM, options::SolverOptions)
     end
 
     if !feasible
+        com.solve_time = time()-com.start_time
         return :Infeasible
     end
 
     if all(v->isfixed(v), com.search_space)
         com.best_sol = com.best_bound
+        com.solve_time = time()-com.start_time
         return :Solved
     end
     if backtrack
         com.info.backtracked = true
-        return backtrack!(com, max_bt_steps; sorting=backtrack_sorting)
+        status = backtrack!(com, max_bt_steps; sorting=backtrack_sorting)
+        com.solve_time = time()-com.start_time
+        return status
     else
         @info "Backtracking is turned off."
+        com.solve_time = time()-com.start_time
         return :NotSolved
     end
 end

@@ -48,12 +48,10 @@ function solve_all(filenames; benchmark=false, single_times=true)
 
         if single_times
             GC.enable(false)
-            t = time()
             MOI.optimize!(m)
             status = MOI.get(m, MOI.TerminationStatus())
-            t = time()-t
             GC.enable(true)
-            println(i-1,", ", t)
+            println(i-1,", ", MOI.get(m, MOI.SolveTime()))
         else
             GC.enable(false)
             MOI.optimize!(m)
