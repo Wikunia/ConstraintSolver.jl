@@ -24,6 +24,8 @@ I'm just a MSc student in computer science so I don't have much knowledge on how
 - [How to profile Julia code](https://opensourc.es/blog/constraint-solver-profiling)
 - [Second take on bipartite matchings](https://opensourc.es/blog/constraint-solver-bipartite-matching)
 - [Making it a JuMP solver](https://opensourc.es/blog/constraint-solver-jump)
+- [Dealing with real objectives](https://opensourc.es/blog/constraint-solver-floats)
+- [Support for linear objectives](https://opensourc.es/blog/constraint-solver-linear-objective)
 
 ## Installation
 You can install this julia package using 
