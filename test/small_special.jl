@@ -654,7 +654,6 @@ end
 
     optimize!(m)
 
-    @test 0 < MOI.get(m, MOI.SolveTime()) < 1
     @test JuMP.termination_status(m) == MOI.OPTIMAL
     x_vals = JuMP.value.(x)
     @test sum(x_vals) <= 25
