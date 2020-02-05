@@ -765,6 +765,22 @@ end
     @test allunique(match.match)
     # no unmatched vertex
     @test count(i->i==0, match.match) == 0
+
+    # more values than indices with matching_init
+    m = 4
+    n = 6
+    l = [1,2,3,4,1,2,3,3,2,1,2,0,0]
+    r = [1,1,2,2,2,2,3,4,5,5,6,0,0]
+    # don't use the zeros
+    l_len = length(l)-2 
+    matching_init = CS.MatchingInit(l_len, zeros(Int, m), zeros(Int, n), zeros(Int, m+1), zeros(Int, m+n), zeros(Int, m+n), zeros(Int, m+n),
+                                    zeros(Bool, m), zeros(Bool, n))
+    match = CS.bipartite_cardinality_matching(l, r, m, n; matching_init=matching_init)
+    @test match.weight == 4
+    # all should be matched to different values
+    @test allunique(match.match)
+    # no unmatched vertex
+    @test count(i->i==0, match.match) == 0
 end
 
 @testset "Not equal constant" begin
