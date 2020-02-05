@@ -115,6 +115,7 @@ end
     for s in sums[2:end]
         @test s.result == sum([CS.value(com_grid[CartesianIndex(i)]) for i in s.indices])
     end
+    @test com.solve_time > 0
 
     # test if deterministic by running it again
     com = CS.ConstraintSolverModel()
