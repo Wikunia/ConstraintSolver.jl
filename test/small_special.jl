@@ -749,6 +749,22 @@ end
     match = CS.bipartite_cardinality_matching([2,1,3],[1,2,3], 3, 3)
     @test match.weight == 3
     @test match.match == [2,1,3]
+
+    # no perfect matching
+    match = CS.bipartite_cardinality_matching([1,2,3,4,1,2,3,3],[1,1,2,2,2,2,3,4], 4, 4)
+    @test match.weight == 3
+    # 4 is zero and the rest should be different
+    @test match.match[4] == 0
+    @test allunique(match.match)
+    
+
+    # more values than indices 
+    match = CS.bipartite_cardinality_matching([1,2,3,4,1,2,3,3,2,1,2],[1,1,2,2,2,2,3,4,5,5,6], 4, 6)
+    @test match.weight == 4
+    # all should be matched to different values
+    @test allunique(match.match)
+    # no unmatched vertex
+    @test count(i->i==0, match.match) == 0
 end
 
 @testset "Not equal constant" begin
