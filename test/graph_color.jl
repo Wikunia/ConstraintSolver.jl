@@ -139,7 +139,7 @@ function normal_49_states(;reverse_constraint = false)
     @test status == MOI.OPTIMAL
     @test com.best_sol == 4 == JuMP.objective_value(m) == JuMP.objective_bound(m)
     @test maximum([JuMP.value(var) for var in states]) == 4 == JuMP.value(max_color)
-
+    @test 0 <= MOI.get(m, MOI.SolveTime()) < 1
     return com
 end
 

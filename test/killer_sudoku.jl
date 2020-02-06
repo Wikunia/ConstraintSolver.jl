@@ -73,6 +73,7 @@ end
     optimize!(m)
     @test JuMP.termination_status(m) == MOI.OPTIMAL
     @test jump_fulfills_sudoku_constr(JuMP.value.(x))
+    @test JuMP.solve_time(m) >= 0
 
     for s in sums
         @test s.result == sum(JuMP.value.([x[i[1],i[2]] for i in s.indices]))
@@ -114,6 +115,7 @@ end
     for s in sums[2:end]
         @test s.result == sum([CS.value(com_grid[CartesianIndex(i)]) for i in s.indices])
     end
+    @test com.solve_time >= 0
 
     # test if deterministic by running it again
     com = CS.ConstraintSolverModel()
