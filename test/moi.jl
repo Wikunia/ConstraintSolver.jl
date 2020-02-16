@@ -65,7 +65,7 @@ end
     @test_throws ErrorException MOI.optimize!(optimizer)
 
     # non existing option
-    @test_logs (:warn, r"Option abc is not available") Model(with_optimizer(CS.Optimizer, abc=1))
+    @test_logs (:error, r"option abc doesn't exist") Model(optimizer_with_attributes(CS.Optimizer, "abc"=>1))
 end
 
 end

@@ -3,7 +3,7 @@ module ConstraintSolver
 using MatrixNetworks
 using JSON
 using MathOptInterface
-using JuMP: @variable, @constraint, @objective, Model, with_optimizer, VariableRef, backend
+using JuMP: @variable, @constraint, @objective, Model, optimizer_with_attributes, VariableRef, backend
 import JuMP.sense_to_set
 
 const MOI = MathOptInterface

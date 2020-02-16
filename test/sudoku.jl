@@ -72,7 +72,7 @@ end
             0 1 0 0 3 9 0 0 0;
             0 0 0 0 0 0 8 0 6]
 
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
     # set variables
     for r=1:9, c=1:9
@@ -101,7 +101,7 @@ end
     grid[8,:] = [0 8 0 0 7 3 0 5 0]
     grid[9,:] = [0 0 0 0 0 0 0 0 0]
 
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
     # set variables
     nvars_set = 0
@@ -223,7 +223,7 @@ end
     grids = sudokus_from_file("data/top95")
     c = 0
     for grid in grids
-        m = Model(with_optimizer(CS.Optimizer, solution_type=Int8))
+        m = Model(optimizer_with_attributes(CS.Optimizer, "solution_type"=>Int8))
 
         @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
         # set variables
@@ -252,7 +252,7 @@ end
 
 
 @testset "Number 7 in top95.txt w/o backtracking" begin
-    m = Model(with_optimizer(CS.Optimizer, backtrack=false))
+    m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack"=>false))
 
     grid = Int[6,0,2,0,5,0,0,0,0,0,0,0,0,0,3,0,4,0,0,0,0,0,0,0,0,0,0,4,3,0,0,0,8,0,
               0,0,0,1,0,0,0,0,2,0,0,0,0,0,0,0,0,7,0,0,5,0,0,2,7,0,0,0,0,0,0,0,0,0,
