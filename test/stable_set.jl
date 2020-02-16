@@ -51,7 +51,7 @@ end
         1 1 0 1
         0 0 1 0
     ]
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     x = @variable(m, x[1:4], Bin)
     for i in 1:4, j in i+1:4
         if matrix[i,j] == 1

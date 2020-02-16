@@ -542,7 +542,7 @@ end
 end
 
 @testset "Fix variable" begin
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x <= 9, Int)
     @variable(m, y == 2, Int)
     # should just return optimal with any 1-9 for x and y is fixed
@@ -552,7 +552,7 @@ end
     @test 1 <= JuMP.value(x) <= 9 && length(CS.values(m, x)) == 1
     @test JuMP.value(y) == 2
 
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x <= 9, Int)
     @variable(m, y == 2, Int)
     @constraint(m, x+y == 10)
@@ -564,7 +564,7 @@ end
 end
 
 @testset "LessThan constraints JuMP" begin
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x[1:5] <= 9, Int)
     @constraint(m, sum(x) <= 25)
     @constraint(m, sum(x) >= 20)
@@ -577,7 +577,7 @@ end
     @test JuMP.objective_value(m) == 99
 
     # minimize
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x[1:5] <= 9, Int)
     @constraint(m, sum(x) <= 25)
     @constraint(m, sum(x) >= 20)
@@ -590,7 +590,7 @@ end
     @test JuMP.objective_value(m) == 37
 
     # minimize with negative and positive real weights
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x[1:5] <= 9, Int)
     @constraint(m, sum(x) <= 25)
     weights = [-0.1,0.2,-0.3,0.4,0.5]
@@ -623,7 +623,7 @@ end
 end
 
 @testset "Knapsack problems" begin
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
 
     @variable(m, 1 <= x[1:5] <= 9, Int)
     @constraint(m, sum(x) <= 25)
@@ -643,7 +643,7 @@ end
     @test JuMP.objective_value(m) ≈ 51.8
 
     # less variables in the objective
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
 
     @variable(m, 1 <= x[1:5] <= 9, Int)
     @constraint(m, sum(x) <= 25)
@@ -661,7 +661,7 @@ end
     @test JuMP.objective_value(m) ≈ 32.3
 
     # minimize
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
 
     @variable(m, 1 <= x[1:5] <= 9, Int)
     @constraint(m, sum(x) >= 25)
@@ -681,7 +681,7 @@ end
     @test JuMP.objective_value(m) ≈ 51.6
 
     # minimize only part of the weights and some are negative
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
 
     @variable(m, 1 <= x[1:5] <= 9, Int)
     @constraint(m, sum(x) >= 25)
@@ -700,7 +700,7 @@ end
     @test sum(x_vals) >= 25
     @test JuMP.objective_value(m) ≈ -4
 
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x[1:5] <= 9, Int)
     @constraint(m, sum(x) <= 25)
     @constraint(m, -x[1]-x[2]-x[3]+x[4]+x[5] >= 5)
@@ -716,29 +716,29 @@ end
 end
 
 @testset "Not supported constraints" begin
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     # must be an Integer upper bound
     @variable(m, 1 <= x[1:5] <= NaN, Int)
     @test_throws ErrorException optimize!(m)
 
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     # must be an Integer lower bound
     @variable(m, NaN <= x[1:5] <= 2, Int)
     @test_throws ErrorException optimize!(m)
 
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x[1:5] <= 2, Int)
     # constraint not supported
     @constraint(m, x[1]-x[2] != 2)
     @test_throws ErrorException optimize!(m)
 
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x[1:5] <= 2, Int)
     # constraint not supported
     @constraint(m, x[1]-x[2]-x[3] != 0)
     @test_throws ErrorException optimize!(m)
 
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x[1:5] <= 2, Int)
     # constraint currently not supported
     @constraint(m, 2x[1]-x[2] != 0)
@@ -784,7 +784,7 @@ end
 end
 
 @testset "Not equal constant" begin
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
 
     @variable(m, 1 <= x <= 10, Int)
     @constraint(m, x != 2-1) # != 1

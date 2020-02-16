@@ -1,8 +1,7 @@
 using JuMP, GLPK, Cbc
 
 function graph_coloring(;fast=true, benchmark=false)
-    #m = Model(with_optimizer(GLPK.Optimizer, msg_lev = 3))
-    m = Model(with_optimizer(Cbc.Optimizer, logLevel=0))
+    m = Model(optimizer_with_attributes(Cbc.Optimizer, "logLevel"=>0))
 
     @variable(m, max_color, Int)
     @variable(m, c[1:49,1:4], Bin)

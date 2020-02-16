@@ -19,7 +19,7 @@ end
 @testset "Killer Sudoku" begin
 
 @testset "Killer Sudoku from wikipedia" begin
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
 
     sums = parseKillerJSON(JSON.parsefile("data/killer_wikipedia"))
@@ -49,7 +49,7 @@ end
 end
 
 @testset "Killer Sudoku from wikipedia with normal rules" begin
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
 
     sums = parseKillerJSON(JSON.parsefile("data/killer_wikipedia"))
@@ -156,7 +156,7 @@ end
 end
 
 function killer_negative()
-    m = Model(with_optimizer(CS.Optimizer, keep_logs=true))
+    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true))
 
     @variable(m, -9 <= com_grid[1:9, 1:9] <= -1, Int)
 

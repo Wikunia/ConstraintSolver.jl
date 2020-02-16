@@ -8,7 +8,7 @@ It seems like you have some specific questions about how to use the constraint s
 using JuMP, ConstraintSolver
 const CS = ConstraintSolver
 
-m = Model(with_optimizer(CS.Optimizer)) 
+m = Model(CS.Optimizer) 
 @variable(m, 1 <= x <= 9, Int)
 @variable(m, 1 <= y <= 5, Int)
 
@@ -70,7 +70,7 @@ For the explanation of the question look [here](explanation.html#Backtracking-1)
 Instead of solving the model directly you can have a look at the state before backtracking by setting an option of the ConstraintSolver:
 
 ```
-m = Model(with_optimizer(CS.Optimizer, backtrack=false))
+m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack"=>false))
 ```
 
 and then check the variables using `CS.values(m, x)` or `CS.values(m, y)` this returns an array of possible values.

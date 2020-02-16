@@ -58,7 +58,7 @@ grid = [6 0 2 0 5 0 0 0 0;
 
 ```
 # creating a constraint solver model and setting ConstraintSolver as the optimizer.
-m = Model(with_optimizer(CS.Optimizer)) 
+m = Model(CS.Optimizer) 
 # define the 81 variables
 @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
 # set variables if fixed
@@ -139,7 +139,7 @@ The goal is to color a graph in such a way that neighboring nodes have a differe
 We want to find the coloring which uses the least amount of colors.
 
 ```
-m = Model(with_optimizer(CS.Optimizer))
+m = Model(CS.Optimizer)
 num_colors = 10
 
 @variable(m, 1 <= countries[1:5] <= num_colors, Int)
