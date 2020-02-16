@@ -25,7 +25,7 @@ function combine_options(options)
     options_dict = Dict{Symbol,Any}()
     for kv in options
         if !in(kv[1], fieldnames(SolverOptions))
-            @warn "Option "*string(kv[1])*" is not available"
+            @error "The option "*string(kv[1])*" doesn't exist."
         else
             options_dict[kv[1]] = kv[2]
         end

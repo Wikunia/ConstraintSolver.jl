@@ -20,6 +20,8 @@
     @test MOI.supports(optimizer, MOI.ObjectiveFunction{MOI.SingleVariable}())
     @test MOI.supports(optimizer, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}())
 
+    @test MOI.supports(optimizer, MOI.RawParameter("backtrack"))
+
     @test MOI.get(optimizer, MOI.ObjectiveSense()) == MOI.FEASIBILITY_SENSE
 end
 
@@ -66,6 +68,7 @@ end
 
     # non existing option
     @test_logs (:error, r"option abc doesn't exist") Model(optimizer_with_attributes(CS.Optimizer, "abc"=>1))
+    @test_logs (:error, r"option abc doesn't exist") model = CS.Optimizer(abc = 1)
 end
 
 end
