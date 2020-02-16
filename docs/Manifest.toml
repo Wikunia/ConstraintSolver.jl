@@ -53,9 +53,7 @@ version = "0.2.0"
 
 [[ConstraintSolver]]
 deps = ["JSON", "JuMP", "MathOptInterface", "MatrixNetworks"]
-git-tree-sha1 = "a1f9fea260d9d54f779f8a03ad6ca55e230b411d"
-repo-rev = "master"
-repo-url = ".."
+path = ".."
 uuid = "e0e52ebd-5523-408d-9ca3-7641f1cd1405"
 version = "0.1.0"
 
