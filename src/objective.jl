@@ -24,12 +24,11 @@ function get_best_bound(com::CS.CoM, obj_fct::SingleVariableObjective, var_idx::
 end
 
 """
-    get_best_bound(com::CS.CoM, obj_fct::LinearCombinationObjective, var_idx::Int, val::Int; start=1)
+    get_best_bound(com::CS.CoM, obj_fct::LinearCombinationObjective, var_idx::Int, val::Int)
 
-Return the best objective if `var_idx` is set to `val` and we have a linear function as our objective.
-Only check constraints with id >= `start`
+Return the best objective if `var_idx` is set to `val` and we have a linear function as our objective
 """
-function get_best_bound(com::CS.CoM, obj_fct::LinearCombinationObjective, var_idx::Int, val::Int; start=1)
+function get_best_bound(com::CS.CoM, obj_fct::LinearCombinationObjective, var_idx::Int, val::Int)
     indices = obj_fct.lc.indices
     coeffs = obj_fct.lc.coeffs
     objval = obj_fct.constant
@@ -65,15 +64,14 @@ function get_best_bound(com::CS.CoM, obj_fct::LinearCombinationObjective, var_id
         return objval
     end
 
-    for ci=start:length(com.constraints)
-        constraint = com.constraints[ci]
+    for constraint in com.constraints
         if constraint.check_in_best_bound
             constrained_obj = get_constrained_best_bound(com, constraint, constraint.fct, constraint.set, obj_fct, var_idx, val)
             # if objective is not fully constrained get better bound on currently unconstrained objective `left_over_obj`
             # only call if the constraint was helpful => left_over_obj is at least one index smaller than the previous objective
             # and of course only if there is a left over objective
             if constrained_obj.left_over_obj !== nothing && length(constrained_obj.local_constrained_idx) >= 1
-                bound_for_left_over = get_best_bound(com, constrained_obj.left_over_obj, var_idx, val; start=ci+1)
+                bound_for_left_over = get_best_bound(com, constrained_obj.left_over_obj, var_idx, val)
                 constrained_obj.complete_bound = constrained_obj.constrained_bound+bound_for_left_over
             end
             if com.sense == MOI.MIN_SENSE && constrained_obj.complete_bound > objval
