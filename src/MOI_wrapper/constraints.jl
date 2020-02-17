@@ -82,7 +82,8 @@ function MOI.add_constraint(model::Optimizer, func::SAF{T}, set::MOI.LessThan{T}
     check_inbounds(model, func)
 
     # support for a <= b which is written as a-b <= 0
-    if set.upper == 0.0 && length(func.terms) == 2 && abs(func.terms[1].coefficient) == 1.0 && func.terms[2].coefficient != -func.terms[2].coefficient
+    # currently only supports if the coefficients are 1 and -1
+    if set.upper == 0.0 && length(func.terms) == 2 && abs(func.terms[1].coefficient) == 1.0  && abs(func.terms[2].coefficient) == 1.0 && func.terms[1].coefficient == -func.terms[2].coefficient
         return add_variable_less_than_variable_constraint(model, func, set)
     end
 
