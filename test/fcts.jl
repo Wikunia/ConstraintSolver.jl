@@ -114,7 +114,7 @@ end
     # objective x[1]+2x[2]+3x[3]+4x[4]+5x[5]+5
     com.sense = MOI.MAX_SENSE
     # optimal value is 51
-    @test CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, 0) >= 51
+    @test CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, 0).complete_bound >= 51
 
     ##################################
     # positive values 
@@ -144,7 +144,7 @@ end
     com.sense = MOI.MIN_SENSE
     # optimal value is 16
     computed_bound = CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, 0)
-    @test computed_bound <= 16 && computed_bound > typemin(Float64)
+    @test typemin(Float64) < computed_bound.complete_bound <= 16
 
     ##################################
     # positive relevant values 
@@ -178,7 +178,7 @@ end
     com.sense = MOI.MIN_SENSE
     # optimal value is 35
     computed_bound = CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, 0)
-    @test computed_bound <= 35 && computed_bound > typemin(Float64)
+    @test typemin(Float64) < computed_bound.complete_bound <= 35
 
     ##################################
     # positive relevant values  Max
@@ -212,7 +212,7 @@ end
     com.sense = MOI.MAX_SENSE
     # optimal value is 50.9
     computed_bound = CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, 0)
-    @test computed_bound >= 50.9-1e-6 && computed_bound < typemax(Float64)
+    @test 50.9-1e-6 <= computed_bound.complete_bound < typemax(Float64)
 
 
     ##################################
@@ -250,7 +250,7 @@ end
     com.sense = MOI.MIN_SENSE
     # optimal value is 1.6
     computed_bound = CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, 0)
-    @test computed_bound <= 1.6+1e-6
+    @test computed_bound.complete_bound <= 1.6+1e-6
 
 end
 end

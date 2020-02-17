@@ -145,13 +145,13 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             ci = ad.same_left_idx[i]
             oi = ad.same_right_idx[i]
             if anti_costs[ci] < 0
-                return typemin(T)
+                return ConstrainedObjectiveObj(typemin(T), typemin(T), Int[], obj_fct)
             end
             if gains[oi] < 0
-                return typemin(T)
+                return ConstrainedObjectiveObj(typemin(T), typemin(T), Int[], obj_fct)
             end
             if com.search_space[cost_indices[ci]].min < 0
-                return typemin(T)
+                return ConstrainedObjectiveObj(typemin(T), typemin(T), Int[], obj_fct)
             end
         end
     else
@@ -159,13 +159,13 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             ci = ad.same_left_idx[i]
             oi = ad.same_right_idx[i]
             if costs[ci] < 0
-                return typemax(T)
+                return ConstrainedObjectiveObj(typemax(T), typemax(T), Int[], obj_fct)
             end
             if gains[oi] < 0
-                return typemax(T)
+                return ConstrainedObjectiveObj(typemax(T), typemax(T), Int[], obj_fct)
             end
             if com.search_space[cost_indices[ci]].min < 0
-                return typemax(T)
+                return ConstrainedObjectiveObj(typemax(T), typemax(T), Int[], obj_fct)
             end
         end
     end
@@ -247,7 +247,15 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             capacity <= com.options.atol && break
         end
     end
-    
+    best_constrained_bound = best_bound
+    # check if some of the objective isn't constrained at the moment
+    if length(ad.only_right_idx) > 0
+        left_over_lc = LinearCombination(gain_indices[ad.only_right_idx], gains[ad.only_right_idx])
+        left_over_obj = LinearCombinationObjective(left_over_lc, zero(T), gain_indices[ad.only_right_idx])
+    else
+        left_over_obj = nothing
+    end
+
     # 3) Use the variables which have no cost but only gains
     if com.sense == MOI.MIN_SENSE
         # trying to minimize the additions to the best bound
@@ -276,8 +284,7 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             end
         end
     end
-
-    return best_bound
+    return ConstrainedObjectiveObj(best_bound, best_constrained_bound, vcat(ad.same_right_idx), left_over_obj)
 end
 
 function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.LessThan{T}; logs = true) where T <: Real
