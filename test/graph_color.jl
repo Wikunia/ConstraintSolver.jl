@@ -1,7 +1,7 @@
 @testset "Graph coloring" begin
 
 function normal_49_states(;reverse_constraint = false)
-    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true))
+    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true, "logging"=>[]))
     num_colors = 20
     
     @variable(m, 1 <= states[1:50] <= num_colors, Int)
@@ -158,7 +158,7 @@ end
 end
 
 @testset "49 US states + DC without sorting + some states same color" begin
-    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true, "backtrack_sorting"=>false))
+    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true, "backtrack_sorting"=>false, "logging"=>[]))
     num_colors = 8
     @variable(m, 1 <= max_color <= num_colors, Int)
 
@@ -303,7 +303,7 @@ end
 end
 
 @testset "49 US states + DC only 3 colors" begin
-    m = Model(CS.Optimizer)
+    m = Model(CSJuMPTestSolver())
     num_colors = 3
 
     @variable(m, 1 <= states[1:50] <= num_colors, Int)
@@ -425,7 +425,7 @@ end
 end
 
 @testset "Maximization objective" begin
-    m = Model(CS.Optimizer)
+    m = Model(CSJuMPTestSolver())
     num_colors = 20
 
     @variable(m, 1 <= states[1:50] <= num_colors, Int)

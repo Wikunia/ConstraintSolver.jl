@@ -251,6 +251,19 @@ end
     # optimal value is 1.6
     computed_bound = CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, 0)
     @test computed_bound <= 1.6+1e-6
+end
 
+@testset "TableLogging" begin
+    table = CS.TableSetup(
+        [:open_nodes, :closed_nodes, :incumbent, :best_bound, :duration],
+        ["#Open", "#Closed", "Incumbent", "Best Bound", "[s]"],
+        [10,10,20,20,10]; 
+        min_diff_duration=5.0)
+    table_header = CS.get_header(table)
+    lines = split(table_header, "\n")
+    @test length(lines) == 2
+    @test length(lines[2]) == sum(table.col_widths)
+    @test occursin("#Open", lines[1])
+    @test occursin("#Closed", lines[1])
 end
 end
