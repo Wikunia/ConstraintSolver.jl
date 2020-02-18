@@ -111,14 +111,14 @@ function get_idx_array_diff(left::Vector{Int}, right::Vector{Int})
 end
 
 """
-    get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, con_fct::SAF{T}, set::MOI.LessThan{T}, obj_fct::LinearCombinationObjective, var_idx, val)  where T <: Real
+    get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, con_fct::SAF{T}, set::MOI.LessThan{T}, obj_fct::LinearCombinationObjective, var_idx, left_side, var_bound)  where T <: Real
 
 Using the greedy knapsack method for obtaining a best bound given this constraint. 
 The greedy method does not work for negative numbers => if a variable can be negative or a negative coefficient is present:
     returns typemax(T) or typemin(T) to indicate that no good bound could be found.
-Returns the a bound which might be tight or not
+Return the a bound which might be tight or not
 """
-function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, con_fct::SAF{T}, set::MOI.LessThan{T}, obj_fct::LinearCombinationObjective, var_idx::Int, val::Int)  where T <: Real
+function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, con_fct::SAF{T}, set::MOI.LessThan{T}, obj_fct::LinearCombinationObjective, var_idx::Int, left_side::Bool, var_bound::Int)  where T <: Real
     capacity = set.upper-con_fct.constant
     costs = [t.coefficient for t in con_fct.terms]
     
@@ -176,7 +176,7 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
         # trying to maximize the anti_costs to get over the threshold
         for ci in ad.only_left_idx
             if cost_indices[ci] == var_idx
-                threshold -= anti_costs[ci]*val
+                threshold -= max_given_coeff_and_bounds(anti_costs[ci], com.search_space[cost_indices[ci]], left_side, var_bound)
                 continue
             end
             if anti_costs[ci] >= 0
@@ -189,7 +189,7 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
         # trying to minimize the costs to have a lot of capacity left
         for ci in ad.only_left_idx
             if cost_indices[ci] == var_idx
-                capacity -= costs[ci]*val
+                capacity -= min_given_coeff_and_bounds(costs[ci], com.search_space[cost_indices[ci]], left_side, var_bound)
                 continue
             end
             if costs[ci] >= 0
@@ -215,7 +215,7 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
             v_idx = vars_ordered[i]
            
             if v_idx == var_idx
-                amount = val
+                amount = min(threshold/anti_cost, max_given_coeff_and_bounds(one(T), com.search_space[v_idx], left_side, var_bound))
             else
                 amount = min(threshold/anti_cost, com.search_space[v_idx].max) 
             end
@@ -238,7 +238,7 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
           
             v_idx = vars_ordered[i]
             if v_idx == var_idx
-                amount = val
+                amount = min(capacity/cost, max_given_coeff_and_bounds(one(T), com.search_space[v_idx], left_side, var_bound))
             else
                 amount = min(capacity/cost, com.search_space[v_idx].max) 
             end 
@@ -253,7 +253,8 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
         # trying to minimize the additions to the best bound
         for ci in ad.only_right_idx
             if gain_indices[ci] == var_idx
-                best_bound += gains[ci]*val
+                best_bound += min_given_coeff_and_bounds(gains[ci], com.search_space[gain_indices[ci]], left_side, var_bound)
+                
                 continue
             end
             if gains[ci] >= 0
@@ -266,7 +267,7 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
         # trying to maximize the additions to the best bound
         for ci=1:length(ad.only_right_idx)
             if gain_indices[ci] == var_idx
-                best_bound += gains[ci]*val
+                best_bound += max_given_coeff_and_bounds(gains[ci], com.search_space[gain_indices[ci]], left_side, var_bound)
                 continue
             end
             if gains[ci] >= 0
