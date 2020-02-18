@@ -104,7 +104,6 @@ end
 
     options = Dict{Symbol, Any}()
     options[:keep_logs] = true
-    options[:logging] = []
 
     options = CS.combine_options(options)
 
