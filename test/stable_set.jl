@@ -16,7 +16,7 @@ using LinearAlgebra: dot
         1 1 0 1
         0 0 1 0
     ]
-    model = CS.Optimizer()
+    model = CSTestSolver()
     x = [MOI.add_constrained_variable(model, MOI.ZeroOne()) for _ in 1:4]
     for i in 1:4, j in 1:4
         if matrix[i,j] == 1 && i < j
@@ -51,7 +51,7 @@ end
         1 1 0 1
         0 0 1 0
     ]
-    m = Model(CS.Optimizer)
+    m = Model(CSJuMPTestSolver())
     x = @variable(m, x[1:4], Bin)
     for i in 1:4, j in i+1:4
         if matrix[i,j] == 1
@@ -78,7 +78,7 @@ function weighted_stable_set(w)
         1 1 0 1
         0 0 1 0
     ]
-    model = CS.Optimizer(solution_type = Real)
+    model = CS.Optimizer(solution_type = Real, logging=[])
     x = [MOI.add_constrained_variable(model, MOI.ZeroOne()) for _ in 1:4]
     for i in 1:4, j in 1:4
         if matrix[i,j] == 1 && i < j

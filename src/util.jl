@@ -53,3 +53,47 @@ function linear_combination_to_saf(lc::LinearCombination)
     sat = [MOI.ScalarAffineTerm{T}(lc.coeffs[i],MOI.VariableIndex(lc.indices[i])) for i=1:length(lc.indices)]
     return SAF{T}(sat, zero(T)), T
 end
+
+"""
+    max_given_coeff_and_bounds(coeff, var::Variable, left_side::Bool, var_bound::Int)
+
+Return the maximum value given the coefficient `coeff` the variable `var` and the stricter bounds with `left_side` and `var_bound`.
+"""
+function max_given_coeff_and_bounds(coeff, var::Variable, left_side::Bool, var_bound::Int)
+    # <= var_bound
+    if left_side
+        if coeff >= 0
+            return coeff*var_bound
+        else
+            return coeff*var.min
+        end
+    else # >= var_bound
+        if coeff >= 0
+            return coeff*var.max
+        else
+            return coeff*var_bound
+        end
+    end
+end
+
+"""
+    min_given_coeff_and_bounds(coeff, var::Variable, left_side::Bool, var_bound::Int)
+
+Return the minimum value given the coefficient `coeff` the variable `var` and the stricter bounds with `left_side` and `var_bound`.
+"""
+function min_given_coeff_and_bounds(coeff, var::Variable, left_side::Bool, var_bound::Int)
+    # <= var_bound 
+    if left_side
+        if coeff >= 0
+            return coeff*var.min
+        else
+            return coeff*var_bound
+        end
+    else # >= var_bound
+        if coeff >= 0
+            return coeff*var_bound
+        else
+            return coeff*var.max
+        end
+    end
+end

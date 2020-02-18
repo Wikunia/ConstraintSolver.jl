@@ -3,14 +3,16 @@ function log_one_node(com, nvars, back_idx, step_nr)
     if length(com.backtrack_vec) > 0
         status = com.backtrack_vec[back_idx].status
         var_idx = com.backtrack_vec[back_idx].variable_idx
-        set_val = com.backtrack_vec[back_idx].pval
+        left_side = com.backtrack_vec[back_idx].left_side
+        var_bound = com.backtrack_vec[back_idx].var_bound
         best_bound = com.backtrack_vec[back_idx].best_bound
 
         parent_idx = com.backtrack_vec[back_idx].parent_idx
     else # for initial solve
         status = :Closed
         var_idx = 0
-        set_val = 0
+        left_side = true
+        var_bound = 0
         best_bound = com.best_bound
     end
 
@@ -20,7 +22,8 @@ function log_one_node(com, nvars, back_idx, step_nr)
         best_bound,
         step_nr,
         var_idx,
-        set_val,
+        left_side,
+        var_bound,
         Dict{Int,Vector{Int}}(), # var_states
         Dict{Int,Vector{Tuple{Symbol, Int, Int, Int}}}(), # var_changes
         Vector{TreeLogNode{typeof(best_bound)}}() # children
@@ -98,14 +101,14 @@ function same_logs(log1, log2)
         end
 
         if node1.id != node2.id || node1.status != node2.status || node1.best_bound != node2.best_bound ||
-            node1.step_nr != node2.step_nr || node1.var_idx != node2.var_idx || node1.set_val != node2.set_val || node1.var_states != node2.var_states
+            node1.step_nr != node2.step_nr || node1.var_idx != node2.var_idx || node1.left_side != node2.left_side || node1.var_bound != node2.var_bound || node1.var_states != node2.var_states
             println("Not identical at i=", i)
             println("node1: ")
             println("id: ", node1.id, " status: ", node1.status, " best_bound: ", node1.best_bound, " step_nr: ", node1.step_nr)
-            println("var_idx: ", node1.var_idx, " set_val: ", node1.set_val, " var_states: ", node1.var_states)
+            println("var_idx: ", node1.var_idx, " left_side:", node1.left_side, " var_bound: ", node1.var_bound, " var_states: ", node1.var_states)
             println("node2: ")
             println("id: ", node2.id, " status: ", node2.status, " best_bound: ", node2.best_bound, " step_nr: ", node2.step_nr)
-            println("var_idx: ", node2.var_idx, " set_val: ", node2.set_val, " var_states: ", node2.var_states)
+            println("var_idx: ", node2.var_idx, " left_side:", node2.left_side, " var_bound: ", node2.var_bound, " var_states: ", node2.var_states)
             return false
         end
     end

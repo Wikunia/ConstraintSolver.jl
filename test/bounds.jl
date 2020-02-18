@@ -25,7 +25,7 @@
     );
 
     @objective(model, Max, sum(days[h,a] * 5 for h in 1:3, a in 1:3));
-    set_optimizer(model, CS.Optimizer)
+    set_optimizer(model, CSJuMPTestSolver())
     optimize!(model)
     @test JuMP.objective_value(model) ≈ 75
 end

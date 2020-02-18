@@ -225,7 +225,7 @@ function set_check_in_best_bound!(com::CS.CoM)
         c_type = typeof(constraint)
         c_fct_type = typeof(constraint.fct)
         c_set_type = typeof(constraint.set)
-        if hasmethod(get_constrained_best_bound, (CS.CoM, c_type, c_fct_type, c_set_type, objective_type, Int, Int))
+        if hasmethod(get_constrained_best_bound, (CS.CoM, c_type, c_fct_type, c_set_type, objective_type, Int, Bool, Int))
             constraint.check_in_best_bound = true
         else # just to be sure => set it to false otherwise
             constraint.check_in_best_bound = false

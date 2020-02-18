@@ -17,7 +17,7 @@ end
     ]
     n = 6
 
-    m = Model(CS.Optimizer)
+    m = Model(CSJuMPTestSolver())
     @variable(m, x[1:n, 1:n], Bin)
     for i=1:n, j=1:n
         if weight_matrix[i,j] == 0 || i > j
