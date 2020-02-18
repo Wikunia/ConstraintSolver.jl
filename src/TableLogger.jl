@@ -52,7 +52,7 @@ function TableSetup(cols::Vector{Symbol}, col_names::Vector{String}, col_width::
     return TableSetup(cols, col_names, col_width, b_parse, min_diff_duration)
 end
 
-function parse_table_value(val::TableOpenNodes, len::Int)
+function parse_table_value(val::Union{TableOpenNodes, TableClosedNodes}, len::Int)
     s_val = string(val.value)
     if length(s_val) > len
         return ">>"
@@ -61,7 +61,7 @@ function parse_table_value(val::TableOpenNodes, len::Int)
 end
 
 function parse_table_value(val::TableDuration, len::Int)
-    s_val = @sprintf "%.2f" val.value
+    s_val = fmt("<.2f", val.value)
     if length(s_val) > len
         return ">>"
     end
@@ -69,17 +69,21 @@ function parse_table_value(val::TableDuration, len::Int)
 end
 
 function parse_table_value(val::Union{TableBestBound, TableIncumbent}, len::Int)
-    s_val = string(val.value)
-    s_val_split = split(s_val, ".")
+    s_val = fmt("<.10f", val.value)
     precision = 2
-    while precision < 10 && length(s_val_split) == 2
-        if s_val_split[2][1] != "0"
-            break
-        end
-        precision += 1
-    end    
+    s_val_split = split(s_val, ".")
+    if length(s_val_split[1]) == 1 && s_val_split[1] == "0"
+        while precision < 10 && length(s_val_split) == 2
+            if s_val_split[2][precision-1] != '0'
+                precision -= 1
+                break
+            end
+            precision += 1
+        end    
+    end
 
-    s_val = string(round(val.value; digits=precision))
+    prec_fmt = FormatSpec("<.$(precision)f")
+    s_val = fmt(prec_fmt, val.value)
     while length(s_val) > len && precision >= 0
         precision -= 1
         s_val = string(round(val.value; digits=precision))

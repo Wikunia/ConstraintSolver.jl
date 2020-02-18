@@ -5,7 +5,7 @@ using JSON
 using MathOptInterface
 using JuMP: @variable, @constraint, @objective, Model, optimizer_with_attributes, VariableRef, backend
 import JuMP.sense_to_set
-using Printf
+using Formatting
 
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities

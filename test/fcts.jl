@@ -276,6 +276,33 @@ end
     # only precision 2
     @test line_split[end-1] == "0.20"
 
+    table_row = CS.TableRow(1000000000000,1000000000000,1.0,1.0,0.203)
+    line = CS.get_row(table, table_row)
+    @test length(line) == sum(table.col_widths)
+    line_split = split(line, r"\s+")
+    # +2 for first and last empty
+    @test length(line_split) == length(table.col_widths)+2
+    @test line_split[2] == ">>"
+    @test line_split[3] == ">>"
+
+    # duration too long
+    table_row = CS.TableRow(1,2,1.0,1.0,10000000000.203)
+    line = CS.get_row(table, table_row)
+    @test length(line) == sum(table.col_widths)
+    line_split = split(line, r"\s+")
+    # +2 for first and last empty
+    @test length(line_split) == length(table.col_widths)+2
+    @test line_split[end-1] == ">>"
+
+    # better precision for bound
+    table_row = CS.TableRow(1,2,1.0,0.000004,0.203)
+    line = CS.get_row(table, table_row)
+    @test length(line) == sum(table.col_widths)
+    line_split = split(line, r"\s+")
+    # +2 for first and last empty
+    @test length(line_split) == length(table.col_widths)+2
+    @test line_split[end-2] == "0.000004"
+
     # need to increase size for #Open
     table = CS.TableSetup(
         [:open_nodes, :closed_nodes, :incumbent, :best_bound, :duration],
