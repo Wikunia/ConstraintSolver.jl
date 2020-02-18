@@ -5,10 +5,12 @@ using JSON
 using MathOptInterface
 using JuMP: @variable, @constraint, @objective, Model, optimizer_with_attributes, VariableRef, backend
 import JuMP.sense_to_set
+using Formatting
 
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
+include("TableLogger.jl")
 include("options.jl")
 
 const CS = ConstraintSolver
@@ -750,6 +752,22 @@ function set_state_to_best_sol!(com::CS.CoM, last_backtrack_id::Int)
     prune!(com, [backtrack_id])
 end
 
+function update_table_log(com::CS.CoM, backtrack_vec, table_row::TableRow, last_table_row::TableRow; force=false)
+    table = com.options.table
+    table_row.open_nodes = TableOpenNodes(count(n->n.status == :Open, backtrack_vec))
+    # -1 for dummy node
+    table_row.closed_nodes = TableClosedNodes(length(backtrack_vec)-table_row.open_nodes.value-1)
+    table_row.best_bound = TableBestBound(com.best_bound)
+    table_row.incumbent = TableIncumbent(com.best_sol)
+    duration = time()-com.start_time
+    if force || duration - last_table_row.duration.value >= table.min_diff_duration
+        table_row.duration = TableDuration(duration)
+        println(get_row(table, table_row))
+        last_table_row = table_row
+    end
+    return last_table_row
+end
+
 """
     backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
@@ -760,6 +778,14 @@ Return :Solved or :Infeasible if proven or `:NotSolved` if interrupted by `max_b
 function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
     found, ind = get_weak_ind(com)
     com.info.backtrack_fixes   = 1
+    
+    log_table = false
+    if :Table in com.options.logging
+        log_table = true
+        println(get_header(com.options.table))
+        table_row = TableRow(0, 0, zero(com.best_sol), zero(com.best_sol), 0.0)
+        last_table_row = TableRow(0, 0, zero(com.best_sol), zero(com.best_sol), -Inf)
+    end
 
     pvals = reverse!(values(com.search_space[ind]))
     dummy_backtrack_obj = BacktrackObj(
@@ -857,6 +883,11 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         end
         update_best_bound!(com)
 
+        # there is no better node => return best solution
+        if length(com.solutions) > 0 && obj_factor*com.best_bound >= obj_factor*com.best_sol
+            break
+        end
+
         ind = backtrack_obj.variable_idx
 
         com.c_backtrack_idx = backtrack_obj.idx
@@ -908,6 +939,9 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             end
         end
 
+        if log_table
+            last_table_row = update_table_log(com, backtrack_vec, table_row, last_table_row)
+        end
 
         found, ind = get_weak_ind(com)
         # no index found => solution found
@@ -916,6 +950,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
             if length(com.solutions) == 0 || obj_factor*new_sol <= obj_factor*com.best_sol
                 push!(com.solutions, backtrack_obj.idx)
                 com.best_sol = new_sol
+                log_table && (last_table_row = update_table_log(com, backtrack_vec, table_row, last_table_row; force=true))
                 if com.best_sol == com.best_bound
                     return :Solved
                 end
@@ -927,6 +962,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                 end
                 continue
             else
+                log_table && (last_table_row = update_table_log(com, backtrack_vec, table_row, last_table_row; force=true))
                 if com.best_sol == com.best_bound
                     set_state_to_best_sol!(com, last_backtrack_id)
                     return :Solved

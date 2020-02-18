@@ -52,7 +52,7 @@ uuid = "bbf7d656-a473-5ed7-a52c-81e309532950"
 version = "0.2.0"
 
 [[ConstraintSolver]]
-deps = ["JSON", "JuMP", "MathOptInterface", "MatrixNetworks"]
+deps = ["Formatting", "JSON", "JuMP", "MathOptInterface", "MatrixNetworks"]
 path = ".."
 uuid = "e0e52ebd-5523-408d-9ca3-7641f1cd1405"
 version = "0.1.0"
@@ -99,6 +99,12 @@ git-tree-sha1 = "d497bcc45bb98a1fbe19445a774cfafeabc6c6df"
 uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 version = "0.24.5"
 
+[[Formatting]]
+deps = ["Printf"]
+git-tree-sha1 = "a0c901c29c0e7c763342751c0a94211d56c0de5c"
+uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
+version = "0.4.1"
+
 [[ForwardDiff]]
 deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "NaNMath", "Random", "SpecialFunctions", "StaticArrays"]
 git-tree-sha1 = "88b082d492be6b63f967b6c96b352e25ced1a34c"
@@ -140,9 +146,9 @@ version = "0.2.0"
 
 [[JuMP]]
 deps = ["Calculus", "DataStructures", "ForwardDiff", "LinearAlgebra", "MathOptInterface", "MutableArithmetics", "NaNMath", "Random", "SparseArrays", "Statistics"]
-git-tree-sha1 = "0b07a4a852e6baf3d053b4b41879b1cd1bc9b17e"
+git-tree-sha1 = "8e87337fd19b6717fd9d5324bfab99848e363d9f"
 uuid = "4076af6c-e467-56ae-b986-b466b2749572"
-version = "0.21.0"
+version = "0.21.1"
 
 [[KahanSummation]]
 deps = ["Test"]
@@ -180,10 +186,10 @@ uuid = "4f449596-a032-5618-b826-5a251cb6dc11"
 version = "1.0.0"
 
 [[MbedTLS]]
-deps = ["BinaryProvider", "Dates", "Distributed", "Libdl", "Random", "Sockets", "Test"]
-git-tree-sha1 = "2d94286a9c2f52c63a16146bb86fd6cdfbf677c6"
+deps = ["BinaryProvider", "Dates", "Libdl", "Random", "Sockets"]
+git-tree-sha1 = "85f5947b53c8cfd53ccfa3f4abae31faa22c2181"
 uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "0.6.8"
+version = "0.7.0"
 
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"

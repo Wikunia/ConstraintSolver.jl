@@ -1,6 +1,6 @@
 @testset "MOI Tests" begin
 @testset "Supports and SolverName" begin
-    optimizer = CS.Optimizer()
+    optimizer = CSTestSolver()
     @test MOI.get(optimizer, MOI.SolverName()) == "ConstraintSolver"
     @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.AllDifferentSet)
     @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.EqualSet)
@@ -26,7 +26,7 @@
 end
 
 @testset "Small MOI tests" begin
-    optimizer = CS.Optimizer()
+    optimizer = CSTestSolver()
     @assert MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.AllDifferentSet)
 
     x1 = MOI.add_constrained_variable(optimizer, MOI.ZeroOne())
@@ -51,16 +51,16 @@ end
 end
 
 @testset "ErrorHandling" begin
-    optimizer = CS.Optimizer()
+    optimizer = CSTestSolver()
     @test_throws ErrorException MOI.add_constrained_variable(optimizer, MOI.Interval(NaN, 2.0))
     @test_throws ErrorException MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, NaN))
 
-    optimizer = CS.Optimizer()
+    optimizer = CSTestSolver()
     x = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 2.0))
     @test_logs (:error, r"Upper bound .* exists") MOI.add_constraint(optimizer, MOI.SingleVariable(MOI.VariableIndex(1)), MOI.LessThan(2.0))
     @test_logs (:error, r"Lower bound .* exists") MOI.add_constraint(optimizer, MOI.SingleVariable(MOI.VariableIndex(1)), MOI.GreaterThan(1.0))
 
-    optimizer = CS.Optimizer()
+    optimizer = CSTestSolver()
     x1 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 2.0))
     x2 = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 2.0))
     # All should be integer
