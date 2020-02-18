@@ -72,8 +72,8 @@ function parse_table_value(val::Union{TableBestBound, TableIncumbent}, len::Int)
     s_val = fmt("<.10f", val.value)
     precision = 2
     s_val_split = split(s_val, ".")
-    if length(s_val_split[1]) == 1 && s_val_split[1] == "0"
-        while precision < 10 && length(s_val_split) == 2
+    if length(s_val_split[1]) == 1 && s_val_split[1] == "0" && length(s_val_split) == 2
+        while precision < 10
             if s_val_split[2][precision-1] != '0'
                 precision -= 1
                 break
@@ -86,7 +86,8 @@ function parse_table_value(val::Union{TableBestBound, TableIncumbent}, len::Int)
     s_val = fmt(prec_fmt, val.value)
     while length(s_val) > len && precision >= 0
         precision -= 1
-        s_val = string(round(val.value; digits=precision))
+        prec_fmt = FormatSpec("<.$(precision)f")
+        s_val = fmt(prec_fmt, val.value)
     end
     if length(s_val) > len
         s_val = ":/"

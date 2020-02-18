@@ -303,6 +303,20 @@ end
     @test length(line_split) == length(table.col_widths)+2
     @test line_split[end-2] == "0.000004"
 
+    # Incumbent precision too high
+    table = CS.TableSetup(
+        [:open_nodes, :closed_nodes, :incumbent, :best_bound, :duration],
+        ["#Open", "#Closed", "Incumbent", "Best Bound", "[s]"],
+        [10,10,10,10,10]; 
+        min_diff_duration=5.0)
+    table_row = CS.TableRow(1,2,10000000.02,0.000004,0.203)
+    line = CS.get_row(table, table_row)
+    @test length(line) == sum(table.col_widths)
+    line_split = split(line, r"\s+")
+    # +2 for first and last empty
+    @test length(line_split) == length(table.col_widths)+2
+    @test line_split[4] == "10000000.0"
+
     # need to increase size for #Open
     table = CS.TableSetup(
         [:open_nodes, :closed_nodes, :incumbent, :best_bound, :duration],
