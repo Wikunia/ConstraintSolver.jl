@@ -72,7 +72,7 @@ end
             0 1 0 0 3 9 0 0 0;
             0 0 0 0 0 0 8 0 6]
 
-    m = Model(CSJuMPTestSolver())
+    m = Model(CS.Optimizer)
     @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
     # set variables
     for r=1:9, c=1:9
