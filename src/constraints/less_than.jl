@@ -121,7 +121,7 @@ Return the a bound which might be tight or not
 function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, con_fct::SAF{T}, set::MOI.LessThan{T}, obj_fct::LinearCombinationObjective, var_idx::Int, left_side::Bool, var_bound::Int)  where T <: Real
     capacity = set.upper-con_fct.constant
     costs = [t.coefficient for t in con_fct.terms]
-      
+    
     gains = obj_fct.lc.coeffs
     cost_indices = [t.variable_index.value for t in con_fct.terms]
     gain_indices = obj_fct.lc.indices

@@ -1,4 +1,4 @@
-function constraint_hash(constraint::BasicConstraint)
+function constraint_hash(constraint::Union{AllDifferentConstraint, BasicConstraint})
     return hash([string(typeof(constraint.set)), constraint.indices])
 end
 

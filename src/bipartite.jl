@@ -4,24 +4,40 @@ struct BipartiteMatching
 end
 
 
-function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m, n; l_sorted=false)
+function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m, n; l_sorted=false, matching_init=nothing)
     @assert length(l_in) == length(r_in)
     @assert m <= n
     l = l_in
     r = r_in
     if !l_sorted
-        perm = sortperm(l_in)
+        if matching_init === nothing 
+            perm = sortperm(l_in)
+        else 
+            perm = sortperm(l_in[1:matching_init.l_in_len])
+        end
         l = l_in[perm]
         r = r_in[perm]
     end
 
-    len = length(l)
-    matching_l = zeros(Int, m)
-    matching_r = zeros(Int, n)
+    if matching_init === nothing
+        len = length(l)
+    else
+        len = matching_init.l_in_len
+    end
+    if matching_init === nothing
+        matching_l = zeros(Int, m)
+        matching_r = zeros(Int, n)
+    else
+        matching_l = matching_init.matching_l
+        matching_r = matching_init.matching_r
+        matching_l .= 0
+        matching_r .= 0
+    end
 
     # create initial matching
     match_len = 0
-    for (li,ri) in zip(l,r)
+    for i = 1:len
+        li, ri = l[i], r[i]
         if matching_l[li] == 0 && matching_r[ri] == 0
             matching_l[li] = ri
             matching_r[ri] = li
@@ -33,7 +49,11 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
     if match_len < m
         # creating indices be able to get edges a vertex is connected to
         # only works if l is sorted
-        index_l = zeros(Int, m+1)
+        if matching_init === nothing
+            index_l = zeros(Int, m+1)
+        else
+            index_l = matching_init.index_l
+        end
         last = l[1]
         c = 2
         for i = 2:len
@@ -43,23 +63,36 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
             end
             c += 1
         end
-        index_l[l[end]+1] = c
+        index_l[l[len]+1] = c
 
         index_l[1] = 1
 
-
-        process_nodes = zeros(Int, m+n)
-        depths = zeros(Int, m+n)
-        parents = zeros(Int, m+n)
-        used_l = zeros(Bool, m)
-        used_r = zeros(Bool, n)
+        if matching_init === nothing
+            process_nodes = zeros(Int, m+n)
+            depths = zeros(Int, m+n)
+            parents = zeros(Int, m+n)
+            used_l = zeros(Bool, m)
+            used_r = zeros(Bool, n)
+        else
+            process_nodes = matching_init.process_nodes
+            depths = matching_init.depths
+            parents = matching_init.parents
+            used_l = matching_init.used_l
+            used_r = matching_init.used_r
+            process_nodes .= 0
+            depths .= 0
+            parents .= 0
+            used_l .= false
+            used_r .= false
+        end
         found = false
 
         # find augmenting path
         while match_len < m
             pend = 1
             pstart = 1
-            for li in l
+            for i=1:len
+                li = l[i]
                 # free vertex
                 if matching_l[li] == 0
                     process_nodes[pstart] = li
@@ -68,7 +101,6 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
                 end
             end
 
-            begin
             while pstart <= pend
                 node = process_nodes[pstart]
                 depth = depths[pstart]
@@ -132,7 +164,6 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
                 found = false
             else
                 break
-            end
             end
         end
     end

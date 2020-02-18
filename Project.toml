@@ -4,11 +4,17 @@ authors = ["Ole Kröger <o.kroeger@opensourc.es>"]
 version = "0.1.0"
 
 [deps]
+Formatting = "59287772-0a20-5a39-b81b-1366585eb4c0"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 MatrixNetworks = "4f449596-a032-5618-b826-5a251cb6dc11"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[compat]
+JuMP = "^0.21.0"
+MathOptInterface = "^0.9.1"
+julia = "1"
 
 [extras]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"

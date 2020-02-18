@@ -251,6 +251,84 @@ end
     # optimal value is 1.6
     computed_bound = CS.get_constrained_best_bound(com, lc, fct, set, obj_fct, 0, false, 0)
     @test computed_bound <= 1.6+1e-6
+end
 
+@testset "TableLogging" begin
+    table = CS.TableSetup(
+        [:open_nodes, :closed_nodes, :incumbent, :best_bound, :duration],
+        ["#Open", "#Closed", "Incumbent", "Best Bound", "[s]"],
+        [10,10,20,20,10]; 
+        min_diff_duration=5.0)
+    table_header = CS.get_header(table)
+    lines = split(table_header, "\n")
+    @test length(lines) == 2
+    @test length(lines[2]) == sum(table.col_widths)
+    @test occursin("#Open", lines[1])
+    @test occursin("#Closed", lines[1])
+
+    table_row = CS.TableRow(0,0,1.0,1.0,0.203)
+    line = CS.get_row(table, table_row)
+    @test length(line) == sum(table.col_widths)
+    line_split = split(line, r"\s+")
+    # +2 for first and last empty
+    @test length(line_split) == length(table.col_widths)+2
+    @test line_split[2] == "0"
+    # only precision 2
+    @test line_split[end-1] == "0.20"
+
+    table_row = CS.TableRow(1000000000000,1000000000000,1.0,1.0,0.203)
+    line = CS.get_row(table, table_row)
+    @test length(line) == sum(table.col_widths)
+    line_split = split(line, r"\s+")
+    # +2 for first and last empty
+    @test length(line_split) == length(table.col_widths)+2
+    @test line_split[2] == ">>"
+    @test line_split[3] == ">>"
+
+    # duration too long
+    table_row = CS.TableRow(1,2,1.0,1.0,10000000000.203)
+    line = CS.get_row(table, table_row)
+    @test length(line) == sum(table.col_widths)
+    line_split = split(line, r"\s+")
+    # +2 for first and last empty
+    @test length(line_split) == length(table.col_widths)+2
+    @test line_split[end-1] == ">>"
+
+    # better precision for bound
+    table_row = CS.TableRow(1,2,1.0,0.000004,0.203)
+    line = CS.get_row(table, table_row)
+    @test length(line) == sum(table.col_widths)
+    line_split = split(line, r"\s+")
+    # +2 for first and last empty
+    @test length(line_split) == length(table.col_widths)+2
+    @test line_split[end-2] == "0.000004"
+
+    # Incumbent precision too high
+    table = CS.TableSetup(
+        [:open_nodes, :closed_nodes, :incumbent, :best_bound, :duration],
+        ["#Open", "#Closed", "Incumbent", "Best Bound", "[s]"],
+        [10,10,10,10,10]; 
+        min_diff_duration=5.0)
+    table_row = CS.TableRow(1,2,10000000.02,0.000004,0.203)
+    line = CS.get_row(table, table_row)
+    @test length(line) == sum(table.col_widths)
+    line_split = split(line, r"\s+")
+    # +2 for first and last empty
+    @test length(line_split) == length(table.col_widths)+2
+    @test line_split[4] == "10000000.0"
+
+    # need to increase size for #Open
+    table = CS.TableSetup(
+        [:open_nodes, :closed_nodes, :incumbent, :best_bound, :duration],
+        ["#Open", "#Closed", "Incumbent", "Best Bound", "[s]"],
+        [1,10,20,20,10]; 
+        min_diff_duration=5.0)
+    table_header = CS.get_header(table)
+    lines = split(table_header, "\n")
+    @test length(lines) == 2
+    @test length(lines[2]) == sum(table.col_widths)
+    @test length(lines[2]) > sum([1,10,20,20,10])
+    @test occursin("#Open", lines[1])
+    @test occursin("#Closed", lines[1])
 end
 end

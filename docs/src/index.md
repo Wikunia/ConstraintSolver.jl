@@ -5,8 +5,9 @@ The documentation is written in four different sections based on [this post abou
 
 - If you want to get a quick overview and just have a look at examples check out the [tutorial](tutorial.md).
 - You just have some `How to` questions? -> [How to guide](how_to.md)
+- What solver options do exist? -> [solver options](options.md)
 - You want to understand how it works deep down? Maybe improve it ;) -> [Explanation](explanation.md)
-- Gimme the code documentation directly! The [reference](reference.md) section got you covered.
+- Gimme the code documentation directly! The [reference](reference.md) section got you covered (It's not much currently)
 
 If you have some questions please feel free to ask me by making an [issue](https://github.com/Wikunia/ConstraintSolver.jl/issues).
 

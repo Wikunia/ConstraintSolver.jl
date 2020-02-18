@@ -1,7 +1,7 @@
 @testset "Graph coloring" begin
 
 function normal_49_states(;reverse_constraint = false)
-    m = Model(with_optimizer(CS.Optimizer, keep_logs=true))
+    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true, "logging"=>[]))
     num_colors = 20
     
     @variable(m, 1 <= states[1:50] <= num_colors, Int)
@@ -139,7 +139,7 @@ function normal_49_states(;reverse_constraint = false)
     @test status == MOI.OPTIMAL
     @test com.best_sol == 4 == JuMP.objective_value(m) == JuMP.objective_bound(m)
     @test maximum([JuMP.value(var) for var in states]) == 4 == JuMP.value(max_color)
-
+    @test 0 <= MOI.get(m, MOI.SolveTime()) < 1
     return com
 end
 
@@ -158,7 +158,7 @@ end
 end
 
 @testset "49 US states + DC without sorting + some states same color" begin
-    m = Model(with_optimizer(CS.Optimizer, keep_logs=true, backtrack_sorting=false))
+    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true, "backtrack_sorting"=>false, "logging"=>[]))
     num_colors = 8
     @variable(m, 1 <= max_color <= num_colors, Int)
 
@@ -303,7 +303,7 @@ end
 end
 
 @testset "49 US states + DC only 3 colors" begin
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CSJuMPTestSolver())
     num_colors = 3
 
     @variable(m, 1 <= states[1:50] <= num_colors, Int)
@@ -425,7 +425,7 @@ end
 end
 
 @testset "Maximization objective" begin
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CSJuMPTestSolver())
     num_colors = 20
 
     @variable(m, 1 <= states[1:50] <= num_colors, Int)

@@ -79,10 +79,25 @@ function MOI.optimize!(model::Optimizer)
     check_var_bounds(model)
 
     set_pvals!(model)
-    set_constraint_hashes!(model)
-    # sets check_in_best_bound per constraint if an objective function exists
-    set_check_in_best_bound!(model)
 
     status = solve!(model)
     set_status!(model, status)
+end
+
+
+MOI.supports(::Optimizer, ::MOI.RawParameter) = true
+
+function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
+    p_symbol = Symbol(p.name)
+    if in(p_symbol, fieldnames(SolverOptions))
+        type_of_param = fieldtype(SolverOptions, p_symbol)
+        if hasmethod(convert, (Type{type_of_param}, typeof(value)))
+            setfield!(model.options, p_symbol, convert(type_of_param, value))
+        else
+            @error "The option $(p.name) has a different type ($(type_of_param))"
+        end
+    else 
+        @error "The option $(p.name) doesn't exist."
+    end 
+    return
 end

@@ -19,7 +19,7 @@ end
 @testset "Killer Sudoku" begin
 
 @testset "Killer Sudoku from wikipedia" begin
-    m = Model(with_optimizer(CS.Optimizer))
+    m = Model(CSJuMPTestSolver())
     @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
 
     sums = parseKillerJSON(JSON.parsefile("data/killer_wikipedia"))
@@ -42,6 +42,38 @@ end
     optimize!(m)
     @test JuMP.termination_status(m) == MOI.OPTIMAL
     @test jump_fulfills_sudoku_constr(JuMP.value.(x))
+
+    for s in sums
+        @test s.result == sum(JuMP.value.([x[i[1],i[2]] for i in s.indices]))
+    end
+end
+
+@testset "Killer Sudoku from wikipedia with normal rules" begin
+    m = Model(CSJuMPTestSolver())
+    @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+
+    sums = parseKillerJSON(JSON.parsefile("data/killer_wikipedia"))
+
+    for s in sums
+        @constraint(m, sum([x[ind[1],ind[2]] for ind in s.indices]) == s.result)
+        @constraint(m, [x[ind[1],ind[2]] for ind in s.indices] in CS.AllDifferentSet(length(s.indices)))
+    end
+
+    # sudoku constraints
+    for rc = 1:9
+        @constraint(m, x[rc,:] in CS.AllDifferentSet(9))
+        @constraint(m, x[:,rc] in CS.AllDifferentSet(9))
+    end
+    for br=0:2
+        for bc=0:2
+            @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet(9))
+        end
+    end
+
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test jump_fulfills_sudoku_constr(JuMP.value.(x))
+    @test JuMP.solve_time(m) >= 0
 
     for s in sums
         @test s.result == sum(JuMP.value.([x[i[1],i[2]] for i in s.indices]))
@@ -83,6 +115,7 @@ end
     for s in sums[2:end]
         @test s.result == sum([CS.value(com_grid[CartesianIndex(i)]) for i in s.indices])
     end
+    @test com.solve_time >= 0
 
     # test if deterministic by running it again
     com = CS.ConstraintSolverModel()
@@ -109,6 +142,7 @@ end
 
     options = Dict{Symbol, Any}()
     options[:keep_logs] = true
+    options[:logging] = []
 
     options = CS.combine_options(options)
     status = CS.solve!(com, options)
@@ -123,7 +157,7 @@ end
 end
 
 function killer_negative()
-    m = Model(with_optimizer(CS.Optimizer, keep_logs=true))
+    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true, "logging"=>[]))
 
     @variable(m, -9 <= com_grid[1:9, 1:9] <= -1, Int)
 
