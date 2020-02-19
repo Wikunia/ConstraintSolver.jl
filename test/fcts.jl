@@ -277,15 +277,13 @@ end
     table_header = CS.get_header(table)
     lines = split(table_header, "\n")
     @test length(lines) == 2
-    @test length(lines[2]) == sum([c.width for c in table.cols])
+    @test length(lines[2]) == sum([c.width+2 for c in table.cols])
     @test occursin("#Open", lines[1])
     @test occursin("#Closed", lines[1])
 
     table_row = create_table_row(table, [0,0,1.0,1.0,0.203])
     line = CS.get_row(table, table_row)
-    println("line: $line")
-    println("table_row: $table_row")
-    @test length(line) == sum([c.width for c in table.cols])
+    @test length(line) == sum([c.width+2 for c in table.cols])
     line_split = split(line, r"\s+")
     # +2 for first and last empty
     @test length(line_split) == length(table.cols)+2
@@ -295,7 +293,7 @@ end
 
     table_row = create_table_row(table, [1000000000000,1000000000000,1.0,1.0,0.203])
     line = CS.get_row(table, table_row)
-    @test length(line) == sum([c.width for c in table.cols])
+    @test length(line) == sum([c.width+2 for c in table.cols])
     line_split = split(line, r"\s+")
     # +2 for first and last empty
     @test length(line_split) == length(table.cols)+2
@@ -305,7 +303,7 @@ end
     # duration too long
     table_row = create_table_row(table, [1,2,1.0,1.0,10000000000.203])
     line = CS.get_row(table, table_row)
-    @test length(line) == sum([c.width for c in table.cols])
+    @test length(line) == sum([c.width+2 for c in table.cols])
     line_split = split(line, r"\s+")
     # +2 for first and last empty
     @test length(line_split) == length(table.cols)+2
@@ -314,7 +312,7 @@ end
     # better precision for bound
     table_row = create_table_row(table, [1,2,1.0,0.000004,0.203])
     line = CS.get_row(table, table_row)
-    @test length(line) == sum([c.width for c in table.cols])
+    @test length(line) == sum([c.width+2 for c in table.cols])
     line_split = split(line, r"\s+")
     # +2 for first and last empty
     @test length(line_split) == length(table.cols)+2
@@ -324,15 +322,16 @@ end
     table = CS.TableSetup(
         [
             CS.TableCol(:open_nodes, "#Open", Int, 10, :center),
-            CS.TableCol(:closed_nodes, "#Closed", Int, 10, :center),
+            CS.TableCol(:closed_nodes, "#Closed", Int, 10, :left),
             CS.TableCol(:incumbent, "Incumbent", Float64, 10, :center), # will get increased to 11
             CS.TableCol(:best_bound, "Best Bound", Float64, 10, :center),
-            CS.TableCol(:duration, "Time [s]", Float64, 10, :center)
+            CS.TableCol(:duration, "Time [s]", Float64, 10, :right)
         ]
     )
     table_row = create_table_row(table, [1,2,100000000.02,0.000004,0.203])
     line = CS.get_row(table, table_row)
-    @test length(line) == sum([c.width for c in table.cols])
+    println("line: $line")
+    @test length(line) == sum([c.width+2 for c in table.cols])
     line_split = split(line, r"\s+")
     # +2 for first and last empty
     @test length(line_split) == length(table.cols)+2
@@ -351,7 +350,7 @@ end
     table_header = CS.get_header(table)
     lines = split(table_header, "\n")
     @test length(lines) == 2
-    @test length(lines[2]) == sum([c.width for c in table.cols])
+    @test length(lines[2]) == sum([c.width+2 for c in table.cols])
     @test length(lines[2]) > sum([1,10,20,20,10])
     @test occursin("Open", lines[1])
     @test occursin("Closed", lines[1])

@@ -4,7 +4,7 @@ mutable struct TableCol
     type                :: DataType
     width               :: Int
     alignment           :: Symbol # :left, :center, :right
-    parse               :: Bool
+    b_format            :: Bool
 end
 
 mutable struct TableEntry{T}
@@ -35,7 +35,7 @@ end
 
 function TableCol(id::Symbol, name::String, type::DataType, width::Int, alignment::Symbol)
     width = width <= length(name)+2 ? length(name)+2 : width
-    return TableCol(id, name, type, width, alignment, hasmethod(parse_table_value, (type, Int)))
+    return TableCol(id, name, type, width, alignment, hasmethod(format_table_value, (type, Int)))
 end
 
 function TableSetup(cols::Vector{TableCol}, diff_criteria::Dict)
@@ -71,7 +71,7 @@ function is_new_row(new::Vector{TableEntry}, before::Vector{TableEntry}, criteri
     return false
 end
 
-function parse_table_value(val::Int, len::Int)
+function format_table_value(val::Int, len::Int)
     s_val = string(val)
     if length(s_val) > len
         return val > 0 ? ">>" : "<<"
@@ -79,7 +79,7 @@ function parse_table_value(val::Int, len::Int)
     return s_val
 end
 
-function parse_table_value(val::Float64, len::Int)
+function format_table_value(val::Float64, len::Int)
     s_val = fmt("<.10f", val)
     precision = 2
     s_val_split = split(s_val, ".")
@@ -118,11 +118,11 @@ function get_header(table::TableSetup)
             padding = 2
             col.width = length(col.name)+2
         end
-        ln *= repeat(" ",fld(padding, 2))
+        ln *= repeat(" ",fld(padding, 2)+1)
         ln *= col.name
-        ln *= repeat(" ",cld(padding, 2))
+        ln *= repeat(" ",cld(padding, 2)+1)
     end
-    equals = repeat("=", sum(sum_width))
+    equals = repeat("=", sum(sum_width)+2*length(table.cols))
     header = "$ln\n$equals"
     return header
 end
@@ -148,8 +148,8 @@ function get_row(table::TableSetup, row::Vector{TableEntry})
         width   = table.cols[c].width
         if isassigned(row, c)
             val     = row[c].value
-            if table.cols[c].parse && isa(val, table.cols[c].type)
-                s_val   = parse_table_value(val, width)
+            if table.cols[c].b_format && isa(val, table.cols[c].type)
+                s_val   = format_table_value(val, width)
             else
                 s_val   = string(val)
             end
@@ -158,9 +158,21 @@ function get_row(table::TableSetup, row::Vector{TableEntry})
         end
         padding = width-length(s_val)
 
-        ln *= repeat(" ",fld(padding, 2))
-        ln *= s_val
-        ln *= repeat(" ",cld(padding, 2))
+        if table.cols[c].alignment == :center
+            ln *= repeat(" ",fld(padding, 2)+1)
+            ln *= s_val
+            ln *= repeat(" ",cld(padding, 2)+1)
+        elseif table.cols[c].alignment == :left
+            ln *= " "
+            ln *= s_val
+            ln *= repeat(" ",padding+1)
+        elseif table.cols[c].alignment == :right
+            ln *= repeat(" ",padding+1)
+            ln *= s_val
+            ln *= " "
+        else
+            @warn "Only the alignments :left, :right and :center are defined."
+        end
     end
     return ln
 end
