@@ -13,10 +13,15 @@ end
 function SolverOptions()
     logging             = [:Table]
     table               = TableSetup(
-                            [:open_nodes, :closed_nodes, :incumbent, :best_bound, :duration],
-                            ["#Open", "#Closed", "Incumbent", "Best Bound", "[s]"],
-                            [10,10,20,20,10]; 
-                            min_diff_duration=5.0)
+                            [
+                                CS.TableCol(:open_nodes, "#Open", Int, 10, :center),
+                                CS.TableCol(:closed_nodes, "#Closed", Int, 10, :center),
+                                CS.TableCol(:incumbent, "Incumbent", Float64, 20, :center),
+                                CS.TableCol(:best_bound, "Best Bound", Float64, 20, :center),
+                                CS.TableCol(:duration, "Time [s]", Float64, 10, :center)
+                            ], 
+                            Dict(:min_diff_duration=>5.0)
+                        )
     backtrack           = true
     max_bt_steps        = typemax(Int)
     backtrack_sorting   = true
