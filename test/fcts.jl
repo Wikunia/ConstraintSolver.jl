@@ -342,20 +342,19 @@ end
     # need to increase size for #Open
     table = CS.TableSetup(
         [
-            CS.TableCol(:open_nodes, "#Open", Int, 1, :center),
-            CS.TableCol(:closed_nodes, "#Closed", Int, 10, :center),
-            CS.TableCol(:incumbent, "Incumbent", Float64, 20, :center),
+            CS.TableCol("Open", Int),
+            CS.TableCol("#Closed", Int, 10),
+            CS.TableCol(:incumbent, "Incumbent", Float64, 20),
             CS.TableCol(:best_bound, "Best Bound", Float64, 20, :center),
             CS.TableCol(:duration, "Time [s]", Float64, 10, :center)
-        ], 
-        Dict(:min_diff_duration=>5.0)
+        ]
     )
     table_header = CS.get_header(table)
     lines = split(table_header, "\n")
     @test length(lines) == 2
     @test length(lines[2]) == sum([c.width for c in table.cols])
     @test length(lines[2]) > sum([1,10,20,20,10])
-    @test occursin("#Open", lines[1])
-    @test occursin("#Closed", lines[1])
+    @test occursin("Open", lines[1])
+    @test occursin("Closed", lines[1])
 end
 end

@@ -1,8 +1,8 @@
 mutable struct TableCol
     id                  :: Symbol
     name                :: String
-    width               :: Int
     type                :: DataType
+    width               :: Int
     alignment           :: Symbol # :left, :center, :right
     parse               :: Bool
 end
@@ -26,16 +26,16 @@ function TableCol(name::String, type::DataType)
 end
 
 function TableCol(name::String, type::DataType, width::Int)
-    return TableCol(Symbol(name), name, width, type)
+    return TableCol(Symbol(name), name, type, width)
 end
 
 function TableCol(id::Symbol, name::String, type::DataType, width::Int)
-    return TableCol(id, name, width, type, :center)
+    return TableCol(id, name, type, width, :center)
 end
 
 function TableCol(id::Symbol, name::String, type::DataType, width::Int, alignment::Symbol)
     width = width <= length(name)+2 ? length(name)+2 : width
-    return TableCol(id, name, width, type, alignment, hasmethod(parse_table_value, (type, Int)))
+    return TableCol(id, name, type, width, alignment, hasmethod(parse_table_value, (type, Int)))
 end
 
 function TableSetup(cols::Vector{TableCol}, diff_criteria::Dict)
@@ -55,6 +55,9 @@ end
 
 function is_new_row(new::Vector{TableEntry}, before::Vector{TableEntry}, criteria::Dict)
     if length(before) != length(new)
+        return true
+    end
+    if length(criteria) == 0
         return true
     end
     min_diff_duration = get(criteria, :min_diff_duration, 5.0)
