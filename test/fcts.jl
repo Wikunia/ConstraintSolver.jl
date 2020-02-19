@@ -328,8 +328,7 @@ end
             CS.TableCol(:incumbent, "Incumbent", Float64, 10, :center), # will get increased to 11
             CS.TableCol(:best_bound, "Best Bound", Float64, 10, :center),
             CS.TableCol(:duration, "Time [s]", Float64, 10, :center)
-        ], 
-        Dict(:min_diff_duration=>5.0)
+        ]
     )
     table_row = create_table_row(table, [1,2,100000000.02,0.000004,0.203])
     line = CS.get_row(table, table_row)
