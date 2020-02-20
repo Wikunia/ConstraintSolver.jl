@@ -138,8 +138,9 @@ function push_to_table!(table::TableSetup; force=false, kwargs...)
     if force || !table.new_row_criteria || is_new_row(row, table.last_row, table.diff_criteria) 
         println(get_row(table, row))
         table.last_row = row
+        return true
     end
-    return
+    return false
 end
 
 function get_row(table::TableSetup, row::Vector{TableEntry})

@@ -318,6 +318,10 @@ end
     @test length(line_split) == length(table.cols)+2
     @test line_split[end-2] == "0.000004"
 
+    @assert CS.push_to_table!(table; open_nodes=1, closed_nodes=1, incumbent=1.0, best_bound=1.0, duration=0.1)
+    # don't print because the duration difference is less than 5sec
+    @assert !CS.push_to_table!(table; open_nodes=1, closed_nodes=1, incumbent=1.0, best_bound=1.0, duration=0.2)
+
     # Incumbent precision too high
     table = CS.TableSetup(
         [
@@ -336,6 +340,8 @@ end
     # +2 for first and last empty
     @test length(line_split) == length(table.cols)+2
     @test line_split[4] == "100000000.0"
+    @assert CS.push_to_table!(table; open_nodes=1, closed_nodes=1, incumbent=1.0, best_bound=1.0, duration=0.1)
+    @assert CS.push_to_table!(table; open_nodes=1, closed_nodes=1, incumbent=1.0, best_bound=1.0, duration=0.2)
 
     # need to increase size for #Open
     table = CS.TableSetup(
