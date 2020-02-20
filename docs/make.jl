@@ -12,6 +12,7 @@ makedocs(
         "Tutorial" => "tutorial.md",
         "How-To" => "how_to.md",
         "Solver options" => "options.md",
+        "Supported/Planned" => "supported.md",
         "Explanation" => "explanation.md",
         "Reference" => "reference.md",
 #        "Developer" => [],
