@@ -2,17 +2,21 @@ function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
 	return model.status
 end
 
-function MOI.get(model::Optimizer, ::MOI.ObjectiveValue)
-    return model.inner.best_sol
+function MOI.get(model::Optimizer, ov::MOI.ObjectiveValue)
+    return model.inner.solutions[ov.result_index].incumbent
 end
 
 function MOI.get(model::Optimizer, ::MOI.ObjectiveBound)
     return model.inner.best_bound
 end
 
-function MOI.get(model::Optimizer, ::MOI.VariablePrimal, vi::MOI.VariableIndex)
+function MOI.get(model::Optimizer, ::MOI.ResultCount)
+    return length(model.inner.solutions)
+end
+
+function MOI.get(model::Optimizer, vp::MOI.VariablePrimal, vi::MOI.VariableIndex)
     check_inbounds(model, vi)
-    return CS.value(model.inner.search_space[vi.value])
+    return model.inner.solutions[vp.N].values[vi.value]
 end
 
 function set_status!(model::Optimizer, status::Symbol)

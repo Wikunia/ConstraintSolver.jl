@@ -227,6 +227,11 @@ mutable struct TreeLogNode{T <: Real}
     children        :: Vector{TreeLogNode{T}}
 end
 
+mutable struct Solution{T <: Real}
+    incumbent           :: T
+    values              :: Vector{Int}
+end
+
 mutable struct ConstraintSolverModel{T <: Real}
     init_search_space   :: Vector{Variable}
     search_space        :: Vector{Variable}
@@ -239,7 +244,8 @@ mutable struct ConstraintSolverModel{T <: Real}
     objective           :: ObjectiveFunction
     best_sol            :: T # Objective of the best solution
     best_bound          :: T # Overall best bound
-    solutions           :: Vector{Int} # saves only the id to the BacktrackObj
+    solutions           :: Vector{Solution}
+    bt_solution_ids     :: Vector{Int} # saves only the id to the BacktrackObj
     info                :: CSInfo
     input               :: Dict{Symbol,Any}
     logs                :: Vector{TreeLogNode{T}}
@@ -283,6 +289,7 @@ function ConstraintSolverModel(::Type{T}=Float64) where {T <: Real}
         NoObjective(), #
         zero(T), # best_sol,
         zero(T), # best_bound
+        Vector{Solution}(), # all solution objects
         Vector{Int}(), # save backtrack id to solution
         CSInfo(0, false, 0, 0, 0), # info
         Dict{Symbol,Any}(), # input
@@ -754,8 +761,8 @@ function set_state_to_best_sol!(com::CS.CoM, last_backtrack_id::Int)
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
     backtrack_vec = com.backtrack_vec
     # find one of the best solutions
-    sol, sol_id = findmin([backtrack_vec[sol_id].best_bound*obj_factor for sol_id in com.solutions])
-    backtrack_id = com.solutions[sol_id]
+    sol, sol_id = findmin([backtrack_vec[sol_id].best_bound*obj_factor for sol_id in com.bt_solution_ids])
+    backtrack_id = com.bt_solution_ids[sol_id]
     checkout_from_to!(com, last_backtrack_id, backtrack_id)
     # prune the last step as checkout_from_to! excludes the to part
     prune!(com, [backtrack_id])
@@ -767,7 +774,7 @@ function update_table_log(com::CS.CoM, backtrack_vec; force=false)
     # -1 for dummy node
     closed_nodes = length(backtrack_vec)-open_nodes-1
     best_bound = com.best_bound
-    incumbent = length(com.solutions) == 0 ? "-" : com.best_sol
+    incumbent = length(com.bt_solution_ids) == 0 ? "-" : com.best_sol
     duration = time()-com.start_time
     push_to_table!(table; force=force, open_nodes=open_nodes, closed_nodes=closed_nodes, incumbent=incumbent, best_bound=best_bound, duration=duration)
 end
@@ -823,7 +830,7 @@ function add2backtrack_vec!(backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{
         get_best_bound(com; var_idx=ind, left_side=true, var_bound=leq_val)
     )
     # only include nodes which have a better objective than the current best solution if one was found already
-    if !check_bound || (backtrack_obj.best_bound*obj_factor < com.best_sol || length(com.solutions) == 0)
+    if !check_bound || (backtrack_obj.best_bound*obj_factor < com.best_sol || length(com.bt_solution_ids) == 0)
         addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com, num_backtrack_objs, step_nr)
     else
         num_backtrack_objs -= 1
@@ -841,7 +848,7 @@ function add2backtrack_vec!(backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{
         geq_val,
         get_best_bound(com; var_idx=ind, left_side=false, var_bound=geq_val)
     )
-    if !check_bound || (backtrack_obj.best_bound*obj_factor < com.best_sol || length(com.solutions) == 0)
+    if !check_bound || (backtrack_obj.best_bound*obj_factor < com.best_sol || length(com.bt_solution_ids) == 0)
         addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com, num_backtrack_objs, step_nr)
     else
         num_backtrack_objs -= 1
@@ -872,7 +879,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         1, # idx
         0, # parent
         0, # depth
-        :Close, # status
+        :Closed, # status
         0, # variable_idx
         true, # left_side (is dummy anyway)
         0, # var_bound
@@ -908,13 +915,24 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                 end
                 backtrack_obj = backtrack_vec[l]
             end
+            if l <= 0 && com.options.all_solutions
+                l = length(backtrack_vec)
+                backtrack_obj = backtrack_vec[l]
+                while backtrack_obj.status == :Closed
+                    l -= 1
+                    if l == 0
+                        break
+                    end
+                    backtrack_obj = backtrack_vec[l]
+                end
+            end
         else # sort for objective
             # don't actually sort => just get the best backtrack idx
             # the one with the best bound and if same best bound choose the one with higher depth
             l = 0
             best_fac_bound = typemax(Int)
             best_depth = 0
-            found_sol = length(com.solutions) > 0
+            found_sol = length(com.bt_solution_ids) > 0
             nopen_nodes = 0
             for i=1:length(backtrack_vec)
                 bo = backtrack_vec[i]
@@ -935,6 +953,18 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                     end
                 end
             end
+            if l == 0 && com.options.all_solutions
+                l = 1
+                backtrack_obj = backtrack_vec[1]
+                while backtrack_obj.status == :Closed
+                    l += 1
+                    if l == length(backtrack_vec)+1
+                        l = 0
+                        break
+                    end
+                    backtrack_obj = backtrack_vec[l]
+                end
+            end
 
             if l != 0
                 backtrack_obj = backtrack_vec[l]
@@ -948,7 +978,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         update_best_bound!(com)
 
         # there is no better node => return best solution
-        if length(com.solutions) > 0 && obj_factor*com.best_bound >= obj_factor*com.best_sol
+        if length(com.bt_solution_ids) > 0 && obj_factor*com.best_bound >= obj_factor*com.best_sol && !com.options.all_solutions
             break
         end
 
@@ -1008,11 +1038,14 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         # no index found => solution found
         if !found
             new_sol = get_best_bound(com)
-            if length(com.solutions) == 0 || obj_factor*new_sol <= obj_factor*com.best_sol
-                push!(com.solutions, backtrack_obj.idx)
+            if length(com.bt_solution_ids) == 0 || obj_factor*new_sol <= obj_factor*com.best_sol
+                push!(com.bt_solution_ids, backtrack_obj.idx)
+                # also push it to the solutions object
+                new_sol_obj = Solution(new_sol, CS.value.(com.search_space))
+                push!(com.solutions, new_sol_obj)
                 com.best_sol = new_sol
                 log_table && (last_table_row = update_table_log(com, backtrack_vec; force=true))
-                if com.best_sol == com.best_bound
+                if com.best_sol == com.best_bound && !com.options.all_solutions
                     return :Solved
                 end
                 # set all nodes to :Worse if they can't achieve a better solution
@@ -1024,7 +1057,12 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                 continue
             else
                 log_table && (last_table_row = update_table_log(com, backtrack_vec; force=true))
-                if com.best_sol == com.best_bound
+                if com.options.all_solutions
+                    new_sol_obj = Solution(new_sol, CS.value.(com.search_space))
+                    push!(com.solutions, new_sol_obj)
+                end
+
+                if com.best_sol == com.best_bound && !com.options.all_solutions
                     set_state_to_best_sol!(com, last_backtrack_id)
                     return :Solved
                 end
@@ -1042,7 +1080,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
         leafs_best_bound = get_best_bound(com)
         # if the objective can't get better we don't have to test all options
-        if leafs_best_bound*obj_factor >= com.best_sol && length(com.solutions) > 0
+        if leafs_best_bound*obj_factor >= com.best_sol && length(com.bt_solution_ids) > 0
             continue
         end
 
@@ -1050,7 +1088,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         last_backtrack_obj = backtrack_vec[last_backtrack_id]
         num_backtrack_objs = add2backtrack_vec!(backtrack_vec, com, num_backtrack_objs, last_backtrack_obj.idx, last_backtrack_obj.depth + 1, step_nr, ind, pvals; check_bound=true)
     end
-    if length(com.solutions) > 0
+    if length(com.bt_solution_ids) > 0
         set_state_to_best_sol!(com, last_backtrack_id)
         com.best_bound = com.best_sol
         return :Solved
@@ -1174,6 +1212,11 @@ function set_in_all_different!(com::CS.CoM)
     end
 end
 
+function sort_solutions!(com::CS.CoM)
+    obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
+    sort!(com.solutions, by = s -> s.incumbent*obj_factor)
+end
+
 """
     solve!(com::CS.CoM, options::SolverOptions)
 
@@ -1216,6 +1259,8 @@ function solve!(com::CS.CoM, options::SolverOptions)
         com.best_bound = get_best_bound(com)
         com.best_sol = com.best_bound
         com.solve_time = time()-com.start_time
+        new_sol_obj = Solution(com.best_sol, CS.value.(com.search_space))
+        push!(com.solutions, new_sol_obj)
         return :Solved
     end
     feasible = prune!(com; pre_backtrack=true)
@@ -1233,11 +1278,14 @@ function solve!(com::CS.CoM, options::SolverOptions)
     if all(v->isfixed(v), com.search_space)
         com.best_sol = com.best_bound
         com.solve_time = time()-com.start_time
+        new_sol_obj = Solution(com.best_sol, CS.value.(com.search_space))
+        push!(com.solutions, new_sol_obj)
         return :Solved
     end
     if backtrack
         com.info.backtracked = true
         status = backtrack!(com, max_bt_steps; sorting=backtrack_sorting)
+        sort_solutions!(com)
         com.solve_time = time()-com.start_time
         return status
     else

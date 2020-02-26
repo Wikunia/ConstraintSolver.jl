@@ -8,6 +8,7 @@ mutable struct SolverOptions
     rtol                :: Float64
     atol                :: Float64
     solution_type       :: Type
+    all_solutions       :: Bool
 end
 
 function SolverOptions()
@@ -29,8 +30,9 @@ function SolverOptions()
     rtol                = 1e-6
     atol                = 1e-6
     solution_type       = Float64
+    all_solutions       = false
 
-    return SolverOptions(logging, table, backtrack, max_bt_steps, backtrack_sorting, keep_logs, rtol, atol, solution_type)
+    return SolverOptions(logging, table, backtrack, max_bt_steps, backtrack_sorting, keep_logs, rtol, atol, solution_type, all_solutions)
 end
 
 function combine_options(options)
