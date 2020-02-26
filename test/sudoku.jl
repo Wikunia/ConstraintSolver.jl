@@ -85,7 +85,6 @@ end
 
     optimize!(m)
     @test JuMP.termination_status(m) == MOI.INFEASIBLE
-    @test !jump_fulfills_sudoku_constr(JuMP.value.(x))
 end
 
 
@@ -283,5 +282,167 @@ end
     @show com.info
 end
 
+@testset "Two solutions" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "all_solutions"=>true, "logging"=>[]))
+
+    grid = Int[9,0,6,0,7,0,4,0,3,
+               0,0,0,4,0,0,2,0,0,
+               0,7,0,0,2,3,0,1,0,
+               5,0,0,0,0,0,1,0,0,
+               0,4,0,2,0,8,0,6,0,
+               0,0,3,0,0,0,0,0,5,
+               0,3,0,7,0,0,0,5,0,
+               0,0,7,0,0,5,0,0,0,
+               4,0,5,0,1,0,7,0,8]
+    grid = transpose(reshape(grid, (9,9)))
+
+    @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+    # set variables
+    for r=1:9, c=1:9
+        if grid[r,c] != 0
+            @constraint(m, x[r,c] == grid[r,c])
+        end
+    end
+
+    # sudoku constraints
+    jump_add_sudoku_constr!(m, x)
+
+    optimize!(m)
+
+    com = JuMP.backend(m).optimizer.model.inner
+
+    @test JuMP.result_count(m) == 2   
+    @test JuMP.value.(x) != JuMP.value.(x, result=2)
+    if JuMP.value.(x[6,5:6]) == [9,4]
+        @test JuMP.value.(x[7,5:6]) == [4,9]
+    else
+        @test JuMP.value.(x[6,5:6]) == [4,9]
+        @test JuMP.value.(x[7,5:6]) == [9,4]
+    end
+end
+
+@testset "Two solutions but optimize on one value" begin
+    # all solutions should give all solutions even if they are not optimal
+    m = Model(optimizer_with_attributes(CS.Optimizer, "all_solutions"=>true, "logging"=>[]))
+
+    grid = Int[9,0,6,0,7,0,4,0,3,
+               0,0,0,4,0,0,2,0,0,
+               0,7,0,0,2,3,0,1,0,
+               5,0,0,0,0,0,1,0,0,
+               0,4,0,2,0,8,0,6,0,
+               0,0,3,0,0,0,0,0,5,
+               0,3,0,7,0,0,0,5,0,
+               0,0,7,0,0,5,0,0,0,
+               4,0,5,0,1,0,7,0,8]
+    grid = transpose(reshape(grid, (9,9)))
+
+    @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+    # set variables
+    for r=1:9, c=1:9
+        if grid[r,c] != 0
+            @constraint(m, x[r,c] == grid[r,c])
+        end
+    end
+
+    # sudoku constraints
+    jump_add_sudoku_constr!(m, x)
+    @objective(m, Max, x[6,5])
+
+    optimize!(m)
+
+    com = JuMP.backend(m).optimizer.model.inner
+
+    @test JuMP.result_count(m) == 2   
+    @test JuMP.value.(x) != JuMP.value.(x, result=2)
+    # the better one should be solution 1 of course
+    @test JuMP.objective_value(m) == 9
+    @test JuMP.value.(x[6,5:6]) == [9,4]
+    @test JuMP.value.(x[7,5:6]) == [4,9]
+    # second worse solution
+    @test JuMP.objective_value(m, result=2) == 4
+    @test JuMP.value.(x[6,5:6], result=2) == [4,9]
+    @test JuMP.value.(x[7,5:6], result=2) == [9,4]
+end
+
+@testset "Two solutions but only one optimal" begin
+    # all solutions should give all solutions even if they are not optimal
+    m = Model(optimizer_with_attributes(CS.Optimizer, "all_optimal_solutions"=>true, "logging"=>[]))
+
+    grid = Int[9,0,6,0,7,0,4,0,3,
+               0,0,0,4,0,0,2,0,0,
+               0,7,0,0,2,3,0,1,0,
+               5,0,0,0,0,0,1,0,0,
+               0,4,0,2,0,8,0,6,0,
+               0,0,3,0,0,0,0,0,5,
+               0,3,0,7,0,0,0,5,0,
+               0,0,7,0,0,5,0,0,0,
+               4,0,5,0,1,0,7,0,8]
+    grid = transpose(reshape(grid, (9,9)))
+
+    @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+    # set variables
+    for r=1:9, c=1:9
+        if grid[r,c] != 0
+            @constraint(m, x[r,c] == grid[r,c])
+        end
+    end
+
+    # sudoku constraints
+    jump_add_sudoku_constr!(m, x)
+    @objective(m, Max, x[6,5])
+
+    optimize!(m)
+
+    com = JuMP.backend(m).optimizer.model.inner
+
+    @test JuMP.result_count(m) == 1   
+    # the better one should be solution 1 of course
+    @test JuMP.objective_value(m) == 9
+    @test JuMP.value.(x[6,5:6]) == [9,4]
+    @test JuMP.value.(x[7,5:6]) == [4,9]
+end
+
+@testset "Two solutions but both optimal" begin
+    # all solutions should give all solutions even if they are not optimal
+    m = Model(optimizer_with_attributes(CS.Optimizer, "all_optimal_solutions"=>true, "logging"=>[]))
+
+    grid = Int[9,0,6,0,7,0,4,0,3,
+               0,0,0,4,0,0,2,0,0,
+               0,7,0,0,2,3,0,1,0,
+               5,0,0,0,0,0,1,0,0,
+               0,4,0,2,0,8,0,6,0,
+               0,0,3,0,0,0,0,0,5,
+               0,3,0,7,0,0,0,5,0,
+               0,0,7,0,0,5,0,0,0,
+               4,0,5,0,1,0,7,0,8]
+    grid = transpose(reshape(grid, (9,9)))
+
+    @variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+    # set variables
+    for r=1:9, c=1:9
+        if grid[r,c] != 0
+            @constraint(m, x[r,c] == grid[r,c])
+        end
+    end
+
+    # sudoku constraints
+    jump_add_sudoku_constr!(m, x)
+    @objective(m, Max, x[1,1])
+
+    optimize!(m)
+
+    com = JuMP.backend(m).optimizer.model.inner
+
+    # the better one should be solution 1 of course
+    @test JuMP.objective_value(m) == 9
+    @test JuMP.result_count(m) == 2   
+    @test JuMP.value.(x) != JuMP.value.(x, result=2)
+    if JuMP.value.(x[6,5:6]) == [9,4]
+        @test JuMP.value.(x[7,5:6]) == [4,9]
+    else
+        @test JuMP.value.(x[6,5:6]) == [4,9]
+        @test JuMP.value.(x[7,5:6]) == [9,4]
+    end
+end
 
 end
