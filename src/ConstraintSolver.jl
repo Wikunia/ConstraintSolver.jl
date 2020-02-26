@@ -1076,16 +1076,11 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                     end
                 end
                 continue
-            else
+            else # if new solution was found but it's worse
                 log_table && (last_table_row = update_table_log(com, backtrack_vec; force=true))
                 if com.options.all_solutions
                     new_sol_obj = Solution(new_sol, CS.value.(com.search_space))
                     push!(com.solutions, new_sol_obj)
-                end
-
-                if com.best_sol == com.best_bound && !find_more_solutions
-                    set_state_to_best_sol!(com, last_backtrack_id)
-                    return :Solved
                 end
                 continue
             end
