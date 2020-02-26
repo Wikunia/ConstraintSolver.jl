@@ -857,6 +857,94 @@ function add2backtrack_vec!(backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{
     return num_backtrack_objs
 end
 
+function get_next_node(com::CS.CoM, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
+    # if there is no objective or sorting is set to false
+    found = false
+    obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
+    backtrack_obj = backtrack_vec[1]
+
+    if com.sense == MOI.FEASIBILITY_SENSE || !sorting
+        l = length(backtrack_vec)
+        backtrack_obj = backtrack_vec[l]
+        while backtrack_obj.status != :Open
+            l -= 1
+            if l == 0
+                break
+            end
+            backtrack_obj = backtrack_vec[l]
+        end
+        if l != 0
+            found = true
+        end
+    else # sort for objective
+        # don't actually sort => just get the best backtrack idx
+        # the one with the best bound and if same best bound choose the one with higher depth
+        l = 0
+        best_fac_bound = typemax(Int)
+        best_depth = 0
+        found_sol = length(com.bt_solution_ids) > 0
+        nopen_nodes = 0
+        for i=1:length(backtrack_vec)
+            bo = backtrack_vec[i]
+            if bo.status == :Open
+                nopen_nodes += 1
+                if found_sol
+                    if obj_factor*bo.best_bound < best_fac_bound || (obj_factor*bo.best_bound == best_fac_bound && bo.depth > best_depth)
+                        l = i
+                        best_depth = bo.depth
+                        best_fac_bound = obj_factor*bo.best_bound
+                    end
+                else
+                    if bo.depth > best_depth || (obj_factor*bo.best_bound < best_fac_bound && bo.depth == best_depth)
+                        l = i
+                        best_depth = bo.depth
+                        best_fac_bound = obj_factor*bo.best_bound
+                    end
+                end
+            end
+        end
+
+        if l != 0
+            backtrack_obj = backtrack_vec[l]
+            found = true
+        end
+    end
+    # if we found the optimal solution or one feasible
+    # => check whether all solutions are requested
+    if !found && com.options.all_solutions
+        l = length(backtrack_vec)
+        backtrack_obj = backtrack_vec[l]
+        while backtrack_obj.status == :Closed
+            l -= 1
+            if l == 0
+                break
+            end
+            backtrack_obj = backtrack_vec[l]
+        end
+        if l != 0
+            found = true
+        end
+    end
+
+    if !found && com.options.all_optimal_solutions
+        l = length(backtrack_vec)
+        backtrack_obj = backtrack_vec[l]
+        # get an obj which has the same bound as the optimal solution
+        while backtrack_obj.best_bound != com.best_sol || backtrack_obj.status == :Closed
+            l -= 1
+            if l == 0
+                break
+            end
+            backtrack_obj = backtrack_vec[l]
+        end
+        if l != 0
+            found = true
+        end
+    end
+
+    return found, backtrack_obj
+end
+
 """
     backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
@@ -867,6 +955,7 @@ Return :Solved or :Infeasible if proven or `:NotSolved` if interrupted by `max_b
 function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
     found, ind = get_weak_ind(com)
     com.info.backtrack_fixes   = 1
+    find_more_solutions = com.options.all_solutions || com.options.all_optimal_solutions
     
     log_table = false
     if :Table in com.options.logging
@@ -904,81 +993,13 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
         # get next open backtrack object
         l = 1
 
-        # if there is no objective or sorting is set to false
-        if com.sense == MOI.FEASIBILITY_SENSE || !sorting
-            l = length(backtrack_vec)
-            backtrack_obj = backtrack_vec[l]
-            while backtrack_obj.status != :Open
-                l -= 1
-                if l == 0
-                    break
-                end
-                backtrack_obj = backtrack_vec[l]
-            end
-            if l <= 0 && com.options.all_solutions
-                l = length(backtrack_vec)
-                backtrack_obj = backtrack_vec[l]
-                while backtrack_obj.status == :Closed
-                    l -= 1
-                    if l == 0
-                        break
-                    end
-                    backtrack_obj = backtrack_vec[l]
-                end
-            end
-        else # sort for objective
-            # don't actually sort => just get the best backtrack idx
-            # the one with the best bound and if same best bound choose the one with higher depth
-            l = 0
-            best_fac_bound = typemax(Int)
-            best_depth = 0
-            found_sol = length(com.bt_solution_ids) > 0
-            nopen_nodes = 0
-            for i=1:length(backtrack_vec)
-                bo = backtrack_vec[i]
-                if bo.status == :Open
-                    nopen_nodes += 1
-                    if found_sol
-                        if obj_factor*bo.best_bound < best_fac_bound || (obj_factor*bo.best_bound == best_fac_bound && bo.depth > best_depth)
-                            l = i
-                            best_depth = bo.depth
-                            best_fac_bound = obj_factor*bo.best_bound
-                        end
-                    else
-                        if bo.depth > best_depth || (obj_factor*bo.best_bound < best_fac_bound && bo.depth == best_depth)
-                            l = i
-                            best_depth = bo.depth
-                            best_fac_bound = obj_factor*bo.best_bound
-                        end
-                    end
-                end
-            end
-            if l == 0 && com.options.all_solutions
-                l = 1
-                backtrack_obj = backtrack_vec[1]
-                while backtrack_obj.status == :Closed
-                    l += 1
-                    if l == length(backtrack_vec)+1
-                        l = 0
-                        break
-                    end
-                    backtrack_obj = backtrack_vec[l]
-                end
-            end
-
-            if l != 0
-                backtrack_obj = backtrack_vec[l]
-            end
-        end
-
-        # no open node => Infeasible
-        if l <= 0 || l > length(backtrack_vec)
-            break
-        end
+        found, backtrack_obj = get_next_node(com, backtrack_vec, sorting)
+        !found && break
+        
         update_best_bound!(com)
 
         # there is no better node => return best solution
-        if length(com.bt_solution_ids) > 0 && obj_factor*com.best_bound >= obj_factor*com.best_sol && !com.options.all_solutions
+        if length(com.bt_solution_ids) > 0 && obj_factor*com.best_bound >= obj_factor*com.best_sol && !find_more_solutions
             break
         end
 
@@ -1045,12 +1066,12 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                 push!(com.solutions, new_sol_obj)
                 com.best_sol = new_sol
                 log_table && (last_table_row = update_table_log(com, backtrack_vec; force=true))
-                if com.best_sol == com.best_bound && !com.options.all_solutions
+                if com.best_sol == com.best_bound && !find_more_solutions
                     return :Solved
                 end
                 # set all nodes to :Worse if they can't achieve a better solution
                 for bo in backtrack_vec
-                    if bo.status == :Open && obj_factor*bo.best_bound >= com.best_sol
+                    if bo.status == :Open && obj_factor*bo.best_bound >= obj_factor*com.best_sol
                         bo.status = :Worse
                     end
                 end
@@ -1062,7 +1083,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
                     push!(com.solutions, new_sol_obj)
                 end
 
-                if com.best_sol == com.best_bound && !com.options.all_solutions
+                if com.best_sol == com.best_bound && !find_more_solutions
                     set_state_to_best_sol!(com, last_backtrack_id)
                     return :Solved
                 end

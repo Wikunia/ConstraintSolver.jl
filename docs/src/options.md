@@ -47,6 +47,11 @@ You can set this to `true` to get **all feasible** solutions. This can be used t
 
 Look at `all_optimal_solutions` if you only want all solutions with the same optimum.
 
+## `all_optimal_solutions` (`false`)
+
+You can set this to `true` to get **optimal solutions**. If you have a feasibility problem you can also use `all_solutions` but for optimization problems this will only return solutions with the same best incumbent.
+
+
 ## `backtrack` (`true`)
 
 To solve the problem completely normally backtracking needs to be used but for some problems like certain sudokus this might not be necessary. This option is mostly there for debugging reasons to check the search space before backtracking starts.
