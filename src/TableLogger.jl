@@ -1,27 +1,27 @@
 mutable struct TableCol
-    id                  :: Symbol
-    name                :: String
-    type                :: DataType
-    width               :: Int
-    alignment           :: Symbol # :left, :center, :right
-    b_format            :: Bool
+    id::Symbol
+    name::String
+    type::DataType
+    width::Int
+    alignment::Symbol # :left, :center, :right
+    b_format::Bool
 end
 
 mutable struct TableEntry{T}
-    col_id              :: Symbol
-    value               :: T
+    col_id::Symbol
+    value::T
 end
 
 mutable struct TableSetup
-    cols                :: Vector{TableCol}
-    col_idx             :: Dict{Symbol,Int}
-    new_row_criteria    :: Bool
-    diff_criteria       :: Dict{Symbol, Any}
-    last_row            :: Vector{TableEntry}
+    cols::Vector{TableCol}
+    col_idx::Dict{Symbol,Int}
+    new_row_criteria::Bool
+    diff_criteria::Dict{Symbol,Any}
+    last_row::Vector{TableEntry}
 end
 
 function TableCol(name::String, type::DataType)
-    width = length(name) <= 8 ? 10 : length(name)+2
+    width = length(name) <= 8 ? 10 : length(name) + 2
     return TableCol(name, type, width)
 end
 
@@ -34,13 +34,20 @@ function TableCol(id::Symbol, name::String, type::DataType, width::Int)
 end
 
 function TableCol(id::Symbol, name::String, type::DataType, width::Int, alignment::Symbol)
-    width = width <= length(name)+2 ? length(name)+2 : width
-    return TableCol(id, name, type, width, alignment, hasmethod(format_table_value, (type, Int)))
+    width = width <= length(name) + 2 ? length(name) + 2 : width
+    return TableCol(
+        id,
+        name,
+        type,
+        width,
+        alignment,
+        hasmethod(format_table_value, (type, Int)),
+    )
 end
 
 function TableSetup(cols::Vector{TableCol}, diff_criteria::Dict)
     new_row_criteria = hasmethod(is_new_row, (Vector{TableEntry}, Vector{TableEntry}, Dict))
-    col_idx = Dict{Symbol, Int}()
+    col_idx = Dict{Symbol,Int}()
     c = 0
     for col in cols
         c += 1
@@ -50,7 +57,7 @@ function TableSetup(cols::Vector{TableCol}, diff_criteria::Dict)
 end
 
 function TableSetup(cols::Vector{TableCol})
-    return TableSetup(cols, Dict{Symbol, Any}())
+    return TableSetup(cols, Dict{Symbol,Any}())
 end
 
 """
@@ -69,7 +76,7 @@ function is_new_row(new::Vector{TableEntry}, before::Vector{TableEntry}, criteri
     min_diff_duration = get(criteria, :min_diff_duration, 5.0)
     for (new_entry, old_entry) in zip(new, before)
         if new_entry.col_id == :duration
-            if new_entry.value-old_entry.value >= min_diff_duration
+            if new_entry.value - old_entry.value >= min_diff_duration
                 return true
             end
         end
@@ -106,7 +113,7 @@ function format_table_value(val::Float64, len::Int)
                 break
             end
             precision += 1
-        end    
+        end
     end
 
     prec_fmt = FormatSpec("<.$(precision)f")
@@ -131,18 +138,18 @@ function get_header(table::TableSetup)
     ln = ""
     sum_width = 0
     for col in table.cols
-        width     = col.width
+        width = col.width
         sum_width += width
-        padding = width-length(col.name)
+        padding = width - length(col.name)
         if padding < 2
             padding = 2
-            col.width = length(col.name)+2
+            col.width = length(col.name) + 2
         end
-        ln *= repeat(" ",fld(padding, 2)+1)
+        ln *= repeat(" ", fld(padding, 2) + 1)
         ln *= col.name
-        ln *= repeat(" ",cld(padding, 2)+1)
+        ln *= repeat(" ", cld(padding, 2) + 1)
     end
-    equals = repeat("=", sum(sum_width)+2*length(table.cols))
+    equals = repeat("=", sum(sum_width) + 2 * length(table.cols))
     header = "$ln\n$equals"
     return header
 end
@@ -154,7 +161,7 @@ Given the arguments `kwargs` it will be checked whether a new row shell be added
 If `force` a new row is added. All values will be formatted in `get_row`
 Return `true` if a new line got added
 """
-function push_to_table!(table::TableSetup; force=false, kwargs...)
+function push_to_table!(table::TableSetup; force = false, kwargs...)
     row = Vector{TableEntry}(undef, length(table.cols))
     for p in kwargs
         col_idx = get(table.col_idx, p.first, 0)
@@ -162,7 +169,8 @@ function push_to_table!(table::TableSetup; force=false, kwargs...)
             row[col_idx] = TableEntry(p.first, p.second)
         end
     end
-    if force || !table.new_row_criteria || is_new_row(row, table.last_row, table.diff_criteria) 
+    if force ||
+       !table.new_row_criteria || is_new_row(row, table.last_row, table.diff_criteria)
         println(get_row(table, row))
         table.last_row = row
         return true
@@ -177,30 +185,30 @@ Return the formatted and padded table row given `row` and a `TableSetup`
 """
 function get_row(table::TableSetup, row::Vector{TableEntry})
     ln = ""
-    for c=1:length(table.cols)
-        width   = table.cols[c].width
+    for c = 1:length(table.cols)
+        width = table.cols[c].width
         if isassigned(row, c)
-            val     = row[c].value
+            val = row[c].value
             if table.cols[c].b_format && isa(val, table.cols[c].type)
-                s_val   = format_table_value(val, width)
+                s_val = format_table_value(val, width)
             else
-                s_val   = string(val)
+                s_val = string(val)
             end
         else
             s_val = "-"
         end
-        padding = width-length(s_val)
+        padding = width - length(s_val)
 
         if table.cols[c].alignment == :center
-            ln *= repeat(" ",fld(padding, 2)+1)
+            ln *= repeat(" ", fld(padding, 2) + 1)
             ln *= s_val
-            ln *= repeat(" ",cld(padding, 2)+1)
+            ln *= repeat(" ", cld(padding, 2) + 1)
         elseif table.cols[c].alignment == :left
             ln *= " "
             ln *= s_val
-            ln *= repeat(" ",padding+1)
+            ln *= repeat(" ", padding + 1)
         elseif table.cols[c].alignment == :right
-            ln *= repeat(" ",padding+1)
+            ln *= repeat(" ", padding + 1)
             ln *= s_val
             ln *= " "
         else

@@ -1,6 +1,6 @@
 using ConstraintSolver, JuMP, MathOptInterface, JSON
 
-if !@isdefined CS 
+if !@isdefined CS
     const CS = ConstraintSolver
 end
 const MOI = MathOptInterface
@@ -16,30 +16,33 @@ function parseJSON(json_sums)
             push!(indices, tuple(ind...))
         end
 
-        push!(sums, (result=s["result"], indices=indices, color=s["color"]))
+        push!(sums, (result = s["result"], indices = indices, color = s["color"]))
     end
     return sums
 end
 
-function solve_all(filenames; benchmark=false, single_times=true)
+function solve_all(filenames; benchmark = false, single_times = true)
     ct = time()
-    for (i,filename) in enumerate(filenames)
+    for (i, filename) in enumerate(filenames)
         sums = parseJSON(JSON.parsefile("data/$(filename)"))
 
         # plot_killer(zeros(Int, (9,9)), sums, filename; fill=false)
         # continue
 
         m = CS.Optimizer()
-        
-        x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i=1:9] for j=1:9]
-        for r=1:9, c=1:9
+
+        x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i = 1:9] for j = 1:9]
+        for r = 1:9, c = 1:9
             MOI.add_constraint(m, x[r][c][1], MOI.GreaterThan(1.0))
             MOI.add_constraint(m, x[r][c][1], MOI.LessThan(9.0))
         end
 
         for s in sums
-            saf = MOI.ScalarAffineFunction{Float64}([MOI.ScalarAffineTerm(1.0, x[ind[1]][ind[2]][1]) for ind in s.indices], 0.0)
-            MOI.add_constraint(m, saf, MOI.EqualTo(convert(Float64,s.result)))
+            saf = MOI.ScalarAffineFunction{Float64}(
+                [MOI.ScalarAffineTerm(1.0, x[ind[1]][ind[2]][1]) for ind in s.indices],
+                0.0,
+            )
+            MOI.add_constraint(m, saf, MOI.EqualTo(convert(Float64, s.result)))
             # MOI.add_constraint(m, [x[ind[1]][ind[2]][1] for ind in s.indices], CS.AllDifferentSet(length(s.indices)))
         end
 
@@ -51,7 +54,7 @@ function solve_all(filenames; benchmark=false, single_times=true)
             MOI.optimize!(m)
             status = MOI.get(m, MOI.TerminationStatus())
             GC.enable(true)
-            println(i-1,", ", MOI.get(m, MOI.SolveTime()))
+            println(i - 1, ", ", MOI.get(m, MOI.SolveTime()))
         else
             GC.enable(false)
             MOI.optimize!(m)
@@ -62,8 +65,8 @@ function solve_all(filenames; benchmark=false, single_times=true)
             println("Status: ", status)
             @show m.inner.info
             solution = zeros(Int, 9, 9)
-            for r=1:9
-                solution[r,:] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c=1:9]
+            for r = 1:9
+                solution[r, :] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c = 1:9]
             end
             @assert jump_fulfills_sudoku_constr(solution)
         end
@@ -71,13 +74,23 @@ function solve_all(filenames; benchmark=false, single_times=true)
         GC.gc()
     end
     println("")
-    tt = time()-ct
+    tt = time() - ct
     println("total time: ", tt)
-    println("avg: ", tt/length(filenames))
+    println("avg: ", tt / length(filenames))
 end
 
-function main(; benchmark=false, single_times=true)
-    solve_all(["niallsudoku_5500", "niallsudoku_5501", "niallsudoku_5502", "niallsudoku_5503", "niallsudoku_6417", "niallsudoku_6249"]; benchmark=benchmark, single_times=single_times)
+function main(; benchmark = false, single_times = true)
+    solve_all(
+        [
+            "niallsudoku_5500",
+            "niallsudoku_5501",
+            "niallsudoku_5502",
+            "niallsudoku_5503",
+            "niallsudoku_6417",
+            "niallsudoku_6249",
+        ];
+        benchmark = benchmark,
+        single_times = single_times,
+    )
     # solve_all(from_file("hardest.txt"), "hardest")
 end
-

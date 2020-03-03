@@ -1,7 +1,7 @@
 using ConstraintSolver
 CS = ConstraintSolver
 
-function main(filename; benchmark=false)
+function main(filename; benchmark = false)
     com = CS.ConstraintSolverModel()
 
     lines = readlines(filename)
@@ -12,7 +12,7 @@ function main(filename; benchmark=false)
         if parts[1] == "p"
             num_colors = parse(Int, parts[3])
             x = Vector{CS.Variable}(undef, num_colors)
-            for i=1:num_colors
+            for i = 1:num_colors
                 x[i] = add_var!(com, 1, num_colors)
             end
         elseif parts[1] == "e"
@@ -26,8 +26,8 @@ function main(filename; benchmark=false)
     set_objective!(com, :Min, CS.vars_max(x))
 
     status = solve!(com)
-    
-    if !benchmark 
+
+    if !benchmark
         println("status: ", status)
         println("objective: ", com.best_sol)
         com.info

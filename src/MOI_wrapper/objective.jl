@@ -1,6 +1,6 @@
 MOI.supports(::Optimizer, ::MOI.ObjectiveSense) = true
 MOI.supports(::Optimizer, ::MOI.ObjectiveFunction{SVF}) = true
-MOI.supports(::Optimizer, ::MOI.ObjectiveFunction{SAF{T}}) where T <: Real = true
+MOI.supports(::Optimizer, ::MOI.ObjectiveFunction{SAF{T}}) where {T<:Real} = true
 
 """
 set and get function overloads
@@ -14,14 +14,15 @@ end
 
 function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction, func::SVF)
     check_inbounds(model, func)
-    model.inner.objective = SingleVariableObjective(func.variable.value, [func.variable.value])
+    model.inner.objective =
+        SingleVariableObjective(func.variable.value, [func.variable.value])
     return
 end
 
-function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction, func::SAF{T}) where T <: Real
+function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction, func::SAF{T}) where {T<:Real}
     check_inbounds(model, func)
-    indices = [func.terms[i].variable_index.value for i=1:length(func.terms)]
-    coeffs  = [func.terms[i].coefficient for i=1:length(func.terms)]
+    indices = [func.terms[i].variable_index.value for i = 1:length(func.terms)]
+    coeffs = [func.terms[i].coefficient for i = 1:length(func.terms)]
     lc = LinearCombination(indices, coeffs)
     model.inner.objective = LinearCombinationObjective(lc, func.constant, indices)
     return

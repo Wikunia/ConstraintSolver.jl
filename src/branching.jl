@@ -11,7 +11,7 @@ function get_next_branch_variable(com::CS.CoM)
     biggest_dependent = typemax(Int)
     found = false
 
-    for ind in 1:length(com.search_space)
+    for ind = 1:length(com.search_space)
         if !isfixed(com.search_space[ind])
             num_pvals = nvalues(com.search_space[ind])
             inf = com.bt_infeasible[ind]

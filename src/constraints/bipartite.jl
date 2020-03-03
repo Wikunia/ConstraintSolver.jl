@@ -1,6 +1,6 @@
 struct BipartiteMatching
-    weight :: Int
-    match  :: Vector{Int}
+    weight::Int
+    match::Vector{Int}
 end
 
 """
@@ -10,15 +10,22 @@ The function works fastest if `l_in` is sorted (asc) and `l_sorted` is set to `t
 Additionally the memory can be reduced if a `matching_init` is set (see `MatchingInit`)
 Return a maximum cardinality matching in the form of `BipartiteMatching`. 
 """
-function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m, n; l_sorted=false, matching_init=nothing)
+function bipartite_cardinality_matching(
+    l_in::Vector{Int},
+    r_in::Vector{Int},
+    m,
+    n;
+    l_sorted = false,
+    matching_init = nothing,
+)
     @assert length(l_in) == length(r_in)
     @assert m <= n
     l = l_in
     r = r_in
     if !l_sorted
-        if matching_init === nothing 
+        if matching_init === nothing
             perm = sortperm(l_in)
-        else 
+        else
             perm = sortperm(l_in[1:matching_init.l_in_len])
         end
         l = l_in[perm]
@@ -56,7 +63,7 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
         # creating indices be able to get edges a vertex is connected to
         # only works if l is sorted
         if matching_init === nothing
-            index_l = zeros(Int, m+1)
+            index_l = zeros(Int, m + 1)
         else
             index_l = matching_init.index_l
         end
@@ -74,9 +81,9 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
         index_l[1] = 1
 
         if matching_init === nothing
-            process_nodes = zeros(Int, m+n)
-            depths = zeros(Int, m+n)
-            parents = zeros(Int, m+n)
+            process_nodes = zeros(Int, m + n)
+            depths = zeros(Int, m + n)
+            parents = zeros(Int, m + n)
             used_l = zeros(Bool, m)
             used_r = zeros(Bool, n)
         else
@@ -97,7 +104,7 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
         while match_len < m
             pend = 1
             pstart = 1
-            for i=1:len
+            for i = 1:len
                 li = l[i]
                 # free vertex
                 if matching_l[li] == 0
@@ -115,13 +122,13 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
                 if depth % 2 == 1
                     used_l[node] = true
                     # only works if l is sorted
-                    for ri=index_l[node]:index_l[node+1]-1
+                    for ri = index_l[node]:index_l[node+1]-1
                         child_node = r[ri]
                         # don't use matching edge
                         if matching_r[child_node] != node && !used_r[child_node]
                             used_r[child_node] = true
                             pend += 1
-                            depths[pend] = depth+1
+                            depths[pend] = depth + 1
                             process_nodes[pend] = child_node
                             parents[pend] = pstart
                         end
@@ -133,7 +140,7 @@ function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m,
                         if !used_l[match_to]
                             used_l[match_to] = true
                             pend += 1
-                            depths[pend] = depth+1
+                            depths[pend] = depth + 1
                             process_nodes[pend] = match_to
                             parents[pend] = pstart
                         end

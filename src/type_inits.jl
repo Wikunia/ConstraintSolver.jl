@@ -1,8 +1,28 @@
-Variable(idx) = Variable(idx,0,0,0,0,[],[],0,0,0,Vector{Vector{Tuple{Symbol,Int,Int,Int}}}(), false, false, false, false)
+Variable(idx) = Variable(
+    idx,
+    0,
+    0,
+    0,
+    0,
+    [],
+    [],
+    0,
+    0,
+    0,
+    Vector{Vector{Tuple{Symbol,Int,Int,Int}}}(),
+    false,
+    false,
+    false,
+    false,
+)
 
 MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[], Bool[])
 
-function LinearConstraint(fct::MOI.ScalarAffineFunction, set::MOI.AbstractScalarSet, indices::Vector{Int})
+function LinearConstraint(
+    fct::MOI.ScalarAffineFunction,
+    set::MOI.AbstractScalarSet,
+    indices::Vector{Int},
+)
     # get common type for rhs and coeffs
     # use the first value (can be .upper, .lower, .value) and subtract left constant
     rhs = -fct.constant
@@ -38,7 +58,7 @@ function LinearConstraint(fct::MOI.ScalarAffineFunction, set::MOI.AbstractScalar
         pre_mins,
         pre_maxs,
         false, # `check_in_best_bound` can be changed later but should be set to false by default
-        zero(UInt64)
+        zero(UInt64),
     )
     return lc
 end
@@ -48,7 +68,7 @@ end
 
 Create the constraint model object and specify the type of the solution
 """
-function ConstraintSolverModel(::Type{T}=Float64) where {T <: Real}
+function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
     ConstraintSolverModel(
         Vector{Variable}(), # init_search_space
         Vector{Variable}(), # search_space
@@ -68,7 +88,7 @@ function ConstraintSolverModel(::Type{T}=Float64) where {T <: Real}
         Vector{TreeLogNode{T}}(), # logs
         SolverOptions(), # options,
         -1.0, # solve start time
-        -1.0 # solve time will be overwritten
+        -1.0, # solve time will be overwritten
     )
 end
 
@@ -83,6 +103,6 @@ function BacktrackObj(com::CS.CoM)
         0, # variable_idx
         true, # left_side (is dummy anyway)
         0, # var_bound
-        com.sense == MOI.MIN_SENSE ? typemax(com.best_bound) : typemin(com.best_bound)
+        com.sense == MOI.MIN_SENSE ? typemax(com.best_bound) : typemin(com.best_bound),
     )
 end

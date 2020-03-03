@@ -1,5 +1,5 @@
 function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
-	return model.status
+    return model.status
 end
 
 function MOI.get(model::Optimizer, ov::MOI.ObjectiveValue)
