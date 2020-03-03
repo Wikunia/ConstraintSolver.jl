@@ -7,9 +7,10 @@ const MOI = MathOptInterface
 const CS = ConstraintSolver
 const MOIU = MOI.Utilities
 
-CSTestSolver() = CS.Optimizer(logging=[])
-CSJuMPTestSolver() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging"=>[])
+CSTestSolver() = CS.Optimizer(logging = [])
+CSJuMPTestSolver() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging" => [])
 
+include("docs.jl")
 include("fcts.jl")
 include("moi.jl")
 

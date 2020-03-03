@@ -25,7 +25,7 @@ Create a BasicConstraint which will later be used by `equal(com, constraint)` \n
 Can be used i.e by `add_constraint!(com, x == y)`.
 """
 function Base.:(==)(x::Variable, y::Variable)
-    variables = [x,y]
+    variables = [x, y]
     bc = BasicConstraint(
         0, # idx will be changed later
         var_vector_to_moi(variables),
@@ -39,7 +39,19 @@ function Base.:(==)(x::Variable, y::Variable)
     return bc
 end
 
-function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::EqualSet; logs = true)
+"""
+    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::EqualSet; logs = true)
+
+Reduce the number of possibilities given the equality constraint which sets all variables in `MOI.VectorOfVariables` to the same value.
+Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set to `true`
+"""
+function prune_constraint!(
+    com::CS.CoM,
+    constraint::BasicConstraint,
+    fct::MOI.VectorOfVariables,
+    set::EqualSet;
+    logs = true,
+)
     indices = constraint.indices
 
     search_space = com.search_space
@@ -100,7 +112,14 @@ end
 
 Return whether the constraint can be still fulfilled.
 """
-function still_feasible(com::CoM, constraint::Constraint, fct::MOI.VectorOfVariables, set::EqualSet, value::Int, index::Int)
-    indices = filter(i->i!=index, constraint.indices)
-    return all(v->issetto(v,value) || !isfixed(v), com.search_space[indices])
+function still_feasible(
+    com::CoM,
+    constraint::Constraint,
+    fct::MOI.VectorOfVariables,
+    set::EqualSet,
+    value::Int,
+    index::Int,
+)
+    indices = filter(i -> i != index, constraint.indices)
+    return all(v -> issetto(v, value) || !isfixed(v), com.search_space[indices])
 end

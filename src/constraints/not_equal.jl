@@ -11,12 +11,24 @@ function Base.:!(bc::CS.BasicConstraint)
     if length(bc.indices) != 2
         throw(ErrorException("!BasicConstraint is only implemented for !equal with exactly 2 variables"))
     end
-    bc.fct, T = linear_combination_to_saf(LinearCombination(bc.indices, [1,-1]))
+    bc.fct, T = linear_combination_to_saf(LinearCombination(bc.indices, [1, -1]))
     bc.set = NotEqualSet{T}(zero(T))
     return bc
 end
 
-function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualSet{T}; logs = true) where T <: Real
+"""
+    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualSet{T}; logs = true) where T <: Real
+
+Reduce the number of possibilities given the not equal constraint and two variable which are not allowed to have the same value.
+Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set to `true`
+"""
+function prune_constraint!(
+    com::CS.CoM,
+    constraint::BasicConstraint,
+    fct::SAF{T},
+    set::NotEqualSet{T};
+    logs = true,
+) where {T<:Real}
     indices = constraint.indices
 
     search_space = com.search_space
@@ -29,6 +41,7 @@ function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}
         return true
     elseif fixed_v1 && fixed_v2
         if CS.value(v1) == CS.value(v2)
+            logs && @warn "The problem is infeasible"
             return false
         end
         return true
@@ -45,6 +58,7 @@ function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}
     end
     if has(prune_v, other_val)
         if !rm!(com, prune_v, other_val)
+            logs && @warn "The problem is infeasible"
             return false
         end
     end
@@ -56,7 +70,14 @@ still_feasible(com::CoM, constraint::Constraint, fct::MOI.ScalarAffineFunction{T
 
 Return whether the `not_equal` constraint can be still fulfilled.
 """
-function still_feasible(com::CoM, constraint::Constraint, fct::SAF{T}, set::NotEqualSet{T}, value::Int, index::Int) where T <: Real
+function still_feasible(
+    com::CoM,
+    constraint::Constraint,
+    fct::SAF{T},
+    set::NotEqualSet{T},
+    value::Int,
+    index::Int,
+) where {T<:Real}
     if index == constraint.indices[1]
         other_var = com.search_space[constraint.indices[2]]
     else

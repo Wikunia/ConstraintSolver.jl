@@ -33,6 +33,25 @@ which means that the open/closed nodes, the incumbent and the best bound is show
 
 For satisfiability problems the incumbent and best bound are `0` so you could remove them. I'll probably add that ;)
 
+## `rtol` (`1e-6`)
+
+Defines the relative tolerance of the solver.
+
+## `atol` (`1e-6`)
+
+Defines the absolute tolerance of the solver.
+
+## `all_solutions` (`false`)
+
+You can set this to `true` to get **all feasible** solutions. This can be used to get all solutions for a sudoku for example but maybe shouldn't be used for an optimization problem. Nevertheless I leave it here so you be able to use it even for optimization problems and get all feasible solutions.
+
+Look at `all_optimal_solutions` if you only want all solutions with the same optimum.
+
+## `all_optimal_solutions` (`false`)
+
+You can set this to `true` to get **optimal solutions**. If you have a feasibility problem you can also use `all_solutions` but for optimization problems this will only return solutions with the same best incumbent.
+
+
 ## `backtrack` (`true`)
 
 To solve the problem completely normally backtracking needs to be used but for some problems like certain sudokus this might not be necessary. This option is mostly there for debugging reasons to check the search space before backtracking starts.
@@ -58,14 +77,6 @@ com = JuMP.backend(m).optimizer.model.inner
 
 CS.save_logs(com, "FILENAME.json")
 ```
-
-## `rtol` (`1e-6`)
-
-Defines the relative tolerance of the solver.
-
-## `atol` (`1e-6`)
-
-Defines the absolute tolerance of the solver.
 
 ## `solution_type` (`Float64`)
 
