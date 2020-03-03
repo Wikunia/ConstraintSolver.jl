@@ -35,6 +35,12 @@ function Base.:(==)(x::LinearCombination, y::LinearCombination)
     return x-y == 0
 end
 
+"""
+    prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}; logs = true) where T <: Real
+
+Reduce the number of possibilities given the equality `LinearConstraint` .
+Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set to `true`
+"""
 function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}; logs = true) where T <: Real
     indices = constraint.indices
     search_space = com.search_space

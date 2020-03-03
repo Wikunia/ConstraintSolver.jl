@@ -16,6 +16,12 @@ function Base.:!(bc::CS.BasicConstraint)
     return bc
 end
 
+"""
+    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualSet{T}; logs = true) where T <: Real
+
+Reduce the number of possibilities given the not equal constraint and two variable which are not allowed to have the same value.
+Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set to `true`
+"""
 function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualSet{T}; logs = true) where T <: Real
     indices = constraint.indices
 
@@ -29,6 +35,7 @@ function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}
         return true
     elseif fixed_v1 && fixed_v2
         if CS.value(v1) == CS.value(v2)
+            logs && @warn "The problem is infeasible"
             return false
         end
         return true
@@ -45,6 +52,7 @@ function prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}
     end
     if has(prune_v, other_val)
         if !rm!(com, prune_v, other_val)
+            logs && @warn "The problem is infeasible"
             return false
         end
     end

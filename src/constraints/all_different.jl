@@ -1,4 +1,4 @@
-include("../bipartite.jl")
+include("bipartite.jl")
 
 """
     all_different(variables::Vector{Variable})
@@ -56,9 +56,8 @@ end
 """
     prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet; logs = true)
 
-Tries to reduce the search space by the all_different constraint.
-Fixes values and then sets com.changed to true for the corresponding index.
-Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set
+Reduce the number of possibilities given the `AllDifferentConstraint`.
+Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set to `true`
 """
 function prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet; logs = true)
     indices = constraint.indices

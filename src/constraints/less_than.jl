@@ -281,6 +281,12 @@ function get_constrained_best_bound(com::CS.CoM, constraint::LinearConstraint, c
     return best_bound
 end
 
+"""
+    prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.LessThan{T}; logs = true) where T <: Real
+
+Reduce the number of possibilities given the less than `LinearConstraint`.
+Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set to `true`
+"""
 function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.LessThan{T}; logs = true) where T <: Real
     indices = constraint.indices
     search_space = com.search_space

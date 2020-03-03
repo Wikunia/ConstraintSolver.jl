@@ -3,7 +3,13 @@ struct BipartiteMatching
     match  :: Vector{Int}
 end
 
+"""
+    bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m, n; l_sorted=false, matching_init=nothing)
 
+The function works fastest if `l_in` is sorted (asc) and `l_sorted` is set to `true`.
+Additionally the memory can be reduced if a `matching_init` is set (see `MatchingInit`)
+Return a maximum cardinality matching in the form of `BipartiteMatching`. 
+"""
 function bipartite_cardinality_matching(l_in::Vector{Int}, r_in::Vector{Int}, m, n; l_sorted=false, matching_init=nothing)
     @assert length(l_in) == length(r_in)
     @assert m <= n
