@@ -53,6 +53,12 @@ function TableSetup(cols::Vector{TableCol})
     return TableSetup(cols, Dict{Symbol, Any}())
 end
 
+"""
+    is_new_row(new::Vector{TableEntry}, before::Vector{TableEntry}, criteria::Dict)
+
+Check whether a new row should be added to the table based on `criteria` and the previous `TableEntry` (`before`)
+Return true if a new row should be added and false otherwise.
+"""
 function is_new_row(new::Vector{TableEntry}, before::Vector{TableEntry}, criteria::Dict)
     if length(before) != length(new)
         return true
@@ -71,6 +77,11 @@ function is_new_row(new::Vector{TableEntry}, before::Vector{TableEntry}, criteri
     return false
 end
 
+"""
+    format_table_value(val::Int, len::Int)
+
+Return the formatted integer value
+"""
 function format_table_value(val::Int, len::Int)
     s_val = string(val)
     if length(s_val) > len
@@ -79,6 +90,11 @@ function format_table_value(val::Int, len::Int)
     return s_val
 end
 
+"""
+    format_table_value(val::Float64, len::Int)
+
+Return the formatted float value
+"""
 function format_table_value(val::Float64, len::Int)
     s_val = fmt("<.10f", val)
     precision = 2
@@ -106,7 +122,11 @@ function format_table_value(val::Float64, len::Int)
     return s_val
 end
 
+"""
+    get_header(table::TableSetup)
 
+Return the header string of the `TableSetup` including `======` as the second line
+"""
 function get_header(table::TableSetup)
     ln = ""
     sum_width = 0
@@ -127,6 +147,13 @@ function get_header(table::TableSetup)
     return header
 end
 
+"""
+    push_to_table!(table::TableSetup; force=false, kwargs...)
+
+Given the arguments `kwargs` it will be checked whether a new row shell be added if `force` is `false`.
+If `force` a new row is added. All values will be formatted in `get_row`
+Return `true` if a new line got added
+"""
 function push_to_table!(table::TableSetup; force=false, kwargs...)
     row = Vector{TableEntry}(undef, length(table.cols))
     for p in kwargs
@@ -143,6 +170,11 @@ function push_to_table!(table::TableSetup; force=false, kwargs...)
     return false
 end
 
+"""
+    get_row(table::TableSetup, row::Vector{TableEntry})
+
+Return the formatted and padded table row given `row` and a `TableSetup`
+"""
 function get_row(table::TableSetup, row::Vector{TableEntry})
     ln = ""
     for c=1:length(table.cols)

@@ -26,7 +26,7 @@ function check_var_bounds(model::Optimizer)
 end
 
 """
-addupd_var_in_inner_model(model::Optimizer, var_index::Int)
+    addupd_var_in_inner_model(model::Optimizer, var_index::Int)
 
 Adds all variables to model.inner.search_space
 """
