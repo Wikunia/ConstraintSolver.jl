@@ -294,7 +294,6 @@ function get_constrained_best_bound(
                     left_side,
                     var_bound,
                 )
-
                 continue
             end
             if gains[ci] >= 0
@@ -305,7 +304,7 @@ function get_constrained_best_bound(
         end
     else
         # trying to maximize the additions to the best bound
-        for ci = 1:length(ad.only_right_idx)
+        for ci in ad.only_right_idx
             if gain_indices[ci] == var_idx
                 best_bound += max_given_coeff_and_bounds(
                     gains[ci],
