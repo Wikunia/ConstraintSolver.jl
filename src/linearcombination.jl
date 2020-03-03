@@ -1,9 +1,9 @@
 function Base.:+(x::Variable, y::Variable)
-    return LinearCombination([x.idx,y.idx],[1,1])
+    return LinearCombination([x.idx, y.idx], [1, 1])
 end
 
 function Base.:-(x::Variable, y::Variable)
-    return LinearCombination([x.idx,y.idx],[1,-1])
+    return LinearCombination([x.idx, y.idx], [1, -1])
 end
 
 function Base.:-(x::LinearCombination)
@@ -25,7 +25,7 @@ function Base.:-(x::LinearCombination, y::Variable)
 end
 
 function Base.:+(x::Variable, y::Int)
-    return LinearCombination([x.idx], [1])+y
+    return LinearCombination([x.idx], [1]) + y
 end
 
 function Base.:+(x::LinearCombination, y::Int)
@@ -36,15 +36,15 @@ function Base.:+(x::LinearCombination, y::Int)
 end
 
 function Base.:-(x::Variable, y::Int)
-    return LinearCombination([x.idx], [1])-y
+    return LinearCombination([x.idx], [1]) - y
 end
 
 function Base.:-(x::LinearCombination, y::Int)
-    return x+(-y)
+    return x + (-y)
 end
 
 function Base.:+(x::Variable, y::LinearCombination)
-    return y+x # commutative
+    return y + x # commutative
 end
 
 function Base.:+(x::LinearCombination, y::LinearCombination)
@@ -56,11 +56,11 @@ function Base.:-(x::LinearCombination, y::LinearCombination)
 end
 
 function Base.:*(x::Int, y::Variable)
-    return LinearCombination([y.idx],[x])
+    return LinearCombination([y.idx], [x])
 end
 
 function Base.:*(y::Variable, x::Int)
-    return LinearCombination([y.idx],[x])
+    return LinearCombination([y.idx], [x])
 end
 
 
@@ -72,7 +72,7 @@ function simplify(x::LinearCombination)
             indices = Int[]
             coeffs = Int[]
             lhs = 0
-            for i=1:length(x.indices)
+            for i = 1:length(x.indices)
                 if x.indices[i] == 0
                     lhs = x.coeffs[i]
                 else
@@ -94,7 +94,7 @@ function simplify(x::LinearCombination)
 
     last_idx = x.indices[1]
 
-    for i=2:length(x.indices)
+    for i = 2:length(x.indices)
         if x.indices[i] == last_idx
             coeffs[end] += x.coeffs[i]
         else

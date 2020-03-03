@@ -15,11 +15,9 @@ makedocs(
         "Supported/Planned" => "supported.md",
         "Explanation" => "explanation.md",
         "Reference" => "reference.md",
-#        "Developer" => [],
-#        "Library" => "library.md"
-    ]
+        #        "Developer" => [],
+        #        "Library" => "library.md"
+    ],
 )
 
-deploydocs(
-    repo = "github.com/Wikunia/ConstraintSolver.jl.git",
-)
+deploydocs(repo = "github.com/Wikunia/ConstraintSolver.jl.git")

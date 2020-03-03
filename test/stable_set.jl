@@ -17,9 +17,9 @@ using LinearAlgebra: dot
         0 0 1 0
     ]
     model = CSTestSolver()
-    x = [MOI.add_constrained_variable(model, MOI.ZeroOne()) for _ in 1:4]
-    for i in 1:4, j in 1:4
-        if matrix[i,j] == 1 && i < j
+    x = [MOI.add_constrained_variable(model, MOI.ZeroOne()) for _ = 1:4]
+    for i = 1:4, j = 1:4
+        if matrix[i, j] == 1 && i < j
             (z, _) = MOI.add_constrained_variable(model, MOI.GreaterThan(0.0))
             MOI.add_constraint(model, z, MOI.Integer())
             MOI.add_constraint(model, z, MOI.LessThan(1.0))
@@ -28,7 +28,8 @@ using LinearAlgebra: dot
                     MOI.ScalarAffineTerm(1.0, x[i][1]),
                     MOI.ScalarAffineTerm(1.0, x[j][1]),
                     MOI.ScalarAffineTerm(1.0, z),
-                ], 0.0
+                ],
+                0.0,
             )
             MOI.add_constraint(model, f, MOI.EqualTo(1.0))
         end
@@ -53,8 +54,8 @@ end
     ]
     m = Model(CSJuMPTestSolver())
     x = @variable(m, x[1:4], Bin)
-    for i in 1:4, j in i+1:4
-        if matrix[i,j] == 1
+    for i = 1:4, j = i+1:4
+        if matrix[i, j] == 1
             zcomp = @variable(m)
             JuMP.set_binary(zcomp)
             @constraint(m, x[i] + x[j] + zcomp == 1)
@@ -78,10 +79,10 @@ function weighted_stable_set(w)
         1 1 0 1
         0 0 1 0
     ]
-    model = CS.Optimizer(solution_type = Real, logging=[])
-    x = [MOI.add_constrained_variable(model, MOI.ZeroOne()) for _ in 1:4]
-    for i in 1:4, j in 1:4
-        if matrix[i,j] == 1 && i < j
+    model = CS.Optimizer(solution_type = Real, logging = [])
+    x = [MOI.add_constrained_variable(model, MOI.ZeroOne()) for _ = 1:4]
+    for i = 1:4, j = 1:4
+        if matrix[i, j] == 1 && i < j
             (z, _) = MOI.add_constrained_variable(model, MOI.GreaterThan(0.0))
             MOI.add_constraint(model, z, MOI.Integer())
             MOI.add_constraint(model, z, MOI.LessThan(1.0))
@@ -90,7 +91,8 @@ function weighted_stable_set(w)
                     MOI.ScalarAffineTerm(1.0, x[i][1]),
                     MOI.ScalarAffineTerm(1.0, x[j][1]),
                     MOI.ScalarAffineTerm(1.0, z),
-                ], 0.0
+                ],
+                0.0,
             )
             MOI.add_constraint(model, f, MOI.EqualTo(1.0))
             # ConstraintSolver.add_constraint!(model, x[i] + x[j] <= 1)

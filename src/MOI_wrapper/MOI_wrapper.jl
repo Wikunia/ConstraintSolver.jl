@@ -5,10 +5,7 @@ const SAF = MOI.ScalarAffineFunction
 const VI = MOI.VariableIndex
 const CI = MOI.ConstraintIndex
 
-const VAR_TYPES = Union{
-    MOI.ZeroOne,
-    MOI.Integer
-}
+const VAR_TYPES = Union{MOI.ZeroOne,MOI.Integer}
 
 """
 Optimizer struct
@@ -32,24 +29,17 @@ MOI.get(::Optimizer, ::MOI.SolverName) = "ConstraintSolver"
 """
 Optimizer struct constructor
 """
-function Optimizer(;options...)
+function Optimizer(; options...)
     options = combine_options(options)
     com = CS.ConstraintSolverModel(options.solution_type)
-    return Optimizer(
-        com,
-        [],
-        [],
-        MOI.OPTIMIZE_NOT_CALLED,
-        options
-    )
+    return Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
 end
 
 """
     MOI.is_empty(model::Optimizer)
 """
 function MOI.is_empty(model::Optimizer)
-    return isempty(model.variable_info) &&
-           isempty(model.var_constraints)
+    return isempty(model.variable_info) && isempty(model.var_constraints)
 end
 
 """
@@ -96,8 +86,8 @@ function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
         else
             @error "The option $(p.name) has a different type ($(type_of_param))"
         end
-    else 
+    else
         @error "The option $(p.name) doesn't exist."
-    end 
+    end
     return
 end

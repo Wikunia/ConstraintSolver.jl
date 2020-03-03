@@ -6,11 +6,11 @@ Can be used i.e by `add_constraint!(com, x+y = 2)`.
 """
 function Base.:(==)(x::LinearCombination, y::Real)
     indices, coeffs, constant_lhs = simplify(x)
-    
-    rhs = y-constant_lhs
+
+    rhs = y - constant_lhs
     func, T = linear_combination_to_saf(LinearCombination(indices, coeffs))
     lc = LinearConstraint(func, MOI.EqualTo{T}(rhs), indices)
-    
+
     lc.hash = constraint_hash(lc)
     return lc
 end
@@ -32,10 +32,22 @@ Create a linear constraint with `LinearCombination` on the left and right hand s
 Can be used i.e by `add_constraint!(com, x+y = a+b)`.
 """
 function Base.:(==)(x::LinearCombination, y::LinearCombination)
-    return x-y == 0
+    return x - y == 0
 end
 
-function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}; logs = true) where T <: Real
+"""
+    prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}; logs = true) where T <: Real
+
+Reduce the number of possibilities given the equality `LinearConstraint` .
+Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set to `true`
+"""
+function prune_constraint!(
+    com::CS.CoM,
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::MOI.EqualTo{T};
+    logs = true,
+) where {T<:Real}
     indices = constraint.indices
     search_space = com.search_space
     rhs = set.value - fct.constant
@@ -45,7 +57,7 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T
     mins = constraint.mins
     pre_maxs = constraint.pre_maxs
     pre_mins = constraint.pre_mins
-    for (i,idx) in enumerate(indices)
+    for (i, idx) in enumerate(indices)
         if fct.terms[i].coefficient >= 0
             max_val = search_space[idx].max * fct.terms[i].coefficient
             min_val = search_space[idx].min * fct.terms[i].coefficient
@@ -61,8 +73,8 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T
 
     # for each index compute the maximum and minimum value possible
     # to fulfill the constraint
-    full_max = sum(maxs)-rhs
-    full_min = sum(mins)-rhs
+    full_max = sum(maxs) - rhs
+    full_min = sum(mins) - rhs
 
     # if the maximum is smaller than 0 (and not even near zero)
     # or if the minimum is bigger than 0 (and not even near zero)
@@ -72,15 +84,15 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T
         return false
     end
 
-    for (i,idx) in enumerate(indices)
+    for (i, idx) in enumerate(indices)
         if isfixed(search_space[idx])
             continue
         end
         # minimum without current index
-        c_min = full_min-mins[i]
+        c_min = full_min - mins[i]
 
         # maximum without current index
-        c_max = full_max-maxs[i]
+        c_max = full_max - maxs[i]
 
         p_max = -c_min
         if p_max < maxs[i]
@@ -94,7 +106,7 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T
     end
 
     # update all
-    for (i,idx) in enumerate(indices)
+    for (i, idx) in enumerate(indices)
         # if the maximum of coefficient * variable got reduced
         # get a safe threshold because of floating point errors
         if maxs[i] < pre_maxs[i]
@@ -125,7 +137,7 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T
     # if there are at most two unfixed variables left check all options
     n_unfixed = 0
     unfixed_ind_1, unfixed_ind_2 = 0, 0
-    unfixed_local_ind_1, unfixed_local_ind_2 = 0,0
+    unfixed_local_ind_1, unfixed_local_ind_2 = 0, 0
     unfixed_rhs = rhs
     li = 0
     for i in indices
@@ -142,7 +154,7 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T
                 end
             end
         else
-            unfixed_rhs -= CS.value(search_space[i])*fct.terms[li].coefficient
+            unfixed_rhs -= CS.value(search_space[i]) * fct.terms[li].coefficient
         end
     end
 
@@ -153,7 +165,9 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T
             return false
         else
             # divide rhs such that it is comparable with the variable directly without coefficient
-            unfixed_rhs = get_approx_discrete(unfixed_rhs / fct.terms[unfixed_local_ind_1].coefficient)
+            unfixed_rhs = get_approx_discrete(
+                unfixed_rhs / fct.terms[unfixed_local_ind_1].coefficient,
+            )
         end
         if !has(search_space[unfixed_ind_1], unfixed_rhs)
             com.bt_infeasible[unfixed_ind_1] += 1
@@ -167,7 +181,8 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T
     elseif n_unfixed == 2
         is_all_different = constraint.in_all_different
         if !is_all_different
-            intersect_cons = intersect(com.subscription[unfixed_ind_1], com.subscription[unfixed_ind_2])
+            intersect_cons =
+                intersect(com.subscription[unfixed_ind_1], com.subscription[unfixed_ind_2])
             for constraint_idx in intersect_cons
                 if isa(com.constraints[constraint_idx].set, AllDifferentSet)
                     is_all_different = true
@@ -176,7 +191,7 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T
             end
         end
 
-        for v in 1:2
+        for v = 1:2
             if v == 1
                 this, local_this = unfixed_ind_1, unfixed_local_ind_1
                 other, local_other = unfixed_ind_2, unfixed_local_ind_2
@@ -187,7 +202,11 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T
 
             for val in values(search_space[this])
                 # if we choose this value but the other wouldn't be an integer => remove this value
-                if !isapprox_divisible(com, (unfixed_rhs-val*fct.terms[local_this].coefficient), fct.terms[local_other].coefficient)
+                if !isapprox_divisible(
+                    com,
+                    (unfixed_rhs - val * fct.terms[local_this].coefficient),
+                    fct.terms[local_other].coefficient,
+                )
                     if !rm!(com, search_space[this], val)
                         return false
                     end
@@ -195,7 +214,9 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T
                 end
 
                 # get discrete other value
-                check_other_val_float = (unfixed_rhs-val*fct.terms[local_this].coefficient)/fct.terms[local_other].coefficient
+                check_other_val_float =
+                    (unfixed_rhs - val * fct.terms[local_this].coefficient) /
+                    fct.terms[local_other].coefficient
                 check_other_val = get_approx_discrete(check_other_val_float)
 
                 # if all different but those two are the same
@@ -222,40 +243,53 @@ function prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T
     return true
 end
 
-function still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}, val::Int, index::Int) where T <: Real
+"""
+    still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}, val::Int, index::Int) where T <: Real
+
+Return whether setting `search_space[index]` to `val` is still feasible given `constraint`.
+"""
+function still_feasible(
+    com::CoM,
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::MOI.EqualTo{T},
+    val::Int,
+    index::Int,
+) where {T<:Real}
     search_space = com.search_space
     rhs = set.value - fct.constant
     csum = 0
     num_not_fixed = 0
     max_extra = 0
     min_extra = 0
-    for (i,idx) in enumerate(constraint.indices)
+    for (i, idx) in enumerate(constraint.indices)
         if idx == index
-            csum += val*fct.terms[i].coefficient
+            csum += val * fct.terms[i].coefficient
             continue
         end
         if isfixed(search_space[idx])
-            csum += CS.value(search_space[idx])*fct.terms[i].coefficient
+            csum += CS.value(search_space[idx]) * fct.terms[i].coefficient
         else
             num_not_fixed += 1
             if fct.terms[i].coefficient >= 0
-                max_extra += search_space[idx].max*fct.terms[i].coefficient
-                min_extra += search_space[idx].min*fct.terms[i].coefficient
+                max_extra += search_space[idx].max * fct.terms[i].coefficient
+                min_extra += search_space[idx].min * fct.terms[i].coefficient
             else
-                min_extra += search_space[idx].max*fct.terms[i].coefficient
-                max_extra += search_space[idx].min*fct.terms[i].coefficient
+                min_extra += search_space[idx].max * fct.terms[i].coefficient
+                max_extra += search_space[idx].min * fct.terms[i].coefficient
             end
         end
     end
-    if num_not_fixed == 0 && !isapprox(csum, rhs; atol=com.options.atol, rtol=com.options.rtol)
+    if num_not_fixed == 0 &&
+       !isapprox(csum, rhs; atol = com.options.atol, rtol = com.options.rtol)
         return false
     end
 
-    if csum + min_extra > rhs+com.options.atol
+    if csum + min_extra > rhs + com.options.atol
         return false
     end
 
-    if csum + max_extra < rhs-com.options.atol
+    if csum + max_extra < rhs - com.options.atol
         return false
     end
 

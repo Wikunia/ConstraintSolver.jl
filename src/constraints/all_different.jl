@@ -1,4 +1,4 @@
-include("../bipartite.jl")
+include("bipartite.jl")
 
 """
     all_different(variables::Vector{Variable})
@@ -13,12 +13,12 @@ function all_different(variables::Vector{Variable})
         AllDifferentSet(length(variables)),
         Int[v.idx for v in variables],
         Int[], # pvals will be filled later
-        Int[], 
         Int[],
         Int[],
         Int[],
         Int[],
-        MatchingInit(), 
+        Int[],
+        MatchingInit(),
         false, # `check_in_best_bound` can be changed later but should be set to false by default
         zero(UInt64), # hash will be filled in the next step
     )
@@ -31,36 +31,55 @@ end
 
 Initialize the AllDifferentConstraint by filling 
 """
-function init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet)
+function init_constraint!(
+    com::CS.CoM,
+    constraint::AllDifferentConstraint,
+    fct::MOI.VectorOfVariables,
+    set::AllDifferentSet,
+)
     pvals = constraint.pvals
     nindices = length(constraint.indices)
 
     min_pvals, max_pvals = extrema(pvals)
-    len_range = max_pvals-min_pvals+1
+    len_range = max_pvals - min_pvals + 1
 
-    num_edges = length(pvals)*nindices
+    num_edges = length(pvals) * nindices
 
     constraint.pval_mapping = zeros(Int, length(pvals))
     constraint.vertex_mapping = zeros(Int, len_range)
-    constraint.vertex_mapping_bw = zeros(Int, nindices+length(pvals))
+    constraint.vertex_mapping_bw = zeros(Int, nindices + length(pvals))
     constraint.di_ei = zeros(Int, num_edges)
     constraint.di_ej = zeros(Int, num_edges)
 
     # fill matching_init
     m = nindices
     n = len_range
-    constraint.matching_init = MatchingInit(0, zeros(Int, m), zeros(Int, n), zeros(Int, m+1),
-                                            zeros(Int, m+n), zeros(Int, m+n), zeros(Int, m+n), zeros(Bool, m), zeros(Bool, n))
+    constraint.matching_init = MatchingInit(
+        0,
+        zeros(Int, m),
+        zeros(Int, n),
+        zeros(Int, m + 1),
+        zeros(Int, m + n),
+        zeros(Int, m + n),
+        zeros(Int, m + n),
+        zeros(Bool, m),
+        zeros(Bool, n),
+    )
 end
 
 """
     prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet; logs = true)
 
-Tries to reduce the search space by the all_different constraint.
-Fixes values and then sets com.changed to true for the corresponding index.
-Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set
+Reduce the number of possibilities given the `AllDifferentConstraint`.
+Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set to `true`
 """
-function prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet; logs = true)
+function prune_constraint!(
+    com::CS.CoM,
+    constraint::AllDifferentConstraint,
+    fct::MOI.VectorOfVariables,
+    set::AllDifferentSet;
+    logs = true,
+)
     indices = constraint.indices
     pvals = constraint.pvals
     nindices = length(indices)
@@ -81,7 +100,7 @@ function prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct:
     while bfixed
         new_fixed_vals = Int[]
         bfixed = false
-        for i in 1:length(unfixed_indices)
+        for i = 1:length(unfixed_indices)
             pi = unfixed_indices[i]
             ind = indices[pi]
             @views c_search_space = search_space[ind]
@@ -112,13 +131,13 @@ function prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct:
     end
 
     min_pvals, max_pvals = extrema(pvals)
-    len_range = max_pvals-min_pvals+1
+    len_range = max_pvals - min_pvals + 1
 
     # find maximum_matching for infeasible check and Berge's lemma
     # building graph
     # ei = indices, ej = possible values
     # i.e ei=[1,2,1] ej = [1,2,2] => 1->[1,2], 2->[2]
-    min_pvals_m1 = min_pvals-1
+    min_pvals_m1 = min_pvals - 1
 
     pval_mapping = constraint.pval_mapping
     vertex_mapping = constraint.vertex_mapping
@@ -158,19 +177,27 @@ function prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct:
         if isfixed(search_space[i])
             edge_counter += 1
             di_ei[edge_counter] = vc
-            di_ej[edge_counter] = vertex_mapping[CS.value(search_space[i])-min_pvals_m1]-nindices
+            di_ej[edge_counter] =
+                vertex_mapping[CS.value(search_space[i])-min_pvals_m1] - nindices
         else
             for pv in view_values(search_space[i])
                 edge_counter += 1
                 di_ei[edge_counter] = vc
-                di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1]-nindices
+                di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1] - nindices
             end
         end
     end
 
     matching_init = constraint.matching_init
     matching_init.l_in_len = num_edges
-    maximum_matching = bipartite_cardinality_matching(di_ei, di_ej, vc, len_range; l_sorted=true, matching_init=matching_init)
+    maximum_matching = bipartite_cardinality_matching(
+        di_ei,
+        di_ej,
+        vc,
+        len_range;
+        l_sorted = true,
+        matching_init = matching_init,
+    )
     if maximum_matching.weight != nindices
         logs && @warn "Infeasible (No maximum matching was found)"
         return false
@@ -204,7 +231,7 @@ function prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct:
         # add extra node which has all values as input which are used in the maximum matching
         # and the ones in maximum matching as inputs see: http://www.minicp.org (Part 6)
         # the direction is opposite to that of minicp
-        used_in_maximum_matching = Dict{Int, Bool}()
+        used_in_maximum_matching = Dict{Int,Bool}()
         for pval in pvals
             used_in_maximum_matching[pval] = false
         end
@@ -218,7 +245,7 @@ function prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct:
                 end
             end
         end
-        new_vertex = num_nodes+1
+        new_vertex = num_nodes + 1
         for kv in used_in_maximum_matching
             # not in maximum matching
             edge_counter += 1
@@ -238,7 +265,7 @@ function prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct:
                     push!(di_ei, vertex_mapping[kv.first-min_pvals_m1])
                     push!(di_ej, new_vertex)
                 end
-            end            
+            end
         end
     end
 
@@ -246,9 +273,9 @@ function prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct:
 
     # remove the left over edges from the search space
     vmb = vertex_mapping_bw
-    for (src,dst) in zip(di_ei, di_ej)
+    for (src, dst) in zip(di_ei, di_ej)
         # only zeros coming afterwards
-        if src == 0 
+        if src == 0
             break
         end
         # edges to the extra node don't count
@@ -261,7 +288,8 @@ function prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct:
             continue
         end
         #  remove edges in maximum matching and then edges which are part of a cycle
-        if src <= nindices && dst == vertex_mapping[pval_mapping[maximum_matching.match[src]]-min_pvals_m1]
+        if src <= nindices &&
+           dst == vertex_mapping[pval_mapping[maximum_matching.match[src]]-min_pvals_m1]
             continue
         end
 
@@ -286,9 +314,16 @@ end
 
 Return whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
 """
-function still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet, value::Int, index::Int)
+function still_feasible(
+    com::CoM,
+    constraint::AllDifferentConstraint,
+    fct::MOI.VectorOfVariables,
+    set::AllDifferentSet,
+    value::Int,
+    index::Int,
+)
     indices = constraint.indices
-    for i=1:length(indices)
+    for i = 1:length(indices)
         if indices[i] == index
             continue
         end
