@@ -9,6 +9,7 @@ import ForwardDiff
 using JuMP
 using LinearAlgebra: dot
 
+@testset "StableSet" begin
 @testset "Weighted stable set" begin
     matrix = [
         0 1 1 0
@@ -71,6 +72,32 @@ end
     @test JuMP.objective_value(m) ≈ 0.3
 end
 
+@testset "Bigger stable set using <= " begin
+    matrix = [
+        0  1  0  1  0  0  1  0  0  1
+        1  0  1  0  1  0  0  0  0  0
+        0  1  0  1  0  0  0  0  1  0
+        1  0  1  0  1  1  0  0  0  0
+        0  1  0  1  0  1  1  1  0  0
+        0  0  0  1  1  0  1  0  0  0
+        1  0  0  0  1  1  0  1  0  0
+        0  0  0  0  1  0  1  0  1  0
+        0  0  1  0  0  0  0  1  0  1
+        1  0  0  0  0  0  0  0  1  0
+    ]
+    n = 10
+    m = Model(CSJuMPTestSolver())
+    @variable(m, x[1:n], Bin)
+    for i = 1:n, j = i+1:n
+        if matrix[i, j] == 1
+            @constraint(m, x[i] + x[j] <= 1)
+        end
+    end
+    w = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+    @objective(m, Max, dot(w, x))
+    optimize!(m)
+    @test MOI.get(m, MOI.ObjectiveValue()) ≈ 2.7
+end
 
 function weighted_stable_set(w)
     matrix = [
@@ -120,4 +147,5 @@ end
     @test ∇w[1] ≈ 1
     @test ∇w[4] ≈ 1
     @test ∇w[2] ≈ ∇w[3] ≈ 0
+end
 end

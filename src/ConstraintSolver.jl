@@ -754,6 +754,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         step_nr += 1
         # get next open backtrack object
         l = 1
+        if !started 
+            # close the previous backtrack object
+            backtrack_vec[last_backtrack_id].status = :Closed
+        end
 
         !started && update_best_bound!(com)
         found, backtrack_obj = get_next_node(com, backtrack_vec, sorting)
@@ -781,8 +785,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
         started = false
         last_backtrack_id = backtrack_obj.idx
-
-        backtrack_obj.status = :Closed
 
         # limit the variable bounds
         !set_bounds!(com, backtrack_obj) && continue
