@@ -281,7 +281,7 @@ function get_constrained_best_bound(
             capacity -= amount * cost
             capacity <= com.options.atol && break
         end
-    end 
+    end
 
     # 3) Use the variables which have no cost but only gains
     if com.sense == MOI.MIN_SENSE

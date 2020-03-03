@@ -109,7 +109,7 @@ function get_best_bound(
                 left_side,
                 var_bound,
             )
-            
+
             if com.sense == MOI.MIN_SENSE && constrained_bound > objval
                 objval = constrained_bound
             elseif com.sense == MOI.MAX_SENSE && constrained_bound < objval

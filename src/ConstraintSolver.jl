@@ -754,7 +754,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         step_nr += 1
         # get next open backtrack object
         l = 1
-        if !started 
+        if !started
             # close the previous backtrack object
             backtrack_vec[last_backtrack_id].status = :Closed
         end
