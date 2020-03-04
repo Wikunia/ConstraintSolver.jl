@@ -43,6 +43,12 @@ end
         end
 
         optimize!(m)
+
+        com = JuMP.backend(m).optimizer.model.inner
+        @test com.info.n_constraint_types.alldifferent == 27
+        @test com.info.n_constraint_types.equality == length(sums)
+        @test length(com.search_space) == 81
+
         @test JuMP.termination_status(m) == MOI.OPTIMAL
         @test jump_fulfills_sudoku_constr(JuMP.value.(x))
 

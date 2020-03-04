@@ -13,7 +13,7 @@ mutable struct SolverOptions
 end
 
 function SolverOptions()
-    logging = [:Table]
+    logging = [:Info, :Table]
     table = TableSetup(
         [
             CS.TableCol(:open_nodes, "#Open", Int, 10, :center),
