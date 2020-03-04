@@ -388,7 +388,7 @@
 
         com = JuMP.backend(m).optimizer.model.inner
         # -1 for equal Set - length(states) for max_color
-        not_equal_constraints = length(com.constraints)-1-length(states)
+        not_equal_constraints = length(com.constraints) - 1 - length(states)
         @test com.info.n_constraint_types.notequal == not_equal_constraints
         @test com.info.n_constraint_types.equality == 1
         @test com.info.n_constraint_types.inequality == length(states)
