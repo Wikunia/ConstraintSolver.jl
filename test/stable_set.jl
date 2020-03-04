@@ -88,14 +88,20 @@ using LinearAlgebra: dot
         n = 10
         m = Model(CSJuMPTestSolver())
         @variable(m, x[1:n], Bin)
+        nconstraints = 0
         for i = 1:n, j = i+1:n
             if matrix[i, j] == 1
                 @constraint(m, x[i] + x[j] <= 1)
+                nconstraints += 1
             end
         end
         w = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         @objective(m, Max, dot(w, x))
         optimize!(m)
+        com = JuMP.backend(m).optimizer.model.inner
+        @test com.info.n_constraint_types.inequality == length(com.constraints)
+        @test com.info.n_constraint_types.inequality == nconstraints
+
         @test MOI.get(m, MOI.ObjectiveValue()) ≈ 2.7
     end
 

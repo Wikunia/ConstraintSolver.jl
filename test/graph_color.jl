@@ -188,7 +188,7 @@
         @test status == MOI.OPTIMAL
         @test com.best_sol == 4 == JuMP.objective_value(m) == JuMP.objective_bound(m)
         @test maximum([JuMP.value(var) for var in states]) == 4 == JuMP.value(max_color)
-        @test 0 <= MOI.get(m, MOI.SolveTime()) < 1
+        @test 0 <= MOI.get(m, MOI.SolveTime()) < 5
         return com
     end
 
@@ -387,6 +387,12 @@
         status = JuMP.termination_status(m)
 
         com = JuMP.backend(m).optimizer.model.inner
+        # -1 for equal Set - length(states) for max_color
+        not_equal_constraints = length(com.constraints) - 1 - length(states)
+        @test com.info.n_constraint_types.notequal == not_equal_constraints
+        @test com.info.n_constraint_types.equality == 1
+        @test com.info.n_constraint_types.inequality == length(states)
+        @test com.info.n_constraint_types.alldifferent == 0
 
         CS.save_logs(com, "graph_color_optimize.json")
         rm("graph_color_optimize.json")

@@ -32,6 +32,7 @@
         CS.add_constraint!(com, com_grid[6] + com_grid[7] - com_grid[8] == 0)
 
         options = Dict{Symbol,Any}()
+        options[:logging] = Symbol[]
         options[:backtrack] = false
         options[:keep_logs] = true
 

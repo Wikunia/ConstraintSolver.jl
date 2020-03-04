@@ -989,6 +989,17 @@ function sort_solutions!(com::CS.CoM)
     sort!(com.solutions, by = s -> s.incumbent * obj_factor)
 end
 
+function print_info(com::CS.CoM)
+    println("# Variables: ", length(com.search_space))
+    println("# Constraints: ", length(com.constraints))
+    for field in fieldnames(CS.NumberConstraintTypes)
+        field_str = uppercasefirst(String(field))
+        val = getfield(com.info.n_constraint_types, field)
+        val != 0 && println(" - # $field_str: $val")
+    end
+    println()
+end
+
 """
     solve!(com::CS.CoM, options::SolverOptions)
 
@@ -1001,6 +1012,9 @@ function solve!(com::CS.CoM, options::SolverOptions)
     backtrack_sorting = options.backtrack_sorting
     keep_logs = options.keep_logs
 
+    if :Info in com.options.logging
+        print_info(com)
+    end
     com.start_time = time()
 
     set_constraint_hashes!(com)

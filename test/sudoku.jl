@@ -48,6 +48,7 @@
 
     @testset "Hard sudoku" begin
         com = CS.ConstraintSolverModel()
+        com.options.logging = Symbol[]
 
         grid = zeros(Int, (9, 9))
         grid[1, :] = [0 0 0 5 4 6 0 0 9]
@@ -80,7 +81,7 @@
             0 0 0 0 0 0 8 0 6
         ]
 
-        m = Model(CS.Optimizer)
+        m = Model(CSJuMPTestSolver())
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
         for r = 1:9, c = 1:9
@@ -476,6 +477,9 @@
         optimize!(m)
 
         com = JuMP.backend(m).optimizer.model.inner
+        @test com.info.n_constraint_types.alldifferent == 27
+        @test length(com.constraints) == 27
+        @test length(com.search_space) == 81
 
         # the better one should be solution 1 of course
         @test JuMP.objective_value(m) == 9

@@ -16,12 +16,20 @@ mutable struct Variable
     is_integer::Bool # must be true to work
 end
 
+mutable struct NumberConstraintTypes
+    equality::Int
+    inequality::Int
+    notequal::Int
+    alldifferent::Int
+end
+
 mutable struct CSInfo
     pre_backtrack_calls::Int
     backtracked::Bool
     backtrack_fixes::Int
     in_backtrack_calls::Int
     backtrack_reverses::Int
+    n_constraint_types::NumberConstraintTypes
 end
 
 abstract type Constraint end

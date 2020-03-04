@@ -50,6 +50,7 @@ function MOI.add_constraint(
     for (i, ind) in enumerate(lc.indices)
         push!(model.inner.subscription[ind], lc.idx)
     end
+    model.inner.info.n_constraint_types.equality += 1
 
     return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(length(model.inner.constraints))
 end
@@ -93,6 +94,7 @@ function add_variable_less_than_variable_constraint(
 
     push!(model.inner.subscription[svc.lhs], svc.idx)
     push!(model.inner.subscription[svc.rhs], svc.idx)
+    com.info.n_constraint_types.inequality += 1
 
     return MOI.ConstraintIndex{SAF{T},MOI.LessThan{T}}(length(model.inner.constraints))
 end
@@ -124,6 +126,7 @@ function MOI.add_constraint(
     for (i, ind) in enumerate(lc.indices)
         push!(model.inner.subscription[ind], lc.idx)
     end
+    model.inner.info.n_constraint_types.inequality += 1
 
     return MOI.ConstraintIndex{SAF{T},MOI.LessThan{T}}(length(model.inner.constraints))
 end
@@ -152,6 +155,7 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
     for (i, ind) in enumerate(constraint.indices)
         push!(com.subscription[ind], constraint.idx)
     end
+    com.info.n_constraint_types.equality += 1
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,EqualSet}(length(com.constraints))
 end
@@ -183,6 +187,7 @@ function MOI.add_constraint(
     for (i, ind) in enumerate(constraint.indices)
         push!(com.subscription[ind], constraint.idx)
     end
+    com.info.n_constraint_types.alldifferent += 1
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,AllDifferentSet}(length(com.constraints))
 end
@@ -209,6 +214,7 @@ function MOI.add_constraint(
         error("Only constraints of the type `a != b` are supported but not `2a != b`. You used coefficients: $(aff.terms[1].coefficient) and $(aff.terms[2].coefficient) instead of `1.0` and `-1.0`")
     end
     com = model.inner
+    com.info.n_constraint_types.notequal += 1
 
     # support for cx != a where a and c are constants
     if length(aff.terms) == 1
