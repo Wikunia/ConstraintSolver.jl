@@ -687,7 +687,7 @@ function add_new_solution!(
         new_sol_obj = Solution(new_sol, CS.value.(com.search_space))
         push!(com.solutions, new_sol_obj)
         com.best_sol = new_sol
-        log_table && (last_table_row = update_table_log(com, backtrack_vec; force = true))
+        log_table && update_table_log(com, backtrack_vec; force = true)
         if com.best_sol == com.best_bound && !find_more_solutions
             return true
         end
@@ -698,7 +698,7 @@ function add_new_solution!(
             end
         end
     else # if new solution was found but it's worse
-        log_table && (last_table_row = update_table_log(com, backtrack_vec; force = true))
+        log_table && update_table_log(com, backtrack_vec; force = true)
         if com.options.all_solutions
             new_sol_obj = Solution(new_sol, CS.value.(com.search_space))
             push!(com.solutions, new_sol_obj)
@@ -813,7 +813,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         end
 
         if log_table
-            last_table_row = update_table_log(com, backtrack_vec)
+            update_table_log(com, backtrack_vec)
         end
 
         found, ind = get_next_branch_variable(com)

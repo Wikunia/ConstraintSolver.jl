@@ -57,9 +57,7 @@ using LinearAlgebra: dot
         x = @variable(m, x[1:4], Bin)
         for i = 1:4, j = i+1:4
             if matrix[i, j] == 1
-                zcomp = @variable(m)
-                JuMP.set_binary(zcomp)
-                @constraint(m, x[i] + x[j] + zcomp == 1)
+                @constraint(m, x[i] + x[j] <= 1)
             end
         end
         w = [0.2, 0.1, 0.2, 0.1]
