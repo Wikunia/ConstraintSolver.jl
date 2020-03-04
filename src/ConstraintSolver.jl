@@ -995,7 +995,7 @@ function print_info(com::CS.CoM)
     for field in fieldnames(CS.NumberConstraintTypes)
         field_str = uppercasefirst(String(field))
         val = getfield(com.info.n_constraint_types, field)
-        println(" - # $field_str: $val")
+        val != 0 && println(" - # $field_str: $val")
     end
     println()
 end

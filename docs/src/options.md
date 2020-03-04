@@ -8,11 +8,25 @@ In general these options can be set as follows if you're using JuMP:
 m = Model(optimizer_with_attributes(CS.Optimizer, "option_name"=>option_value))
 ```
 
-## `logging` (`[:Table]`)
+## `logging` (`[:Info, :Table]`)
 
 Current possible symbols
+- :Info
+    - Shows info about how many variables are part of the model
+    - Info about which constraints are present in the model
 - :Table
     - Shows a table about the current solver status
+
+Output will be something like
+```
+# Variables: 5
+# Constraints: 2
+ - # Inequality: 2
+
+   #Open      #Closed         Incumbent             Best Bound        Time [s]  
+================================================================================
+     2           0                -                   44.20            0.0003  
+```
   
 ## `table` (`TableSetup(...)`)
 
