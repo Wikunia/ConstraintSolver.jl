@@ -384,6 +384,7 @@
         )
         # constraint sum(x)+2.0 <= 10
         obj_fct = CS.LinearCombinationObjective(
+            fct,
             CS.LinearCombination([1, 2, 3, 4, 5], [1.0, 2, 3, 4, 5]),
             5.0,
             [1, 2, 3, 4, 5],
@@ -423,6 +424,7 @@
         )
         # constraint sum(x)-2.0 >= 6
         obj_fct = CS.LinearCombinationObjective(
+            fct,
             CS.LinearCombination([1, 2, 3, 4, 5], [1.0, 2, 3, 4, 5]),
             5.0,
             [1, 2, 3, 4, 5],
@@ -468,6 +470,7 @@
         # y can be negative but it's not part of the objective anyway
         # constraint sum(x)+y >= 20
         obj_fct = CS.LinearCombinationObjective(
+            fct,
             CS.LinearCombination([1, 2, 3, 4, 5], [5.0, 4, 3, 2, 1]),
             5.0,
             [1, 2, 3, 4, 5],
@@ -513,6 +516,7 @@
         # y can be negative but it's not part of the objective anyway
         # constraint sum(x)+y <= 7
         obj_fct = CS.LinearCombinationObjective(
+            fct,
             CS.LinearCombination([1, 2, 3], [5.0, 4.9, 3.2]),
             -5.0,
             [1, 2, 3],
@@ -562,6 +566,7 @@
         # y can be negative but it's not part of the objective anyway
         # constraint x[1]+x[2]-x[3] >= 7
         obj_fct = CS.LinearCombinationObjective(
+            fct,
             CS.LinearCombination([1, 2, 3], [5.0, 4.9, 3.2]),
             -5.0,
             [1, 2, 3],

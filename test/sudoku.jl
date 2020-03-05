@@ -214,7 +214,7 @@
 
         add_sudoku_constr!(com, com_grid)
 
-        com.objective = CS.SingleVariableObjective(1, [1])
+        com.objective = CS.SingleVariableObjective(MOI.SingleVariable(MOI.VariableIndex(1)), 1, [1])
         com.sense = MOI.MIN_SENSE
 
         options = Dict{Symbol,Any}()

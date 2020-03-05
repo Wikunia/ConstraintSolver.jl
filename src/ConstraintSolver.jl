@@ -15,7 +15,9 @@ using JuMP:
     set_optimizer,
     direct_model,
     optimize!,
-    objective_value
+    objective_value, 
+    set_lower_bound,
+    set_upper_bound
 import JuMP.sense_to_set
 using Formatting
 

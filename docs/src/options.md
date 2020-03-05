@@ -55,6 +55,10 @@ Defines the relative tolerance of the solver.
 
 Defines the absolute tolerance of the solver.
 
+## `lp_optimizer` (`nothing`)
+
+It is advised to use a linear problem solver like [Cbc.jl](https://github.com/JuliaOpt/Cbc.jl) if you have a lot of linear constraints and an optimization problem. The solver is used to compute bounds in the optimization steps.
+
 ## `all_solutions` (`false`)
 
 You can set this to `true` to get **all feasible** solutions. This can be used to get all solutions for a sudoku for example but maybe shouldn't be used for an optimization problem. Nevertheless I leave it here so you be able to use it even for optimization problems and get all feasible solutions.

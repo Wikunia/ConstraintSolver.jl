@@ -97,25 +97,13 @@ function get_best_bound(
         return objval
     end
 
-    for constraint in com.constraints
-        if constraint.check_in_best_bound
-            constrained_bound = get_constrained_best_bound(
-                com,
-                constraint,
-                constraint.fct,
-                constraint.set,
-                com.objective,
-                var_idx,
-                left_side,
-                var_bound,
-            )
+    com.options.lp_optimizer === nothing && return objval
 
-            if com.sense == MOI.MIN_SENSE && constrained_bound > objval
-                objval = constrained_bound
-            elseif com.sense == MOI.MAX_SENSE && constrained_bound < objval
-                objval = constrained_bound
-            end
-        end
+    # compute bound using the lp optimizer
+    for variable in com.search_space
+        set_lower_bound(com.lp_x[variable.idx], com.search_space[variable.idx].min)
+        set_upper_bound(com.lp_x[variable.idx], com.search_space[variable.idx].max)
     end
-    return objval
+    optimize!(com.lp_model)
+    return objective_value(com.lp_model)
 end
