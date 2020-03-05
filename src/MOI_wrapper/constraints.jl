@@ -263,33 +263,6 @@ function set_constraint_hashes!(com::CS.CoM)
     end
 end
 
-"""
-    set_check_in_best_bound!(com::CS.CoM)
-
-Sets `check_in_best_bound` in each constraint if we have an objective function and:
-- the constraint type has a function `get_constrained_best_bound`
-"""
-function set_check_in_best_bound!(com::CS.CoM)
-    if com.sense == MOI.FEASIBILITY_SENSE
-        return
-    end
-    objective_type = typeof(com.objective)
-    for ci = 1:length(com.constraints)
-        constraint = com.constraints[ci]
-        c_type = typeof(constraint)
-        c_fct_type = typeof(constraint.fct)
-        c_set_type = typeof(constraint.set)
-        if hasmethod(
-            get_constrained_best_bound,
-            (CS.CoM, c_type, c_fct_type, c_set_type, objective_type, Int, Bool, Int),
-        )
-            constraint.check_in_best_bound = true
-        else # just to be sure => set it to false otherwise
-            constraint.check_in_best_bound = false
-        end
-    end
-end
-
 function init_constraints!(com::CS.CoM)
     for ci = 1:length(com.constraints)
         constraint = com.constraints[ci]

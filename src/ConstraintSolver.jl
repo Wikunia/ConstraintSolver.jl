@@ -1024,8 +1024,6 @@ function solve!(com::CS.CoM, options::SolverOptions)
     com.start_time = time()
 
     set_constraint_hashes!(com)
-    # sets check_in_best_bound per constraint if an objective function exists
-    set_check_in_best_bound!(com)
 
     # initialize constraints if `init_constraint!` exists for the constraint
     init_constraints!(com)
