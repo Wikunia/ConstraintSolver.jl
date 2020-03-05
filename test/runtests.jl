@@ -1,7 +1,7 @@
 using Test
 using ConstraintSolver
 using JSON
-using MathOptInterface, JuMP, Cbc
+using MathOptInterface, JuMP, Cbc, GLPK
 
 const MOI = MathOptInterface
 const CS = ConstraintSolver
@@ -13,7 +13,7 @@ CSJuMPTestSolver() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging" => [
 include("docs.jl")
 include("fcts.jl")
 include("moi.jl")
-include("bounds.jl")
+include("lp_solver.jl")
 
 include("stable_set.jl")
 include("sudoku_fcts.jl")

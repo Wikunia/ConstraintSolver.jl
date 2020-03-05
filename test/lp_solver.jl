@@ -1,9 +1,9 @@
-@testset "Bounds" begin
+@testset "LP Solver" begin
     @testset "Issue 83" begin
-        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.OFF)
         model = Model(optimizer_with_attributes(
             CS.Optimizer,
-            "lp_optimizer" => cbc_optimizer,
+            "lp_optimizer" => glpk_optimizer,
             "logging" => [],
         ))
 
@@ -32,5 +32,27 @@
         @objective(model, Max, sum(days[h, a] * 5 for h = 1:3, a = 1:3))
         optimize!(model)
         @test JuMP.objective_value(model) ≈ 75
+    end
+
+    @testset "Combine lp with all different" begin
+        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        model = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "lp_optimizer" => cbc_optimizer,
+            "logging" => [],
+        ))
+
+        # Variables
+        @variable(model, 1 <= x[1:4] <= 15, Int)
+        
+        # Constraints
+        @constraint(model, sum(x[1:2]) >= 10)
+        @constraint(model, sum(x[3:4]) <= 15)
+        @constraint(model, x in CS.AllDifferentSet(4))
+       
+        @objective(model, Max, sum(x))
+        optimize!(model)
+        @test JuMP.objective_value(model) ≈ 44
+        @test sum(JuMP.value.(x[1:2])) ≈ 29
     end
 end
