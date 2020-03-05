@@ -1,7 +1,7 @@
 using Test
 using ConstraintSolver
 using JSON
-using MathOptInterface, JuMP
+using MathOptInterface, JuMP, Cbc
 
 const MOI = MathOptInterface
 const CS = ConstraintSolver
