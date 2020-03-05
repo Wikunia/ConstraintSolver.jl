@@ -103,12 +103,14 @@ end
 function BacktrackObj(com::CS.CoM)
     return BacktrackObj(
         1, # idx
-        0, # parent
+        0, # parent_idx
         0, # depth
         :Closed, # status
         0, # variable_idx
         true, # left_side (is dummy anyway)
         0, # var_bound
         com.sense == MOI.MIN_SENSE ? typemax(com.best_bound) : typemin(com.best_bound),
+        zeros(length(com.search_space)),
+        zeros(length(com.search_space))
     )
 end

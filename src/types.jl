@@ -145,6 +145,8 @@ mutable struct BacktrackObj{T<:Real}
     left_side::Bool # indicates whether we branch left or right: true => ≤ var_bound, false => ≥ var_bound
     var_bound::Int
     best_bound::T
+    primal_start::Vector{Float64}
+    solution::Vector{Float64} # holds the solution values
 end
 
 
@@ -158,6 +160,8 @@ function Base.convert(::Type{B}, obj::BacktrackObj{T2}) where {T1,T2,B<:Backtrac
         obj.left_side,
         obj.var_bound,
         convert(T1, obj.best_bound),
+        obj.primal_start,
+        obj.solution
     )
 end
 

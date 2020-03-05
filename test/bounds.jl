@@ -1,6 +1,11 @@
 @testset "Bounds" begin
     @testset "Issue 83" begin
-        model = Model()
+        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        model = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "lp_optimizer" => cbc_optimizer,
+            "logging" => [],
+        ))
 
         # Variables
         @variable(model, inclusion[h = 1:3], Bin)
@@ -25,7 +30,6 @@
         )
 
         @objective(model, Max, sum(days[h, a] * 5 for h = 1:3, a = 1:3))
-        set_optimizer(model, CSJuMPTestSolver())
         optimize!(model)
         @test JuMP.objective_value(model) ≈ 75
     end

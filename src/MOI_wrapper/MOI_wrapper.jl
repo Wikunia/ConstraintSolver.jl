@@ -93,7 +93,7 @@ function create_lp_model!(model)
     for variable in com.search_space
         lp_x[variable.idx] = @variable(lp_model, lower_bound = variable.lower_bound, upper_bound = variable.upper_bound)
     end
-    lp_backend = backend(lp_model);
+    lp_backend = backend(lp_model)
     # iterate through all constraints and add all supported constraints
     for constraint in com.constraints
         if MOI.supports_constraint(model.options.lp_optimizer.optimizer_constructor(), typeof(constraint.fct), typeof(constraint.set))
