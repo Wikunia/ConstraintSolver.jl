@@ -37,6 +37,7 @@ abstract type Constraint end
 abstract type ObjectiveFunction end
 
 mutable struct SingleVariableObjective <: ObjectiveFunction
+    fct::MOI.SingleVariable
     index::Int # index of the variable
     indices::Vector{Int}
 end
@@ -129,6 +130,7 @@ mutable struct LinearConstraint{T<:Real} <: Constraint
 end
 
 mutable struct LinearCombinationObjective{T<:Real} <: ObjectiveFunction
+    fct::MOI.ScalarAffineFunction
     lc::LinearCombination{T}
     constant::T
     indices::Vector{Int} # must exist to update the objective only if one of these changed
@@ -178,6 +180,8 @@ mutable struct Solution{T<:Real}
 end
 
 mutable struct ConstraintSolverModel{T<:Real}
+    lp_model::Model # only used if lp_optimizer is set
+    lp_x::Vector{VariableRef}
     init_search_space::Vector{Variable}
     search_space::Vector{Variable}
     subscription::Vector{Vector{Int}}

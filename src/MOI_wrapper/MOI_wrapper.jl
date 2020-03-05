@@ -61,22 +61,13 @@ function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; kws...)
     return MOI.Utilities.automatic_copy_to(model, src; kws...)
 end
 
-"""
-    MOI.optimize!(model::Optimizer)
-"""
-function MOI.optimize!(model::Optimizer)
-    # check if every variable has bounds and is an Integer
-    check_var_bounds(model)
-
-    set_pvals!(model)
-
-    status = solve!(model)
-    set_status!(model, status)
-end
-
-
 MOI.supports(::Optimizer, ::MOI.RawParameter) = true
 
+"""
+    MOI.set(model::Optimizer, p::MOI.RawParameter, value)
+
+Set a RawParameter to `value`
+"""
 function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
     p_symbol = Symbol(p.name)
     if in(p_symbol, fieldnames(SolverOptions))
@@ -91,3 +82,52 @@ function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
     end
     return
 end
+
+function create_lp_model!(model)
+    model.options.lp_optimizer === nothing && return
+    com = model.inner
+    com.sense == MOI.FEASIBILITY_SENSE && return
+    lp_model = com.lp_model
+    set_optimizer(lp_model, model.options.lp_optimizer)
+    lp_x = Vector{VariableRef}(undef, length(com.search_space))
+    for variable in com.search_space
+        lp_x[variable.idx] = @variable(lp_model, lower_bound = variable.lower_bound, upper_bound = variable.upper_bound)
+    end
+    lp_backend = backend(lp_model);
+    # iterate through all constraints and add all supported constraints
+    for constraint in com.constraints
+        if MOI.supports_constraint(model.options.lp_optimizer.optimizer_constructor(), typeof(constraint.fct), typeof(constraint.set))
+            MOI.add_constraint(lp_backend, constraint.fct, constraint.set)
+        end
+    end
+    # add objective
+    !MOI.supports(lp_backend, MOI.ObjectiveSense()) && @error "The given lp solver doesn't allow objective functions"
+    typeof_objective = typeof(com.objective.fct)
+    if MOI.supports(lp_backend, MOI.ObjectiveFunction{typeof_objective}())
+        MOI.set(lp_backend, MOI.ObjectiveFunction{typeof_objective}(), com.objective.fct)
+    else 
+        @error "The given `lp_optimizer` doesn't support the objective function $(typeof_objective)" 
+    end
+    if MOI.supports(lp_backend, MOI.ObjectiveSense())
+        MOI.set(lp_backend, MOI.ObjectiveSense(), com.sense)
+    else 
+        @error "The given `lp_optimizer` doesn't support setting `ObjectiveSense`" 
+    end
+    com.lp_x = lp_x
+end
+
+"""
+    MOI.optimize!(model::Optimizer)
+"""
+function MOI.optimize!(model::Optimizer)
+    # check if every variable has bounds and is an Integer
+    check_var_bounds(model)
+
+    set_pvals!(model)
+
+    create_lp_model!(model)
+
+    status = solve!(model)
+    set_status!(model, status)
+end
+

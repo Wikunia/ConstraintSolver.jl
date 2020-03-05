@@ -11,7 +11,11 @@ using JuMP:
     Model,
     optimizer_with_attributes,
     VariableRef,
-    backend
+    backend,
+    set_optimizer,
+    direct_model,
+    optimize!,
+    objective_value
 import JuMP.sense_to_set
 using Formatting
 

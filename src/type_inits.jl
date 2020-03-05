@@ -70,6 +70,8 @@ Create the constraint model object and specify the type of the solution
 """
 function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
     ConstraintSolverModel(
+        Model(), # lp_model
+        Vector{VariableRef}(), # lp_x
         Vector{Variable}(), # init_search_space
         Vector{Variable}(), # search_space
         Vector{Vector{Int}}(), # subscription
