@@ -27,6 +27,7 @@ using JuMP
 Solving:
   - [Sudoku](#Sudoku-1)
   - [Graph coloring](#Graph-coloring-1)
+  - [Better bound computation](#Bound-computation-1)
 
 ## Sudoku
 
@@ -183,3 +184,52 @@ and getting the maximum color used with
 ```
 println("#colors: $(JuMP.value(max_color))")
 ```
+
+# Bound computation
+
+In this section you learn how to combine the alldifferent constraint and a sum constraint as well as using an objective function.
+When using a linear objective function it is useful to get good bounds to find the optimal solution faster and proof optimality.
+There is a very very basic bound computation build into the ConstraintSolver itself by just having a look at the maximum and minium values per variable.
+However this is a very bad estimate most of the time i.e for less than constraints.
+
+If we have
+```
+m = Model(CS.Optimizer) 
+@variable(m, 0 <= x[1:10] <= 15, Int)
+@constraint(m, sum(x) <=  15)
+@objective(m, Max, sum(x))
+```
+
+Each variable itself can have all values but the objective bound is of course $15$ and not $150$. Instead of building this directly into the ConstraintSolver I decided 
+to instead get help by a linear solver of your choice.
+You can use this with the option `lp_optimizer`:
+
+```
+cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+m = Model(optimizer_with_attributes(
+    CS.Optimizer,
+    "lp_optimizer" => cbc_optimizer,
+))
+@variable(m, 0 <= x[1:10] <= 15, Int)
+@constraint(m, sum(x) <=  15)
+@objective(m, Max, sum(x))
+optimize!(m)
+```
+
+It creates an `LP` with all supported constraints so `<=, >=, ==`. The ConstraintSolver will then work as the branch and bound part to solve the discrete problem.
+This is currently slower for problems that you can formulate directly as a MIP as the one above but now you can solve problems like:
+
+```
+cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+m = Model(optimizer_with_attributes(
+    CS.Optimizer,
+    "lp_optimizer" => cbc_optimizer,
+))
+@variable(m, 0 <= x[1:10] <= 15, Int)
+@constraint(m, sum(x) >= 10)
+@constraint(m, x[1:5] in CS.AllDifferentSet(5))
+@constraint(m, x[6:10] in CS.AllDifferentSet(5))
+@objective(m, Min, sum(x))
+optimize!(m)
+```
+

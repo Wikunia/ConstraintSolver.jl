@@ -76,4 +76,10 @@ m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack"=>false))
 and then check the variables using `CS.values(m, x)` or `CS.values(m, y)` this returns an array of possible values.
 
 
+## How to improve the bound computation?
+
+You might have encountered that the bound computation is not good. If you haven't already you should check out the tutorial on bound computation.
+It is definitely advised that you use an LP solver for computing bounds. 
+
+
 
