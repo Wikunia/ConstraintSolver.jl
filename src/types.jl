@@ -46,13 +46,26 @@ end
 # used to designate a feasibility sense
 struct NoObjective <: ObjectiveFunction end
 
+"""
+    BoundRhsVariable 
+idx - variable index in the lp Model
+lb  - lower bound of that variable
+ub  - upper bound of that variable
+"""
+mutable struct BoundRhsVariable
+    idx :: Int
+    lb  :: Int
+    ub  :: Int
+end
+
 mutable struct BasicConstraint <: Constraint
     idx::Int
     fct::Union{MOI.AbstractScalarFunction,MOI.AbstractVectorFunction}
     set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
     indices::Vector{Int}
     pvals::Vector{Int}
-    check_in_best_bound::Bool
+    enforce_bound::Bool
+    bound_rhs :: Union{Nothing, BoundRhsVariable} # should be set if `enforce_bound` is true
     hash::UInt64
 end
 
@@ -80,7 +93,8 @@ mutable struct AllDifferentConstraint <: Constraint
     di_ei::Vector{Int}
     di_ej::Vector{Int}
     matching_init::MatchingInit
-    check_in_best_bound::Bool
+    enforce_bound::Bool
+    bound_rhs :: Union{Nothing, BoundRhsVariable} # should be set if `enforce_bound` is true
     hash::UInt64
 end
 
@@ -93,7 +107,7 @@ mutable struct SingleVariableConstraint <: Constraint
     pvals::Vector{Int}
     lhs::Int
     rhs::Int
-    check_in_best_bound::Bool
+    enforce_bound::Bool
     hash::UInt64
 end
 
@@ -125,7 +139,7 @@ mutable struct LinearConstraint{T<:Real} <: Constraint
     maxs::Vector{T}
     pre_mins::Vector{T}
     pre_maxs::Vector{T}
-    check_in_best_bound::Bool
+    enforce_bound::Bool
     hash::UInt64
 end
 
@@ -184,7 +198,7 @@ mutable struct Solution{T<:Real}
 end
 
 mutable struct ConstraintSolverModel{T<:Real}
-    lp_model::Model # only used if lp_optimizer is set
+    lp_model::Union{Nothing,Model} # only used if lp_optimizer is set
     lp_x::Vector{VariableRef}
     init_search_space::Vector{Variable}
     search_space::Vector{Variable}

@@ -86,7 +86,7 @@ function add_variable_less_than_variable_constraint(
         Int[], # pvals
         lhs,
         rhs,
-        false, # `check_in_best_bound` can be changed later but should be set to false by default
+        false, # `enforce_bound` can be changed later but should be set to false by default
         zero(UInt64), # will be filled later
     )
 
@@ -147,7 +147,8 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
         set,
         Int[v.value for v in vars.variables],
         Int[], # pvals will be filled later
-        false, # `check_in_best_bound` can be changed later but should be set to false by default
+        false, # `enforce_bound` can be changed later but should be set to false by default
+        nothing, 
         zero(UInt64), # hash will be filled later
     )
 
@@ -179,7 +180,8 @@ function MOI.add_constraint(
         Int[], # di_ei => later
         Int[], # di_ej => later
         MatchingInit(),
-        false, # `check_in_best_bound` can be changed later but should be set to false by default
+        false, # `enforce_bound` can be changed later but should be set to false by default
+        nothing,
         zero(UInt64), # hash will be filled later
     )
 
@@ -238,7 +240,8 @@ function MOI.add_constraint(
         set,
         Int[t.variable_index.value for t in aff.terms],
         Int[], # pvals will be filled later
-        false, # `check_in_best_bound` can be changed later but should be set to false by default
+        false, # `enforce_bound` can be changed later but should be set to false by default
+        nothing,
         zero(UInt64), # hash will be filled later
     )
 
@@ -273,6 +276,32 @@ function init_constraints!(com::CS.CoM)
             init_constraint!(com, constraint, constraint.fct, constraint.set)
         end
     end
+end
+
+"""	
+    set_enforce_bound!(com::CS.CoM)	
+Sets `enforce_bound` in each constraint if we have an objective function and:	
+- the constraint type has a function `update_best_bound_constraint!`	
+"""	
+function set_enforce_bound!(com::CS.CoM)	
+    if com.sense == MOI.FEASIBILITY_SENSE	
+        return	
+    end	
+    objective_type = typeof(com.objective)	
+    for ci = 1:length(com.constraints)	
+        constraint = com.constraints[ci]	
+        c_type = typeof(constraint)	
+        c_fct_type = typeof(constraint.fct)	
+        c_set_type = typeof(constraint.set)	
+        if hasmethod(	
+            update_best_bound_constraint!,	
+            (CS.CoM, c_type, c_fct_type, c_set_type, Int, Bool, Int),	
+        )	
+            constraint.enforce_bound = true	
+        else # just to be sure => set it to false otherwise	
+            constraint.enforce_bound = false	
+        end	
+    end	
 end
 
 ### !=

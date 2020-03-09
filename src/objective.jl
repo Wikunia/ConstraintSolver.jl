@@ -93,14 +93,13 @@ function get_best_bound(
         end
     end
 
-    # check each constraint which has `check_in_best_bound = true` for a better bound
     # if all variables are fixed we don't have to compute several bounds
     if all(v -> isfixed(v), com.search_space)
         return objval
     end
-
+    
     com.options.lp_optimizer === nothing && return objval
-
+    
     # check if last best_bound is affected
     # check that we have a parent node to maybe use the bound of the parent
     if backtrack_obj.parent_idx != 0 && var_idx == 0
@@ -142,6 +141,17 @@ function get_best_bound(
             MOI.set(lp_backend, MOI.VariablePrimalStart(), MOI.VariableIndex(v_idx), backtrack_obj.primal_start[v_idx])
         end
     end
+
+    # update bounds by constraints
+    # check each constraint which has `enforce_bound = true` for a better bound
+    for constraint in com.constraints
+        if constraint.enforce_bound
+            update_best_bound_constraint!(com, constraint, constraint.fct, constraint.set, var_idx, left_side, var_bound)
+            set_lower_bound(com.lp_x[constraint.bound_rhs.idx], constraint.bound_rhs.lb)
+            set_upper_bound(com.lp_x[constraint.bound_rhs.idx], constraint.bound_rhs.ub)
+        end
+    end
+
     optimize!(com.lp_model)
     if termination_status(com.lp_model) == MOI.OPTIMAL
         backtrack_obj.solution = JuMP.value.(com.lp_x)

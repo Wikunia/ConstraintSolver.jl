@@ -57,7 +57,7 @@ function LinearConstraint(
         maxs,
         pre_mins,
         pre_maxs,
-        false, # `check_in_best_bound` can be changed later but should be set to false by default
+        false, # `enforce_bound` can be changed later but should be set to false by default
         zero(UInt64),
     )
     return lc
@@ -70,7 +70,7 @@ Create the constraint model object and specify the type of the solution
 """
 function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
     ConstraintSolverModel(
-        Model(), # lp_model
+        nothing, # lp_model
         Vector{VariableRef}(), # lp_x
         Vector{Variable}(), # init_search_space
         Vector{Variable}(), # search_space

@@ -19,7 +19,8 @@ function all_different(variables::Vector{Variable})
         Int[],
         Int[],
         MatchingInit(),
-        false, # `check_in_best_bound` can be changed later but should be set to false by default
+        false, # `enforce_bound` can be changed later but should be set to false by default
+        nothing,
         zero(UInt64), # hash will be filled in the next step
     )
     constraint.hash = constraint_hash(constraint)
@@ -65,6 +66,96 @@ function init_constraint!(
         zeros(Bool, m),
         zeros(Bool, n),
     )
+
+    # check if lp model exists and then add an equality constraint for better bound computation
+    com.lp_model === nothing && return 
+
+    lp_backend = backend(com.lp_model)
+    lp_var_idx = create_lp_variable!(com.lp_model, com.lp_x)
+    # create == constraint with sum of all variables equal the newly created variable
+    sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(var_idx)) for var_idx in constraint.indices]
+    push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_var_idx)))
+    saf = MOI.ScalarAffineFunction(sats, 0.0)
+    MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
+    
+    constraint.bound_rhs = BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int))
+end
+
+"""
+    update_best_bound_constraint!(com::CS.CoM,
+        constraint::AllDifferentConstraint,
+        fct::MOI.VectorOfVariables,
+        set::AllDifferentSet,
+        var_idx::Int,
+        left_side::Bool,
+        var_bound::Int
+    )
+
+Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to 
+the possible values the all different constraint allows. 
+i.e if we have 4 variables all between 1 and 10 the maximum sum is 10+9+8+7 and the minimum sum is 1+2+3+4
+Additionally one of the variables can be bounded using `var_idx`, `left_side` and `var_bound`
+"""
+function update_best_bound_constraint!(com::CS.CoM,
+    constraint::AllDifferentConstraint,
+    fct::MOI.VectorOfVariables,
+    set::AllDifferentSet,
+    var_idx::Int,
+    left_side::Bool,
+    var_bound::Int
+)
+
+    constraint.bound_rhs === nothing && return
+    search_space = com.search_space
+
+    # compute bounds
+    # get the maximum/minimum value for each variable
+    max_vals = zeros(Int, length(constraint.indices))
+    min_vals = zeros(Int, length(constraint.indices))
+    for i=1:length(constraint.indices)
+        v_idx = constraint.indices[i]
+        if v_idx == var_idx
+            if left_side 
+                max_vals[i] = var_bound
+                min_vals[i] = search_space[v_idx].min
+            else
+                min_vals[i] = var_bound
+                max_vals[i] = search_space[v_idx].max
+            end
+        else
+            min_vals[i] = search_space[v_idx].min
+            max_vals[i] = search_space[v_idx].max
+        end
+    end
+    
+    # sort the max_vals desc and obtain bound by enforcing all different
+    sort!(max_vals; rev=true)
+    max_sum = max_vals[1]
+    last_val = max_sum
+    for i=2:length(max_vals)
+        if max_vals[i] >= last_val
+            last_val -= 1 
+        else 
+            last_val = max_vals[i]
+        end
+        max_sum += last_val
+    end
+
+    # sort the max_vals asc and obtain bound by enforcing all different
+    sort!(min_vals)
+    min_sum = min_vals[1]
+    last_val = min_sum
+    for i=2:length(min_vals)
+        if min_vals[i] <= last_val
+            last_val += 1 
+        else 
+            last_val = min_vals[i]
+        end
+        min_sum += last_val
+    end
+   
+    constraint.bound_rhs.lb = min_sum
+    constraint.bound_rhs.ub = max_sum
 end
 
 """

@@ -43,16 +43,18 @@
         ))
 
         # Variables
-        @variable(model, 1 <= x[1:4] <= 15, Int)
+        @variable(model, 1 <= x[1:10] <= 15, Int)
         
         # Constraints
-        @constraint(model, sum(x[1:2]) >= 10)
-        @constraint(model, sum(x[3:4]) <= 15)
-        @constraint(model, x in CS.AllDifferentSet(4))
+        @constraint(model, sum(x[1:5]) >= 10)
+        @constraint(model, sum(x[6:10]) <= 15)
+        @constraint(model, x in CS.AllDifferentSet(10))
        
         @objective(model, Max, sum(x))
         optimize!(model)
-        @test JuMP.objective_value(model) ≈ 44
-        @test sum(JuMP.value.(x[1:2])) ≈ 29
+        # possible solution 11+12+13+14+15  + 1+2+3+4+5
+        # only works fast if the all different bound works 
+        @test JuMP.objective_value(model) ≈ 80
+        @test sum(JuMP.value.(x[6:10])) ≈ 15
     end
 end
