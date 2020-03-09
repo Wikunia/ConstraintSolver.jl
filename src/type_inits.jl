@@ -57,7 +57,7 @@ function LinearConstraint(
         maxs,
         pre_mins,
         pre_maxs,
-        false, # `check_in_best_bound` can be changed later but should be set to false by default
+        false, # `enforce_bound` can be changed later but should be set to false by default
         zero(UInt64),
     )
     return lc
@@ -70,6 +70,8 @@ Create the constraint model object and specify the type of the solution
 """
 function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
     ConstraintSolverModel(
+        nothing, # lp_model
+        Vector{VariableRef}(), # lp_x
         Vector{Variable}(), # init_search_space
         Vector{Variable}(), # search_space
         Vector{Vector{Int}}(), # subscription
@@ -101,12 +103,14 @@ end
 function BacktrackObj(com::CS.CoM)
     return BacktrackObj(
         1, # idx
-        0, # parent
+        0, # parent_idx
         0, # depth
         :Closed, # status
         0, # variable_idx
         true, # left_side (is dummy anyway)
         0, # var_bound
         com.sense == MOI.MIN_SENSE ? typemax(com.best_bound) : typemin(com.best_bound),
+        zeros(length(com.search_space)),
+        zeros(length(com.search_space))
     )
 end

@@ -61,22 +61,13 @@ function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; kws...)
     return MOI.Utilities.automatic_copy_to(model, src; kws...)
 end
 
-"""
-    MOI.optimize!(model::Optimizer)
-"""
-function MOI.optimize!(model::Optimizer)
-    # check if every variable has bounds and is an Integer
-    check_var_bounds(model)
-
-    set_pvals!(model)
-
-    status = solve!(model)
-    set_status!(model, status)
-end
-
-
 MOI.supports(::Optimizer, ::MOI.RawParameter) = true
 
+"""
+    MOI.set(model::Optimizer, p::MOI.RawParameter, value)
+
+Set a RawParameter to `value`
+"""
 function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
     p_symbol = Symbol(p.name)
     if in(p_symbol, fieldnames(SolverOptions))
@@ -90,4 +81,20 @@ function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
         @error "The option $(p.name) doesn't exist."
     end
     return
+end
+
+"""
+    MOI.optimize!(model::Optimizer)
+"""
+function MOI.optimize!(model::Optimizer)
+    # check if every variable has bounds and is an Integer
+    check_var_bounds(model)
+
+    set_pvals!(model)
+
+    create_lp_model!(model)
+    set_enforce_bound!(model.inner)
+
+    status = solve!(model)
+    set_status!(model, status)
 end

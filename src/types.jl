@@ -37,6 +37,7 @@ abstract type Constraint end
 abstract type ObjectiveFunction end
 
 mutable struct SingleVariableObjective <: ObjectiveFunction
+    fct::MOI.SingleVariable
     index::Int # index of the variable
     indices::Vector{Int}
 end
@@ -45,13 +46,26 @@ end
 # used to designate a feasibility sense
 struct NoObjective <: ObjectiveFunction end
 
+"""
+    BoundRhsVariable 
+idx - variable index in the lp Model
+lb  - lower bound of that variable
+ub  - upper bound of that variable
+"""
+mutable struct BoundRhsVariable
+    idx :: Int
+    lb  :: Int
+    ub  :: Int
+end
+
 mutable struct BasicConstraint <: Constraint
     idx::Int
     fct::Union{MOI.AbstractScalarFunction,MOI.AbstractVectorFunction}
     set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
     indices::Vector{Int}
     pvals::Vector{Int}
-    check_in_best_bound::Bool
+    enforce_bound::Bool
+    bound_rhs :: Union{Nothing, BoundRhsVariable} # should be set if `enforce_bound` is true
     hash::UInt64
 end
 
@@ -79,7 +93,8 @@ mutable struct AllDifferentConstraint <: Constraint
     di_ei::Vector{Int}
     di_ej::Vector{Int}
     matching_init::MatchingInit
-    check_in_best_bound::Bool
+    enforce_bound::Bool
+    bound_rhs :: Union{Nothing, BoundRhsVariable} # should be set if `enforce_bound` is true
     hash::UInt64
 end
 
@@ -92,7 +107,7 @@ mutable struct SingleVariableConstraint <: Constraint
     pvals::Vector{Int}
     lhs::Int
     rhs::Int
-    check_in_best_bound::Bool
+    enforce_bound::Bool
     hash::UInt64
 end
 
@@ -124,11 +139,12 @@ mutable struct LinearConstraint{T<:Real} <: Constraint
     maxs::Vector{T}
     pre_mins::Vector{T}
     pre_maxs::Vector{T}
-    check_in_best_bound::Bool
+    enforce_bound::Bool
     hash::UInt64
 end
 
 mutable struct LinearCombinationObjective{T<:Real} <: ObjectiveFunction
+    fct::MOI.ScalarAffineFunction
     lc::LinearCombination{T}
     constant::T
     indices::Vector{Int} # must exist to update the objective only if one of these changed
@@ -143,6 +159,8 @@ mutable struct BacktrackObj{T<:Real}
     left_side::Bool # indicates whether we branch left or right: true => ≤ var_bound, false => ≥ var_bound
     var_bound::Int
     best_bound::T
+    primal_start::Vector{Float64}
+    solution::Vector{Float64} # holds the solution values
 end
 
 
@@ -156,6 +174,8 @@ function Base.convert(::Type{B}, obj::BacktrackObj{T2}) where {T1,T2,B<:Backtrac
         obj.left_side,
         obj.var_bound,
         convert(T1, obj.best_bound),
+        obj.primal_start,
+        obj.solution
     )
 end
 
@@ -178,6 +198,8 @@ mutable struct Solution{T<:Real}
 end
 
 mutable struct ConstraintSolverModel{T<:Real}
+    lp_model::Union{Nothing,Model} # only used if lp_optimizer is set
+    lp_x::Vector{VariableRef}
     init_search_space::Vector{Variable}
     search_space::Vector{Variable}
     subscription::Vector{Vector{Int}}

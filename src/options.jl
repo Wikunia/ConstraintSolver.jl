@@ -10,6 +10,7 @@ mutable struct SolverOptions
     solution_type::Type
     all_solutions::Bool
     all_optimal_solutions::Bool
+    lp_optimizer::Any
 end
 
 function SolverOptions()
@@ -33,6 +34,7 @@ function SolverOptions()
     solution_type = Float64
     all_solutions = false
     all_optimal_solutions = false
+    lp_optimizer = nothing
 
     return SolverOptions(
         logging,
@@ -46,6 +48,7 @@ function SolverOptions()
         solution_type,
         all_solutions,
         all_optimal_solutions,
+        lp_optimizer
     )
 end
 

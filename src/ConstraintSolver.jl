@@ -11,8 +11,16 @@ using JuMP:
     Model,
     optimizer_with_attributes,
     VariableRef,
-    backend
+    backend,
+    set_optimizer,
+    direct_model,
+    optimize!,
+    objective_value, 
+    set_lower_bound,
+    set_upper_bound,
+    termination_status
 import JuMP.sense_to_set
+import JuMP
 using Formatting
 
 const MOI = MathOptInterface
@@ -30,6 +38,7 @@ include("type_inits.jl")
 include("util.jl")
 include("branching.jl")
 include("traversing.jl")
+include("lp_model.jl")
 include("MOI_wrapper/MOI_wrapper.jl")
 include("printing.jl")
 include("logs.jl")
@@ -362,18 +371,18 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
 end
 
 """
-    get_best_bound(com::CS.CoM; var_idx=0, left_side=true, var_bound=0)
+    get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; var_idx=0, left_side=true, var_bound=0)
 
 Return the best bound if setting the variable with idx: `var_idx` to 
     <= `var_bound` if `var_idx != 0` and `left_side` 
     >= `var_bound` if `var_idx != 0` and `!left_side` 
 Without an objective function return 0.
 """
-function get_best_bound(com::CS.CoM; var_idx = 0, left_side = true, var_bound = 0)
+function get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; var_idx = 0, left_side = true, var_bound = 0)
     if com.sense == MOI.FEASIBILITY_SENSE
         return zero(com.best_bound)
     end
-    return get_best_bound(com, com.objective, var_idx, left_side, var_bound)
+    return get_best_bound(com, backtrack_obj, com.objective, var_idx, left_side, var_bound)
 end
 
 """
@@ -476,7 +485,7 @@ function update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraint
     # if best bound unchanged => continue pruning
     # otherwise try another path but don't close the current
     # -> means open new paths from here even if not pruned til the end
-    new_bb = get_best_bound(com)
+    new_bb = get_best_bound(com, backtrack_obj)
     if backtrack_obj.best_bound != new_bb
         further_pruning = false
     end
@@ -600,8 +609,11 @@ function add2backtrack_vec!(
         ind,
         true, # left branch
         leq_val,
-        get_best_bound(com; var_idx = ind, left_side = true, var_bound = leq_val),
+        backtrack_vec[parent_idx].best_bound, # initialize with parent best bound
+        backtrack_vec[parent_idx].solution,
+        zeros(length(com.search_space))
     )
+    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, left_side = true, var_bound = leq_val)
     # only include nodes which have a better objective than the current best solution if one was found already
     if !check_bound || (
         backtrack_obj.best_bound * obj_factor < com.best_sol ||
@@ -617,7 +629,6 @@ function add2backtrack_vec!(
     else
         num_backtrack_objs -= 1
     end
-
     # right branch
     num_backtrack_objs += 1
     backtrack_obj = BacktrackObj(
@@ -628,8 +639,11 @@ function add2backtrack_vec!(
         ind,
         false, # right branch
         geq_val,
-        get_best_bound(com; var_idx = ind, left_side = false, var_bound = geq_val),
+        backtrack_vec[parent_idx].best_bound,
+        backtrack_vec[parent_idx].solution,
+        zeros(length(com.search_space))
     )
+    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, left_side = false, var_bound = geq_val)
     if !check_bound || (
         backtrack_obj.best_bound * obj_factor < com.best_sol ||
         length(com.bt_solution_ids) == 0
@@ -680,7 +694,7 @@ function add_new_solution!(
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
     find_more_solutions = com.options.all_solutions || com.options.all_optimal_solutions
 
-    new_sol = get_best_bound(com)
+    new_sol = get_best_bound(com, backtrack_obj)
     if length(com.bt_solution_ids) == 0 || obj_factor * new_sol <= obj_factor * com.best_sol
         push!(com.bt_solution_ids, backtrack_obj.idx)
         # also push it to the solutions object
@@ -833,7 +847,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
                 log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr)
         end
 
-        leafs_best_bound = get_best_bound(com)
+        leafs_best_bound = get_best_bound(com, backtrack_obj)
         # if the objective can't get better we don't have to test all options
         if leafs_best_bound * obj_factor >= com.best_sol && length(com.bt_solution_ids) > 0
             continue
@@ -1018,8 +1032,6 @@ function solve!(com::CS.CoM, options::SolverOptions)
     com.start_time = time()
 
     set_constraint_hashes!(com)
-    # sets check_in_best_bound per constraint if an objective function exists
-    set_check_in_best_bound!(com)
 
     # initialize constraints if `init_constraint!` exists for the constraint
     init_constraints!(com)
@@ -1042,7 +1054,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
         return :Infeasible
     end
     if all(v -> isfixed(v), com.search_space)
-        com.best_bound = get_best_bound(com)
+        com.best_bound = get_best_bound(com, BacktrackObj(com))
         com.best_sol = com.best_bound
         com.solve_time = time() - com.start_time
         new_sol_obj = Solution(com.best_sol, CS.value.(com.search_space))
@@ -1051,7 +1063,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     end
     feasible = prune!(com; pre_backtrack = true)
 
-    com.best_bound = get_best_bound(com)
+    com.best_bound = get_best_bound(com, BacktrackObj(com))
     if keep_logs
         push!(com.logs, log_one_node(com, length(com.search_space), 1, 1))
     end
