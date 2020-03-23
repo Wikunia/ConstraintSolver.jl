@@ -25,9 +25,9 @@ It's a bit more but still not as fully featured as I would like it to be.
 - [X] All different
   - `@constraint(m, x[1:9] in CS.AllDifferentSet(9))`
   - Currently you have to specify the length of vector
-- [ ] Support for `!=`
+- [X] Support for `!=`
   - [X] Supports `a != b` with `a` and `b` being single variables
-  - [ ] Support for linear unequal constraints [#66](https://github.com/Wikunia/ConstraintSolver.jl/issues/66)
+  - [X] Support for linear unequal constraints [#66](https://github.com/Wikunia/ConstraintSolver.jl/issues/66)
 - [ ] Cycle constraints
 
 If I miss something which would be helpful for your needs please open an issue.
