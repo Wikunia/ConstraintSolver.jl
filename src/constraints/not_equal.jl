@@ -16,13 +16,8 @@ function Base.:!(bc::CS.BasicConstraint)
     return bc
 end
 
-"""
-    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualSet{T}; logs = true) where T <: Real
 
-Reduce the number of possibilities given the not equal constraint and two variable which are not allowed to have the same value.
-Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set to `true`
-"""
-function prune_constraint!(
+function prune_not_equal_with_two_variable!(
     com::CS.CoM,
     constraint::BasicConstraint,
     fct::SAF{T},
@@ -66,6 +61,54 @@ function prune_constraint!(
 end
 
 """
+    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualSet{T}; logs = true) where T <: Real
+
+Reduce the number of possibilities given the not equal constraint.
+Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
+"""
+function prune_constraint!(
+    com::CS.CoM,
+    constraint::BasicConstraint,
+    fct::SAF{T},
+    set::NotEqualSet{T};
+    logs = true,
+) where {T<:Real}
+    indices = constraint.indices
+    if length(indices) == 2 && set.value == zero(T)
+        return prune_not_equal_with_two_variable!(com, constraint, fct, set; logs = logs)        
+    end
+
+    # check if only one variable is variable
+    nfixed = count(v -> isfixed(v), com.search_space[constraint.indices])
+    if nfixed == length(constraint.indices)-1
+        search_space = com.search_space
+        sum = -set.value
+        unfixed_i = 0
+        for (i, idx) in enumerate(indices)
+            if isfixed(search_space[idx])
+                sum += CS.value(search_space[idx]) * fct.terms[i].coefficient
+            else 
+                unfixed_i = i
+            end
+        end
+        @assert unfixed_i != 0
+        sum /= fct.terms[unfixed_i].coefficient
+        # if not integer
+        if !isapprox_discrete(com, sum)
+            return true
+        end
+        sum = get_approx_discrete(sum)
+        # if can be removed => is removed and is feasible otherwise not feasible
+        if has(search_space[indices[unfixed_i]], sum)
+            return rm!(com, search_space[indices[unfixed_i]], sum)
+        else
+            return true
+        end
+    end
+    return true
+end
+
+"""
 still_feasible(com::CoM, constraint::Constraint, fct::MOI.ScalarAffineFunction{T}, set::NotEqualSet{T}, value::Int, index::Int) where T <: Real
 
 Return whether the `not_equal` constraint can be still fulfilled.
@@ -78,10 +121,42 @@ function still_feasible(
     value::Int,
     index::Int,
 ) where {T<:Real}
-    if index == constraint.indices[1]
-        other_var = com.search_space[constraint.indices[2]]
-    else
-        other_var = com.search_space[constraint.indices[1]]
+
+    if length(constraint.indices) == 2 && set.value == zero(T)
+        if index == constraint.indices[1]
+            other_var = com.search_space[constraint.indices[2]]
+        else
+            other_var = com.search_space[constraint.indices[1]]
+        end
+        return !issetto(other_var, value)
     end
-    return !issetto(other_var, value)
+    # more than two variables
+    indices = constraint.indices
+    # check if only one variable is variable
+    nfixed = count(v -> isfixed(v), com.search_space[indices])
+    if nfixed >= length(indices)-1
+        search_space = com.search_space
+        sum = -set.value
+        unfixed_i = 0
+        for (i, idx) in enumerate(indices)
+            if isfixed(search_space[idx])
+                sum += CS.value(search_space[idx]) * fct.terms[i].coefficient
+            elseif index == idx
+                sum += value * fct.terms[i].coefficient
+            else
+                unfixed_i = i
+            end
+        end
+        # all fixed => must be != 0
+        if unfixed_i == 0
+            # not discrete => not 0 => feasible
+            if !isapprox_discrete(com, sum)
+                return true
+            end
+            return get_approx_discrete(sum) != zero(T)
+        end
+        # if not fixed there is a value which fulfills the != constraint
+        return true
+    end
+    return true
 end

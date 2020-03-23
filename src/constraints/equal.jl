@@ -45,7 +45,7 @@ end
     prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::EqualSet; logs = true)
 
 Reduce the number of possibilities given the equality constraint which sets all variables in `MOI.VectorOfVariables` to the same value.
-Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set to `true`
+Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
 """
 function prune_constraint!(
     com::CS.CoM,

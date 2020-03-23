@@ -761,21 +761,12 @@
 
         m = Model(CSJuMPTestSolver())
         @variable(m, 1 <= x[1:5] <= 2, Int)
-        # constraint not supported
-        @constraint(m, x[1] - x[2] != 2)
-        @test_throws ErrorException optimize!(m)
 
         m = Model(CSJuMPTestSolver())
         @variable(m, 1 <= x[1:5] <= 2, Int)
-        # constraint not supported
-        @constraint(m, x[1] - x[2] - x[3] != 0)
-        @test_throws ErrorException optimize!(m)
 
         m = Model(CSJuMPTestSolver())
         @variable(m, 1 <= x[1:5] <= 2, Int)
-        # constraint currently not supported
-        @constraint(m, 2 * x[1] - x[2] != 0)
-        @test_throws ErrorException optimize!(m)
     end
 
     @testset "Bipartite matching" begin
@@ -835,20 +826,22 @@
         @test count(i -> i == 0, match.match) == 0
     end
 
-    @testset "Not equal constant" begin
+    @testset "Not equal" begin
         m = Model(CSJuMPTestSolver())
 
         @variable(m, 1 <= x <= 10, Int)
+        @variable(m, 1 <= y <= 1, Int)
         @constraint(m, x != 2 - 1) # != 1
         @constraint(m, 2x != 4) # != 2
         @constraint(m, π / 3 * x != π) # != 3
         @constraint(m, 2.2x != 8.8) # != 4
+        @constraint(m, 4x+5y != 25) # != 5
         @objective(m, Min, x)
         optimize!(m)
 
-        @test JuMP.objective_value(m) == 5
+        @test JuMP.objective_value(m) == 6
         @test JuMP.termination_status(m) == MOI.OPTIMAL
-        @test JuMP.value(x) == 5
+        @test JuMP.value(x) == 6
         @test length(CS.values(m, x)) == 1 # the value should be fixed
     end
 

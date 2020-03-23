@@ -205,16 +205,6 @@ function MOI.add_constraint(
     aff::SAF{T},
     set::NotEqualSet{T},
 ) where {T<:Real}
-    if set.value != 0.0 && length(aff.terms) != 1
-        error("Only constraints of the type `a != b` are supported but not `a != b-2`")
-    end
-    if length(aff.terms) > 2
-        error("Only constraints of the type `a != b` are supported but not `[a,b,...] in NotEqualSet` => only two variables. Otherwise use an AllDifferentSet constraint.")
-    end
-    if length(aff.terms) == 2 &&
-       (aff.terms[1].coefficient != 1.0 || aff.terms[2].coefficient != -1.0)
-        error("Only constraints of the type `a != b` are supported but not `2a != b`. You used coefficients: $(aff.terms[1].coefficient) and $(aff.terms[2].coefficient) instead of `1.0` and `-1.0`")
-    end
     com = model.inner
     com.info.n_constraint_types.notequal += 1
 
