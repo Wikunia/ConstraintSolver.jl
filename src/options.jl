@@ -1,6 +1,7 @@
 mutable struct SolverOptions
     logging::Vector{Symbol}
     table::TableSetup
+    time_limit::Float64 # time limit in backtracking in seconds
     backtrack::Bool
     max_bt_steps::Int
     backtrack_sorting::Bool
@@ -35,10 +36,12 @@ function SolverOptions()
     all_solutions = false
     all_optimal_solutions = false
     lp_optimizer = nothing
+    time_limit = Inf
 
     return SolverOptions(
         logging,
         table,
+        time_limit,
         backtrack,
         max_bt_steps,
         backtrack_sorting,

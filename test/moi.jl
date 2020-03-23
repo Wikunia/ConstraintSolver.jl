@@ -31,6 +31,9 @@
             CS.NotEqualSet{Float64},
         )
 
+        # TimeLimit
+        @test MOI.supports(optimizer, MOI.TimeLimitSec())
+
         # objective
         @test MOI.supports(optimizer, MOI.ObjectiveSense())
         @test MOI.supports(optimizer, MOI.ObjectiveFunction{MOI.SingleVariable}())

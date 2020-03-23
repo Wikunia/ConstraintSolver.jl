@@ -62,6 +62,7 @@ function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; kws...)
 end
 
 MOI.supports(::Optimizer, ::MOI.RawParameter) = true
+MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
 
 """
     MOI.set(model::Optimizer, p::MOI.RawParameter, value)
@@ -79,6 +80,20 @@ function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
         end
     else
         @error "The option $(p.name) doesn't exist."
+    end
+    return
+end
+
+"""
+    MOI.set(model::Optimizer, ::MOI.RawParameter, value)
+
+Set the time limit
+"""
+function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value::Union{Nothing, Float64})
+    if value === nothing
+        model.options.time_limit = Inf
+    else
+        model.options.time_limit = value
     end
     return
 end

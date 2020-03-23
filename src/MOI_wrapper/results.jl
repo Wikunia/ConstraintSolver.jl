@@ -24,6 +24,8 @@ function set_status!(model::Optimizer, status::Symbol)
         model.status = MOI.OPTIMAL
     elseif status == :Infeasible
         model.status = MOI.INFEASIBLE
+    elseif status == :Time
+        model.status = MOI.TIME_LIMIT
     else
         model.status = MOI.OTHER_LIMIT
     end

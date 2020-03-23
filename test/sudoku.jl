@@ -35,6 +35,7 @@
 
         # sudoku constraints
         moi_add_sudoku_constr!(m, x)
+        MOI.set(m, MOI.TimeLimitSec(), 10.0)
 
         MOI.optimize!(m)
         @test MOI.get(m, MOI.TerminationStatus()) == MOI.OPTIMAL
@@ -43,6 +44,7 @@
             solution[r, :] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c = 1:9]
         end
         @test jump_fulfills_sudoku_constr(solution)
+        @test m.options.time_limit == 10.0
     end
 
 

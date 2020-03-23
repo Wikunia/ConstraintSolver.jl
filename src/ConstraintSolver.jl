@@ -772,6 +772,9 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             # close the previous backtrack object
             backtrack_vec[last_backtrack_id].status = :Closed
         end
+        if time() - com.start_time > com.options.time_limit
+            break
+        end
 
         !started && update_best_bound!(com)
         found, backtrack_obj = get_next_node(com, backtrack_vec, sorting)
@@ -870,9 +873,17 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
     if length(com.bt_solution_ids) > 0
         set_state_to_best_sol!(com, last_backtrack_id)
         com.best_bound = com.best_sol
-        return :Solved
+        if time() - com.start_time > com.options.time_limit
+            return :Time
+        else
+            return :Solved
+        end
     end
-    return :Infeasible
+    if time() - com.start_time > com.options.time_limit
+        return :Time
+    else
+        return :Infeasible
+    end
 end
 
 """

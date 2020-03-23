@@ -47,6 +47,10 @@ which means that the open/closed nodes, the incumbent and the best bound is show
 
 For satisfiability problems the incumbent and best bound are `0` so you could remove them. I'll probably add that ;)
 
+## `time_limit` (`Inf`)
+
+Time limit for backtracking in seconds. If reached before the problem was solved or infeasibility was proven will return the status `MOI.TIME_LIMIT`.
+
 ## `rtol` (`1e-6`)
 
 Defines the relative tolerance of the solver.
