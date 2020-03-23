@@ -82,7 +82,7 @@ function prune_constraint!(
     nfixed = count(v -> isfixed(v), com.search_space[constraint.indices])
     if nfixed == length(constraint.indices)-1
         search_space = com.search_space
-        sum = -set.value
+        sum = -set.value+fct.constant
         unfixed_i = 0
         for (i, idx) in enumerate(indices)
             if isfixed(search_space[idx])
@@ -92,15 +92,16 @@ function prune_constraint!(
             end
         end
         @assert unfixed_i != 0
-        sum /= fct.terms[unfixed_i].coefficient
+        not_val = -sum
+        not_val /= fct.terms[unfixed_i].coefficient
         # if not integer
-        if !isapprox_discrete(com, sum)
+        if !isapprox_discrete(com, not_val)
             return true
         end
-        sum = get_approx_discrete(sum)
+        not_val = get_approx_discrete(not_val)
         # if can be removed => is removed and is feasible otherwise not feasible
-        if has(search_space[indices[unfixed_i]], sum)
-            return rm!(com, search_space[indices[unfixed_i]], sum)
+        if has(search_space[indices[unfixed_i]], not_val)
+            return rm!(com, search_space[indices[unfixed_i]], not_val)
         else
             return true
         end
@@ -136,7 +137,7 @@ function still_feasible(
     nfixed = count(v -> isfixed(v), com.search_space[indices])
     if nfixed >= length(indices)-1
         search_space = com.search_space
-        sum = -set.value
+        sum = -set.value+fct.constant
         unfixed_i = 0
         for (i, idx) in enumerate(indices)
             if isfixed(search_space[idx])
