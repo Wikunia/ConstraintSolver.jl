@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Wikunia/ConstraintSolver.jl.svg?branch=master)](https://travis-ci.org/Wikunia/ConstraintSolver.jl) [![codecov](https://codecov.io/gh/Wikunia/ConstraintSolver.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/Wikunia/ConstraintSolver.jl)
+![Build status](https://github.com/Wikunia/ConstraintSolver.jl/workflows/Run%20tests/badge.svg) [![codecov](https://codecov.io/gh/Wikunia/ConstraintSolver.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/Wikunia/ConstraintSolver.jl)
 [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://wikunia.github.io/ConstraintSolver.jl/dev)
 
 # ConstraintSolver.jl
@@ -26,6 +26,8 @@ I'm just a MSc student in computer science so I don't have much knowledge on how
 - [Making it a JuMP solver](https://opensourc.es/blog/constraint-solver-jump)
 - [Dealing with real objectives](https://opensourc.es/blog/constraint-solver-floats)
 - [Support for linear objectives](https://opensourc.es/blog/constraint-solver-linear-objective)
+- [Table logging](https://opensourc.es/blog/table-logging)
+- [Bound computation](https://opensourc.es/blog/constraint-solver-bounds)
 
 ## Installation
 You can install this julia package using 
