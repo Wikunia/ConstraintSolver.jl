@@ -16,50 +16,6 @@ function Base.:!(bc::CS.BasicConstraint)
     return bc
 end
 
-
-function prune_not_equal_with_two_variable!(
-    com::CS.CoM,
-    constraint::BasicConstraint,
-    fct::SAF{T},
-    set::NotEqualSet{T};
-    logs = true,
-) where {T<:Real}
-    indices = constraint.indices
-
-    search_space = com.search_space
-    # we always have only two variables
-    v1 = search_space[indices[1]]
-    v2 = search_space[indices[2]]
-    fixed_v1 = isfixed(v1)
-    fixed_v2 = isfixed(v2)
-    if !fixed_v1 && !fixed_v2
-        return true
-    elseif fixed_v1 && fixed_v2
-        if CS.value(v1) == CS.value(v2)
-            logs && @warn "The problem is infeasible"
-            return false
-        end
-        return true
-    end
-    # one is fixed and one isn't
-    if fixed_v1
-        prune_v = v2
-        prune_v_idx = 2
-        other_val = CS.value(v1)
-    else
-        prune_v = v1
-        prune_v_idx = 1
-        other_val = CS.value(v2)
-    end
-    if has(prune_v, other_val)
-        if !rm!(com, prune_v, other_val)
-            logs && @warn "The problem is infeasible"
-            return false
-        end
-    end
-    return true
-end
-
 """
     prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualSet{T}; logs = true) where T <: Real
 
@@ -74,13 +30,10 @@ function prune_constraint!(
     logs = true,
 ) where {T<:Real}
     indices = constraint.indices
-    if length(indices) == 2 && set.value == zero(T) && fct.constant == zero(T)
-        return prune_not_equal_with_two_variable!(com, constraint, fct, set; logs = logs)        
-    end
 
     # check if only one variable is variable
     nfixed = count(v -> isfixed(v), com.search_space[constraint.indices])
-    if nfixed == length(constraint.indices)-1
+    if nfixed >= length(constraint.indices)-1
         search_space = com.search_space
         sum = -set.value+fct.constant
         unfixed_i = 0
@@ -91,7 +44,10 @@ function prune_constraint!(
                 unfixed_i = i
             end
         end
-        @assert unfixed_i != 0
+        # all fixed
+        if unfixed_i == 0
+            return get_approx_discrete(sum) != zero(T)
+        end
         not_val = -sum
         not_val /= fct.terms[unfixed_i].coefficient
         # if not integer
@@ -122,15 +78,6 @@ function still_feasible(
     value::Int,
     index::Int,
 ) where {T<:Real}
-    if length(constraint.indices) == 2 && set.value == zero(T) && fct.constant == zero(T)
-        if index == constraint.indices[1]
-            other_var = com.search_space[constraint.indices[2]]
-        else
-            other_var = com.search_space[constraint.indices[1]]
-        end
-        return !issetto(other_var, value)
-    end
-    # more than two variables
     indices = constraint.indices
     # check if only one variable is variable
     nfixed = count(v -> isfixed(v), com.search_space[indices])
