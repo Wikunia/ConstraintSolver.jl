@@ -74,7 +74,7 @@ function prune_constraint!(
     logs = true,
 ) where {T<:Real}
     indices = constraint.indices
-    if length(indices) == 2 && set.value == zero(T)
+    if length(indices) == 2 && set.value == zero(T) && fct.constant == zero(T)
         return prune_not_equal_with_two_variable!(com, constraint, fct, set; logs = logs)        
     end
 
@@ -122,8 +122,7 @@ function still_feasible(
     value::Int,
     index::Int,
 ) where {T<:Real}
-
-    if length(constraint.indices) == 2 && set.value == zero(T)
+    if length(constraint.indices) == 2 && set.value == zero(T) && fct.constant == zero(T)
         if index == constraint.indices[1]
             other_var = com.search_space[constraint.indices[2]]
         else

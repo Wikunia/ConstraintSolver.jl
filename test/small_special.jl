@@ -838,14 +838,20 @@
         @constraint(m, 2.2x != 8.8) # != 4
         @constraint(m, 4x+5y != 25) # != 5
         @constraint(m, 4x+π*y != 10) # just some random stuff
-        @constraint(m, x+y+z != 10)
+        @constraint(m, x+y+z-π != 10)
+        @constraint(m, x+y+z+2 != 10)
         @objective(m, Min, x)
         optimize!(m)
 
         @test JuMP.objective_value(m) == 6
         @test JuMP.termination_status(m) == MOI.OPTIMAL
         @test JuMP.value(x) == 6
-        @test length(CS.values(m, x)) == 1 # the value should be fixed
+        @test JuMP.value(y) == 1
+        # the values should be fixed
+        @test length(CS.values(m, x)) == 1 
+        @test length(CS.values(m, y)) == 1 
+        @test length(CS.values(m, z)) == 1 
+        @test JuMP.value(x) + JuMP.value(y) + JuMP.value(z) + 2 != 10 
     end
 
 end
