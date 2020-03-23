@@ -1,10 +1,11 @@
 @testset "Graph coloring" begin
 
-    function normal_49_states(; reverse_constraint = false)
+    function normal_49_states(; reverse_constraint = false, tests=true, time_limit=Inf)
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "keep_logs" => true,
             "logging" => [],
+            "time_limit" => time_limit
         ))
         num_colors = 20
 
@@ -185,16 +186,32 @@
         CS.save_logs(com, "graph_color_optimize.json")
         rm("graph_color_optimize.json")
 
-        @test status == MOI.OPTIMAL
-        @test com.best_sol == 4 == JuMP.objective_value(m) == JuMP.objective_bound(m)
-        @test maximum([JuMP.value(var) for var in states]) == 4 == JuMP.value(max_color)
-        @test 0 <= MOI.get(m, MOI.SolveTime()) < 5
-        return com
+        if tests
+            @test status == MOI.OPTIMAL
+            @test com.best_sol == 4 == JuMP.objective_value(m) == JuMP.objective_bound(m)
+            @test maximum([JuMP.value(var) for var in states]) == 4 == JuMP.value(max_color)
+            @test 0 <= MOI.get(m, MOI.SolveTime()) < 5
+        end
+        return com, m
     end
 
+    @testset "49 US states + DC time limit" begin
+        com1, m1 = normal_49_states(; time_limit = 0.01, tests=false)
+        com2, m2 = normal_49_states()
+        info_1 = com1.info
+        info_2 = com2.info
+        @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
+        @test info_1.backtrack_fixes < info_2.backtrack_fixes
+        @test info_1.in_backtrack_calls < info_2.in_backtrack_calls
+        @test info_1.backtrack_reverses < info_2.backtrack_reverses
+        @test 0 <= MOI.get(m1, MOI.SolveTime()) < 0.5
+        @test JuMP.termination_status(m1) == MOI.TIME_LIMIT
+    end
+
+
     @testset "49 US states + DC" begin
-        com1 = normal_49_states(; reverse_constraint = true)
-        com2 = normal_49_states()
+        com1,_ = normal_49_states(; reverse_constraint = true)
+        com2,_ = normal_49_states()
         info_1 = com1.info
         info_2 = com2.info
         @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
