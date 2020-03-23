@@ -1,8 +1,23 @@
 """
+    Base.:!(bc::CS.LinearConstraint)
+
+Change the `LinearConstraint` to describe the opposite of it.
+Can be used i.e by `add_constraint!(com, x + y != z)`.
+"""
+function Base.:!(lc::CS.LinearConstraint)
+    if !isa(lc.set, MOI.EqualTo)
+        throw(ErrorException("!BasicConstraint is only implemented for !equal"))
+    end
+    set = NotEqualSet{typeof(lc.set.value)}(lc.set.value)
+    bc = BasicConstraint(lc.idx, lc.fct, set, lc.indices, lc.pvals, false, nothing, lc.hash)
+    return bc
+end
+
+"""
     Base.:!(bc::CS.BasicConstraint)
 
-Change the `BasicConstraint` to describe the opposite of it. Only works with a `equal` basic constraint and two indices. \n
-Can be used i.e by `add_constraint!(com, x != y)`.
+Change the `BasicConstraint` to describe the opposite of it.
+Can be used i.e by `add_constraint!(com, x != z)`.
 """
 function Base.:!(bc::CS.BasicConstraint)
     if !isa(bc.set, EqualSet)
