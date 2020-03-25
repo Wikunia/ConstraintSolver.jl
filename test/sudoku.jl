@@ -171,6 +171,7 @@
                 com_grid[ind] = CS.add_var!(com, 0, 8; fix = val)
             end
         end
+        CS.add_constraint!(com, com_grid[1,1]+com_grid[2,2] != com_grid[4,4])
 
         add_sudoku_constr!(com, com_grid)
         options = Dict{Symbol,Any}()

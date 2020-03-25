@@ -70,7 +70,7 @@
         @test JuMP.objective_value(model) ≈ 75
     end
 
-    @testset "Combine lp with all different" begin
+    @testset "Combine lp with all different + not equal" begin
         cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
         model = Model(optimizer_with_attributes(
             CS.Optimizer,
@@ -84,6 +84,8 @@
         # Constraints
         @constraint(model, sum(x[1:5]) >= 10)
         @constraint(model, sum(x[6:10]) <= 15)
+        # disallow x[1] = 11 and x[2] == 12
+        @constraint(model, 1.5*x[1]+2*x[2] != 40.5)
         @constraint(model, x in CS.AllDifferentSet(10))
        
         @objective(model, Max, sum(x))
@@ -92,5 +94,6 @@
         # only works fast if the all different bound works 
         @test JuMP.objective_value(model) ≈ 80
         @test sum(JuMP.value.(x[6:10])) ≈ 15
+        @test !(1.5*JuMP.value(x[1]) + 2*JuMP.value(x[2]) ≈ 40.5)
     end
 end

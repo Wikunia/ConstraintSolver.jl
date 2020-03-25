@@ -53,7 +53,7 @@ end
     prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.LessThan{T}; logs = true) where T <: Real
 
 Reduce the number of possibilities given the less than `LinearConstraint`.
-Return a ConstraintOutput object and throws a warning if infeasible and `logs` is set to `true`
+Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
 """
 function prune_constraint!(
     com::CS.CoM,
