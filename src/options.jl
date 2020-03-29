@@ -2,6 +2,7 @@ mutable struct SolverOptions
     logging::Vector{Symbol}
     table::TableSetup
     time_limit::Float64 # time limit in backtracking in seconds
+    traverse_strategy::Symbol
     backtrack::Bool
     max_bt_steps::Int
     backtrack_sorting::Bool
@@ -13,6 +14,21 @@ mutable struct SolverOptions
     all_optimal_solutions::Bool
     lp_optimizer::Any
 end
+
+function get_traverse_strategy(;options=SolverOptions())
+    strategy = options.traverse_strategy
+    if strategy == :BFS
+        return TraverseBFS()
+    elseif strategy == :DFS
+        return TraverseDFS()
+    elseif strategy == :DBFS
+        return TraverseDBFS()
+    end
+end
+
+const POSSIBLE_OPTIONS = Dict(
+    :traverse_strategy => [:BFS, :DFS, :DBFS]
+)
 
 function SolverOptions()
     logging = [:Info, :Table]
@@ -26,6 +42,7 @@ function SolverOptions()
         ],
         Dict(:min_diff_duration => 5.0),
     )
+    traverse_strategy = :BFS
     backtrack = true
     max_bt_steps = typemax(Int)
     backtrack_sorting = true
@@ -42,6 +59,7 @@ function SolverOptions()
         logging,
         table,
         time_limit,
+        traverse_strategy,
         backtrack,
         max_bt_steps,
         backtrack_sorting,
@@ -60,9 +78,14 @@ function combine_options(options)
     options_dict = Dict{Symbol,Any}()
     for kv in options
         if !in(kv[1], fieldnames(SolverOptions))
-            @error "The option " * string(kv[1]) * " doesn't exist."
+            @error "The option $(kv[1]) doesn't exist."
         else
-            options_dict[kv[1]] = kv[2]
+            moi_key = MOI.RawParameter(string(kv[1]))
+            if is_possible_option_value(moi_key, kv[2])
+                options_dict[kv[1]] = kv[2]
+            else
+                @error "The option $(kv[1]) doesn't have $(kv[2]) as a possible value. Possible values are: $(POSSIBLE_OPTIONS[moi_key])"
+            end
         end
     end
 
@@ -76,4 +99,12 @@ function combine_options(options)
         end
     end
     return defaults
+end
+
+function is_possible_option_value(option_param::MOI.RawParameter, value)
+    option = Symbol(option_param.name)
+    if haskey(POSSIBLE_OPTIONS, option)
+        return value in POSSIBLE_OPTIONS[option]
+    end
+    return true
 end

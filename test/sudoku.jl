@@ -239,7 +239,7 @@
             m = Model(optimizer_with_attributes(
                 CS.Optimizer,
                 "solution_type" => Int8,
-                "logging" => [],
+                "logging" => []
             ))
 
             @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
@@ -272,7 +272,7 @@
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "backtrack" => false,
-            "logging" => [],
+            "logging" => []
         ))
 
         grid = Int[
