@@ -96,4 +96,32 @@
         @test sum(JuMP.value.(x[6:10])) ≈ 15
         @test !(1.5*JuMP.value(x[1]) + 2*JuMP.value(x[2]) ≈ 40.5)
     end
+
+    @testset "Combine lp with all different + not equal + DFS" begin
+        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        model = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "lp_optimizer" => cbc_optimizer,
+            "logging" => [],
+            "traverse_strategy" => :DFS
+        ))
+
+        # Variables
+        @variable(model, 1 <= x[1:10] <= 15, Int)
+        
+        # Constraints
+        @constraint(model, sum(x[1:5]) >= 10)
+        @constraint(model, sum(x[6:10]) <= 15)
+        # disallow x[1] = 11 and x[2] == 12
+        @constraint(model, 1.5*x[1]+2*x[2] != 40.5)
+        @constraint(model, x in CS.AllDifferentSet(10))
+       
+        @objective(model, Max, sum(x))
+        optimize!(model)
+        # possible solution 11+12+13+14+15  + 1+2+3+4+5
+        # only works fast if the all different bound works 
+        @test JuMP.objective_value(model) ≈ 80
+        @test sum(JuMP.value.(x[6:10])) ≈ 15
+        @test !(1.5*JuMP.value(x[1]) + 2*JuMP.value(x[2]) ≈ 40.5)
+    end
 end

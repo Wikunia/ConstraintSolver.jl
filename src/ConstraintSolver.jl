@@ -1036,6 +1036,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     max_bt_steps = options.max_bt_steps
     backtrack_sorting = options.backtrack_sorting
     keep_logs = options.keep_logs
+    com.traverse_strategy = get_traverse_strategy(;options = options)
 
     if :Info in com.options.logging
         print_info(com)

@@ -74,7 +74,11 @@ function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
     if in(p_symbol, fieldnames(SolverOptions))
         type_of_param = fieldtype(SolverOptions, p_symbol)
         if hasmethod(convert, (Type{type_of_param}, typeof(value)))
-            setfield!(model.options, p_symbol, convert(type_of_param, value))
+            if is_possible_option_value(p, value)
+                setfield!(model.options, p_symbol, convert(type_of_param, value))
+            else
+                @error "The option $(p_symbol) doesn't have $(value) as a possible value. Possible values are: $(POSSIBLE_OPTIONS[p_symbol])"
+            end
         else
             @error "The option $(p.name) has a different type ($(type_of_param))"
         end

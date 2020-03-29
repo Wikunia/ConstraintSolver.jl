@@ -81,6 +81,7 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         Vector{BacktrackObj{T}}(), # backtrack_vec
         MOI.FEASIBILITY_SENSE, #
         NoObjective(), #
+        get_traverse_strategy(), 
         zero(T), # best_sol,
         zero(T), # best_bound
         Vector{Solution}(), # all solution objects
