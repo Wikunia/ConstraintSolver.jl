@@ -273,6 +273,7 @@
             CS.Optimizer,
             "backtrack" => false,
             "logging" => [],
+            "traverse_strategy" => :DFS
         ))
 
         grid = Int[

@@ -465,4 +465,41 @@
         @test occursin("Open", lines[1])
         @test occursin("Closed", lines[1])
     end
+
+    @testset "Traverse" begin
+        com = CS.ConstraintSolverModel()
+        com.traverse_strategy = CS.TraverseDFS()
+        com.sense = MOI.MIN_SENSE
+        backtrack_vec = Vector{CS.BacktrackObj{Float64}}()
+        bounds = [0.4, 0.15, 0.15, 0.1]
+        depths = [3, 2, 1, 2]
+        bo = CS.BacktrackObj(com)
+        for i = 1:length(bounds)
+            bo.status = :Open
+            bo.idx = i
+            bo.best_bound = bounds[i]
+            bo.depth = depths[i]
+            push!(backtrack_vec, bo)
+        end
+        order = [1,4,2,3]
+        for i=1:length(bounds)
+            found, bo = CS.get_next_node(com, backtrack_vec, true)
+            @test found 
+            @test bo.idx == order[i]
+            bo.status = :Closed
+        end
+
+        # test Best first search
+        com.traverse_strategy = CS.TraverseBFS()
+        for i=1:length(bounds)
+            backtrack_vec[i].status = :Open
+        end
+        order = [4,2,3,1]
+        for i=1:length(bounds)
+            found, bo = CS.get_next_node(com, backtrack_vec, true)
+            @test found 
+            @test bo.idx == order[i]
+            bo.status = :Closed
+        end
+    end
 end
