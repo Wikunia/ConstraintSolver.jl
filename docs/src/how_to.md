@@ -23,7 +23,7 @@ status = JuMP.termination_status(m)
 If you want that the values are all different for some variables you can use:
 
 ```
-@constraint(m, vars in CS.AllDifferentSet(length(vars)))
+@constraint(m, vars in CS.AllDifferentSet()
 ```
 
 where `vars` is an array of variables of the constraint solver i.e `[x,y]`.

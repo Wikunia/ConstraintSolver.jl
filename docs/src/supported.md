@@ -23,7 +23,7 @@ It's a bit more but still not as fully featured as I would like it to be.
   - [X] `<=`
   - [X] `>=`
 - [X] All different
-  - `@constraint(m, x[1:9] in CS.AllDifferentSet(9))`
+  - `@constraint(m, x[1:9] in CS.AllDifferentSet())`
   - Currently you have to specify the length of vector
 - [X] Support for `!=`
   - [X] Supports `a != b` with `a` and `b` being single variables

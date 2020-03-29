@@ -2,7 +2,7 @@
     @testset "Supports and SolverName" begin
         optimizer = CSTestSolver()
         @test MOI.get(optimizer, MOI.SolverName()) == "ConstraintSolver"
-        @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.AllDifferentSet)
+        @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.AllDifferentSetInternal)
         @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.EqualSet)
         @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.ZeroOne)
         @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.Integer)
@@ -52,7 +52,7 @@
         @assert MOI.supports_constraint(
             optimizer,
             MOI.VectorOfVariables,
-            CS.AllDifferentSet,
+            CS.AllDifferentSetInternal,
         )
 
         x1 = MOI.add_constrained_variable(optimizer, MOI.ZeroOne())
@@ -74,7 +74,7 @@
         MOI.add_constraint(
             optimizer,
             MOI.VectorOfVariables([x1[1], x2[1], x3[1]]),
-            CS.AllDifferentSet(3),
+            CS.AllDifferentSetInternal(3),
         )
 
         MOI.optimize!(optimizer)
