@@ -127,6 +127,7 @@ end
 
         options = Dict{Symbol,Any}()
         options[:keep_logs] = true
+        options[:traverse_strategy] = :DFS
 
         options = CS.combine_options(options)
 

@@ -21,11 +21,13 @@ function get_traverse_strategy(;options=SolverOptions())
         return TraverseBFS()
     elseif strategy == :DFS
         return TraverseDFS()
+    elseif strategy == :DBFS
+        return TraverseDBFS()
     end
 end
 
 const POSSIBLE_OPTIONS = Dict(
-    :traverse_strategy => [:BFS, :DFS]
+    :traverse_strategy => [:BFS, :DFS, :DBFS]
 )
 
 function SolverOptions()

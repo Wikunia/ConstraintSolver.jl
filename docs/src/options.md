@@ -68,6 +68,7 @@ It is advised to use a linear problem solver like [Cbc.jl](https://github.com/Ju
 You can chose a traversal strategy for you model with this strategy. The default is best first search.
 Other options:
 - `:DFS` => Depth First Search
+- `:DBFS` => Depth First Search until solution was found then Best First Search
 
 ## `all_solutions` (`false`)
 

@@ -40,6 +40,7 @@ abstract type ObjectiveFunction end
 
 mutable struct TraverseBFS <: TraverseStrategy end
 mutable struct TraverseDFS <: TraverseStrategy end
+mutable struct TraverseDBFS <: TraverseStrategy end
 
 mutable struct SingleVariableObjective <: ObjectiveFunction
     fct::MOI.SingleVariable

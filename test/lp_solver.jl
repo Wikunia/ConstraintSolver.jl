@@ -76,6 +76,7 @@
             CS.Optimizer,
             "lp_optimizer" => cbc_optimizer,
             "logging" => [],
+            "traverse_strategy" => :DBFS
         ))
 
         # Variables

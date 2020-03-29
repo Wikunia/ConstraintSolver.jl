@@ -58,6 +58,25 @@ function get_next_node(
 end
 
 """
+    get_next_node(com::CS.CoM, ::TraverseDBFS, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
+
+Get the next node we want to prune on if there is any. 
+This uses depth first search if no solution was found so far and BFS otherwise.
+Check other `get_next_node` functions for other possible traverse strategies.
+Return whether a node was found and the corresponding backtrack_obj
+"""
+function get_next_node(
+    com::CS.CoM,
+    traverse::TraverseDBFS,
+    backtrack_vec::Vector{BacktrackObj{T}},
+    sorting
+) where {T<:Real}
+    found_sol = length(com.bt_solution_ids) > 0
+    strategy = found_sol ?  TraverseBFS() :  TraverseDFS()
+    return get_next_node(com, strategy, backtrack_vec, sorting)
+end
+
+"""
     get_next_node(com::CS.CoM, ::TraverseBFS, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
 
 Get the next node we want to prune on if there is any. This uses best first search and if two 
@@ -85,7 +104,6 @@ function get_next_node(
     l = 0
     best_fac_bound = typemax(Int)
     best_depth = 0
-    found_sol = length(com.bt_solution_ids) > 0
     nopen_nodes = 0
     for i = 1:length(backtrack_vec)
         bo = backtrack_vec[i]
@@ -136,7 +154,6 @@ function get_next_node(
     l = 0
     best_fac_bound = typemax(Int)
     best_depth = 0
-    found_sol = length(com.bt_solution_ids) > 0
     nopen_nodes = 0
     for i = 1:length(backtrack_vec)
         bo = backtrack_vec[i]
