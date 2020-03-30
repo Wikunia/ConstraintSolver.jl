@@ -5,8 +5,70 @@
 
 This package aims to be a constraint solver written in Julia and will be documented completely on my blog [OpenSourc.es](https://opensourc.es/blog/constraint-solver-1)
 
-In general it's the goal to be as fast as possible but also as a teaching project on how one can do such a project from scratch.
-I'm just a MSc student in computer science so I don't have much knowledge on how constraint programming works but I'm keen to find out ;)
+## Goals
+- Easily extendable
+- Teaching/Learning about constraint programming
+
+## Installation
+You can install this julia package using 
+`] add https://github.com/Wikunia/ConstraintSolver.jl` or if you want to change code you might want to use
+`] dev https://github.com/Wikunia/ConstraintSolver.jl`.
+
+If everything goes well I will make a request to make this a julia package but that needs a bit more work.
+
+## Example
+
+You can easily use this package using the same modelling package as you might be used to for solving (non)linear problems in Julia: [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl).
+
+### Sudoku
+```
+using JuMP
+
+grid = [6 0 2 0 5 0 0 0 0;
+        0 0 0 0 0 3 0 4 0;
+        0 0 0 0 0 0 0 0 0;
+        4 3 0 0 0 8 0 0 0;
+        0 1 0 0 0 0 2 0 0;
+        0 0 0 0 0 0 7 0 0;
+        5 0 0 2 7 0 0 0 0;
+        0 0 0 0 0 0 0 8 1;
+        0 0 0 6 0 0 0 0 0]
+
+using ConstraintSolver
+const CS = ConstraintSolver
+
+# creating a constraint solver model and setting ConstraintSolver as the optimizer.
+m = Model(CS.Optimizer) 
+# define the 81 variables
+@variable(m, 1 <= x[1:9,1:9] <= 9, Int)
+# set variables if fixed
+for r=1:9, c=1:9
+    if grid[r,c] != 0
+        @constraint(m, x[r,c] == grid[r,c])
+    end
+end
+
+for rc = 1:9
+    @constraint(m, x[rc,:] in CS.AllDifferentSet())
+    @constraint(m, x[:,rc] in CS.AllDifferentSet())
+end
+
+for br=0:2
+    for bc=0:2
+        @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet())
+    end
+end
+
+optimize!(m)
+
+# retrieve grid
+grid = convert.(Int, JuMP.value.(x))
+```
+
+## Supported variables and constraints
+You can see a list of currently supported constraints [in the docs](https://wikunia.github.io/ConstraintSolver.jl/dev/supported.html).
+This constraint solver works only with bounded discrete variables.
+
 
 ## Blog posts
 - [Setup of the solver and basic backtracking for Sudoku](https://opensourc.es/blog/constraint-solver-1)
@@ -29,13 +91,9 @@ I'm just a MSc student in computer science so I don't have much knowledge on how
 - [Table logging](https://opensourc.es/blog/table-logging)
 - [Bound computation](https://opensourc.es/blog/constraint-solver-bounds)
 
-## Installation
-You can install this julia package using 
-`] add https://github.com/Wikunia/ConstraintSolver.jl` or if you want to change code you might want to use
-`] dev https://github.com/Wikunia/ConstraintSolver.jl`.
-
-If everything goes well I will make a request to make this a julia package but that needs some more blog posts to make it a real constraint solver and not just something to play around with and solve sudokus.
+## Notice
+I'm a MSc student in computer science so I don't have much knowledge on how constraint programming works but I'm keen to find out ;)
 
 ## Support
 If you find a bug or improvement please open an issue or make a pull request. 
-You just enjoy reading and want to see more posts and get them earlier? Support me on [Patreon](https://www.patreon.com/opensources)
+You just enjoy reading and want to see more posts and get them earlier? Support me on [Patreon](https://www.patreon.com/opensources) or click on the support button at the top of this website. ;)
