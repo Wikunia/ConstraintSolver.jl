@@ -19,11 +19,11 @@ for r=1:9, c=1:9
         @constraint(m, x[r,c] == grid[r,c])
     end
 end</code></pre><p>For the empty cell we create a variable with possible values <code>1-9</code> and otherwise we do the same but fix the value to the given cell value.</p><p>Then we define the constraints:</p><pre><code class="language-none">for rc = 1:9
-    @constraint(m, x[rc,:] in CS.AllDifferentSet(9))
-    @constraint(m, x[:,rc] in CS.AllDifferentSet(9))
-end</code></pre><p>The <code>9</code> in <code>CS.AllDifferentSet</code> just specifies the number of variables in the set.</p><p>For each row and column (1-9) we create an <code>AllDifferent</code> constraint which specifies that all the variables should have a different value in the end using <code>CS.AllDifferentSet()</code>. As there are always nine variables and nine digits each value 1-9 is set exactly once per row and column.</p><p>Now we need to add the constraints for the 3x3 blocks:</p><pre><code class="language-none">for br=0:2
+    @constraint(m, x[rc,:] in CS.AllDifferentSet())
+    @constraint(m, x[:,rc] in CS.AllDifferentSet())
+end</code></pre><p>For each row and column (1-9) we create an <code>AllDifferent</code> constraint which specifies that all the variables should have a different value in the end using <code>CS.AllDifferentSet()</code>. As there are always nine variables and nine digits each value 1-9 is set exactly once per row and column.</p><p>Now we need to add the constraints for the 3x3 blocks:</p><pre><code class="language-none">for br=0:2
     for bc=0:2
-        @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet(9))
+        @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet())
     end
 end</code></pre><p>Then we call the solve function of JuMP called <code>optimize</code> with the model as the only parameter.</p><pre><code class="language-none">optimize!(m)</code></pre><p><strong>Attention:</strong> This might take a while for the first solve as everything needs to be compiled but the second time it will be fast.</p><p>The status of the model can be extracted by:</p><pre><code class="language-none">status = JuMP.termination_status(m)</code></pre><p>This returns a <a href="https://github.com/JuliaOpt/MathOptInterface.jl">MOI</a> StatusCode which are explained <a href="http://www.juliaopt.org/JuMP.jl/v0.19.2/solutions/#MathOptInterface.TerminationStatusCode">here</a>.</p><p>In our case it returns <code>MOI.OPTIMAL</code>. If we want to get the solved sudoku we can use:</p><pre><code class="language-none">@show convert.(Integer,JuMP.value.(x))</code></pre><p>which outputs:</p><pre><code class="language-none">6  8  2  1  5  4  3  7  9
 9  5  1  7  6  3  8  4  2
@@ -64,7 +64,7 @@ m = Model(optimizer_with_attributes(
 ))
 @variable(m, 0 &lt;= x[1:10] &lt;= 15, Int)
 @constraint(m, sum(x) &gt;= 10)
-@constraint(m, x[1:5] in CS.AllDifferentSet(5))
-@constraint(m, x[6:10] in CS.AllDifferentSet(5))
+@constraint(m, x[1:5] in CS.AllDifferentSet())
+@constraint(m, x[6:10] in CS.AllDifferentSet())
 @objective(m, Min, sum(x))
-optimize!(m)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="index.html">« Home</a><a class="docs-footer-nextpage" href="how_to.html">How-To »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Sunday 29 March 2020 19:04">Sunday 29 March 2020</span>. Using Julia version 1.2.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+optimize!(m)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="index.html">« Home</a><a class="docs-footer-nextpage" href="how_to.html">How-To »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 30 March 2020 13:37">Monday 30 March 2020</span>. Using Julia version 1.2.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
