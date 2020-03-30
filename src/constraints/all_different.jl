@@ -10,7 +10,7 @@ function all_different(variables::Vector{Variable})
     constraint = AllDifferentConstraint(
         0, # idx will be changed later
         var_vector_to_moi(variables),
-        AllDifferentSet(length(variables)),
+        AllDifferentSetInternal(length(variables)),
         Int[v.idx for v in variables],
         Int[], # pvals will be filled later
         Int[],
@@ -28,7 +28,7 @@ function all_different(variables::Vector{Variable})
 end
 
 """
-    init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet)
+    init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal)
 
 Initialize the AllDifferentConstraint by filling 
 """
@@ -36,7 +36,7 @@ function init_constraint!(
     com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSet,
+    set::AllDifferentSetInternal,
 )
     pvals = constraint.pvals
     nindices = length(constraint.indices)
@@ -85,7 +85,7 @@ end
     update_best_bound_constraint!(com::CS.CoM,
         constraint::AllDifferentConstraint,
         fct::MOI.VectorOfVariables,
-        set::AllDifferentSet,
+        set::AllDifferentSetInternal,
         var_idx::Int,
         left_side::Bool,
         var_bound::Int
@@ -99,7 +99,7 @@ Additionally one of the variables can be bounded using `var_idx`, `left_side` an
 function update_best_bound_constraint!(com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSet,
+    set::AllDifferentSetInternal,
     var_idx::Int,
     left_side::Bool,
     var_bound::Int
@@ -159,7 +159,7 @@ function update_best_bound_constraint!(com::CS.CoM,
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet; logs = true)
+    prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal; logs = true)
 
 Reduce the number of possibilities given the `AllDifferentConstraint`.
 Return whether still feasible and throws a warning if infeasible and `logs` is set to `true`
@@ -168,7 +168,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSet;
+    set::AllDifferentSetInternal;
     logs = true,
 )
     indices = constraint.indices
@@ -401,7 +401,7 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSet, value::Int, index::Int)
+    still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal, value::Int, index::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
 """
@@ -409,7 +409,7 @@ function still_feasible(
     com::CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSet,
+    set::AllDifferentSetInternal,
     value::Int,
     index::Int,
 )

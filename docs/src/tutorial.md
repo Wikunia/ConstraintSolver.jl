@@ -76,11 +76,10 @@ Then we define the constraints:
 
 ```
 for rc = 1:9
-    @constraint(m, x[rc,:] in CS.AllDifferentSet(9))
-    @constraint(m, x[:,rc] in CS.AllDifferentSet(9))
+    @constraint(m, x[rc,:] in CS.AllDifferentSet())
+    @constraint(m, x[:,rc] in CS.AllDifferentSet())
 end
 ```
-The `9` in `CS.AllDifferentSet` just specifies the number of variables in the set.
 
 For each row and column (1-9) we create an `AllDifferent` constraint which specifies that all the variables should have a different value in the end using `CS.AllDifferentSet()`.
 As there are always nine variables and nine digits each value 1-9 is set exactly once per row and column.
@@ -90,7 +89,7 @@ Now we need to add the constraints for the 3x3 blocks:
 ```
 for br=0:2
     for bc=0:2
-        @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet(9))
+        @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet())
     end
 end
 ```
@@ -227,8 +226,8 @@ m = Model(optimizer_with_attributes(
 ))
 @variable(m, 0 <= x[1:10] <= 15, Int)
 @constraint(m, sum(x) >= 10)
-@constraint(m, x[1:5] in CS.AllDifferentSet(5))
-@constraint(m, x[6:10] in CS.AllDifferentSet(5))
+@constraint(m, x[1:5] in CS.AllDifferentSet())
+@constraint(m, x[6:10] in CS.AllDifferentSet())
 @objective(m, Min, sum(x))
 optimize!(m)
 ```

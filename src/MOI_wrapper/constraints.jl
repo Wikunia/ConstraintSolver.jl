@@ -135,7 +135,7 @@ MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{Equal
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
-    ::Type{AllDifferentSet},
+    ::Type{AllDifferentSetInternal},
 ) = true
 
 function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::EqualSet)
@@ -164,7 +164,7 @@ end
 function MOI.add_constraint(
     model::Optimizer,
     vars::MOI.VectorOfVariables,
-    set::AllDifferentSet,
+    set::AllDifferentSetInternal,
 )
     com = model.inner
 
@@ -191,7 +191,7 @@ function MOI.add_constraint(
     end
     com.info.n_constraint_types.alldifferent += 1
 
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,AllDifferentSet}(length(com.constraints))
+    return MOI.ConstraintIndex{MOI.VectorOfVariables,AllDifferentSetInternal}(length(com.constraints))
 end
 
 MOI.supports_constraint(

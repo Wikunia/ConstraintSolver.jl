@@ -117,9 +117,12 @@ mutable struct SingleVariableConstraint <: Constraint
     hash::UInt64
 end
 
-struct AllDifferentSet <: MOI.AbstractVectorSet
-    dimension::Int
+struct AllDifferentSetInternal <: MOI.AbstractVectorSet
+    dimension :: Int
 end
+
+struct AllDifferentSet <: JuMP.AbstractVectorSet end
+JuMP.moi_set(::AllDifferentSet, dim) = AllDifferentSetInternal(dim)
 
 struct EqualSet <: MOI.AbstractVectorSet
     dimension::Int

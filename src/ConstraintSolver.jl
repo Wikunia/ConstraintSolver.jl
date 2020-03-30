@@ -899,7 +899,7 @@ function simplify!(com)
     b_all_different_sum = false
     b_eq_sum = false
     for constraint in com.constraints
-        if isa(constraint.set, AllDifferentSet)
+        if isa(constraint.set, AllDifferentSetInternal)
             b_all_different = true
             if length(constraint.indices) == length(constraint.pvals)
                 b_all_different_sum = true
@@ -918,7 +918,7 @@ function simplify!(com)
         for constraint_idx = 1:length(com.constraints)
             constraint = com.constraints[constraint_idx]
 
-            if isa(constraint.set, AllDifferentSet)
+            if isa(constraint.set, AllDifferentSetInternal)
                 add_sum_constraint = true
                 if length(constraint.indices) == length(constraint.pvals)
                     all_diff_sum = sum(constraint.pvals)
@@ -994,7 +994,7 @@ function set_in_all_different!(com::CS.CoM)
                 intersects = intersect(subscriptions_idxs...)
 
                 for i in intersects
-                    if isa(com.constraints[i].set, AllDifferentSet)
+                    if isa(com.constraints[i].set, AllDifferentSetInternal)
                         constraint.in_all_different = true
                         break
                     end

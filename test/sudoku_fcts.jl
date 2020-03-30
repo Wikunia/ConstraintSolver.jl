@@ -49,14 +49,14 @@ end
 
 function jump_add_sudoku_constr!(m, x)
     for rc = 1:9
-        @constraint(m, x[rc, :] in CS.AllDifferentSet(9))
-        @constraint(m, x[:, rc] in CS.AllDifferentSet(9))
+        @constraint(m, x[rc, :] in CS.AllDifferentSet())
+        @constraint(m, x[:, rc] in CS.AllDifferentSet())
     end
     for br = 0:2
         for bc = 0:2
             @constraint(
                 m,
-                vec(x[br*3+1:(br+1)*3, bc*3+1:(bc+1)*3]) in CS.AllDifferentSet(9)
+                vec(x[br*3+1:(br+1)*3, bc*3+1:(bc+1)*3]) in CS.AllDifferentSet()
             )
         end
     end
@@ -67,14 +67,14 @@ function moi_add_sudoku_constr!(m, x)
         MOI.add_constraint(
             m,
             MOI.VectorOfVariables([x[r][c][1] for c = 1:9]),
-            CS.AllDifferentSet(9),
+            CS.AllDifferentSetInternal(9),
         )
     end
     for c = 1:9
         MOI.add_constraint(
             m,
             MOI.VectorOfVariables([x[r][c][1] for r = 1:9]),
-            CS.AllDifferentSet(9),
+            CS.AllDifferentSetInternal(9),
         )
     end
     variables = [MOI.VariableIndex(0) for _ = 1:9]
@@ -85,7 +85,7 @@ function moi_add_sudoku_constr!(m, x)
                 variables[variables_i] = x[i][j][1]
                 variables_i += 1
             end
-            MOI.add_constraint(m, variables, CS.AllDifferentSet(9))
+            MOI.add_constraint(m, variables, CS.AllDifferentSetInternal(9))
         end
     end
 end
