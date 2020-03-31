@@ -63,10 +63,11 @@ Defines the absolute tolerance of the solver.
 
 It is advised to use a linear problem solver like [Cbc.jl](https://github.com/JuliaOpt/Cbc.jl) if you have a lot of linear constraints and an optimization problem. The solver is used to compute bounds in the optimization steps.
 
-## `traverse_strategy` (`:BFS`)
+## `traverse_strategy` (`:Auto`)
 
-You can chose a traversal strategy for you model with this strategy. The default is best first search.
+You can chose a traversal strategy for you model with this strategy. The default is choosing depending on the model. In feasibility problems depth first search is chosen and in optimization problems best first search.
 Other options:
+- `:BFS` => Best First Search
 - `:DFS` => Depth First Search
 - `:DBFS` => Depth First Search until solution was found then Best First Search
 
