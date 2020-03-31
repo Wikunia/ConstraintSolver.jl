@@ -600,6 +600,18 @@ function add2backtrack_vec!(
 ) where {T<:Real}
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
     leq_val, geq_val = get_split_pvals(pvals)
+
+    #=
+        Check whether the new node is needed which depends on
+        - Is there a solution already? 
+            - no => Add 
+        - Do we want all solutions? 
+            - yes => Add
+        - Do we want all optimal solutions? 
+            - yes => Add if better or same as previous optimal one
+    =#
+
+    # left branch
     num_backtrack_objs += 1
     backtrack_obj = BacktrackObj(
         num_backtrack_objs,
@@ -615,10 +627,10 @@ function add2backtrack_vec!(
     )
     backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, left_side = true, var_bound = leq_val)
     # only include nodes which have a better objective than the current best solution if one was found already
-    if !check_bound || (
-        backtrack_obj.best_bound * obj_factor < com.best_sol ||
-        length(com.bt_solution_ids) == 0
-    )
+    if com.options.all_solutions || !check_bound || length(com.bt_solution_ids) == 0 ||
+        backtrack_obj.best_bound * obj_factor < com.best_sol * obj_factor ||
+        com.options.all_optimal_solutions && backtrack_obj.best_bound * obj_factor <= com.best_sol * obj_factor
+    
         addBacktrackObj2Backtrack_vec!(
             backtrack_vec,
             backtrack_obj,
@@ -644,10 +656,10 @@ function add2backtrack_vec!(
         zeros(length(com.search_space))
     )
     backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, left_side = false, var_bound = geq_val)
-    if !check_bound || (
+    if com.options.all_solutions || !check_bound || length(com.bt_solution_ids) == 0 ||
         backtrack_obj.best_bound * obj_factor < com.best_sol ||
-        length(com.bt_solution_ids) == 0
-    )
+        com.options.all_optimal_solutions && backtrack_obj.best_bound * obj_factor <= com.best_sol * obj_factor
+
         addBacktrackObj2Backtrack_vec!(
             backtrack_vec,
             backtrack_obj,
@@ -851,11 +863,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         end
 
         leafs_best_bound = get_best_bound(com, backtrack_obj)
-        # if the objective can't get better we don't have to test all options
-        if leafs_best_bound * obj_factor >= com.best_sol && length(com.bt_solution_ids) > 0
-            continue
-        end
-
+        
         pvals = values(com.search_space[ind])
         last_backtrack_obj = backtrack_vec[last_backtrack_id]
         num_backtrack_objs = add2backtrack_vec!(

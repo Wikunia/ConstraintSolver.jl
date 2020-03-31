@@ -1,4 +1,13 @@
 """
+JuMP constraints
+"""
+sense_to_set(::Function, ::Val{:!=}) = NotEqualSet(0.0)
+
+### !=
+
+MOIU.shift_constant(set::NotEqualSet, value) = NotEqualSet(set.value + value)
+
+"""
 MOI constraints
 """
 
@@ -294,8 +303,4 @@ function set_enforce_bound!(com::CS.CoM)
     end	
 end
 
-### !=
 
-sense_to_set(::Function, ::Val{:!=}) = NotEqualSet(0.0)
-
-MOIU.shift_constant(set::NotEqualSet, value) = NotEqualSet(set.value + value)

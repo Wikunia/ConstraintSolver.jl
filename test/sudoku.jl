@@ -496,4 +496,83 @@
         end
     end
 
+    @testset "All optimal solutions" begin
+        n = 9
+        g = 3
+
+        grid = zeros(Int, (n, n))
+
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "all_optimal_solutions" => true,
+            "time_limit" => 1.0,
+            "logging" => []
+        ))
+
+        @variable(m, 1 <= x[1:n, 1:n] <= n, Int)
+        # set variables
+        for r = 1:n, c = 1:n
+            if grid[r, c] != 0
+                @constraint(m, x[r, c] == grid[r, c])
+            end
+        end
+        for rc = 1:n
+            @constraint(m, x[rc, :] in CS.AllDifferentSet())
+            @constraint(m, x[:, rc] in CS.AllDifferentSet())
+        end
+        for br = 0:g-1
+            for bc = 0:g-1
+                @constraint(
+                    m,
+                    vec(x[br*g+1:(br+1)*g, bc*g+1:(bc+1)*g]) in CS.AllDifferentSet()
+                )
+            end
+        end
+
+        optimize!(m)
+        @test MOI.get(m, MOI.SolveTime()) >= 1.0
+        # at least more than 1 but in that time frame it should find a lot ;)
+        @test MOI.get(m, MOI.ResultCount()) >= 10 
+        @test JuMP.termination_status(m) == MOI.TIME_LIMIT
+    end
+
+    @testset "All solutions" begin
+        n = 9
+        g = 3
+
+        grid = zeros(Int, (n, n))
+
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "all_solutions" => true,
+            "time_limit" => 1.0,
+            "logging" => []
+        ))
+
+        @variable(m, 1 <= x[1:n, 1:n] <= n, Int)
+        # set variables
+        for r = 1:n, c = 1:n
+            if grid[r, c] != 0
+                @constraint(m, x[r, c] == grid[r, c])
+            end
+        end
+        for rc = 1:n
+            @constraint(m, x[rc, :] in CS.AllDifferentSet())
+            @constraint(m, x[:, rc] in CS.AllDifferentSet())
+        end
+        for br = 0:g-1
+            for bc = 0:g-1
+                @constraint(
+                    m,
+                    vec(x[br*g+1:(br+1)*g, bc*g+1:(bc+1)*g]) in CS.AllDifferentSet()
+                )
+            end
+        end
+
+        optimize!(m)
+        @test MOI.get(m, MOI.SolveTime()) >= 1.0
+        # at least more than 1 but in that time frame it should find a lot ;)
+        @test MOI.get(m, MOI.ResultCount()) >= 10 
+        @test JuMP.termination_status(m) == MOI.TIME_LIMIT
+    end
 end
