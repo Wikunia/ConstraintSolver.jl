@@ -71,7 +71,7 @@ mutable struct BasicConstraint <: Constraint
     indices::Vector{Int}
     pvals::Vector{Int}
     enforce_bound::Bool
-    bound_rhs :: Union{Nothing, BoundRhsVariable} # should be set if `enforce_bound` is true
+    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
     hash::UInt64
 end
 
@@ -100,7 +100,9 @@ mutable struct AllDifferentConstraint <: Constraint
     di_ej::Vector{Int}
     matching_init::MatchingInit
     enforce_bound::Bool
-    bound_rhs :: Union{Nothing, BoundRhsVariable} # should be set if `enforce_bound` is true
+    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
+    # corresponds to `in_all_different`: Saves the constraint idxs which variables are part of this alldifferent constraint
+    sub_constraint_idxs::Vector{Int}
     hash::UInt64
 end
 
@@ -219,6 +221,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     sense::MOI.OptimizationSense
     objective::ObjectiveFunction
     traverse_strategy::TraverseStrategy
+    branch_split::Val
     best_sol::T # Objective of the best solution
     best_bound::T # Overall best bound
     solutions::Vector{Solution}

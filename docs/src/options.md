@@ -70,6 +70,14 @@ Other options:
 - `:DFS` => Depth First Search
 - `:DBFS` => Depth First Search until solution was found then Best First Search
 
+## `branch_split` (`:Smallest`)
+
+You can define how the variable is split into two branches with this option. 
+Normally the smallest value is chosen and then the problem gets split into the smallest value and the rest.
+Other options:
+- `:Biggest` same as smallest but splits into biggest value as a single choice and the rest
+- `:InHalf` takes the mean value to split the problem into two branches of equal size
+
 ## `all_solutions` (`false`)
 
 You can set this to `true` to get **all feasible** solutions. This can be used to get all solutions for a sudoku for example but maybe shouldn't be used for an optimization problem. Nevertheless I leave it here so you be able to use it even for optimization problems and get all feasible solutions.

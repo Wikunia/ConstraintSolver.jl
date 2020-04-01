@@ -3,6 +3,7 @@ mutable struct SolverOptions
     table::TableSetup
     time_limit::Float64 # time limit in backtracking in seconds
     traverse_strategy::Symbol
+    branch_split::Symbol # defines splitting in the middle, or takes smallest, biggest value
     backtrack::Bool
     max_bt_steps::Int
     backtrack_sorting::Bool
@@ -26,8 +27,14 @@ function get_traverse_strategy(;options=SolverOptions())
     end
 end
 
+function get_branch_split(;options=SolverOptions())
+    strategy = options.branch_split
+    return Val(strategy)
+end
+
 const POSSIBLE_OPTIONS = Dict(
-    :traverse_strategy => [:BFS, :DFS, :DBFS]
+    :traverse_strategy => [:BFS, :DFS, :DBFS],
+    :branch_split => [:Smallest, :Biggest, :InHalf]
 )
 
 function SolverOptions()
@@ -43,6 +50,7 @@ function SolverOptions()
         Dict(:min_diff_duration => 5.0),
     )
     traverse_strategy = :BFS
+    branch_split = :Smallest
     backtrack = true
     max_bt_steps = typemax(Int)
     backtrack_sorting = true
@@ -60,6 +68,7 @@ function SolverOptions()
         table,
         time_limit,
         traverse_strategy,
+        branch_split,
         backtrack,
         max_bt_steps,
         backtrack_sorting,

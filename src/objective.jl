@@ -114,8 +114,10 @@ function get_best_bound(
     for constraint in com.constraints
         if constraint.enforce_bound
             update_best_bound_constraint!(com, constraint, constraint.fct, constraint.set, var_idx, lb, ub)
-            set_lower_bound(com.lp_x[constraint.bound_rhs.idx], constraint.bound_rhs.lb)
-            set_upper_bound(com.lp_x[constraint.bound_rhs.idx], constraint.bound_rhs.ub)
+            for bound in constraint.bound_rhs
+                set_lower_bound(com.lp_x[bound.idx], bound.lb)
+                set_upper_bound(com.lp_x[bound.idx], bound.ub)
+            end
         end
     end
 

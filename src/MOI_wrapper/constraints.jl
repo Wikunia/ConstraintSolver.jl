@@ -191,6 +191,7 @@ function MOI.add_constraint(
         MatchingInit(),
         false, # `enforce_bound` can be changed later but should be set to false by default
         nothing,
+        Int[],
         zero(UInt64), # hash will be filled later
     )
 
@@ -294,7 +295,7 @@ function set_enforce_bound!(com::CS.CoM)
         c_set_type = typeof(constraint.set)	
         if hasmethod(	
             update_best_bound_constraint!,	
-            (CS.CoM, c_type, c_fct_type, c_set_type, Int, Bool, Int),	
+            (CS.CoM, c_type, c_fct_type, c_set_type, Int, Int, Int),	
         )	
             constraint.enforce_bound = true	
         else # just to be sure => set it to false otherwise	
