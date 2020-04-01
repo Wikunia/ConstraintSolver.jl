@@ -87,22 +87,22 @@ end
         fct::MOI.VectorOfVariables,
         set::AllDifferentSetInternal,
         var_idx::Int,
-        left_side::Bool,
-        var_bound::Int
+        lb::Int,
+        ub::Int
     )
 
 Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to 
 the possible values the all different constraint allows. 
 i.e if we have 4 variables all between 1 and 10 the maximum sum is 10+9+8+7 and the minimum sum is 1+2+3+4
-Additionally one of the variables can be bounded using `var_idx`, `left_side` and `var_bound`
+Additionally one of the variables can be bounded using `var_idx`, `lb` and `ub`
 """
 function update_best_bound_constraint!(com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal,
     var_idx::Int,
-    left_side::Bool,
-    var_bound::Int
+    lb::Int,
+    ub::Int
 )
 
     constraint.bound_rhs === nothing && return
@@ -115,13 +115,8 @@ function update_best_bound_constraint!(com::CS.CoM,
     for i=1:length(constraint.indices)
         v_idx = constraint.indices[i]
         if v_idx == var_idx
-            if left_side 
-                max_vals[i] = var_bound
-                min_vals[i] = search_space[v_idx].min
-            else
-                min_vals[i] = var_bound
-                max_vals[i] = search_space[v_idx].max
-            end
+            max_vals[i] = ub
+            min_vals[i] = lb
         else
             min_vals[i] = search_space[v_idx].min
             max_vals[i] = search_space[v_idx].max

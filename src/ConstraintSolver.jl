@@ -371,18 +371,17 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
 end
 
 """
-    get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; var_idx=0, left_side=true, var_bound=0)
+    get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; var_idx=0, lb=0, ub=0)
 
 Return the best bound if setting the variable with idx: `var_idx` to 
-    <= `var_bound` if `var_idx != 0` and `left_side` 
-    >= `var_bound` if `var_idx != 0` and `!left_side` 
+    lb <= var[var_idx] <= ub if var_idx != 0
 Without an objective function return 0.
 """
-function get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; var_idx = 0, left_side = true, var_bound = 0)
+function get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; var_idx = 0, lb = 0, ub = 0)
     if com.sense == MOI.FEASIBILITY_SENSE
         return zero(com.best_bound)
     end
-    return get_best_bound(com, backtrack_obj, com.objective, var_idx, left_side, var_bound)
+    return get_best_bound(com, backtrack_obj, com.objective, var_idx, lb, ub)
 end
 
 """
@@ -541,21 +540,29 @@ end
     get_split_pvals(pvals::Vector{Int})
 
 Splits the possible values into two by obtaining the mean value.
-Return the biggest int in pvals which is ≤ the mean and the smallest int in pvals which is bigger than mean
+Return lb, leq, geq, ub => the bounds for the lower part and the bounds for the upper part
 """
 function get_split_pvals(pvals::Vector{Int})
     @assert length(pvals) >= 2
     mean_val = mean(pvals)
     leq = typemin(Int)
     geq = typemax(Int)
+    lb = typemax(Int)
+    ub = typemin(Int)
     for pval in pvals
         if pval <= mean_val && pval > leq
             leq = pval
         elseif pval > mean_val && pval < geq
             geq = pval
         end
+        if pval < lb 
+            lb = pval
+        end
+        if pval > ub 
+            ub = pval
+        end
     end
-    return leq, geq
+    return lb, leq, geq, ub
 end
 
 """
@@ -599,7 +606,7 @@ function add2backtrack_vec!(
     check_bound = false,
 ) where {T<:Real}
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
-    leq_val, geq_val = get_split_pvals(pvals)
+    left_lb, left_ub, right_lb, right_ub = get_split_pvals(pvals)
 
     #=
         Check whether the new node is needed which depends on
@@ -619,13 +626,13 @@ function add2backtrack_vec!(
         depth,
         :Open,
         ind,
-        true, # left branch
-        leq_val,
+        left_lb,
+        left_ub,
         backtrack_vec[parent_idx].best_bound, # initialize with parent best bound
         backtrack_vec[parent_idx].solution,
         zeros(length(com.search_space))
     )
-    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, left_side = true, var_bound = leq_val)
+    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, lb = left_lb, ub = left_ub)
     # only include nodes which have a better objective than the current best solution if one was found already
     if com.options.all_solutions || !check_bound || length(com.bt_solution_ids) == 0 ||
         backtrack_obj.best_bound * obj_factor < com.best_sol * obj_factor ||
@@ -649,13 +656,13 @@ function add2backtrack_vec!(
         depth,
         :Open,
         ind,
-        false, # right branch
-        geq_val,
+        right_lb,
+        right_ub,
         backtrack_vec[parent_idx].best_bound,
         backtrack_vec[parent_idx].solution,
         zeros(length(com.search_space))
     )
-    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, left_side = false, var_bound = geq_val)
+    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, lb = right_lb, ub = right_ub)
     if com.options.all_solutions || !check_bound || length(com.bt_solution_ids) == 0 ||
         backtrack_obj.best_bound * obj_factor < com.best_sol ||
         com.options.all_optimal_solutions && backtrack_obj.best_bound * obj_factor <= com.best_sol * obj_factor
@@ -682,11 +689,8 @@ Return if simple removable is still feasible
 """
 function set_bounds!(com, backtrack_obj)
     ind = backtrack_obj.variable_idx
-    if backtrack_obj.left_side
-        !remove_above!(com, com.search_space[ind], backtrack_obj.var_bound) && return false
-    else
-        !remove_below!(com, com.search_space[ind], backtrack_obj.var_bound) && return false
-    end
+    !remove_above!(com, com.search_space[ind], backtrack_obj.ub) && return false
+    !remove_below!(com, com.search_space[ind], backtrack_obj.lb) && return false
     return true
 end
 

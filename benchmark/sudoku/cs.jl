@@ -26,7 +26,7 @@ function solve_all(grids; benchmark = false, single_times = true)
     ct = time()
     grids = grids
     for (i, grid) in enumerate(grids)
-        m = CS.Optimizer()
+        m = CS.Optimizer(logging=[])
 
         x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i = 1:9] for j = 1:9]
         for r = 1:9, c = 1:9

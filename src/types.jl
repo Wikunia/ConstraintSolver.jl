@@ -165,8 +165,8 @@ mutable struct BacktrackObj{T<:Real}
     depth::Int
     status::Symbol
     variable_idx::Int
-    left_side::Bool # indicates whether we branch left or right: true => ≤ var_bound, false => ≥ var_bound
-    var_bound::Int
+    lb::Int # lb <= var[variable_idx] <= ub
+    ub::Int
     best_bound::T
     primal_start::Vector{Float64}
     solution::Vector{Float64} # holds the solution values
@@ -180,8 +180,8 @@ function Base.convert(::Type{B}, obj::BacktrackObj{T2}) where {T1,T2,B<:Backtrac
         obj.depth,
         obj.status,
         obj.variable_idx,
-        obj.left_side,
-        obj.var_bound,
+        obj.lb,
+        obj.ub,
         convert(T1, obj.best_bound),
         obj.primal_start,
         obj.solution
@@ -194,8 +194,8 @@ mutable struct TreeLogNode{T<:Real}
     best_bound::T
     step_nr::Int
     var_idx::Int
-    left_side::Bool
-    var_bound::Int
+    lb::Int
+    ub::Int
     var_states::Dict{Int,Vector{Int}}
     var_changes::Dict{Int,Vector{Tuple{Symbol,Int,Int,Int}}}
     children::Vector{TreeLogNode{T}}
