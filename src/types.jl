@@ -65,7 +65,7 @@ mutable struct BasicConstraint <: Constraint
     indices::Vector{Int}
     pvals::Vector{Int}
     enforce_bound::Bool
-    bound_rhs :: Union{Nothing, BoundRhsVariable} # should be set if `enforce_bound` is true
+    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
     hash::UInt64
 end
 
@@ -94,7 +94,9 @@ mutable struct AllDifferentConstraint <: Constraint
     di_ej::Vector{Int}
     matching_init::MatchingInit
     enforce_bound::Bool
-    bound_rhs :: Union{Nothing, BoundRhsVariable} # should be set if `enforce_bound` is true
+    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
+    # corresponds to `in_all_different`: Saves the constraint idxs which variables are part of this alldifferent constraint
+    sub_constraint_idxs::Vector{Int}
     hash::UInt64
 end
 
@@ -159,8 +161,8 @@ mutable struct BacktrackObj{T<:Real}
     depth::Int
     status::Symbol
     variable_idx::Int
-    left_side::Bool # indicates whether we branch left or right: true => ≤ var_bound, false => ≥ var_bound
-    var_bound::Int
+    lb::Int # lb <= var[variable_idx] <= ub
+    ub::Int
     best_bound::T
     primal_start::Vector{Float64}
     solution::Vector{Float64} # holds the solution values
@@ -174,8 +176,8 @@ function Base.convert(::Type{B}, obj::BacktrackObj{T2}) where {T1,T2,B<:Backtrac
         obj.depth,
         obj.status,
         obj.variable_idx,
-        obj.left_side,
-        obj.var_bound,
+        obj.lb,
+        obj.ub,
         convert(T1, obj.best_bound),
         obj.primal_start,
         obj.solution
@@ -188,8 +190,8 @@ mutable struct TreeLogNode{T<:Real}
     best_bound::T
     step_nr::Int
     var_idx::Int
-    left_side::Bool
-    var_bound::Int
+    lb::Int
+    ub::Int
     var_states::Dict{Int,Vector{Int}}
     var_changes::Dict{Int,Vector{Tuple{Symbol,Int,Int,Int}}}
     children::Vector{TreeLogNode{T}}
@@ -213,6 +215,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     sense::MOI.OptimizationSense
     objective::ObjectiveFunction
     traverse_strategy::Val
+    branch_split::Val
     best_sol::T # Objective of the best solution
     best_bound::T # Overall best bound
     solutions::Vector{Solution}

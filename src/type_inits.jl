@@ -82,6 +82,7 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         MOI.FEASIBILITY_SENSE, #
         NoObjective(), #
         get_traverse_strategy(), 
+        get_branch_split(),
         zero(T), # best_sol,
         zero(T), # best_bound
         Vector{Solution}(), # all solution objects
@@ -108,8 +109,8 @@ function BacktrackObj(com::CS.CoM)
         0, # depth
         :Closed, # status
         0, # variable_idx
-        true, # left_side (is dummy anyway)
-        0, # var_bound
+        0, # lb and ub only take effect if variable_idx != 0 
+        0, # ub
         com.sense == MOI.MIN_SENSE ? typemax(com.best_bound) : typemin(com.best_bound),
         zeros(length(com.search_space)),
         zeros(length(com.search_space))

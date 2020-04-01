@@ -51,6 +51,7 @@
     @testset "Hard sudoku" begin
         com = CS.ConstraintSolverModel()
         com.options.logging = Symbol[]
+        com.options.branch_split = :Biggest
 
         grid = zeros(Int, (9, 9))
         grid[1, :] = [0 0 0 5 4 6 0 0 9]

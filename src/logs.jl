@@ -3,16 +3,16 @@ function log_one_node(com, nvars, back_idx, step_nr)
     if length(com.backtrack_vec) > 0
         status = com.backtrack_vec[back_idx].status
         var_idx = com.backtrack_vec[back_idx].variable_idx
-        left_side = com.backtrack_vec[back_idx].left_side
-        var_bound = com.backtrack_vec[back_idx].var_bound
+        lb = com.backtrack_vec[back_idx].lb
+        ub = com.backtrack_vec[back_idx].ub
         best_bound = com.backtrack_vec[back_idx].best_bound
 
         parent_idx = com.backtrack_vec[back_idx].parent_idx
     else # for initial solve
         status = :Closed
         var_idx = 0
-        left_side = true
-        var_bound = 0
+        lb = 0
+        ub = 0
         best_bound = com.best_bound
     end
 
@@ -22,8 +22,8 @@ function log_one_node(com, nvars, back_idx, step_nr)
         best_bound,
         step_nr,
         var_idx,
-        left_side,
-        var_bound,
+        lb,
+        ub,
         Dict{Int,Vector{Int}}(), # var_states
         Dict{Int,Vector{Tuple{Symbol,Int,Int,Int}}}(), # var_changes
         Vector{TreeLogNode{typeof(best_bound)}}(), # children
@@ -102,8 +102,8 @@ function same_logs(log1, log2)
 
         if node1.id != node2.id || node1.status != node2.status ||
            node1.best_bound != node2.best_bound || node1.step_nr != node2.step_nr ||
-           node1.var_idx != node2.var_idx || node1.left_side != node2.left_side ||
-           node1.var_bound != node2.var_bound || node1.var_states != node2.var_states
+           node1.var_idx != node2.var_idx || node1.lb != node2.lb ||
+           node1.ub != node2.ub || node1.var_states != node2.var_states
             println("Not identical at i=", i)
             println("node1: ")
             println(
@@ -119,10 +119,10 @@ function same_logs(log1, log2)
             println(
                 "var_idx: ",
                 node1.var_idx,
-                " left_side:",
-                node1.left_side,
-                " var_bound: ",
-                node1.var_bound,
+                " lb:",
+                node1.lb,
+                " ub: ",
+                node1.ub,
                 " var_states: ",
                 node1.var_states,
             )
@@ -140,10 +140,10 @@ function same_logs(log1, log2)
             println(
                 "var_idx: ",
                 node2.var_idx,
-                " left_side:",
-                node2.left_side,
-                " var_bound: ",
-                node2.var_bound,
+                " lb:",
+                node2.lb,
+                " ub: ",
+                node2.ub,
                 " var_states: ",
                 node2.var_states,
             )

@@ -371,18 +371,17 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
 end
 
 """
-    get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; var_idx=0, left_side=true, var_bound=0)
+    get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; var_idx=0, lb=0, ub=0)
 
 Return the best bound if setting the variable with idx: `var_idx` to 
-    <= `var_bound` if `var_idx != 0` and `left_side` 
-    >= `var_bound` if `var_idx != 0` and `!left_side` 
+    lb <= var[var_idx] <= ub if var_idx != 0
 Without an objective function return 0.
 """
-function get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; var_idx = 0, left_side = true, var_bound = 0)
+function get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; var_idx = 0, lb = 0, ub = 0)
     if com.sense == MOI.FEASIBILITY_SENSE
         return zero(com.best_bound)
     end
-    return get_best_bound(com, backtrack_obj, com.objective, var_idx, left_side, var_bound)
+    return get_best_bound(com, backtrack_obj, com.objective, var_idx, lb, ub)
 end
 
 """
@@ -538,27 +537,6 @@ function set_state_to_best_sol!(com::CS.CoM, last_backtrack_id::Int)
 end
 
 """
-    get_split_pvals(pvals::Vector{Int})
-
-Splits the possible values into two by obtaining the mean value.
-Return the biggest int in pvals which is ≤ the mean and the smallest int in pvals which is bigger than mean
-"""
-function get_split_pvals(pvals::Vector{Int})
-    @assert length(pvals) >= 2
-    mean_val = mean(pvals)
-    leq = typemin(Int)
-    geq = typemax(Int)
-    for pval in pvals
-        if pval <= mean_val && pval > leq
-            leq = pval
-        elseif pval > mean_val && pval < geq
-            geq = pval
-        end
-    end
-    return leq, geq
-end
-
-"""
     addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com::CS.CoM, num_backtrack_objs, step_nr)
 
 Add a backtrack object to the backtrack vector and create necessary vectors and maybe include it in the logs
@@ -583,7 +561,7 @@ function addBacktrackObj2Backtrack_vec!(
 end
 
 """
-    backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{T},num_backtrack_objs, parent_idx, depth, step_nr, ind, pvals; check_bound=false)
+    backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{T},num_backtrack_objs, parent_idx, depth, step_nr, ind; check_bound=false)
 
 Create two branches with two additional BacktrackObj and add them to backtrack_vec 
 """
@@ -594,12 +572,11 @@ function add2backtrack_vec!(
     parent_idx,
     depth,
     step_nr,
-    ind,
-    pvals;
+    ind;
     check_bound = false,
 ) where {T<:Real}
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
-    leq_val, geq_val = get_split_pvals(pvals)
+    left_lb, left_ub, right_lb, right_ub = get_split_pvals(com.branch_split, com.search_space[ind])
 
     #=
         Check whether the new node is needed which depends on
@@ -619,13 +596,13 @@ function add2backtrack_vec!(
         depth,
         :Open,
         ind,
-        true, # left branch
-        leq_val,
+        left_lb,
+        left_ub,
         backtrack_vec[parent_idx].best_bound, # initialize with parent best bound
         backtrack_vec[parent_idx].solution,
         zeros(length(com.search_space))
     )
-    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, left_side = true, var_bound = leq_val)
+    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, lb = left_lb, ub = left_ub)
     # only include nodes which have a better objective than the current best solution if one was found already
     if com.options.all_solutions || !check_bound || length(com.bt_solution_ids) == 0 ||
         backtrack_obj.best_bound * obj_factor < com.best_sol * obj_factor ||
@@ -649,13 +626,13 @@ function add2backtrack_vec!(
         depth,
         :Open,
         ind,
-        false, # right branch
-        geq_val,
+        right_lb,
+        right_ub,
         backtrack_vec[parent_idx].best_bound,
         backtrack_vec[parent_idx].solution,
         zeros(length(com.search_space))
     )
-    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, left_side = false, var_bound = geq_val)
+    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, lb = right_lb, ub = right_ub)
     if com.options.all_solutions || !check_bound || length(com.bt_solution_ids) == 0 ||
         backtrack_obj.best_bound * obj_factor < com.best_sol ||
         com.options.all_optimal_solutions && backtrack_obj.best_bound * obj_factor <= com.best_sol * obj_factor
@@ -682,11 +659,8 @@ Return if simple removable is still feasible
 """
 function set_bounds!(com, backtrack_obj)
     ind = backtrack_obj.variable_idx
-    if backtrack_obj.left_side
-        !remove_above!(com, com.search_space[ind], backtrack_obj.var_bound) && return false
-    else
-        !remove_below!(com, com.search_space[ind], backtrack_obj.var_bound) && return false
-    end
+    !remove_above!(com, com.search_space[ind], backtrack_obj.ub) && return false
+    !remove_below!(com, com.search_space[ind], backtrack_obj.lb) && return false
     return true
 end
 
@@ -751,7 +725,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         println(get_header(com.options.table))
     end
 
-    pvals = values(com.search_space[ind])
     dummy_backtrack_obj = BacktrackObj(com)
 
     backtrack_vec = com.backtrack_vec
@@ -768,8 +741,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         1,
         1,
         step_nr,
-        ind,
-        pvals,
+        ind
     )
     last_backtrack_id = 0
 
@@ -864,7 +836,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
         leafs_best_bound = get_best_bound(com, backtrack_obj)
         
-        pvals = values(com.search_space[ind])
         last_backtrack_obj = backtrack_vec[last_backtrack_id]
         num_backtrack_objs = add2backtrack_vec!(
             backtrack_vec,
@@ -873,8 +844,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             last_backtrack_obj.idx,
             last_backtrack_obj.depth + 1,
             step_nr,
-            ind,
-            pvals;
+            ind;
             check_bound = true,
         )
     end
@@ -1004,7 +974,7 @@ function set_in_all_different!(com::CS.CoM)
                 for i in intersects
                     if isa(com.constraints[i].set, AllDifferentSetInternal)
                         constraint.in_all_different = true
-                        break
+                        push!(com.constraints[i].sub_constraint_idxs, constraint.idx)
                     end
                 end
             end
@@ -1052,6 +1022,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
         options.traverse_strategy = get_auto_traverse_strategy(com)
     end
     com.traverse_strategy = get_traverse_strategy(;options = options)
+    com.branch_split = get_branch_split(;options = options)
 
     if :Info in com.options.logging
         print_info(com)
@@ -1059,6 +1030,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     com.start_time = time()
 
     set_constraint_hashes!(com)
+    set_in_all_different!(com)
 
     # initialize constraints if `init_constraint!` exists for the constraint
     init_constraints!(com)
@@ -1068,7 +1040,6 @@ function solve!(com::CS.CoM, options::SolverOptions)
         com.init_search_space = deepcopy(com.search_space)
     end
 
-    set_in_all_different!(com)
 
     # check for better constraints
     simplify!(com)

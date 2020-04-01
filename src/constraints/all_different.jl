@@ -21,6 +21,7 @@ function all_different(variables::Vector{Variable})
         MatchingInit(),
         false, # `enforce_bound` can be changed later but should be set to false by default
         nothing,
+        Int[],
         zero(UInt64), # hash will be filled in the next step
     )
     constraint.hash = constraint_hash(constraint)
@@ -78,7 +79,51 @@ function init_constraint!(
     saf = MOI.ScalarAffineFunction(sats, 0.0)
     MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
     
-    constraint.bound_rhs = BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int))
+    constraint.bound_rhs = [BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int))]
+
+    # if constraints are part of the all different constraint
+    # the all different constraint can be split more parts to get better bounds
+    # i.e https://github.com/Wikunia/ConstraintSolver.jl/issues/114
+    for sc_idx in constraint.sub_constraint_idxs
+        lp_var_idx = create_lp_variable!(com.lp_model, com.lp_x)
+        # create == constraint with sum of all variables equal the newly created variable
+        sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(var_idx)) for var_idx in com.constraints[sc_idx].indices]
+        push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_var_idx)))
+        saf = MOI.ScalarAffineFunction(sats, 0.0)
+        MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
+        push!(constraint.bound_rhs, BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int)))
+    end
+end
+
+"""
+    get_alldifferent_extrema(sorted_min, sorted_max, len)
+
+Return the minimum and maximum sum using `len` values of sorted_min while satisfying the all different constraint
+"""
+function get_alldifferent_extrema(sorted_min, sorted_max, len)
+    max_sum = sorted_max[1]
+    last_val = max_sum
+    for i=2:len
+        if sorted_max[i] >= last_val
+            last_val -= 1 
+        else 
+            last_val = sorted_max[i]
+        end
+        max_sum += last_val
+    end
+
+    min_sum = sorted_min[1]
+    last_val = min_sum
+    for i=2:len
+        if sorted_min[i] <= last_val
+            last_val += 1 
+        else 
+            last_val = sorted_min[i]
+        end
+        min_sum += last_val
+    end
+
+    return min_sum, max_sum
 end
 
 """
@@ -87,24 +132,23 @@ end
         fct::MOI.VectorOfVariables,
         set::AllDifferentSetInternal,
         var_idx::Int,
-        left_side::Bool,
-        var_bound::Int
+        lb::Int,
+        ub::Int
     )
 
 Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to 
 the possible values the all different constraint allows. 
 i.e if we have 4 variables all between 1 and 10 the maximum sum is 10+9+8+7 and the minimum sum is 1+2+3+4
-Additionally one of the variables can be bounded using `var_idx`, `left_side` and `var_bound`
+Additionally one of the variables can be bounded using `var_idx`, `lb` and `ub`
 """
 function update_best_bound_constraint!(com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal,
     var_idx::Int,
-    left_side::Bool,
-    var_bound::Int
+    lb::Int,
+    ub::Int
 )
-
     constraint.bound_rhs === nothing && return
     search_space = com.search_space
 
@@ -115,13 +159,8 @@ function update_best_bound_constraint!(com::CS.CoM,
     for i=1:length(constraint.indices)
         v_idx = constraint.indices[i]
         if v_idx == var_idx
-            if left_side 
-                max_vals[i] = var_bound
-                min_vals[i] = search_space[v_idx].min
-            else
-                min_vals[i] = var_bound
-                max_vals[i] = search_space[v_idx].max
-            end
+            max_vals[i] = ub
+            min_vals[i] = lb
         else
             min_vals[i] = search_space[v_idx].min
             max_vals[i] = search_space[v_idx].max
@@ -130,32 +169,22 @@ function update_best_bound_constraint!(com::CS.CoM,
     
     # sort the max_vals desc and obtain bound by enforcing all different
     sort!(max_vals; rev=true)
-    max_sum = max_vals[1]
-    last_val = max_sum
-    for i=2:length(max_vals)
-        if max_vals[i] >= last_val
-            last_val -= 1 
-        else 
-            last_val = max_vals[i]
-        end
-        max_sum += last_val
-    end
-
-    # sort the max_vals asc and obtain bound by enforcing all different
+    # sort the min_vals asc and obtain bound by enforcing all different
     sort!(min_vals)
-    min_sum = min_vals[1]
-    last_val = min_sum
-    for i=2:length(min_vals)
-        if min_vals[i] <= last_val
-            last_val += 1 
-        else 
-            last_val = min_vals[i]
-        end
-        min_sum += last_val
+  
+    min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(constraint.indices))
+
+    constraint.bound_rhs[1].lb = min_sum
+    constraint.bound_rhs[1].ub = max_sum
+
+    i = 1
+    for sc_idx in constraint.sub_constraint_idxs
+        i += 1
+        sub_constraint = com.constraints[sc_idx]
+        min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(sub_constraint.indices))
+        constraint.bound_rhs[i].lb = min_sum
+        constraint.bound_rhs[i].ub = max_sum
     end
-   
-    constraint.bound_rhs.lb = min_sum
-    constraint.bound_rhs.ub = max_sum
 end
 
 """

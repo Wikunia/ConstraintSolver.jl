@@ -1,9 +1,9 @@
 
 """
-    get_best_bound(com::CS.CoM, backtrack_obj::CS.BacktrackObj, obj_fct::SingleVariableObjective, var_idx::Int, left_side::Bool, var_bound::Int)
+    get_best_bound(com::CS.CoM, backtrack_obj::CS.BacktrackObj, obj_fct::SingleVariableObjective, var_idx::Int, lb::Int, ub::Int)
 
-Compute the best bound if we have a `SingleVariableObjective` and limit `var_idx` using either a `<=` or a `>=` bound 
-with `var_bound` and `left_side`. `left_side = true` means we have a `<=` bound
+Compute the best bound if we have a `SingleVariableObjective` and limit `var_idx` using 
+    `lb <= var[var_idx] <= ub` if `var_idx != 0`.
 Return a best bound given the constraints on `var_idx`
 """
 function get_best_bound(
@@ -11,8 +11,8 @@ function get_best_bound(
     backtrack_obj::CS.BacktrackObj,
     obj_fct::SingleVariableObjective,
     var_idx::Int,
-    left_side::Bool,
-    var_bound::Int,
+    lb::Int,
+    ub::Int,
 )
     if obj_fct.index != var_idx
         if com.sense == MOI.MIN_SENSE
@@ -22,26 +22,18 @@ function get_best_bound(
         end
     else
         if com.sense == MOI.MIN_SENSE
-            if left_side
-                return com.search_space[obj_fct.index].min
-            else
-                return var_bound
-            end
+            return lb
         else
-            if left_side
-                return var_bound
-            else
-                return com.search_space[obj_fct.index].max
-            end
+            return ub
         end
     end
 end
 
 """
-    get_best_bound(com::CS.CoM, backtrack_obj::CS.BacktrackObj, obj_fct::LinearCombinationObjective, var_idx::Int, left_side::Bool, var_bound::Int)
+    get_best_bound(com::CS.CoM, backtrack_obj::CS.BacktrackObj, obj_fct::LinearCombinationObjective, var_idx::Int, lb::Int, ub::Int)
 
-Compute the best bound if we have a `LinearCombinationObjective` and limit `var_idx` using either a `<=` or a `>=` bound 
-with `var_bound` and `left_side`. `left_side = true` means we have a `<=` bound
+Compute the best bound if we have a `LinearCombinationObjective` and limit `var_idx` using 
+    `lb <= var[var_idx] <= ub` if `var_idx != 0`.
 Return a best bound given the constraints on `var_idx`
 """
 function get_best_bound(
@@ -49,8 +41,8 @@ function get_best_bound(
     backtrack_obj::CS.BacktrackObj,
     obj_fct::LinearCombinationObjective,
     var_idx::Int,
-    left_side::Bool,
-    var_bound::Int,
+    lb::Int,
+    ub::Int,
 )
     indices = obj_fct.lc.indices
     coeffs = obj_fct.lc.coeffs
@@ -58,38 +50,18 @@ function get_best_bound(
     if com.sense == MOI.MIN_SENSE
         for i = 1:length(indices)
             if indices[i] == var_idx
-                if left_side && coeffs[i] >= 0
-                    objval += coeffs[i] * com.search_space[indices[i]].min
-                elseif left_side || coeffs[i] >= 0
-                    objval += coeffs[i] * var_bound
-                else
-                    objval += coeffs[i] * com.search_space[indices[i]].max
-                end
+                objval += min(coeffs[i]*lb, coeffs[i]*ub)
                 continue
             end
-            if coeffs[i] >= 0
-                objval += coeffs[i] * com.search_space[indices[i]].min
-            else
-                objval += coeffs[i] * com.search_space[indices[i]].max
-            end
+            objval += min(coeffs[i] * com.search_space[indices[i]].min, coeffs[i] * com.search_space[indices[i]].max)
         end
     else # MAX Sense
         for i = 1:length(indices)
             if indices[i] == var_idx
-                if !left_side && coeffs[i] >= 0
-                    objval += coeffs[i] * com.search_space[indices[i]].max
-                elseif !left_side || coeffs[i] >= 0
-                    objval += coeffs[i] * var_bound
-                else
-                    objval += coeffs[i] * com.search_space[indices[i]].min
-                end
+                objval += max(coeffs[i]*lb, coeffs[i]*ub)
                 continue
             end
-            if coeffs[i] >= 0
-                objval += coeffs[i] * com.search_space[indices[i]].max
-            else
-                objval += coeffs[i] * com.search_space[indices[i]].min
-            end
+            objval += max(coeffs[i] * com.search_space[indices[i]].min, coeffs[i] * com.search_space[indices[i]].max)
         end
     end
 
@@ -122,13 +94,8 @@ function get_best_bound(
     # setting all bounds
     for variable in com.search_space
         if variable.idx == var_idx 
-            if left_side
-                set_lower_bound(com.lp_x[var_idx], com.search_space[var_idx].min)
-                set_upper_bound(com.lp_x[var_idx], var_bound)
-            else
-                set_lower_bound(com.lp_x[var_idx], var_bound)
-                set_upper_bound(com.lp_x[var_idx], com.search_space[var_idx].max)
-            end
+            set_lower_bound(com.lp_x[var_idx], lb)
+            set_upper_bound(com.lp_x[var_idx], ub)
         else
             set_lower_bound(com.lp_x[variable.idx], com.search_space[variable.idx].min)
             set_upper_bound(com.lp_x[variable.idx], com.search_space[variable.idx].max)
@@ -146,9 +113,11 @@ function get_best_bound(
     # check each constraint which has `enforce_bound = true` for a better bound
     for constraint in com.constraints
         if constraint.enforce_bound
-            update_best_bound_constraint!(com, constraint, constraint.fct, constraint.set, var_idx, left_side, var_bound)
-            set_lower_bound(com.lp_x[constraint.bound_rhs.idx], constraint.bound_rhs.lb)
-            set_upper_bound(com.lp_x[constraint.bound_rhs.idx], constraint.bound_rhs.ub)
+            update_best_bound_constraint!(com, constraint, constraint.fct, constraint.set, var_idx, lb, ub)
+            for bound in constraint.bound_rhs
+                set_lower_bound(com.lp_x[bound.idx], bound.lb)
+                set_upper_bound(com.lp_x[bound.idx], bound.ub)
+            end
         end
     end
 
