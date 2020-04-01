@@ -468,7 +468,7 @@
 
     @testset "Traverse" begin
         com = CS.ConstraintSolverModel()
-        com.traverse_strategy = CS.TraverseDFS()
+        com.traverse_strategy = Val(:DFS)
         com.sense = MOI.MIN_SENSE
         backtrack_vec = Vector{CS.BacktrackObj{Float64}}()
         bounds = [0.4, 0.15, 0.15, 0.1]
@@ -490,7 +490,7 @@
         end
 
         # test Best first search
-        com.traverse_strategy = CS.TraverseBFS()
+        com.traverse_strategy = Val(:BFS)
         for i=1:length(bounds)
             backtrack_vec[i].status = :Open
         end

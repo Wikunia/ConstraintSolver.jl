@@ -16,18 +16,11 @@ mutable struct SolverOptions
 end
 
 function get_traverse_strategy(;options=SolverOptions())
-    strategy = options.traverse_strategy
-    if strategy == :BFS
-        return TraverseBFS()
-    elseif strategy == :DFS
-        return TraverseDFS()
-    elseif strategy == :DBFS
-        return TraverseDBFS()
-    end
+    return Val(options.traverse_strategy)
 end
 
 const POSSIBLE_OPTIONS = Dict(
-    :traverse_strategy => [:BFS, :DFS, :DBFS]
+    :traverse_strategy => [:Auto, :BFS, :DFS, :DBFS]
 )
 
 function SolverOptions()
@@ -42,7 +35,7 @@ function SolverOptions()
         ],
         Dict(:min_diff_duration => 5.0),
     )
-    traverse_strategy = :BFS
+    traverse_strategy = :Auto
     backtrack = true
     max_bt_steps = typemax(Int)
     backtrack_sorting = true
