@@ -1003,6 +1003,10 @@ function print_info(com::CS.CoM)
     println()
 end
 
+function get_auto_traverse_strategy(com::CS.CoM)
+    return com.sense == MOI.FEASIBILITY_SENSE ? :DFS : :BFS
+end
+
 """
     solve!(com::CS.CoM, options::SolverOptions)
 
@@ -1014,6 +1018,9 @@ function solve!(com::CS.CoM, options::SolverOptions)
     max_bt_steps = options.max_bt_steps
     backtrack_sorting = options.backtrack_sorting
     keep_logs = options.keep_logs
+    if options.traverse_strategy == :Auto
+        options.traverse_strategy = get_auto_traverse_strategy(com)
+    end
     com.traverse_strategy = get_traverse_strategy(;options = options)
     com.branch_split = get_branch_split(;options = options)
 

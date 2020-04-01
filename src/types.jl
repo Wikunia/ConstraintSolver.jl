@@ -34,13 +34,7 @@ end
 
 abstract type Constraint end
 
-abstract type TraverseStrategy end
-
 abstract type ObjectiveFunction end
-
-mutable struct TraverseBFS <: TraverseStrategy end
-mutable struct TraverseDFS <: TraverseStrategy end
-mutable struct TraverseDBFS <: TraverseStrategy end
 
 mutable struct SingleVariableObjective <: ObjectiveFunction
     fct::MOI.SingleVariable
@@ -220,7 +214,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     backtrack_vec::Vector{BacktrackObj{T}}
     sense::MOI.OptimizationSense
     objective::ObjectiveFunction
-    traverse_strategy::TraverseStrategy
+    traverse_strategy::Val
     branch_split::Val
     best_sol::T # Objective of the best solution
     best_bound::T # Overall best bound

@@ -58,7 +58,7 @@ function get_next_node(
 end
 
 """
-    get_next_node(com::CS.CoM, ::TraverseDBFS, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
+    get_next_node(com::CS.CoM, ::Val{:DBFS}, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
 
 Get the next node we want to prune on if there is any. 
 This uses depth first search if no solution was found so far and BFS otherwise.
@@ -67,17 +67,17 @@ Return whether a node was found and the corresponding backtrack_obj
 """
 function get_next_node(
     com::CS.CoM,
-    traverse::TraverseDBFS,
+    ::Val{:DBFS},
     backtrack_vec::Vector{BacktrackObj{T}},
     sorting
 ) where {T<:Real}
     found_sol = length(com.bt_solution_ids) > 0
-    strategy = found_sol ?  TraverseBFS() :  TraverseDFS()
+    strategy = found_sol ? Val(:BFS) : Val(:DFS)
     return get_next_node(com, strategy, backtrack_vec, sorting)
 end
 
 """
-    get_next_node(com::CS.CoM, ::TraverseBFS, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
+    get_next_node(com::CS.CoM, ::Val{:BFS}, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
 
 Get the next node we want to prune on if there is any. This uses best first search and if two 
 nodes have the same `best_bound` the deeper one is chosen. 
@@ -86,7 +86,7 @@ Return whether a node was found and the corresponding backtrack_obj
 """
 function get_next_node(
     com::CS.CoM,
-    traverse::TraverseBFS,
+    ::Val{:BFS},
     backtrack_vec::Vector{BacktrackObj{T}},
     sorting
 ) where {T<:Real}
@@ -104,11 +104,9 @@ function get_next_node(
     l = 0
     best_fac_bound = typemax(Int)
     best_depth = 0
-    nopen_nodes = 0
     for i = 1:length(backtrack_vec)
         bo = backtrack_vec[i]
         if bo.status == :Open
-            nopen_nodes += 1
             if obj_factor * bo.best_bound < best_fac_bound || (
                 obj_factor * bo.best_bound == best_fac_bound &&
                 bo.depth > best_depth
@@ -128,7 +126,7 @@ function get_next_node(
 end
 
 """
-    get_next_node(com::CS.CoM, ::TraverseDFS, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
+    get_next_node(com::CS.CoM, :Val{:DFS}, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
 
 Get the next node we want to prune on if there is any. This uses depth first search and if two 
 nodes have the same depth the one with the better `best_bound` is chosen. 
@@ -137,7 +135,7 @@ Return whether a node was found and the corresponding backtrack_obj
 """
 function get_next_node(
     com::CS.CoM,
-    traverse::TraverseDFS,
+    ::Val{:DFS},
     backtrack_vec::Vector{BacktrackObj{T}},
     sorting
 ) where {T<:Real}
@@ -145,8 +143,8 @@ function get_next_node(
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
     backtrack_obj = backtrack_vec[1]
 
-    # if there is no objective or sorting is set to false
-    if com.sense == MOI.FEASIBILITY_SENSE || !sorting
+    # if sorting is set to false
+    if !sorting
         return get_first_open(backtrack_vec)
     end # sort for depth
     # don't actually sort => just get the best backtrack idx
@@ -154,11 +152,9 @@ function get_next_node(
     l = 0
     best_fac_bound = typemax(Int)
     best_depth = 0
-    nopen_nodes = 0
     for i = 1:length(backtrack_vec)
         bo = backtrack_vec[i]
         if bo.status == :Open
-            nopen_nodes += 1
             if bo.depth > best_depth || (
                 obj_factor * bo.best_bound < best_fac_bound &&
                 bo.depth == best_depth

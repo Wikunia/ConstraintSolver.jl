@@ -17,14 +17,7 @@ mutable struct SolverOptions
 end
 
 function get_traverse_strategy(;options=SolverOptions())
-    strategy = options.traverse_strategy
-    if strategy == :BFS
-        return TraverseBFS()
-    elseif strategy == :DFS
-        return TraverseDFS()
-    elseif strategy == :DBFS
-        return TraverseDBFS()
-    end
+    return Val(options.traverse_strategy)
 end
 
 function get_branch_split(;options=SolverOptions())
@@ -33,7 +26,7 @@ function get_branch_split(;options=SolverOptions())
 end
 
 const POSSIBLE_OPTIONS = Dict(
-    :traverse_strategy => [:BFS, :DFS, :DBFS],
+    :traverse_strategy => [:Auto, :BFS, :DFS, :DBFS],
     :branch_split => [:Smallest, :Biggest, :InHalf]
 )
 
@@ -49,7 +42,7 @@ function SolverOptions()
         ],
         Dict(:min_diff_duration => 5.0),
     )
-    traverse_strategy = :BFS
+    traverse_strategy = :Auto
     branch_split = :Smallest
     backtrack = true
     max_bt_steps = typemax(Int)

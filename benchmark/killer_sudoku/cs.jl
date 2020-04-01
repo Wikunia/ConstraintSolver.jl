@@ -29,7 +29,7 @@ function solve_all(filenames; benchmark = false, single_times = true)
         # plot_killer(zeros(Int, (9,9)), sums, filename; fill=false)
         # continue
 
-        m = CS.Optimizer()
+        m = CS.Optimizer(traverse_strategy=:BFS)
 
         x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i = 1:9] for j = 1:9]
         for r = 1:9, c = 1:9
