@@ -72,9 +72,7 @@ function bfs_list(start_node::CS.TreeLogNode)
     push!(to_process, start_node)
     push!(depths, 0)
     node = deepcopy(start_node)
-    push!(num_children, length(node.children))
     node.children = TreeLogNode[]
-    push!(nodes_list, node)
 
     while !isempty(to_process)
         current_node = popfirst!(to_process)
@@ -91,6 +89,32 @@ function bfs_list(start_node::CS.TreeLogNode)
         end
     end
     return nodes_list, num_children
+end
+
+"""
+    sanity_check_logs(log)
+
+Check that
+- there are at least 2 closed nodes
+- no step nr > 0 is used more than once
+"""
+function sanity_check_log(log)
+    nodes_list, num_children = bfs_list(log)
+    nclosed = 0
+    step_nrs = Int[]
+    for i = 1:length(nodes_list)
+        node = nodes_list[i]
+        num_child = num_children[i]
+        if node.status == :Closed
+            nclosed += 1
+        end
+        if node.step_nr > 0
+            push!(step_nrs, node.step_nr)
+        end
+    end
+    passed = nclosed >= 2 && allunique(step_nrs)
+    !passed && write("FAILED.json", JSON.json(log))
+    return passed
 end
 
 function same_logs(log1, log2)

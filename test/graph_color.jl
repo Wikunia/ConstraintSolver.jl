@@ -220,6 +220,7 @@
         @test info_1.backtrack_reverses == info_2.backtrack_reverses
         logs_1 = CS.get_logs(com1)
         logs_2 = CS.get_logs(com2)
+        @test CS.sanity_check_log(logs_1[:tree])
         @test CS.same_logs(logs_1[:tree], logs_2[:tree])
     end
 

@@ -755,9 +755,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         if !started
             # close the previous backtrack object
             backtrack_vec[last_backtrack_id].status = :Closed
-            log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
+            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
         end
-        if time() - com.start_time > com.options.time_limit
+        # run at least once so that everything is well defined
+        if step_nr > 2 && time() - com.start_time > com.options.time_limit
             break
         end
 
@@ -825,7 +826,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             if finished
                 # close the previous backtrack object
                 backtrack_vec[last_backtrack_id].status = :Closed
-                log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
+                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
                 return :Solved
             end
             continue
@@ -833,7 +834,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
         if com.info.backtrack_fixes > max_bt_steps
             backtrack_vec[last_backtrack_id].status = :Closed
-            log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
+            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
             return :NotSolved
         end
 
@@ -857,7 +858,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         )
     end
     backtrack_vec[last_backtrack_id].status = :Closed
-    log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
+    com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
     if length(com.bt_solution_ids) > 0
         set_state_to_best_sol!(com, last_backtrack_id)
         com.best_bound = com.best_sol
