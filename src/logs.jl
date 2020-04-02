@@ -200,13 +200,23 @@ function get_logs(com::CS.CoM)
     return logs
 end
 
+function add_variable_mapping(log, args...)
+    var_mapping = Dict{Symbol,Any}()
+    for var in args
+        # transpose such that JSON has it row by row instead of column by column
+        var_mapping[var.first] = var_idx.(var.second)'
+    end
+    log[:variable_mapping] = var_mapping
+end
+
 """
     save_logs(com::CS.CoM, filepath)
 
 Save the tree structure and some additional problem information in a json file `filepath`.
 Can be only used if `keep_logs` is set to `true` in the [`solve!`](@ref) call.
 """
-function save_logs(com::CS.CoM, filepath)
+function save_logs(com::CS.CoM, filepath, vars...)
     logs = get_logs(com)
+    add_variable_mapping(logs, vars...)
     write(filepath, JSON.json(logs))
 end
