@@ -29,7 +29,7 @@ function solve_all(filenames; benchmark = false, single_times = true)
         # plot_killer(zeros(Int, (9,9)), sums, filename; fill=false)
         # continue
 
-        m = CS.Optimizer(traverse_strategy=:BFS)
+        m = CS.Optimizer(logging=[])
 
         x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i = 1:9] for j = 1:9]
         for r = 1:9, c = 1:9
@@ -43,7 +43,7 @@ function solve_all(filenames; benchmark = false, single_times = true)
                 0.0,
             )
             MOI.add_constraint(m, saf, MOI.EqualTo(convert(Float64, s.result)))
-            # MOI.add_constraint(m, [x[ind[1]][ind[2]][1] for ind in s.indices], CS.AllDifferentSet(length(s.indices)))
+            MOI.add_constraint(m, [x[ind[1]][ind[2]][1] for ind in s.indices], CS.AllDifferentSetInternal(length(s.indices)))
         end
 
         # sudoku constraints

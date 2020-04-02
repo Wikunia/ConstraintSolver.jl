@@ -29,14 +29,8 @@ function log_one_node(com, nvars, back_idx, step_nr)
         Vector{TreeLogNode{typeof(best_bound)}}(), # children
     )
 
-    if tree_log_node.status == :Closed
-        for var in com.search_space
-            if length(var.changes[back_idx]) > 0
-                tree_log_node.var_states[var.idx] = sort!(values(var))
-                tree_log_node.var_changes[var.idx] = var.changes[back_idx]
-            end
-        end
-    end
+    log_node_state!(tree_log_node, nothing, com.search_space)
+  
     if parent_idx > 0
         changed = false
         for (i, child) in enumerate(com.logs[parent_idx].children)
@@ -51,6 +45,22 @@ function log_one_node(com, nvars, back_idx, step_nr)
         end
     end
     return tree_log_node
+end
+
+function log_node_state!(tree_log_node, bo, variables)
+    back_idx = tree_log_node.id
+    bo !== nothing && (tree_log_node.status = bo.status)
+    if tree_log_node.status == :Closed
+        for var in variables
+            # easier to visualize if we save it every step even if unchanged
+            # increases time and file size but that is not critical if keep_logs is `true` anyway.
+            # Hopefully :D
+            tree_log_node.var_states[var.idx] = sort!(values(var))
+            if length(var.changes[back_idx]) > 0
+                tree_log_node.var_changes[var.idx] = var.changes[back_idx]
+            end
+        end
+    end
 end
 
 function bfs_list(start_node::CS.TreeLogNode)
