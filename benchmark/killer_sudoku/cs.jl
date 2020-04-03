@@ -26,10 +26,10 @@ function solve_all(filenames; benchmark = false, single_times = true)
     for (i, filename) in enumerate(filenames)
         sums = parseJSON(JSON.parsefile("data/$(filename)"))
 
-        # plot_killer(zeros(Int, (9,9)), sums, filename; fill=false)
+        plot_killer(zeros(Int, (9,9)), sums, filename; fill=false)
         # continue
 
-        m = CS.Optimizer(traverse_strategy=:BFS)
+        m = CS.Optimizer(logging=[], keep_logs=true, time_limit=20)
 
         x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i = 1:9] for j = 1:9]
         for r = 1:9, c = 1:9
@@ -43,15 +43,16 @@ function solve_all(filenames; benchmark = false, single_times = true)
                 0.0,
             )
             MOI.add_constraint(m, saf, MOI.EqualTo(convert(Float64, s.result)))
-            # MOI.add_constraint(m, [x[ind[1]][ind[2]][1] for ind in s.indices], CS.AllDifferentSet(length(s.indices)))
+            MOI.add_constraint(m, [x[ind[1]][ind[2]][1] for ind in s.indices], CS.AllDifferentSetInternal(length(s.indices)))
         end
 
         # sudoku constraints
         moi_add_sudoku_constr!(m, x)
+        
 
         if single_times
             GC.enable(false)
-            MOI.optimize!(m)
+            MOI.optimize!(m)           
             status = MOI.get(m, MOI.TerminationStatus())
             GC.enable(true)
             println(i - 1, ", ", MOI.get(m, MOI.SolveTime()))
@@ -64,11 +65,20 @@ function solve_all(filenames; benchmark = false, single_times = true)
         if !benchmark
             println("Status: ", status)
             @show m.inner.info
-            solution = zeros(Int, 9, 9)
+            var_x = fill(MOI.VariableIndex(0), (9,9))
             for r = 1:9
-                solution[r, :] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c = 1:9]
+                var_x[r,:] = [x[r][c][1] for c = 1:9]
             end
-            @assert jump_fulfills_sudoku_constr(solution)
+            CS.save_logs(m.inner, "/srv/http/ConstraintVisual/data/json/killer_$filename.json", :x => var_x)
+            if status == MOI.OPTIMAL
+                solution = zeros(Int, 9, 9)
+                for r = 1:9
+                    solution[r, :] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c = 1:9]
+                end
+                @assert jump_fulfills_sudoku_constr(solution)
+            else 
+                println("NOT SOLVED TO OPTIMALITY")
+            end
         end
         com = nothing
         GC.gc()

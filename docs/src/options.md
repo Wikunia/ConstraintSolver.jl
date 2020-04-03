@@ -116,6 +116,18 @@ com = JuMP.backend(m).optimizer.model.inner
 CS.save_logs(com, "FILENAME.json")
 ```
 
+Additionally because the mapping from JuMP can be different to your internal mapping you can use:
+
+```
+CS.save_logs(com, "FILENAME.json", :x => x)
+```
+if `x` is/are your variable/variables and if you have more variables:
+
+```
+CS.save_logs(com, "FILENAME.json", :x => x, :y => y)
+```
+etc...
+
 ## `solution_type` (`Float64`)
 
 Defines the type of `best_bound` and `incumbent`. Normally you don't want to change this as JuMP only works with `Float` but if you work directly using MathOptInterface you can use this option.

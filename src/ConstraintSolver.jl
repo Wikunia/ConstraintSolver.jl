@@ -613,7 +613,7 @@ function add2backtrack_vec!(
             backtrack_obj,
             com,
             num_backtrack_objs,
-            step_nr,
+            -1,
         )
     else
         num_backtrack_objs -= 1
@@ -642,7 +642,7 @@ function add2backtrack_vec!(
             backtrack_obj,
             com,
             num_backtrack_objs,
-            step_nr,
+            -1,
         )
     else
         num_backtrack_objs -= 1
@@ -755,8 +755,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         if !started
             # close the previous backtrack object
             backtrack_vec[last_backtrack_id].status = :Closed
+            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
         end
-        if time() - com.start_time > com.options.time_limit
+        # run at least once so that everything is well defined
+        if step_nr > 2 && time() - com.start_time > com.options.time_limit
             break
         end
 
@@ -821,11 +823,18 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         # no index found => solution found
         if !found
             finished = add_new_solution!(com, backtrack_vec, backtrack_obj, log_table)
-            finished && return :Solved
+            if finished
+                # close the previous backtrack object
+                backtrack_vec[last_backtrack_id].status = :Closed
+                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
+                return :Solved
+            end
             continue
         end
 
         if com.info.backtrack_fixes > max_bt_steps
+            backtrack_vec[last_backtrack_id].status = :Closed
+            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
             return :NotSolved
         end
 
@@ -848,6 +857,8 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             check_bound = true,
         )
     end
+    backtrack_vec[last_backtrack_id].status = :Closed
+    com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
     if length(com.bt_solution_ids) > 0
         set_state_to_best_sol!(com, last_backtrack_id)
         com.best_bound = com.best_sol

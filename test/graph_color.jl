@@ -183,7 +183,7 @@
 
         com = JuMP.backend(m).optimizer.model.inner
 
-        CS.save_logs(com, "graph_color_optimize.json")
+        CS.save_logs(com, "graph_color_optimize.json", :states => states, :max_color => max_color)
         rm("graph_color_optimize.json")
 
         if tests
@@ -220,6 +220,7 @@
         @test info_1.backtrack_reverses == info_2.backtrack_reverses
         logs_1 = CS.get_logs(com1)
         logs_2 = CS.get_logs(com2)
+        @test CS.sanity_check_log(logs_1[:tree])
         @test CS.same_logs(logs_1[:tree], logs_2[:tree])
     end
 

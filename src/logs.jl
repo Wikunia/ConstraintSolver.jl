@@ -29,14 +29,8 @@ function log_one_node(com, nvars, back_idx, step_nr)
         Vector{TreeLogNode{typeof(best_bound)}}(), # children
     )
 
-    if tree_log_node.status == :Closed
-        for var in com.search_space
-            if length(var.changes[back_idx]) > 0
-                tree_log_node.var_states[var.idx] = sort!(values(var))
-                tree_log_node.var_changes[var.idx] = var.changes[back_idx]
-            end
-        end
-    end
+    log_node_state!(tree_log_node, nothing, com.search_space)
+  
     if parent_idx > 0
         changed = false
         for (i, child) in enumerate(com.logs[parent_idx].children)
@@ -53,6 +47,22 @@ function log_one_node(com, nvars, back_idx, step_nr)
     return tree_log_node
 end
 
+function log_node_state!(tree_log_node, bo, variables)
+    back_idx = tree_log_node.id
+    bo !== nothing && (tree_log_node.status = bo.status)
+    if tree_log_node.status == :Closed
+        for var in variables
+            # easier to visualize if we save it every step even if unchanged
+            # increases time and file size but that is not critical if keep_logs is `true` anyway.
+            # Hopefully :D
+            tree_log_node.var_states[var.idx] = sort!(values(var))
+            if length(var.changes[back_idx]) > 0
+                tree_log_node.var_changes[var.idx] = var.changes[back_idx]
+            end
+        end
+    end
+end
+
 function bfs_list(start_node::CS.TreeLogNode)
     to_process = Vector{CS.TreeLogNode}()
     depths = Vector{Int}()
@@ -62,9 +72,7 @@ function bfs_list(start_node::CS.TreeLogNode)
     push!(to_process, start_node)
     push!(depths, 0)
     node = deepcopy(start_node)
-    push!(num_children, length(node.children))
     node.children = TreeLogNode[]
-    push!(nodes_list, node)
 
     while !isempty(to_process)
         current_node = popfirst!(to_process)
@@ -81,6 +89,32 @@ function bfs_list(start_node::CS.TreeLogNode)
         end
     end
     return nodes_list, num_children
+end
+
+"""
+    sanity_check_logs(log)
+
+Check that
+- there are at least 2 closed nodes
+- no step nr > 0 is used more than once
+"""
+function sanity_check_log(log)
+    nodes_list, num_children = bfs_list(log)
+    nclosed = 0
+    step_nrs = Int[]
+    for i = 1:length(nodes_list)
+        node = nodes_list[i]
+        num_child = num_children[i]
+        if node.status == :Closed
+            nclosed += 1
+        end
+        if node.step_nr > 0
+            push!(step_nrs, node.step_nr)
+        end
+    end
+    passed = nclosed >= 2 && allunique(step_nrs)
+    !passed && write("FAILED.json", JSON.json(log))
+    return passed
 end
 
 function same_logs(log1, log2)
@@ -166,13 +200,23 @@ function get_logs(com::CS.CoM)
     return logs
 end
 
+function add_variable_mapping(log, args...)
+    var_mapping = Dict{Symbol,Any}()
+    for var in args
+        # transpose such that JSON has it row by row instead of column by column
+        var_mapping[var.first] = var_idx.(var.second)'
+    end
+    log[:variable_mapping] = var_mapping
+end
+
 """
     save_logs(com::CS.CoM, filepath)
 
 Save the tree structure and some additional problem information in a json file `filepath`.
 Can be only used if `keep_logs` is set to `true` in the [`solve!`](@ref) call.
 """
-function save_logs(com::CS.CoM, filepath)
+function save_logs(com::CS.CoM, filepath, vars...)
     logs = get_logs(com)
+    add_variable_mapping(logs, vars...)
     write(filepath, JSON.json(logs))
 end

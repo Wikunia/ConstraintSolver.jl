@@ -17,7 +17,7 @@ using LinearAlgebra: dot
             1 1 0 1
             0 0 1 0
         ]
-        model = CSTestSolver()
+        model = CS.Optimizer(logging = [], keep_logs = true)
         x = [MOI.add_constrained_variable(model, MOI.ZeroOne()) for _ = 1:4]
         for i = 1:4, j = 1:4
             if matrix[i, j] == 1 && i < j
@@ -41,6 +41,10 @@ using LinearAlgebra: dot
         MOI.set(model, MOI.ObjectiveFunction{typeof(objective)}(), objective)
         MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
         MOI.optimize!(model)
+        var_x = [x[i][1] for i = 1:4]
+        CS.save_logs(model.inner, "stable_set.json", :x => var_x)
+        rm("stable_set.json")
+
         @test MOI.get(model, MOI.VariablePrimal(), x[4][1]) == 1
         @test MOI.get(model, MOI.VariablePrimal(), x[1][1]) == 1
         @test MOI.get(model, MOI.ObjectiveValue()) ≈ 0.3

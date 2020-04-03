@@ -7,6 +7,9 @@ const CI = MOI.ConstraintIndex
 
 const VAR_TYPES = Union{MOI.ZeroOne,MOI.Integer}
 
+var_idx(x::JuMP.VariableRef) = x.index.value
+var_idx(x::MOI.VariableIndex) = x.value
+
 """
 Optimizer struct
 """
