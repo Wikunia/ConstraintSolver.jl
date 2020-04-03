@@ -883,7 +883,6 @@ i.e an `all_different` does sometimes include information about the sum.
 Return a list of newly added constraint ids
 """
 function simplify!(com)
-    println("call to simplify")
     added_constraint_idxs = Int[]
     # check if we have all_different and sum constraints
     # (all different where every value is used)

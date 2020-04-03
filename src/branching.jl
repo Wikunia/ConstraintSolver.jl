@@ -61,7 +61,7 @@ Return whether there is an unfixed variable and a best index
 """
 function get_next_branch_variable(com::CS.CoM)
     lowest_num_pvals = typemax(Int)
-    biggest_inf = -1.0
+    biggest_inf = -1
     best_ind = -1
     biggest_dependent = typemax(Int)
     found = false
