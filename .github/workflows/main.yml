@@ -23,11 +23,11 @@ jobs:
       - name: "Run tests"
         uses: julia-actions/julia-runtest@master
       - name: "Create CodeCov "
-        - uses: julia-actions/julia-processcoverage@v1
+        uses: julia-actions/julia-processcoverage@v1
       - name: "Upload CodeCov"  
-        - uses: codecov/codecov-action@v1
-          with:
-            file: ./lcov.info
-            flags: unittests
-            name: codecov-umbrella
-            fail_ci_if_error: true
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
