@@ -69,18 +69,14 @@ function get_next_branch_variable(com::CS.CoM)
     for ind = 1:length(com.search_space)
         if !isfixed(com.search_space[ind])
             num_pvals = nvalues(com.search_space[ind])
-            constrained_times = sum(1/length(com.constraints[c_idx].indices) for c_idx in com.subscription[ind]) 
             inf = com.bt_infeasible[ind]
-            val = ((inf+1)/10*constrained_times)/num_pvals
-            if val >= biggest_inf
-                biggest_inf = val
-                best_ind = ind
-                found = true
-                #=if inf > biggest_inf || num_pvals < lowest_num_pvals
+            if inf >= biggest_inf
+                if inf > biggest_inf || num_pvals < lowest_num_pvals
                     lowest_num_pvals = num_pvals
+                    biggest_inf = inf
                     best_ind = ind
                     found = true
-                end=#
+                end
             end
         end
     end

@@ -191,7 +191,7 @@ end
         @test CS.same_logs(logs_1[:tree], logs_2[:tree])
     end
 
-    function killer_negative()
+    function killer_negative(;reverse_order=false)
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "keep_logs" => true,
@@ -200,13 +200,12 @@ end
 
         @variable(m, -9 <= com_grid[1:9, 1:9] <= -1, Int)
 
-        sums = parseKillerJSON(JSON.parsefile("data/killer_niallsudoku_5500"))
+        sums = parseKillerJSON(JSON.parsefile("data/killer_niallsudoku_5503"))
+        if reverse_order
+            reverse!(sums)
+        end
 
-        # the upper left sum constraint is x+y+z = 10 and the solution is -2 + -1 + -7
-        # here I change it to 5*x-7*y-z = 4
-        @constraint(m, 5 * com_grid[1, 1] - 7 * com_grid[2, 1] - com_grid[2, 2] == 4)
-
-        for s in sums[2:end]
+        for s in sums
             @constraint(m, sum([com_grid[ind...] for ind in s.indices]) == -s.result)
         end
 
@@ -215,17 +214,16 @@ end
 
         @test JuMP.termination_status(m) == MOI.OPTIMAL
         @test jump_fulfills_sudoku_constr(com_grid)
-        @test 5 * JuMP.value(com_grid[1, 1]) - 7 * JuMP.value(com_grid[2, 1]) -
-              JuMP.value(com_grid[2, 2]) == 4
-        for s in sums[2:end]
+        for s in sums
             @test -s.result == sum([JuMP.value(com_grid[i...]) for i in s.indices])
         end
         return JuMP.backend(m).optimizer.model.inner
     end
 
-    @testset "Killer Sudoku niallsudoku_5500 with negative coefficients and -9 to -1" begin
+    @testset "Killer Sudoku niallsudoku_5503 with negative coefficients and -9 to -1" begin
         com1 = killer_negative()
-        com2 = killer_negative()
+        # the constraint order should not effect anything
+        com2 = killer_negative(;reverse_order=true)
         info_1 = com1.info
         info_2 = com2.info
         @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls

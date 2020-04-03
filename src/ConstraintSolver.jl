@@ -883,6 +883,7 @@ i.e an `all_different` does sometimes include information about the sum.
 Return a list of newly added constraint ids
 """
 function simplify!(com)
+    println("call to simplify")
     added_constraint_idxs = Int[]
     # check if we have all_different and sum constraints
     # (all different where every value is used)
@@ -915,6 +916,7 @@ function simplify!(com)
                     all_diff_sum = sum(constraint.pvals)
                     # check if some sum constraints are completely inside this alldifferent constraint
                     in_sum = 0
+                    found_possible_constraint = false
                     outside_indices = constraint.indices
                     for sc_idx in constraint.sub_constraint_idxs
                         sub_constraint = com.constraints[sc_idx]
@@ -922,13 +924,14 @@ function simplify!(com)
                             isa(sub_constraint.set, MOI.EqualTo)
                             # the coefficients must be all 1
                             if all(t.coefficient == 1 for t in sub_constraint.fct.terms)
+                                found_possible_constraint = true
                                 in_sum += sub_constraint.set.value -
                                     sub_constraint.fct.constant
                                 outside_indices = setdiff(outside_indices, sub_constraint.indices)
                             end
                         end
                     end
-                    if in_sum > 0 && length(outside_indices) <= 4
+                    if found_possible_constraint && length(outside_indices) <= 4
                         add_constraint!(
                             com,
                             sum(com.search_space[outside_indices]) ==
