@@ -22,7 +22,12 @@ jobs:
         uses: julia-actions/julia-buildpkg@master
       - name: "Run tests"
         uses: julia-actions/julia-runtest@master
-      - name: "CodeCov"
-        uses: julia-actions/julia-uploadcodecov@master
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: "Create CodeCov "
+        uses: julia-actions/julia-processcoverage@v1
+      - name: "Upload CodeCov"  
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
