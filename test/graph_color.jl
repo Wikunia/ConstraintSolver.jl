@@ -183,7 +183,7 @@
 
         com = JuMP.backend(m).optimizer.model.inner
 
-        CS.save_logs(com, "graph_color_optimize.json")
+        CS.save_logs(com, "graph_color_optimize.json", :states => states, :max_color => max_color)
         rm("graph_color_optimize.json")
 
         if tests
