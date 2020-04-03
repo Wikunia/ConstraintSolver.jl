@@ -266,9 +266,8 @@ function set_constraint_hashes!(com::CS.CoM)
     end
 end
 
-function init_constraints!(com::CS.CoM)
-    for ci = 1:length(com.constraints)
-        constraint = com.constraints[ci]
+function init_constraints!(com::CS.CoM; constraints=com.constraints)
+    for constraint in constraints
         c_type = typeof(constraint)
         c_fct_type = typeof(constraint.fct)
         c_set_type = typeof(constraint.set)

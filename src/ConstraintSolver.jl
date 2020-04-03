@@ -880,8 +880,10 @@ end
 
 Simplify constraints i.e by adding new constraints which uses an implicit connection between two constraints.
 i.e an `all_different` does sometimes include information about the sum.
+Return a list of newly added constraint ids
 """
 function simplify!(com)
+    added_constraint_idxs = Int[]
     # check if we have all_different and sum constraints
     # (all different where every value is used)
     b_all_different = false
@@ -899,7 +901,7 @@ function simplify!(com)
     end
     if b_all_different_sum && b_eq_sum
         # for each all_different constraint
-        # which can be formulated as a sum constraint
+        # which has an implicit sum constraint
         # check which sum constraints are completely inside all different
         # which are partially inside
         # compute inside sum and total sum
@@ -911,7 +913,30 @@ function simplify!(com)
                 add_sum_constraint = true
                 if length(constraint.indices) == length(constraint.pvals)
                     all_diff_sum = sum(constraint.pvals)
+                    # check if some sum constraints are completely inside this alldifferent constraint
                     in_sum = 0
+                    outside_indices = constraint.indices
+                    for sc_idx in constraint.sub_constraint_idxs
+                        sub_constraint = com.constraints[sc_idx]
+                        if isa(sub_constraint.fct, SAF) &&
+                            isa(sub_constraint.set, MOI.EqualTo)
+                            # the coefficients must be all 1
+                            if all(t.coefficient == 1 for t in sub_constraint.fct.terms)
+                                in_sum += sub_constraint.set.value -
+                                    sub_constraint.fct.constant
+                                outside_indices = setdiff(outside_indices, sub_constraint.indices)
+                            end
+                        end
+                    end
+                    if in_sum > 0 && length(outside_indices) <= 4
+                        add_constraint!(
+                            com,
+                            sum(com.search_space[outside_indices]) ==
+                            all_diff_sum - in_sum,
+                        )
+                        push!(added_constraint_idxs, length(com.constraints))
+                    end
+
                     total_sum = 0
                     outside_indices = Int[]
                     cons_indices_dict = arr2dict(constraint.indices)
@@ -940,11 +965,6 @@ function simplify!(com)
                                             delete!(cons_indices_dict, sub_variable_idx)
                                         end
                                     end
-                                    if all_inside
-                                        in_sum +=
-                                            sub_constraint.set.value -
-                                            sub_constraint.fct.constant
-                                    end
                                     break
                                 end
                             end
@@ -956,17 +976,19 @@ function simplify!(com)
                     end
 
                     # make sure that there are not too many outside indices
-                    if add_sum_constraint && length(outside_indices) < 3
+                    if add_sum_constraint && length(outside_indices) <= 4
                         add_constraint!(
                             com,
                             sum(com.search_space[outside_indices]) ==
                             total_sum - all_diff_sum,
                         )
+                        push!(added_constraint_idxs, length(com.constraints))
                     end
                 end
             end
         end
     end
+    return added_constraint_idxs
 end
 
 """
@@ -974,8 +996,8 @@ end
 
 Set `constraint.in_all_different` if all variables in the constraint are part of the same `all_different` constraint.
 """
-function set_in_all_different!(com::CS.CoM)
-    for constraint in com.constraints
+function set_in_all_different!(com::CS.CoM; constraints=com.constraints)
+    for constraint in constraints
         if :in_all_different in fieldnames(typeof(constraint))
             if !constraint.in_all_different
                 subscriptions_idxs =
@@ -1040,7 +1062,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     end
     com.start_time = time()
 
-    set_constraint_hashes!(com)
+    
     set_in_all_different!(com)
 
     # initialize constraints if `init_constraint!` exists for the constraint
@@ -1053,7 +1075,13 @@ function solve!(com::CS.CoM, options::SolverOptions)
 
 
     # check for better constraints
-    simplify!(com)
+    added_con_idxs = simplify!(com)
+    if length(added_con_idxs) > 0
+        set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
+        init_constraints!(com; constraints=com.constraints[added_con_idxs])
+    end
+
+    set_constraint_hashes!(com)
 
     # check if all feasible even if for example everything is fixed
     feasible = prune!(com; pre_backtrack = true, initial_check = true)

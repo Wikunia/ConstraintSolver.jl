@@ -100,7 +100,7 @@ mutable struct AllDifferentConstraint <: Constraint
     matching_init::MatchingInit
     enforce_bound::Bool
     bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
-    # corresponds to `in_all_different`: Saves the constraint idxs which variables are part of this alldifferent constraint
+    # corresponds to `in_all_different`: Saves the constraint idxs where all variables are part of this alldifferent constraint
     sub_constraint_idxs::Vector{Int}
     hash::UInt64
 end
