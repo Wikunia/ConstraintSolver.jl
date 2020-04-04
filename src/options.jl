@@ -27,7 +27,7 @@ end
 
 const POSSIBLE_OPTIONS = Dict(
     :traverse_strategy => [:Auto, :BFS, :DFS, :DBFS],
-    :branch_split => [:Smallest, :Biggest, :InHalf]
+    :branch_split => [:Auto, :Smallest, :Biggest, :InHalf]
 )
 
 function SolverOptions()
@@ -43,7 +43,7 @@ function SolverOptions()
         Dict(:min_diff_duration => 5.0),
     )
     traverse_strategy = :Auto
-    branch_split = :Smallest
+    branch_split = :Auto
     backtrack = true
     max_bt_steps = typemax(Int)
     backtrack_sorting = true

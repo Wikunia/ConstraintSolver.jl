@@ -71,12 +71,13 @@ Other options:
 - `:DFS` => Depth First Search
 - `:DBFS` => Depth First Search until solution was found then Best First Search
 
-## `branch_split` (`:Smallest`)
+## `branch_split` (`:Auto`)
 
 You can define how the variable is split into two branches with this option. 
-Normally the smallest value is chosen and then the problem gets split into the smallest value and the rest.
+Normally the smallest value is chosen for satisfiability problems and depending on the coefficient of the variable in the objective either the smallest or biggest is chosen as a single choice for optimization problems.
 Other options:
-- `:Biggest` same as smallest but splits into biggest value as a single choice and the rest
+- `:Smallest` Smallest value on the left branch and rest on the right branch
+- `:Biggest` same as smallest but splits into biggest value as a single choice and the rest the second choice
 - `:InHalf` takes the mean value to split the problem into two branches of equal size
 
 ## `all_solutions` (`false`)

@@ -576,7 +576,7 @@ function add2backtrack_vec!(
     check_bound = false,
 ) where {T<:Real}
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
-    left_lb, left_ub, right_lb, right_ub = get_split_pvals(com.branch_split, com.search_space[ind])
+    left_lb, left_ub, right_lb, right_ub = get_split_pvals(com, com.branch_split, com.search_space[ind])
 
     #=
         Check whether the new node is needed which depends on

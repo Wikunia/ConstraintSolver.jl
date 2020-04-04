@@ -35,7 +35,7 @@
         @test JuMP.termination_status(model) == MOI.TIME_LIMIT
     end
 
-    @testset "Issue 83 TimeLimit" begin
+    @testset "Issue 83 max_bt_steps" begin
         glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.OFF)
         model = Model(optimizer_with_attributes(
             CS.Optimizer,

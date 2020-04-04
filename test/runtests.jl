@@ -10,6 +10,7 @@ const MOIU = MOI.Utilities
 CSTestSolver() = CS.Optimizer(logging = [])
 CSJuMPTestSolver() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging" => [])
 
+test_stime = time()
 include("docs.jl")
 include("fcts.jl")
 include("options.jl")
@@ -24,3 +25,4 @@ include("small_eq_sum_real.jl")
 include("sudoku.jl")
 include("killer_sudoku.jl")
 include("graph_color.jl")
+println("Time for all tests $(time()-test_stime)")
