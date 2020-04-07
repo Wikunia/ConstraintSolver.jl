@@ -11,10 +11,8 @@ This package aims to be a constraint solver written in Julia and will be documen
 
 ## Installation
 You can install this julia package using 
-`] add https://github.com/Wikunia/ConstraintSolver.jl` or if you want to change code you might want to use
-`] dev https://github.com/Wikunia/ConstraintSolver.jl`.
-
-If everything goes well I will make a request to make this a julia package but that needs a bit more work.
+`] add ConstraintSolver` or if you want to change code you might want to use
+`] dev ConstraintSolver`. 
 
 ## Example
 
