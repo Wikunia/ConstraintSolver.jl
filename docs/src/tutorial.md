@@ -6,10 +6,8 @@ Before we tackle some problems we first have to install the constraint solver.
 
 ```
 $ julia
-] add https://github.com/Wikunia/ConstraintSolver.jl
+] add ConstraintSolver.jl
 ```
-
-The package is currently not an official package which is the reason why we need to specify the url here.
 
 Then we have to use the package with:
 
