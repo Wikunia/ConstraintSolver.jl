@@ -81,5 +81,13 @@ and then check the variables using `CS.values(m, x)` or `CS.values(m, y)` this r
 You might have encountered that the bound computation is not good. If you haven't already you should check out the tutorial on bound computation.
 It is definitely advised that you use an LP solver for computing bounds. 
 
+## How to define variables by a set of integers?
 
+Instead of `@variable(m, 1 <= x <= 10, Int)` and then remove values with `@constraint(m, x != 3)`.
+You can directly write:
 
+```
+@variable(m, CS.Integers([i for i=1:10 if i != 3]))
+```
+
+this removes unnecessary constraints. 
