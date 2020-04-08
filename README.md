@@ -88,6 +88,7 @@ This constraint solver works only with bounded discrete variables.
 - [Support for linear objectives](https://opensourc.es/blog/constraint-solver-linear-objective)
 - [Table logging](https://opensourc.es/blog/table-logging)
 - [Bound computation](https://opensourc.es/blog/constraint-solver-bounds)
+- [v0.1.0](https://opensourc.es/blog/constraint-solver-v0.1.0)
 
 ## Notice
 I'm a MSc student in computer science so I don't have much knowledge on how constraint programming works but I'm keen to find out ;)
