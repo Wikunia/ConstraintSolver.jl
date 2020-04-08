@@ -118,6 +118,10 @@ mutable struct SingleVariableConstraint <: Constraint
     hash::UInt64
 end
 
+struct Integers <: MOI.AbstractScalarSet 
+    values::Vector{Int}
+end
+
 struct AllDifferentSetInternal <: MOI.AbstractVectorSet
     dimension :: Int
 end

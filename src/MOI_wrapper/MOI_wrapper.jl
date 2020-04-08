@@ -10,6 +10,15 @@ const VAR_TYPES = Union{MOI.ZeroOne,MOI.Integer}
 var_idx(x::JuMP.VariableRef) = x.index.value
 var_idx(x::MOI.VariableIndex) = x.value
 
+function JuMP.build_variable(_error::Function, info::JuMP.VariableInfo, setType::Type{T}) where T<:MOI.AbstractScalarSet
+    return JuMP.VariableConstrainedOnCreation(JuMP.ScalarVariable(info), setType())
+end
+
+function JuMP.build_variable(_error::Function, info::JuMP.VariableInfo, set::T) where T<:MOI.AbstractScalarSet
+    return JuMP.VariableConstrainedOnCreation(JuMP.ScalarVariable(info), set)
+end
+
+
 """
 Optimizer struct
 """

@@ -854,4 +854,28 @@
         @test JuMP.value(x) + JuMP.value(y) + JuMP.value(z) + 2 != 10 
     end
 
+    @testset "Biggest cube square number up to 100" begin
+        m = Model(CSJuMPTestSolver())
+        @variable(m, x, CS.Integers([i^2 for i=1:20 if i^2 < 100]))
+        @variable(m, y, CS.Integers([i^3 for i=1:20 if i^3 < 100]))
+        @constraint(m, x == y)
+        @objective(m, Max, x)
+        optimize!(m)
+        @test JuMP.value(x) ≈ 64
+        @test JuMP.value(y) ≈ 64
+        @test JuMP.objective_value(m) ≈ 64
+    end
+
+    @testset "Pythagorean triples" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "all_solutions" => true,
+            "logging" => [],
+        ))
+        @variable(m, x[1:3], CS.Integers([i^2 for i=1:50]))
+        @constraint(m, x[1]+x[2] == x[3])
+        @constraint(m, x[1] <= x[2])
+        optimize!(m)
+        @test MOI.get(m, MOI.ResultCount()) == 20
+    end
 end
