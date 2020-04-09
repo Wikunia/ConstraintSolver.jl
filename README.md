@@ -1,5 +1,6 @@
 ![Build status](https://github.com/Wikunia/ConstraintSolver.jl/workflows/Run%20tests/badge.svg) [![codecov](https://codecov.io/gh/Wikunia/ConstraintSolver.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/Wikunia/ConstraintSolver.jl)
 [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://wikunia.github.io/ConstraintSolver.jl/dev)
+[![Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://wikunia.github.io/ConstraintSolver.jl/stable)
 
 # ConstraintSolver.jl
 

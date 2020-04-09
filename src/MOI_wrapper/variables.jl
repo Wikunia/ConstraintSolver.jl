@@ -2,17 +2,36 @@
 Single variable bound constraints
 """
 # MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{AbstractVector{<:MOI.AbstractScalarSet}}) = true
-MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.LessThan{T}}) where {T<:Real} =
-    true
+MOI.supports_constraint(
+    ::Optimizer, 
+    ::Type{SVF}, 
+    ::Type{MOI.LessThan{T}}
+) where {T<:Real} = true
+
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{SVF},
     ::Type{MOI.GreaterThan{T}},
 ) where {T<:Real} = true
-MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.EqualTo{T}}) where {T<:Real} =
-    true
-MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.Interval{T}}) where {T<:Real} =
-    true
+
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{SVF}, 
+    ::Type{MOI.EqualTo{T}}
+) where {T<:Real} = true
+
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{SVF}, 
+    ::Type{MOI.Interval{T}}
+) where {T<:Real} = true
+
+
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{SVF},
+    ::Type{Integers},
+) = true
 
 """
 Binary/Integer variable support
@@ -109,6 +128,47 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.ZeroOne)
     cindex = length(model.var_constraints) + 1
     push!(model.var_constraints, (vi.value, :bin, typemin(Int), typemax(Int)))
     return MOI.ConstraintIndex{SVF,MOI.ZeroOne}(cindex)
+end
+
+function MOI.add_constraint(model::Optimizer, v::SVF, t::Integers)
+    vi = v.variable
+    model.variable_info[vi.value].is_integer = true
+
+    set_vals = t.values
+
+    min_val, max_val = extrema(set_vals)
+    range = max_val-min_val+1
+    vals = copy(set_vals)
+    append!(vals, zeros(Int, range-length(vals)))
+
+    # fill the indices such that 1:length(set_vals) map to set_vals
+    indices = zeros(Int, range)
+    indices[set_vals] = 1:length(set_vals)
+    j = 1
+    for i=1:range
+        if indices[i] == 0
+            indices[i] = j
+            j += 1
+        end
+    end
+
+    model.variable_info[vi.value].upper_bound = max_val
+    model.variable_info[vi.value].max = max_val
+    model.variable_info[vi.value].has_upper_bound = true
+    model.variable_info[vi.value].lower_bound = min_val
+    model.variable_info[vi.value].min = min_val
+    model.variable_info[vi.value].has_lower_bound = true
+    model.variable_info[vi.value].values = vals
+    model.variable_info[vi.value].offset = 1 - min_val
+    model.variable_info[vi.value].indices = indices
+    model.variable_info[vi.value].first_ptr = 1
+    model.variable_info[vi.value].last_ptr = length(set_vals)
+    addupd_var_in_inner_model(model, vi.value)
+
+    cindex = length(model.var_constraints) + 1
+    # TODO: If we want to do something with var_constraints later we need to save the actual input values
+    push!(model.var_constraints, (vi.value, :integers, min_val, max_val))
+    return MOI.ConstraintIndex{SVF,Integers}(cindex)
 end
 
 #=

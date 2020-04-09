@@ -7,6 +7,7 @@
         @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.ZeroOne)
         @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.Integer)
         @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.LessThan{Float64})
+        @test MOI.supports_constraint(optimizer, MOI.SingleVariable, CS.Integers)
         @test MOI.supports_constraint(
             optimizer,
             MOI.SingleVariable,

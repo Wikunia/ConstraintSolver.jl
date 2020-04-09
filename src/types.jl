@@ -118,6 +118,11 @@ mutable struct SingleVariableConstraint <: Constraint
     hash::UInt64
 end
 
+struct Integers <: MOI.AbstractScalarSet 
+    values::Vector{Int}
+end
+Integers(vals::Union{UnitRange{Int}, StepRange{Int, Int}}) = Integers(collect(vals))
+
 struct AllDifferentSetInternal <: MOI.AbstractVectorSet
     dimension :: Int
 end

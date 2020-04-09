@@ -466,7 +466,7 @@
             4 0 5 0 1 0 7 0 8
         ]
 
-        @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
+        @variable(m, x[1:9, 1:9], CS.Integers(1:9))
         # set variables
         for r = 1:9, c = 1:9
             if grid[r, c] != 0
