@@ -143,8 +143,9 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::Integers)
 
     # fill the indices such that 1:length(set_vals) map to set_vals
     indices = zeros(Int, range)
-    indices[set_vals] = 1:length(set_vals)
-    j = 1
+    # .- needed for the offset
+    indices[set_vals .- (min_val-1)] = 1:length(set_vals)
+    j = length(set_vals)+1
     for i=1:range
         if indices[i] == 0
             indices[i] = j
