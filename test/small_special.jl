@@ -854,6 +854,33 @@
         @test JuMP.value(x) + JuMP.value(y) + JuMP.value(z) + 2 != 10 
     end
 
+    @testset "Integers basic" begin
+        m = Model(CSJuMPTestSolver())
+        @variable(m, x, CS.Integers([1,2,4]))
+        @variable(m, y, CS.Integers([2,3,5,6]))
+        @constraint(m, x == y)
+        @objective(m, Max, x)
+        optimize!(m)
+        @test JuMP.value(x) ≈ 2
+        @test JuMP.value(y) ≈ 2
+        @test JuMP.objective_value(m) ≈ 2
+
+        m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack" => false))
+        @variable(m, x, CS.Integers([1,2,4]))
+        optimize!(m)
+        com = JuMP.backend(m).optimizer.model.inner
+        @test !CS.has(com.search_space[1], 3)
+        @test sort(CS.values(com.search_space[1])) == [1,2,4]
+
+        m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack" => false))
+        @variable(m, y, CS.Integers([2,5,6,3]))
+        optimize!(m)
+        com = JuMP.backend(m).optimizer.model.inner
+        @test !CS.has(com.search_space[1], 1)
+        @test !CS.has(com.search_space[1], 4)
+        @test sort(CS.values(com.search_space[1])) == [2,3,5,6]
+    end
+
     @testset "Biggest cube square number up to 100" begin
         m = Model(CSJuMPTestSolver())
         @variable(m, x, CS.Integers([i^2 for i=1:20 if i^2 < 100]))

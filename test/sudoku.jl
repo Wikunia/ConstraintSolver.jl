@@ -1,6 +1,6 @@
 @testset "Sudoku" begin
 
-    @testset "Sudoku from opensourc.es using MOI and Int8" begin
+    @testset "Sudoku MOI/Integers/Int8" begin
         grid = Int8[
             0 2 1 0 7 9 0 8 5
             0 4 5 3 1 0 0 0 9
@@ -12,18 +12,17 @@
             0 9 4 0 0 7 8 0 0
             2 0 0 5 0 0 0 4 0
         ]
+        grid .-= 6
+        grid[grid .== 3] .= 10
+        grid[grid .== -2] .= 7
 
-        m = CSTestSolver()
-
-        x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i = 1:9] for j = 1:9]
-        for r = 1:9, c = 1:9
-            MOI.add_constraint(m, x[r][c][1], MOI.GreaterThan(1))
-            MOI.add_constraint(m, x[r][c][1], MOI.LessThan(9))
-        end
+        m = CS.Optimizer()
+        # don't use 1-9 here but some other integers to test offset and alldifferent without all numbers
+        x = [[MOI.add_constrained_variable(m, CS.Integers([-5,-4,-3,7,-1,0,1,2,10])) for i = 1:9] for j = 1:9]
 
         # set variables
         for r = 1:9, c = 1:9
-            if grid[r, c] != 0
+            if grid[r, c] != -6
                 sat = [MOI.ScalarAffineTerm(Int8(1), x[r][c][1])]
                 MOI.add_constraint(
                     m,
