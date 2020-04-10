@@ -52,6 +52,7 @@ include("constraints/less_than.jl")
 include("constraints/svc.jl")
 include("constraints/equal.jl")
 include("constraints/not_equal.jl")
+include("constraints/table.jl")
 
 """
     add_var!(com::CS.CoM, from::Int, to::Int; fix=nothing)
@@ -64,21 +65,23 @@ function add_var!(com::CS.CoM, from::Int, to::Int; fix = nothing)
     changes = Vector{Vector{Tuple{Symbol,Int,Int,Int}}}()
     push!(changes, Vector{Tuple{Symbol,Int,Int,Int}}())
     var = Variable(
-        ind,
-        from,
-        to,
-        1,
-        to - from + 1,
-        from:to,
-        1:to-from+1,
-        1 - from,
-        from,
-        to,
+        ind, # idx
+        from, # lower_bound
+        to, # upper_bound
+        1, # first_ptr
+        to - from + 1, # last_ptr
+        from:to, # values
+        1:to-from+1, # indices
+        from:to, # init_vals
+        1:to-from+1, # init_indices_to_vals
+        1 - from, # offset
+        from, # min
+        to, # max
         changes,
-        true,
-        true,
-        fix !== nothing,
-        true,
+        true, # has_upper_bound
+        true, # has_lower_bound
+        fix !== nothing, # is_fixed
+        true, # is_integer
     )
     if fix !== nothing
         fix!(com, var, fix)

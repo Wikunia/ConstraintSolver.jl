@@ -6,6 +6,8 @@ Variable(idx) = Variable(
     0,
     [],
     [],
+    [],
+    [],
     0,
     0,
     0,
@@ -99,7 +101,7 @@ end
 @deprecate init() ConstraintSolverModel()
 
 function NumberConstraintTypes()
-    return NumberConstraintTypes(0, 0, 0, 0)
+    return NumberConstraintTypes(zeros(Int, length(fieldnames(NumberConstraintTypes)))...)
 end
 
 function BacktrackObj(com::CS.CoM)

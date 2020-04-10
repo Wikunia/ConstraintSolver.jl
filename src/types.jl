@@ -6,6 +6,8 @@ mutable struct Variable
     last_ptr::Int
     values::Vector{Int}
     indices::Vector{Int}
+    init_vals::Vector{Int} # saves all initial values
+    init_indices_to_vals::Vector{Int} # saves the index in which val appears in init_vals
     offset::Int
     min::Int # the minimum value during the solving process
     max::Int # for initial see lower/upper_bound
@@ -26,6 +28,7 @@ mutable struct NumberConstraintTypes
     inequality::Int
     notequal::Int
     alldifferent::Int
+    table::Int
 end
 
 mutable struct CSInfo
@@ -130,6 +133,16 @@ end
 struct AllDifferentSet <: JuMP.AbstractVectorSet end
 JuMP.moi_set(::AllDifferentSet, dim) = AllDifferentSetInternal(dim)
 
+struct TableSetInternal <: MOI.AbstractVectorSet
+    dimension :: Int
+    table     :: Array{Int, 2}
+end
+
+struct TableSet <: JuMP.AbstractVectorSet 
+    table     :: Array{Int, 2}
+end
+JuMP.moi_set(t::TableSet, dim) = TableSetInternal(dim, t.table)
+
 struct EqualSet <: MOI.AbstractVectorSet
     dimension::Int
 end
@@ -155,6 +168,42 @@ mutable struct LinearConstraint{T<:Real} <: Constraint
     pre_mins::Vector{T}
     pre_maxs::Vector{T}
     enforce_bound::Bool
+    hash::UInt64
+end
+
+"""
+    RSparseBitSet  
+
+See https://arxiv.org/pdf/1604.06641.pdf
+values[x] will save 64 possibilities in a TableConstraint a `1` at position y will mean that the 
+values in row (x-1)*64+y of the table are possible a 0 means that they aren't
+Similar to `Variable` a whole block of 64 rows can be removed by changing the `indices` and `last_ptr`.
+The `mask` saves the current mask to change words
+"""
+mutable struct RSparseBitSet
+    values    :: Vector{UInt64}
+    indices   :: Vector{Int}
+    last_ptr  :: Int
+    mask      :: Vector{UInt64}
+    RSparseBitSet() = new() 
+end
+
+mutable struct TableSupport
+    var_start::Vector{Int}
+    table::Array{UInt64, 2}
+    TableSupport() = new()
+end
+
+mutable struct TableConstraint <: Constraint
+    idx::Int
+    fct::MOI.AbstractVectorFunction
+    set::TableSetInternal
+    indices::Vector{Int}
+    pvals::Vector{Int}
+    current::RSparseBitSet
+    supports::TableSupport
+    enforce_bound::Bool
+    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
     hash::UInt64
 end
 

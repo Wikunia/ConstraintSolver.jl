@@ -31,7 +31,7 @@ end
 """
     init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal)
 
-Initialize the AllDifferentConstraint by filling 
+Initialize the AllDifferentConstraint by filling matching_init
 """
 function init_constraint!(
     com::CS.CoM,

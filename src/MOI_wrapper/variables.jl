@@ -119,6 +119,8 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.ZeroOne)
     model.variable_info[vi.value].min = 0
     model.variable_info[vi.value].has_lower_bound = true
     model.variable_info[vi.value].values = [0, 1]
+    model.variable_info[vi.value].init_vals = [0, 1]
+    model.variable_info[vi.value].init_indices_to_vals = 1:2
     model.variable_info[vi.value].offset = 1
     model.variable_info[vi.value].indices = 1:2
     model.variable_info[vi.value].first_ptr = 1
@@ -160,8 +162,10 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::Integers)
     model.variable_info[vi.value].min = min_val
     model.variable_info[vi.value].has_lower_bound = true
     model.variable_info[vi.value].values = vals
+    model.variable_info[vi.value].init_vals = vals
     model.variable_info[vi.value].offset = 1 - min_val
     model.variable_info[vi.value].indices = indices
+    model.variable_info[vi.value].init_indices_to_vals = indices
     model.variable_info[vi.value].first_ptr = 1
     model.variable_info[vi.value].last_ptr = length(set_vals)
     addupd_var_in_inner_model(model, vi.value)
@@ -204,6 +208,8 @@ function MOI.add_constraint(
     model.variable_info[vi.value].indices = 1:num_vals
     model.variable_info[vi.value].first_ptr = 1
     model.variable_info[vi.value].last_ptr = num_vals
+    model.variable_info[vi.value].init_vals = model.variable_info[vi.value].values
+    model.variable_info[vi.value].init_indices_to_vals = model.variable_info[vi.value].indices
 
     addupd_var_in_inner_model(model, vi.value)
 
@@ -231,6 +237,8 @@ function MOI.add_constraint(model::Optimizer, v::SVF, lt::MOI.LessThan{T}) where
         model.variable_info[vi.value].indices = 1:num_vals
         model.variable_info[vi.value].first_ptr = 1
         model.variable_info[vi.value].last_ptr = num_vals
+        model.variable_info[vi.value].init_vals = model.variable_info[vi.value].values
+        model.variable_info[vi.value].init_indices_to_vals = model.variable_info[vi.value].indices
     end
 
     addupd_var_in_inner_model(model, vi.value)
@@ -264,6 +272,8 @@ function MOI.add_constraint(
         model.variable_info[vi.value].indices = 1:num_vals
         model.variable_info[vi.value].first_ptr = 1
         model.variable_info[vi.value].last_ptr = num_vals
+        model.variable_info[vi.value].init_vals = model.variable_info[vi.value].values
+        model.variable_info[vi.value].init_indices_to_vals = model.variable_info[vi.value].indices
     end
     addupd_var_in_inner_model(model, vi.value)
 
@@ -290,6 +300,8 @@ function MOI.add_constraint(model::Optimizer, v::SVF, eq::MOI.EqualTo{T}) where 
     model.variable_info[vi.value].indices = [1]
     model.variable_info[vi.value].first_ptr = 1
     model.variable_info[vi.value].last_ptr = 1
+    model.variable_info[vi.value].init_vals = model.variable_info[vi.value].values
+    model.variable_info[vi.value].init_indices_to_vals = model.variable_info[vi.value].indices
     addupd_var_in_inner_model(model, vi.value)
 
     cindex = length(model.var_constraints) + 1

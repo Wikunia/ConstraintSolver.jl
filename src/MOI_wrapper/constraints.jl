@@ -26,6 +26,19 @@ MOI.supports_constraint(
     ::Type{MOI.LessThan{T}},
 ) where {T<:Real} = true
 
+MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{EqualSet}) = true
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{MOI.VectorOfVariables},
+    ::Type{AllDifferentSetInternal},
+) = true
+
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{MOI.VectorOfVariables},
+    ::Type{TableSetInternal},
+) = true
+
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
     for term in aff.terms
         check_inbounds(model, term.variable_index)
@@ -140,13 +153,6 @@ function MOI.add_constraint(
     return MOI.ConstraintIndex{SAF{T},MOI.LessThan{T}}(length(model.inner.constraints))
 end
 
-MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{EqualSet}) = true
-MOI.supports_constraint(
-    ::Optimizer,
-    ::Type{MOI.VectorOfVariables},
-    ::Type{AllDifferentSetInternal},
-) = true
-
 function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::EqualSet)
     com = model.inner
 
@@ -202,6 +208,35 @@ function MOI.add_constraint(
     com.info.n_constraint_types.alldifferent += 1
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,AllDifferentSetInternal}(length(com.constraints))
+end
+
+function MOI.add_constraint(
+    model::Optimizer,
+    vars::MOI.VectorOfVariables,
+    set::TableSetInternal,
+)
+    com = model.inner
+
+    constraint = TableConstraint(
+        length(com.constraints) + 1,
+        vars,
+        set,
+        Int[v.value for v in vars.variables],
+        Int[], # pvals will be filled later
+        RSparseBitSet(),
+        TableSupport(), # will be filled in init_constraint!
+        false, # currently don't care about bounds
+        nothing, 
+        zero(UInt64), # hash will be filled later
+    )
+
+    push!(com.constraints, constraint)
+    for (i, ind) in enumerate(constraint.indices)
+        push!(com.subscription[ind], constraint.idx)
+    end
+    com.info.n_constraint_types.table += 1
+
+    return MOI.ConstraintIndex{MOI.VectorOfVariables,TableSetInternal}(length(com.constraints))
 end
 
 MOI.supports_constraint(
