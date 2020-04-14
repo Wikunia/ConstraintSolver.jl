@@ -52,6 +52,7 @@ include("constraints/less_than.jl")
 include("constraints/svc.jl")
 include("constraints/equal.jl")
 include("constraints/not_equal.jl")
+
 include("constraints/table.jl")
 
 """
@@ -73,7 +74,7 @@ function add_var!(com::CS.CoM, from::Int, to::Int; fix = nothing)
         from:to, # values
         1:to-from+1, # indices
         from:to, # init_vals
-        1:to-from+1, # init_indices_to_vals
+        1:to-from+1, # init_val_to_index
         1 - from, # offset
         from, # min
         to, # max
@@ -1071,7 +1072,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     set_in_all_different!(com)
 
     # initialize constraints if `init_constraint!` exists for the constraint
-    init_constraints!(com)
+    !init_constraints!(com) && return :Infeasible
 
     com.input[:logs] = keep_logs
     if keep_logs
@@ -1083,7 +1084,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     added_con_idxs = simplify!(com)
     if length(added_con_idxs) > 0
         set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
-        init_constraints!(com; constraints=com.constraints[added_con_idxs])
+        !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
     end
 
     set_constraint_hashes!(com)

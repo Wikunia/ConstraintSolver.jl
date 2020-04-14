@@ -302,14 +302,17 @@ function set_constraint_hashes!(com::CS.CoM)
 end
 
 function init_constraints!(com::CS.CoM; constraints=com.constraints)
+    feasible = true
     for constraint in constraints
         c_type = typeof(constraint)
         c_fct_type = typeof(constraint.fct)
         c_set_type = typeof(constraint.set)
         if hasmethod(init_constraint!, (CS.CoM, c_type, c_fct_type, c_set_type))
-            init_constraint!(com, constraint, constraint.fct, constraint.set)
+            feasible = init_constraint!(com, constraint, constraint.fct, constraint.set)
+            !feasible && break
         end
     end
+    return feasible
 end
 
 """	

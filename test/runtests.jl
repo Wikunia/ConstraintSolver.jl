@@ -15,6 +15,8 @@ include("docs.jl")
 include("fcts.jl")
 include("options.jl")
 include("moi.jl")
+include("constraints/table.jl")
+
 include("lp_solver.jl")
 
 include("stable_set.jl")

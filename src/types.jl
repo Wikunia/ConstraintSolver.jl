@@ -7,7 +7,7 @@ mutable struct Variable
     values::Vector{Int}
     indices::Vector{Int}
     init_vals::Vector{Int} # saves all initial values
-    init_indices_to_vals::Vector{Int} # saves the index in which val appears in init_vals
+    init_val_to_index::Vector{Int} # saves the index in which val appears in init_vals
     offset::Int
     min::Int # the minimum value during the solving process
     max::Int # for initial see lower/upper_bound
@@ -40,19 +40,43 @@ mutable struct CSInfo
     n_constraint_types::NumberConstraintTypes
 end
 
-abstract type Constraint end
+#====================================================================================
+=================== SETS FOR VARIABLES AND CONSTRAINTS ==============================
+====================================================================================#
 
-abstract type ObjectiveFunction end
+struct Integers <: MOI.AbstractScalarSet 
+    values::Vector{Int}
+end
+Integers(vals::Union{UnitRange{Int}, StepRange{Int, Int}}) = Integers(collect(vals))
 
-mutable struct SingleVariableObjective <: ObjectiveFunction
-    fct::MOI.SingleVariable
-    index::Int # index of the variable
-    indices::Vector{Int}
+struct AllDifferentSetInternal <: MOI.AbstractVectorSet
+    dimension :: Int
 end
 
+struct AllDifferentSet <: JuMP.AbstractVectorSet end
+JuMP.moi_set(::AllDifferentSet, dim) = AllDifferentSetInternal(dim)
 
-# used to designate a feasibility sense
-struct NoObjective <: ObjectiveFunction end
+struct TableSetInternal <: MOI.AbstractVectorSet
+    dimension :: Int
+    table     :: Array{Int, 2}
+end
+
+struct TableSet <: JuMP.AbstractVectorSet 
+    table     :: Array{Int, 2}
+end
+JuMP.moi_set(t::TableSet, dim) = TableSetInternal(dim, t.table)
+
+struct EqualSet <: MOI.AbstractVectorSet
+    dimension::Int
+end
+
+struct NotEqualSet{T} <: MOI.AbstractScalarSet
+    value::T
+end
+
+#====================================================================================
+====================== TYPES FOR CONSTRAINTS ========================================
+====================================================================================#
 
 """
     BoundRhsVariable 
@@ -66,17 +90,6 @@ mutable struct BoundRhsVariable
     ub  :: Int
 end
 
-mutable struct BasicConstraint <: Constraint
-    idx::Int
-    fct::Union{MOI.AbstractScalarFunction,MOI.AbstractVectorFunction}
-    set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
-    indices::Vector{Int}
-    pvals::Vector{Int}
-    enforce_bound::Bool
-    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
-    hash::UInt64
-end
-
 mutable struct MatchingInit
     l_in_len::Int
     matching_l::Vector{Int}
@@ -87,6 +100,49 @@ mutable struct MatchingInit
     parents::Vector{Int}
     used_l::Vector{Bool}
     used_r::Vector{Bool}
+end
+
+"""
+    RSparseBitSet  
+
+See https://arxiv.org/pdf/1604.06641.pdf
+words[x] will save 64 possibilities in a TableConstraint a `1` at position y will mean that the 
+words in row (x-1)*64+y of the table are possible a 0 means that they aren't
+Similar to `Variable` a whole block of 64 rows can be removed by changing the `indices` and `last_ptr`.
+The `mask` saves the current mask to change words
+"""
+mutable struct RSparseBitSet
+    words     :: Vector{UInt64}
+    indices   :: Vector{Int}
+    last_ptr  :: Int
+    mask      :: Vector{UInt64}
+    RSparseBitSet() = new() 
+end
+
+mutable struct TableSupport
+    # defines the range for each variable i.e [1,3,7,10] means that the first variable has 2 values, the second 4
+    var_start   :: Vector{Int} 
+    table       :: Array{UInt64, 2}
+    last_sizes  :: Vector{Int}
+    residues    :: Vector{Int}
+    TableSupport() = new()
+end
+
+#====================================================================================
+====================== CONSTRAINTS ==================================================
+====================================================================================#
+
+abstract type Constraint end
+
+mutable struct BasicConstraint <: Constraint
+    idx::Int
+    fct::Union{MOI.AbstractScalarFunction,MOI.AbstractVectorFunction}
+    set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
+    indices::Vector{Int}
+    pvals::Vector{Int}
+    enforce_bound::Bool
+    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
+    hash::UInt64
 end
 
 mutable struct AllDifferentConstraint <: Constraint
@@ -121,41 +177,6 @@ mutable struct SingleVariableConstraint <: Constraint
     hash::UInt64
 end
 
-struct Integers <: MOI.AbstractScalarSet 
-    values::Vector{Int}
-end
-Integers(vals::Union{UnitRange{Int}, StepRange{Int, Int}}) = Integers(collect(vals))
-
-struct AllDifferentSetInternal <: MOI.AbstractVectorSet
-    dimension :: Int
-end
-
-struct AllDifferentSet <: JuMP.AbstractVectorSet end
-JuMP.moi_set(::AllDifferentSet, dim) = AllDifferentSetInternal(dim)
-
-struct TableSetInternal <: MOI.AbstractVectorSet
-    dimension :: Int
-    table     :: Array{Int, 2}
-end
-
-struct TableSet <: JuMP.AbstractVectorSet 
-    table     :: Array{Int, 2}
-end
-JuMP.moi_set(t::TableSet, dim) = TableSetInternal(dim, t.table)
-
-struct EqualSet <: MOI.AbstractVectorSet
-    dimension::Int
-end
-
-struct NotEqualSet{T} <: MOI.AbstractScalarSet
-    value::T
-end
-
-mutable struct LinearCombination{T<:Real}
-    indices::Vector{Int}
-    coeffs::Vector{T}
-end
-
 mutable struct LinearConstraint{T<:Real} <: Constraint
     idx::Int
     fct::MOI.ScalarAffineFunction
@@ -171,29 +192,6 @@ mutable struct LinearConstraint{T<:Real} <: Constraint
     hash::UInt64
 end
 
-"""
-    RSparseBitSet  
-
-See https://arxiv.org/pdf/1604.06641.pdf
-values[x] will save 64 possibilities in a TableConstraint a `1` at position y will mean that the 
-values in row (x-1)*64+y of the table are possible a 0 means that they aren't
-Similar to `Variable` a whole block of 64 rows can be removed by changing the `indices` and `last_ptr`.
-The `mask` saves the current mask to change words
-"""
-mutable struct RSparseBitSet
-    values    :: Vector{UInt64}
-    indices   :: Vector{Int}
-    last_ptr  :: Int
-    mask      :: Vector{UInt64}
-    RSparseBitSet() = new() 
-end
-
-mutable struct TableSupport
-    var_start::Vector{Int}
-    table::Array{UInt64, 2}
-    TableSupport() = new()
-end
-
 mutable struct TableConstraint <: Constraint
     idx::Int
     fct::MOI.AbstractVectorFunction
@@ -205,6 +203,27 @@ mutable struct TableConstraint <: Constraint
     enforce_bound::Bool
     bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
     hash::UInt64
+end
+
+#====================================================================================
+====================== OBJECTIVES ==================================================
+====================================================================================#
+
+abstract type ObjectiveFunction end
+
+mutable struct SingleVariableObjective <: ObjectiveFunction
+    fct::MOI.SingleVariable
+    index::Int # index of the variable
+    indices::Vector{Int}
+end
+
+
+# used to designate a feasibility sense
+struct NoObjective <: ObjectiveFunction end
+
+mutable struct LinearCombination{T<:Real}
+    indices::Vector{Int}
+    coeffs::Vector{T}
 end
 
 mutable struct LinearCombinationObjective{T<:Real} <: ObjectiveFunction
