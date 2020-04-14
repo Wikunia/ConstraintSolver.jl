@@ -165,7 +165,8 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::Integers)
     model.variable_info[vi.value].init_vals = vals
     model.variable_info[vi.value].offset = 1 - min_val
     model.variable_info[vi.value].indices = indices
-    model.variable_info[vi.value].init_val_to_index = indices
+    # needs copy to be different
+    model.variable_info[vi.value].init_val_to_index = copy(indices)
     model.variable_info[vi.value].first_ptr = 1
     model.variable_info[vi.value].last_ptr = length(set_vals)
     addupd_var_in_inner_model(model, vi.value)

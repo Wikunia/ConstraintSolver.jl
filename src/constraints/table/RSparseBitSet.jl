@@ -1,3 +1,15 @@
+function is_empty(bitset::RSparseBitSet)
+    for i=1:bitset.last_ptr
+        idx = bitset.indices[i]
+        if bitset.mask[idx] != UInt64(0)
+            return false
+        end
+    end
+    return true
+    # TODO use last_ptr
+    # return bitset.last_ptr == 0
+end
+
 function clear_mask(bitset::RSparseBitSet)
     for i=1:bitset.last_ptr
         idx = bitset.indices[i]
@@ -25,7 +37,6 @@ function intersect_with_mask(bitset::RSparseBitSet)
     for i=bitset.last_ptr:-1:1
         idx = bitset.indices[i]
         w = words[idx] & mask[idx]
-        println("words[idx]: $(words[idx]) & mask[idx]: $(mask[idx]) => $w")
         if w != words[idx]
             words[idx] = w
             # TODO: Change last_ptr here later

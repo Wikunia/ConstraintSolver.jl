@@ -1,6 +1,50 @@
 include("table/support.jl")
+include("table/residues.jl")
 include("table/RSparseBitSet.jl")
 
+function update_table(com::CoM, constraint::TableConstraint)
+    current = constraint.current
+    supports = constraint.supports
+    variables = com.search_space
+    for local_vidx in constraint.changed_vars
+        vidx = constraint.indices[local_vidx]
+        clear_mask(current)
+        # TODO: Include incremental update
+        # reset based update
+        for value in CS.values(variables[vidx])
+            add_to_mask(current, supports[com, vidx, value])
+        end
+        intersect_with_mask(current)
+        is_empty(current) && break
+    end
+end
+
+function filter_domains(com::CoM, constraint::TableConstraint)
+    current = constraint.current
+    supports = constraint.supports
+    residues = constraint.residues
+    variables = com.search_space
+    for local_vidx in constraint.unfixed_vars
+        vidx = constraint.indices[local_vidx]
+        for value in CS.values(variables[vidx])
+            idx = residues[com, vidx, value]
+            if current.words[idx] & supports[com, vidx, value][idx] == UInt64(0)
+                idx = intersect_index(current, supports[com, vidx, value])
+                if idx != 0
+                    # TODO set index method
+                    residues[com, vidx, value] = idx
+                else
+                    if !rm!(com, variables[vidx], value)
+                        return false # not feasible anymore
+                    end
+                end 
+            end
+        end
+        constraint.last_sizes[local_vidx] = CS.nvalues(variables[vidx])
+    end
+    return true
+end
+    
 """
     init_constraint!(com::CS.CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal)
 
@@ -15,9 +59,6 @@ function init_constraint!(
     
     possible_rows = trues(num_pos_rows)
     search_space = com.search_space
-    @show search_space
-    @show search_space[2]
-    @assert !has(search_space[2], 3)
 
     indices = constraint.indices
     for row_id in 1:size(set.table)[1]
@@ -51,7 +92,7 @@ function init_constraint!(
     ending_ones = (num_pos_rows-1) % 64 +1
     rsbs.words[end] = rsbs.words[end] .⊻ ((UInt64(1) << (64-ending_ones))-1)
 
-    support.table = zeros(UInt64, (num_64_words, num_supports))
+    support.values = zeros(UInt64, (num_64_words, num_supports))
 
     num_64_idx = 0
     rp_idx = 0
@@ -69,11 +110,9 @@ function init_constraint!(
                 @assert variable.init_vals[val_idx] == table_val
                 support_col_idx = support.var_start[c]+val_idx-1
                 # println("support_col_idx: $support_col_idx")
-                cell_64 = support.table[num_64_idx, support_col_idx]
+                cell_64 = support.values[num_64_idx, support_col_idx]
                 pos_in_64 = (rp_idx-1) % 64 + 1
-                support.table[num_64_idx, support_col_idx] = cell_64 .| (UInt64(1) << (64-pos_in_64))
-                # println(bitstring(support.table[num_64_idx, support_col_idx]))
-                # cld(set.table[r,c], 64)
+                support.values[num_64_idx, support_col_idx] = cell_64 .| (UInt64(1) << (64-pos_in_64))
             end
         end
     end
@@ -81,8 +120,8 @@ function init_constraint!(
     # check if a support column is completely zero
     # that means that the variable corresponding to that column can't have the value corresponding to the column 
     feasible = true
-    for c = 1:size(support.table, 2)
-        if all(i->i==UInt64(0), support.table[:,c])
+    for c = 1:size(support.values, 2)
+        if all(i->i==UInt64(0), support.values[:,c])
             # getting the correct index in indices
             var_i = 1
             while support.var_start[var_i] <= c
@@ -97,6 +136,19 @@ function init_constraint!(
         end
     end
     !feasible && return false
+
+    # define residues
+    residues = constraint.residues
+    residues.var_start = support.var_start
+    residues.values = zeros(Int, num_supports)
+    for sc=1:num_supports
+        idx = support.values[:,sc]
+        residues.values[sc] = intersect_index(rsbs, idx)
+    end
+
+    # define last_sizes
+    constraint.last_sizes = [CS.nvalues(com.search_space[vidx]) for vidx in constraint.indices]
+
     return feasible
 end
 
@@ -113,9 +165,20 @@ function prune_constraint!(
     set::TableSetInternal;
     logs = true,
 )
-    # just a placeholder atm
-    return true
+    current = constraint.current
+    indices = constraint.indices
+    variables = com.search_space
 
+    # All local indices (1 corresponds to indices[1]) which have changed
+    constraint.changed_vars = findall(x->CS.nvalues(variables[indices[x]]) != constraint.last_sizes[x], 1:length(indices))
+    for local_vidx in constraint.changed_vars
+        constraint.last_sizes[local_vidx] = CS.nvalues(variables[indices[local_vidx]])
+    end
+    constraint.unfixed_vars = findall(x->constraint.last_sizes[x] > 1, 1:length(indices))
+    update_table(com, constraint)
+    is_empty(current) && return false
+
+    return filter_domains(com, constraint)
 end
 
 """

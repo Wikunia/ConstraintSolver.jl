@@ -120,12 +120,19 @@ mutable struct RSparseBitSet
 end
 
 mutable struct TableSupport
-    # defines the range for each variable i.e [1,3,7,10] means that the first variable has 2 values, the second 4
+    # defines the range for each variable 
+    # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
     var_start   :: Vector{Int} 
-    table       :: Array{UInt64, 2}
-    last_sizes  :: Vector{Int}
-    residues    :: Vector{Int}
+    values      :: Array{UInt64, 2}
     TableSupport() = new()
+end
+
+mutable struct TableResidues
+    # defines the range for each variable 
+    # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
+    var_start   :: Vector{Int} 
+    values      :: Vector{Int}
+    TableResidues() = new()
 end
 
 #====================================================================================
@@ -200,6 +207,10 @@ mutable struct TableConstraint <: Constraint
     pvals::Vector{Int}
     current::RSparseBitSet
     supports::TableSupport
+    last_sizes::Vector{Int}
+    residues::TableResidues
+    changed_vars::Vector{Int}
+    unfixed_vars::Vector{Int}
     enforce_bound::Bool
     bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
     hash::UInt64

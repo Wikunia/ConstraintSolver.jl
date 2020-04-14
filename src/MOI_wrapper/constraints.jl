@@ -225,6 +225,10 @@ function MOI.add_constraint(
         Int[], # pvals will be filled later
         RSparseBitSet(),
         TableSupport(), # will be filled in init_constraint!
+        Int[], # will be changes later as it needs the number of words
+        TableResidues(),
+        Int[],
+        Int[],
         false, # currently don't care about bounds
         nothing, 
         zero(UInt64), # hash will be filled later
