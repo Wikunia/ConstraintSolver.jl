@@ -1,5 +1,5 @@
 function constraint_hash(constraint::Union{AllDifferentConstraint,BasicConstraint})
-    return hash([string(typeof(constraint.set)), constraint.indices])
+    return hash([string(typeof(constraint.std.set)), constraint.std.indices])
 end
 
 function constraint_hash(constraint::TableConstraint)
@@ -7,16 +7,16 @@ function constraint_hash(constraint::TableConstraint)
 end
 
 function constraint_hash(constraint::LinearConstraint)
-    coeffs = [t.coefficient for t in constraint.fct.terms]
-    if isa(constraint.set, MOI.EqualTo)
-        rhs = constraint.set.value - constraint.fct.constant
+    coeffs = [t.coefficient for t in constraint.std.fct.terms]
+    if isa(constraint.std.set, MOI.EqualTo)
+        rhs = constraint.std.set.value - constraint.std.fct.constant
     end
-    if isa(constraint.set, MOI.LessThan)
-        rhs = constraint.set.upper - constraint.fct.constant
+    if isa(constraint.std.set, MOI.LessThan)
+        rhs = constraint.std.set.upper - constraint.std.fct.constant
     end
-    return hash([string(typeof(constraint.set)), constraint.indices, coeffs, rhs])
+    return hash([string(typeof(constraint.std.set)), constraint.std.indices, coeffs, rhs])
 end
 
 function constraint_hash(constraint::SingleVariableConstraint)
-    return hash([string(typeof(constraint.set)), constraint.indices])
+    return hash([string(typeof(constraint.std.set)), constraint.std.indices])
 end

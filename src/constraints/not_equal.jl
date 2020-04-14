@@ -5,11 +5,12 @@ Change the `LinearConstraint` to describe the opposite of it.
 Can be used i.e by `add_constraint!(com, x + y != z)`.
 """
 function Base.:!(lc::CS.LinearConstraint)
-    if !isa(lc.set, MOI.EqualTo)
+    if !isa(lc.std.set, MOI.EqualTo)
         throw(ErrorException("!BasicConstraint is only implemented for !equal"))
     end
-    set = NotEqualSet{typeof(lc.set.value)}(lc.set.value)
-    bc = BasicConstraint(lc.idx, lc.fct, set, lc.indices, lc.pvals, false, nothing, lc.hash)
+    set = NotEqualSet{typeof(lc.std.set.value)}(lc.std.set.value)
+    internals = ConstraintInternals(lc.std.idx, lc.std.fct, set, lc.std.indices)
+    bc = BasicConstraint(internals)
     return bc
 end
 
@@ -20,14 +21,14 @@ Change the `BasicConstraint` to describe the opposite of it.
 Can be used i.e by `add_constraint!(com, x != z)`.
 """
 function Base.:!(bc::CS.BasicConstraint)
-    if !isa(bc.set, EqualSet)
+    if !isa(bc.std.set, EqualSet)
         throw(ErrorException("!BasicConstraint is only implemented for !equal"))
     end
-    if length(bc.indices) != 2
+    if length(bc.std.indices) != 2
         throw(ErrorException("!BasicConstraint is only implemented for !equal with exactly 2 variables"))
     end
-    bc.fct, T = linear_combination_to_saf(LinearCombination(bc.indices, [1, -1]))
-    bc.set = NotEqualSet{T}(zero(T))
+    bc.std.fct, T = linear_combination_to_saf(LinearCombination(bc.std.indices, [1, -1]))
+    bc.std.set = NotEqualSet{T}(zero(T))
     return bc
 end
 
@@ -44,11 +45,11 @@ function prune_constraint!(
     set::NotEqualSet{T};
     logs = true,
 ) where {T<:Real}
-    indices = constraint.indices
+    indices = constraint.std.indices
 
     # check if only one variable is variable
-    nfixed = count(v -> isfixed(v), com.search_space[constraint.indices])
-    if nfixed >= length(constraint.indices)-1
+    nfixed = count(v -> isfixed(v), com.search_space[constraint.std.indices])
+    if nfixed >= length(constraint.std.indices)-1
         search_space = com.search_space
         sum = -set.value+fct.constant
         unfixed_i = 0
@@ -93,7 +94,7 @@ function still_feasible(
     value::Int,
     index::Int,
 ) where {T<:Real}
-    indices = constraint.indices
+    indices = constraint.std.indices
     # check if only one variable is variable
     nfixed = count(v -> isfixed(v), com.search_space[indices])
     if nfixed >= length(indices)-1

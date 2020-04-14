@@ -5,9 +5,10 @@ include("table/RSparseBitSet.jl")
 function update_table(com::CoM, constraint::TableConstraint)
     current = constraint.current
     supports = constraint.supports
+    indices = constraint.std.indices
     variables = com.search_space
     for local_vidx in constraint.changed_vars
-        vidx = constraint.indices[local_vidx]
+        vidx = indices[local_vidx]
         clear_mask(current)
         # TODO: Include incremental update
         # reset based update
@@ -23,9 +24,10 @@ function filter_domains(com::CoM, constraint::TableConstraint)
     current = constraint.current
     supports = constraint.supports
     residues = constraint.residues
+    indices = constraint.std.indices
     variables = com.search_space
     for local_vidx in constraint.unfixed_vars
-        vidx = constraint.indices[local_vidx]
+        vidx = indices[local_vidx]
         for value in CS.values(variables[vidx])
             idx = residues[com, vidx, value]
             if current.words[idx] & supports[com, vidx, value][idx] == UInt64(0)
@@ -60,7 +62,7 @@ function init_constraint!(
     possible_rows = trues(num_pos_rows)
     search_space = com.search_space
 
-    indices = constraint.indices
+    indices = constraint.std.indices
     for row_id in 1:size(set.table)[1]
         row = set.table[row_id,:]
         for (i, vidx) in enumerate(indices)
@@ -147,7 +149,7 @@ function init_constraint!(
     end
 
     # define last_sizes
-    constraint.last_sizes = [CS.nvalues(com.search_space[vidx]) for vidx in constraint.indices]
+    constraint.last_sizes = [CS.nvalues(com.search_space[vidx]) for vidx in indices]
 
     return feasible
 end
@@ -166,7 +168,7 @@ function prune_constraint!(
     logs = true,
 )
     current = constraint.current
-    indices = constraint.indices
+    indices = constraint.std.indices
     variables = com.search_space
 
     # All local indices (1 corresponds to indices[1]) which have changed

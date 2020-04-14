@@ -20,6 +20,12 @@ Variable(idx) = Variable(
 
 MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[], Bool[])
 
+function ConstraintInternals(idx::Int, fct, set, indices::Vector{Int})
+    return ConstraintInternals(
+        idx, fct, set, indices, Int[], false, nothing, zero(UInt64)
+    )
+end
+
 function LinearConstraint(
     fct::MOI.ScalarAffineFunction,
     set::MOI.AbstractScalarSet,
@@ -46,21 +52,15 @@ function LinearConstraint(
     pre_mins = zeros(promote_T, length(indices))
     # this can be changed later in `set_in_all_different!` but needs to be initialized with false
     in_all_different = false
-    pvals = Int[]
 
+    internals = ConstraintInternals(0, fct, set, indices)
     lc = LinearConstraint(
-        0, # idx will be filled later
-        fct,
-        set,
-        indices,
-        pvals,
+        internals,
         in_all_different,
         mins,
         maxs,
         pre_mins,
         pre_maxs,
-        false, # `enforce_bound` can be changed later but should be set to false by default
-        zero(UInt64),
     )
     return lc
 end

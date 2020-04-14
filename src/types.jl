@@ -61,11 +61,6 @@ struct TableSetInternal <: MOI.AbstractVectorSet
     table     :: Array{Int, 2}
 end
 
-struct TableSet <: JuMP.AbstractVectorSet 
-    table     :: Array{Int, 2}
-end
-JuMP.moi_set(t::TableSet, dim) = TableSetInternal(dim, t.table)
-
 struct EqualSet <: MOI.AbstractVectorSet
     dimension::Int
 end
@@ -136,84 +131,65 @@ mutable struct TableResidues
 end
 
 #====================================================================================
+====================================================================================#
+
+mutable struct ConstraintInternals
+    idx::Int
+    fct::Union{MOI.AbstractScalarFunction,MOI.AbstractVectorFunction}
+    set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
+    indices::Vector{Int}
+    pvals::Vector{Int}
+    enforce_bound::Bool
+    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
+    hash::UInt64
+end
+
+#====================================================================================
 ====================== CONSTRAINTS ==================================================
 ====================================================================================#
 
 abstract type Constraint end
 
 mutable struct BasicConstraint <: Constraint
-    idx::Int
-    fct::Union{MOI.AbstractScalarFunction,MOI.AbstractVectorFunction}
-    set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
-    indices::Vector{Int}
-    pvals::Vector{Int}
-    enforce_bound::Bool
-    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
-    hash::UInt64
+    std::ConstraintInternals
 end
 
 mutable struct AllDifferentConstraint <: Constraint
-    idx::Int
-    fct::Union{MOI.AbstractScalarFunction,MOI.AbstractVectorFunction}
-    set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
-    indices::Vector{Int}
-    pvals::Vector{Int}
+    std::ConstraintInternals
     pval_mapping::Vector{Int}
     vertex_mapping::Vector{Int}
     vertex_mapping_bw::Vector{Int}
     di_ei::Vector{Int}
     di_ej::Vector{Int}
     matching_init::MatchingInit
-    enforce_bound::Bool
-    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
     # corresponds to `in_all_different`: Saves the constraint idxs where all variables are part of this alldifferent constraint
     sub_constraint_idxs::Vector{Int}
-    hash::UInt64
 end
 
 # support for a <= b constraint
 mutable struct SingleVariableConstraint <: Constraint
-    idx::Int
-    fct::MOI.AbstractScalarFunction
-    set::MOI.AbstractScalarSet
-    indices::Vector{Int}
-    pvals::Vector{Int}
+    std::ConstraintInternals
     lhs::Int
     rhs::Int
-    enforce_bound::Bool
-    hash::UInt64
 end
 
 mutable struct LinearConstraint{T<:Real} <: Constraint
-    idx::Int
-    fct::MOI.ScalarAffineFunction
-    set::MOI.AbstractScalarSet
-    indices::Vector{Int}
-    pvals::Vector{Int}
+    std::ConstraintInternals
     in_all_different::Bool
     mins::Vector{T}
     maxs::Vector{T}
     pre_mins::Vector{T}
     pre_maxs::Vector{T}
-    enforce_bound::Bool
-    hash::UInt64
 end
 
 mutable struct TableConstraint <: Constraint
-    idx::Int
-    fct::MOI.AbstractVectorFunction
-    set::TableSetInternal
-    indices::Vector{Int}
-    pvals::Vector{Int}
+    std::ConstraintInternals
     current::RSparseBitSet
     supports::TableSupport
     last_sizes::Vector{Int}
     residues::TableResidues
     changed_vars::Vector{Int}
     unfixed_vars::Vector{Int}
-    enforce_bound::Bool
-    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
-    hash::UInt64
 end
 
 #====================================================================================
