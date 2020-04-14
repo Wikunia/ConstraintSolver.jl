@@ -37,19 +37,38 @@ mutable struct CSInfo
     n_constraint_types::NumberConstraintTypes
 end
 
-abstract type Constraint end
+#====================================================================================
+=================== SETS FOR VARIABLES AND CONSTRAINTS ==============================
+====================================================================================#
 
-abstract type ObjectiveFunction end
+struct Integers <: MOI.AbstractScalarSet 
+    values::Vector{Int}
+end
+Integers(vals::Union{UnitRange{Int}, StepRange{Int, Int}}) = Integers(collect(vals))
 
-mutable struct SingleVariableObjective <: ObjectiveFunction
-    fct::MOI.SingleVariable
-    index::Int # index of the variable
-    indices::Vector{Int}
+struct AllDifferentSetInternal <: MOI.AbstractVectorSet
+    dimension :: Int
 end
 
+struct AllDifferentSet <: JuMP.AbstractVectorSet end
+JuMP.moi_set(::AllDifferentSet, dim) = AllDifferentSetInternal(dim)
 
-# used to designate a feasibility sense
-struct NoObjective <: ObjectiveFunction end
+struct TableSetInternal <: MOI.AbstractVectorSet
+    dimension :: Int
+    table     :: Array{Int, 2}
+end
+
+struct EqualSet <: MOI.AbstractVectorSet
+    dimension::Int
+end
+
+struct NotEqualSet{T} <: MOI.AbstractScalarSet
+    value::T
+end
+
+#====================================================================================
+====================== TYPES FOR CONSTRAINTS ========================================
+====================================================================================#
 
 """
     BoundRhsVariable 
@@ -61,17 +80,6 @@ mutable struct BoundRhsVariable
     idx :: Int
     lb  :: Int
     ub  :: Int
-end
-
-mutable struct BasicConstraint <: Constraint
-    idx::Int
-    fct::Union{MOI.AbstractScalarFunction,MOI.AbstractVectorFunction}
-    set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
-    indices::Vector{Int}
-    pvals::Vector{Int}
-    enforce_bound::Bool
-    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
-    hash::UInt64
 end
 
 mutable struct MatchingInit
@@ -86,76 +94,79 @@ mutable struct MatchingInit
     used_r::Vector{Bool}
 end
 
-mutable struct AllDifferentConstraint <: Constraint
+"""
+    ConstraintInternals
+
+All fields which are used by all constraints and need to be added to each constraint as `std`
+"""
+mutable struct ConstraintInternals
     idx::Int
     fct::Union{MOI.AbstractScalarFunction,MOI.AbstractVectorFunction}
     set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
     indices::Vector{Int}
     pvals::Vector{Int}
+    enforce_bound::Bool
+    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
+    hash::UInt64
+end
+
+#====================================================================================
+====================== CONSTRAINTS ==================================================
+====================================================================================#
+
+abstract type Constraint end
+
+mutable struct BasicConstraint <: Constraint
+    std::ConstraintInternals
+end
+
+mutable struct AllDifferentConstraint <: Constraint
+    std::ConstraintInternals
     pval_mapping::Vector{Int}
     vertex_mapping::Vector{Int}
     vertex_mapping_bw::Vector{Int}
     di_ei::Vector{Int}
     di_ej::Vector{Int}
     matching_init::MatchingInit
-    enforce_bound::Bool
-    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
     # corresponds to `in_all_different`: Saves the constraint idxs where all variables are part of this alldifferent constraint
     sub_constraint_idxs::Vector{Int}
-    hash::UInt64
 end
 
 # support for a <= b constraint
 mutable struct SingleVariableConstraint <: Constraint
-    idx::Int
-    fct::MOI.AbstractScalarFunction
-    set::MOI.AbstractScalarSet
-    indices::Vector{Int}
-    pvals::Vector{Int}
+    std::ConstraintInternals
     lhs::Int
     rhs::Int
-    enforce_bound::Bool
-    hash::UInt64
-end
-
-struct Integers <: MOI.AbstractScalarSet 
-    values::Vector{Int}
-end
-Integers(vals::Union{UnitRange{Int}, StepRange{Int, Int}}) = Integers(collect(vals))
-
-struct AllDifferentSetInternal <: MOI.AbstractVectorSet
-    dimension :: Int
-end
-
-struct AllDifferentSet <: JuMP.AbstractVectorSet end
-JuMP.moi_set(::AllDifferentSet, dim) = AllDifferentSetInternal(dim)
-
-struct EqualSet <: MOI.AbstractVectorSet
-    dimension::Int
-end
-
-struct NotEqualSet{T} <: MOI.AbstractScalarSet
-    value::T
-end
-
-mutable struct LinearCombination{T<:Real}
-    indices::Vector{Int}
-    coeffs::Vector{T}
 end
 
 mutable struct LinearConstraint{T<:Real} <: Constraint
-    idx::Int
-    fct::MOI.ScalarAffineFunction
-    set::MOI.AbstractScalarSet
-    indices::Vector{Int}
-    pvals::Vector{Int}
+    std::ConstraintInternals
     in_all_different::Bool
     mins::Vector{T}
     maxs::Vector{T}
     pre_mins::Vector{T}
     pre_maxs::Vector{T}
-    enforce_bound::Bool
-    hash::UInt64
+end
+
+#====================================================================================
+====================== OBJECTIVES ==================================================
+====================================================================================#
+
+abstract type ObjectiveFunction end
+
+mutable struct SingleVariableObjective <: ObjectiveFunction
+    fct::MOI.SingleVariable
+    index::Int # index of the variable
+    indices::Vector{Int}
+end
+
+
+# used to designate a feasibility sense
+struct NoObjective <: ObjectiveFunction end
+
+mutable struct LinearCombination{T<:Real}
+    indices::Vector{Int}
+    coeffs::Vector{T}
 end
 
 mutable struct LinearCombinationObjective{T<:Real} <: ObjectiveFunction

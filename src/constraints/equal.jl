@@ -5,17 +5,16 @@ Create a BasicConstraint which will later be used by `equal(com, constraint)` \n
 Can be used i.e by `add_constraint!(com, CS.equal([x,y,z])`.
 """
 function equal(variables::Vector{Variable})
-    constraint = BasicConstraint(
+    internals = ConstraintInternals(
         0, # idx will be changed later
         var_vector_to_moi(variables),
         EqualSet(length(variables)),
-        Int[v.idx for v in variables],
-        Int[], # pvals will be filled later
-        false, # `enforce_bound` can be changed later but should be set to false by default
-        nothing, 
-        zero(UInt64), # hash will be filled in the next step
+        Int[v.idx for v in variables]
     )
-    constraint.hash = constraint_hash(constraint)
+    constraint = BasicConstraint(
+      internals
+    )
+    constraint.std.hash = constraint_hash(constraint)
     return constraint
 end
 
@@ -27,17 +26,16 @@ Can be used i.e by `add_constraint!(com, x == y)`.
 """
 function Base.:(==)(x::Variable, y::Variable)
     variables = [x, y]
-    bc = BasicConstraint(
+    internals = ConstraintInternals(
         0, # idx will be changed later
         var_vector_to_moi(variables),
         EqualSet(2),
-        Int[x.idx, y.idx],
-        Int[], # pvals will be filled later
-        false, # `enforce_bound` can be changed later but should be set to false by default
-        nothing,
-        zero(UInt64), # hash will be filled in the next step
+        Int[x.idx, y.idx]
     )
-    bc.hash = constraint_hash(bc)
+    bc = BasicConstraint(
+       internals
+    )
+    bc.std.hash = constraint_hash(bc)
     return bc
 end
 
@@ -54,7 +52,7 @@ function prune_constraint!(
     set::EqualSet;
     logs = true,
 )
-    indices = constraint.indices
+    indices = constraint.std.indices
 
     search_space = com.search_space
     # is only needed if we want to set more
@@ -122,6 +120,6 @@ function still_feasible(
     value::Int,
     index::Int,
 )
-    indices = filter(i -> i != index, constraint.indices)
+    indices = filter(i -> i != index, constraint.std.indices)
     return all(v -> issetto(v, value) || !isfixed(v), com.search_space[indices])
 end
