@@ -160,7 +160,68 @@ end
         CS.TableSetInternal(3, table)
     )
     @test feasible
-    # the 3 should be removed
+    # the 3 should be removed from z
     @test sort(CS.values(com.search_space[z.value])) == [1,2]
+end
+
+
+@testset "Table prune once more than 64" begin
+    m = CS.Optimizer()
+    x = MOI.add_variable(m)
+    y = MOI.add_variable(m)
+    z = MOI.add_variable(m)
+    MOI.add_constraint(m, x, CS.Integers([1,2,3,4,5,6,7,8,9]))
+    MOI.add_constraint(m, y, CS.Integers([1,2,3,4,5,6,7,8,9]))
+    MOI.add_constraint(m, z, CS.Integers([1,2,3,4,5,6,7,8,9]))
+
+    table = Array{Int64}(undef,(9*8*7,3))
+    i = 1
+    for a=1:9
+        for b=1:9
+            if a != b
+                for c=1:9
+                    if a != c && b != c 
+                        table[i,:] = [a,b,c]
+                        i += 1
+                    end
+                end
+            end
+        end
+    end
+
+    MOI.add_constraint(
+        m,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table),
+    )
+
+    com = m.inner
+    constraint = com.constraints[1]
+
+    feasible = CS.init_constraint!(
+        com,
+        constraint,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table)
+    )
+    @test feasible
+
+    CS.remove_below!(com, com.search_space[x.value], 5; changes=false)
+    # this changes residues
+    feasible = CS.prune_constraint!(
+        com,
+        constraint,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table)
+    )
+    @test feasible
+    # only 5:9 should be allowed for x but no other changes
+    @test sort(CS.values(com.search_space[x.value])) == 5:9
+    @test sort(CS.values(com.search_space[y.value])) == 1:9
+    @test sort(CS.values(com.search_space[z.value])) == 1:9
+    for i=1:9
+        @test constraint.residues[com, y.value, i] >= 4
+        @test constraint.residues[com, z.value, i] >= 4
+    end
 end
 end

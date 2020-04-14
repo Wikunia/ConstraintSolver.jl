@@ -33,7 +33,6 @@ function filter_domains(com::CoM, constraint::TableConstraint)
             if current.words[idx] & supports[com, vidx, value][idx] == UInt64(0)
                 idx = intersect_index(current, supports[com, vidx, value])
                 if idx != 0
-                    # TODO set index method
                     residues[com, vidx, value] = idx
                 else
                     if !rm!(com, variables[vidx], value)
