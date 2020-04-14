@@ -19,9 +19,8 @@ function init_constraint!(
     @assert !has(search_space[2], 3)
 
     indices = constraint.indices
-    row_id = 0
-    for row in eachrow(set.table)
-        row_id += 1
+    for row_id in 1:size(set.table)[1]
+        row = set.table[row_id,:]
         for (i, vidx) in enumerate(indices)
             if !has(search_space[vidx], row[i])
                 # println("row_id: $row_id")
