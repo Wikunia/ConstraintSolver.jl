@@ -1,4 +1,5 @@
 include("table/support.jl")
+include("table/RSparseBitSet.jl")
 
 """
     init_constraint!(com::CS.CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal)
@@ -43,7 +44,7 @@ function init_constraint!(
 
     # define RSparseBitSet
     rsbs = constraint.current
-    rsbs.words = fill(typemax(UInt64), num_64_words)
+    rsbs.words = fill(~zero(UInt64), num_64_words)
     rsbs.indices = 1:num_64_words
     rsbs.last_ptr = num_64_words
     rsbs.mask = zeros(UInt64, num_64_words)

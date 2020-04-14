@@ -1,3 +1,4 @@
+@testset "Table" begin
 @testset "Table Init" begin
     m = CS.Optimizer()
     x = MOI.add_variable(m)
@@ -81,4 +82,33 @@
         CS.TableSetInternal(3, table)
     )
     @test !feasible
+end
+
+@testset "RSparseBitSet" begin
+    bitset = CS.RSparseBitSet()
+    bitset.words = [~zero(UInt64),~zero(UInt64),one(UInt64)]
+    bitset.indices = [1,2,3]
+    bitset.last_ptr = 3
+    bitset.mask = [~zero(UInt64),~zero(UInt64),one(UInt64)]
+    CS.clear_mask(bitset)
+    @test bitset.mask == [zero(UInt64),zero(UInt64),zero(UInt64)]
+    CS.invert_mask(bitset)
+    @test bitset.mask == [typemax(UInt64),typemax(UInt64),typemax(UInt64)]
+    
+    mask = [UInt64(0),UInt64(7),UInt64(0)]
+    @test CS.intersect_index(bitset, mask) == 2
+
+    mask = [UInt64(0),UInt64(0),UInt64(0)]
+    @test CS.intersect_index(bitset, mask) == 0
+
+    CS.clear_mask(bitset)
+    add = [UInt64(30),UInt64(42),UInt64(0)]
+    CS.add_to_mask(bitset, add)
+    add = [UInt64(0),UInt64(128),UInt64(7)]
+    CS.add_to_mask(bitset, add)
+    @test bitset.mask == [UInt64(30),UInt64(128+42),UInt64(7)]
+
+    CS.intersect_with_mask(bitset)
+    @test bitset.words == [UInt64(30),UInt64(128+42),UInt64(1)]
+end
 end
