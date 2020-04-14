@@ -11,7 +11,7 @@ function Base.:(==)(x::LinearCombination, y::Real)
     func, T = linear_combination_to_saf(LinearCombination(indices, coeffs))
     lc = LinearConstraint(func, MOI.EqualTo{T}(rhs), indices)
 
-    lc.hash = constraint_hash(lc)
+    lc.std.hash = constraint_hash(lc)
     return lc
 end
 
@@ -48,7 +48,7 @@ function prune_constraint!(
     set::MOI.EqualTo{T};
     logs = true,
 ) where {T<:Real}
-    indices = constraint.indices
+    indices = constraint.std.indices
     search_space = com.search_space
     rhs = set.value - fct.constant
 
@@ -184,7 +184,7 @@ function prune_constraint!(
             intersect_cons =
                 intersect(com.subscription[unfixed_ind_1], com.subscription[unfixed_ind_2])
             for constraint_idx in intersect_cons
-                if isa(com.constraints[constraint_idx].set, AllDifferentSetInternal)
+                if isa(com.constraints[constraint_idx].std.set, AllDifferentSetInternal)
                     is_all_different = true
                     break
                 end
@@ -262,7 +262,7 @@ function still_feasible(
     num_not_fixed = 0
     max_extra = 0
     min_extra = 0
-    for (i, idx) in enumerate(constraint.indices)
+    for (i, idx) in enumerate(constraint.std.indices)
         if idx == index
             csum += val * fct.terms[i].coefficient
             continue

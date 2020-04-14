@@ -7,24 +7,24 @@ Create a AllDifferentConstraint which will later be used by `all_different(com, 
 Can be used i.e by `add_constraint!(com, CS.all_different(variables))`.
 """
 function all_different(variables::Vector{Variable})
-    constraint = AllDifferentConstraint(
+    internals = ConstraintInternals(
         0, # idx will be changed later
         var_vector_to_moi(variables),
         AllDifferentSetInternal(length(variables)),
-        Int[v.idx for v in variables],
-        Int[], # pvals will be filled later
+        Int[v.idx for v in variables]
+    )
+
+    constraint = AllDifferentConstraint(
+        internals,
         Int[],
         Int[],
         Int[],
         Int[],
         Int[],
         MatchingInit(),
-        false, # `enforce_bound` can be changed later but should be set to false by default
-        nothing,
-        Int[],
-        zero(UInt64), # hash will be filled in the next step
+        Int[]        
     )
-    constraint.hash = constraint_hash(constraint)
+    constraint.std.hash = constraint_hash(constraint)
     return constraint
 end
 
@@ -39,8 +39,8 @@ function init_constraint!(
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal,
 )
-    pvals = constraint.pvals
-    nindices = length(constraint.indices)
+    pvals = constraint.std.pvals
+    nindices = length(constraint.std.indices)
 
     min_pvals, max_pvals = extrema(pvals)
     len_range = max_pvals - min_pvals + 1
@@ -74,12 +74,12 @@ function init_constraint!(
     lp_backend = backend(com.lp_model)
     lp_var_idx = create_lp_variable!(com.lp_model, com.lp_x)
     # create == constraint with sum of all variables equal the newly created variable
-    sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(var_idx)) for var_idx in constraint.indices]
+    sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(var_idx)) for var_idx in constraint.std.indices]
     push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_var_idx)))
     saf = MOI.ScalarAffineFunction(sats, 0.0)
     MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
     
-    constraint.bound_rhs = [BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int))]
+    constraint.std.bound_rhs = [BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int))]
 
     # if constraints are part of the all different constraint
     # the all different constraint can be split more parts to get better bounds
@@ -87,11 +87,11 @@ function init_constraint!(
     for sc_idx in constraint.sub_constraint_idxs
         lp_var_idx = create_lp_variable!(com.lp_model, com.lp_x)
         # create == constraint with sum of all variables equal the newly created variable
-        sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(var_idx)) for var_idx in com.constraints[sc_idx].indices]
+        sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(var_idx)) for var_idx in com.constraints[sc_idx].std.indices]
         push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_var_idx)))
         saf = MOI.ScalarAffineFunction(sats, 0.0)
         MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
-        push!(constraint.bound_rhs, BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int)))
+        push!(constraint.std.bound_rhs, BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int)))
     end
 end
 
@@ -149,15 +149,15 @@ function update_best_bound_constraint!(com::CS.CoM,
     lb::Int,
     ub::Int
 )
-    constraint.bound_rhs === nothing && return
+    constraint.std.bound_rhs === nothing && return
     search_space = com.search_space
 
     # compute bounds
     # get the maximum/minimum value for each variable
-    max_vals = zeros(Int, length(constraint.indices))
-    min_vals = zeros(Int, length(constraint.indices))
-    for i=1:length(constraint.indices)
-        v_idx = constraint.indices[i]
+    max_vals = zeros(Int, length(constraint.std.indices))
+    min_vals = zeros(Int, length(constraint.std.indices))
+    for i=1:length(constraint.std.indices)
+        v_idx = constraint.std.indices[i]
         if v_idx == var_idx
             max_vals[i] = ub
             min_vals[i] = lb
@@ -172,18 +172,18 @@ function update_best_bound_constraint!(com::CS.CoM,
     # sort the min_vals asc and obtain bound by enforcing all different
     sort!(min_vals)
   
-    min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(constraint.indices))
+    min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(constraint.std.indices))
 
-    constraint.bound_rhs[1].lb = min_sum
-    constraint.bound_rhs[1].ub = max_sum
+    constraint.std.bound_rhs[1].lb = min_sum
+    constraint.std.bound_rhs[1].ub = max_sum
 
     i = 1
     for sc_idx in constraint.sub_constraint_idxs
         i += 1
         sub_constraint = com.constraints[sc_idx]
-        min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(sub_constraint.indices))
-        constraint.bound_rhs[i].lb = min_sum
-        constraint.bound_rhs[i].ub = max_sum
+        min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(sub_constraint.std.indices))
+        constraint.std.bound_rhs[i].lb = min_sum
+        constraint.std.bound_rhs[i].ub = max_sum
     end
 end
 
@@ -200,8 +200,8 @@ function prune_constraint!(
     set::AllDifferentSetInternal;
     logs = true,
 )
-    indices = constraint.indices
-    pvals = constraint.pvals
+    indices = constraint.std.indices
+    pvals = constraint.std.pvals
     nindices = length(indices)
 
     search_space = com.search_space
@@ -442,7 +442,7 @@ function still_feasible(
     value::Int,
     index::Int,
 )
-    indices = constraint.indices
+    indices = constraint.std.indices
     for i = 1:length(indices)
         if indices[i] == index
             continue

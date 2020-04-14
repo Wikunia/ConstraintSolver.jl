@@ -52,12 +52,12 @@ function MOI.add_constraint(
     indices = [v.variable_index.value for v in func.terms]
 
     lc = LinearConstraint(func, set, indices)
-    lc.idx = length(model.inner.constraints) + 1
+    lc.std.idx = length(model.inner.constraints) + 1
 
     push!(model.inner.constraints, lc)
 
-    for (i, ind) in enumerate(lc.indices)
-        push!(model.inner.subscription[ind], lc.idx)
+    for (i, ind) in enumerate(lc.std.indices)
+        push!(model.inner.subscription[ind], lc.std.idx)
     end
     model.inner.info.n_constraint_types.equality += 1
 
@@ -87,22 +87,22 @@ function add_variable_less_than_variable_constraint(
         rhs = func.terms[2].variable_index.value
     end
 
-    svc = SingleVariableConstraint(
+    internals = ConstraintInternals(
         length(model.inner.constraints) + 1, # idx
         func,
         set,
-        [lhs, rhs],
-        Int[], # pvals
+        [lhs, rhs]
+    )
+    svc = SingleVariableConstraint(
+        internals,
         lhs,
-        rhs,
-        false, # `enforce_bound` can be changed later but should be set to false by default
-        zero(UInt64), # will be filled later
+        rhs
     )
 
     push!(model.inner.constraints, svc)
 
-    push!(model.inner.subscription[svc.lhs], svc.idx)
-    push!(model.inner.subscription[svc.rhs], svc.idx)
+    push!(model.inner.subscription[svc.lhs], svc.std.idx)
+    push!(model.inner.subscription[svc.rhs], svc.std.idx)
     com.info.n_constraint_types.inequality += 1
 
     return MOI.ConstraintIndex{SAF{T},MOI.LessThan{T}}(length(model.inner.constraints))
@@ -128,12 +128,12 @@ function MOI.add_constraint(
     indices = [v.variable_index.value for v in func.terms]
 
     lc = LinearConstraint(func, set, indices)
-    lc.idx = length(model.inner.constraints) + 1
+    lc.std.idx = length(model.inner.constraints) + 1
 
     push!(model.inner.constraints, lc)
 
-    for (i, ind) in enumerate(lc.indices)
-        push!(model.inner.subscription[ind], lc.idx)
+    for (i, ind) in enumerate(lc.std.indices)
+        push!(model.inner.subscription[ind], lc.std.idx)
     end
     model.inner.info.n_constraint_types.inequality += 1
 
@@ -150,20 +150,19 @@ MOI.supports_constraint(
 function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::EqualSet)
     com = model.inner
 
-    constraint = BasicConstraint(
+    internals = ConstraintInternals(
         length(com.constraints) + 1,
         vars,
         set,
-        Int[v.value for v in vars.variables],
-        Int[], # pvals will be filled later
-        false, # `enforce_bound` can be changed later but should be set to false by default
-        nothing, 
-        zero(UInt64), # hash will be filled later
+        Int[v.value for v in vars.variables]
+    )
+    constraint = BasicConstraint(
+       internals
     )
 
     push!(com.constraints, constraint)
-    for (i, ind) in enumerate(constraint.indices)
-        push!(com.subscription[ind], constraint.idx)
+    for (i, ind) in enumerate(constraint.std.indices)
+        push!(com.subscription[ind], constraint.std.idx)
     end
     com.info.n_constraint_types.equality += 1
 
@@ -177,27 +176,27 @@ function MOI.add_constraint(
 )
     com = model.inner
 
-    constraint = AllDifferentConstraint(
+    internals = ConstraintInternals(
         length(com.constraints) + 1,
         vars,
         set,
-        Int[v.value for v in vars.variables],
-        Int[], # pvals will be filled later
+        Int[v.value for v in vars.variables]
+    )
+
+    constraint = AllDifferentConstraint(
+        internals,
         Int[], # pval_mapping will be filled later
         Int[], # vertex_mapping => later
         Int[], # vertex_mapping_bw => later
         Int[], # di_ei => later
         Int[], # di_ej => later
         MatchingInit(),
-        false, # `enforce_bound` can be changed later but should be set to false by default
-        nothing,
-        Int[],
-        zero(UInt64), # hash will be filled later
+        Int[]
     )
 
     push!(com.constraints, constraint)
-    for (i, ind) in enumerate(constraint.indices)
-        push!(com.subscription[ind], constraint.idx)
+    for (i, ind) in enumerate(constraint.std.indices)
+        push!(com.subscription[ind], constraint.std.idx)
     end
     com.info.n_constraint_types.alldifferent += 1
 
@@ -234,20 +233,19 @@ function MOI.add_constraint(
         return MOI.ConstraintIndex{SAF{T},NotEqualSet{T}}(0)
     end
 
-    constraint = BasicConstraint(
+    internals = ConstraintInternals(
         length(com.constraints) + 1,
         aff,
         set,
-        Int[t.variable_index.value for t in aff.terms],
-        Int[], # pvals will be filled later
-        false, # `enforce_bound` can be changed later but should be set to false by default
-        nothing,
-        zero(UInt64), # hash will be filled later
+        Int[t.variable_index.value for t in aff.terms]
+    )
+    constraint = BasicConstraint(
+        internals
     )
 
     push!(com.constraints, constraint)
-    for (i, ind) in enumerate(constraint.indices)
-        push!(com.subscription[ind], constraint.idx)
+    for (i, ind) in enumerate(constraint.std.indices)
+        push!(com.subscription[ind], constraint.std.idx)
     end
 
     return MOI.ConstraintIndex{SAF{T},NotEqualSet{T}}(length(com.constraints))
@@ -262,17 +260,17 @@ end
 
 function set_constraint_hashes!(com::CS.CoM)
     for ci = 1:length(com.constraints)
-        com.constraints[ci].hash = constraint_hash(com.constraints[ci])
+        com.constraints[ci].std.hash = constraint_hash(com.constraints[ci])
     end
 end
 
 function init_constraints!(com::CS.CoM; constraints=com.constraints)
     for constraint in constraints
         c_type = typeof(constraint)
-        c_fct_type = typeof(constraint.fct)
-        c_set_type = typeof(constraint.set)
+        c_fct_type = typeof(constraint.std.fct)
+        c_set_type = typeof(constraint.std.set)
         if hasmethod(init_constraint!, (CS.CoM, c_type, c_fct_type, c_set_type))
-            init_constraint!(com, constraint, constraint.fct, constraint.set)
+            init_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
         end
     end
 end
@@ -290,15 +288,15 @@ function set_enforce_bound!(com::CS.CoM)
     for ci = 1:length(com.constraints)	
         constraint = com.constraints[ci]	
         c_type = typeof(constraint)	
-        c_fct_type = typeof(constraint.fct)	
-        c_set_type = typeof(constraint.set)	
+        c_fct_type = typeof(constraint.std.fct)	
+        c_set_type = typeof(constraint.std.set)	
         if hasmethod(	
             update_best_bound_constraint!,	
             (CS.CoM, c_type, c_fct_type, c_set_type, Int, Int, Int),	
         )	
-            constraint.enforce_bound = true	
+            constraint.std.enforce_bound = true	
         else # just to be sure => set it to false otherwise	
-            constraint.enforce_bound = false	
+            constraint.std.enforce_bound = false	
         end	
     end	
 end
