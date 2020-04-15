@@ -1,6 +1,6 @@
 # ConstrainSolver.jl - Changelog
 
-## Unreleased
+## v0.1.1 (15th of April 2020)
 - CS.Integers
   - i.e `@variable(m, x, CS.Integers([1,2,5]))`
 - **Bugfixes:**
