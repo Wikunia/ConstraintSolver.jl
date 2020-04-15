@@ -141,6 +141,37 @@
         @test jump_fulfills_sudoku_constr(JuMP.value.(x))
     end
 
+    @testset "Infeasible sudoku at start" begin
+        grid = zeros(Int, (9, 9))
+        grid[1, :] = [0 0 0 0 0 0 0 0 0]
+        grid[2, :] = [0 1 0 6 2 0 0 9 0]
+        grid[3, :] = [0 0 2 0 0 9 3 1 0]
+        grid[4, :] = [0 0 4 0 0 6 0 8 0]
+        grid[5, :] = [0 0 8 7 0 2 1 0 0]
+        grid[6, :] = [0 0 0 0 0 0 5 0 0]
+        grid[7, :] = [0 6 9 1 0 0 2 1 0]
+        grid[8, :] = [0 0 0 0 7 0 0 5 0]
+        grid[9, :] = [0 0 1 0 0 0 0 0 0]
+
+        m = Model(CSJuMPTestSolver())
+        @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
+        # set variables
+        nvars_set = 0
+        for r = 1:9, c = 1:9
+            if grid[r, c] != 0
+                @constraint(m, x[r, c] == grid[r, c])
+                nvars_set += 1
+            end
+        end
+
+        # sudoku constraints
+        jump_add_sudoku_constr!(m, x)
+
+        optimize!(m)
+
+        @test JuMP.termination_status(m) == MOI.INFEASIBLE
+    end
+
     @testset "Hard fsudoku repo 0-8 Int8" begin
         com = CS.ConstraintSolverModel(Int8)
 

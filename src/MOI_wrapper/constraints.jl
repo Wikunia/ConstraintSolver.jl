@@ -44,7 +44,8 @@ function MOI.add_constraint(
         fix!(
             model.inner,
             model.variable_info[func.terms[1].variable_index.value],
-            convert(Int, set.value / func.terms[1].coefficient),
+            convert(Int, set.value / func.terms[1].coefficient);
+            check_feasibility = false
         )
         return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(0)
     end
