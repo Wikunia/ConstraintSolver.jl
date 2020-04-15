@@ -77,8 +77,8 @@ function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several = false, cha
     return true
 end
 
-function fix!(com::CS.CoM, v::CS.Variable, x::Int; changes = true)
-    if !fulfills_constraints(com, v.idx, x)
+function fix!(com::CS.CoM, v::CS.Variable, x::Int; changes = true, check_feasibility=true)
+    if check_feasibility && !fulfills_constraints(com, v.idx, x)
         com.bt_infeasible[v.idx] += 1
         return false
     end
