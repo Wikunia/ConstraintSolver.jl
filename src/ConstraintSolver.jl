@@ -85,7 +85,7 @@ function add_var!(com::CS.CoM, from::Int, to::Int; fix = nothing)
         true, # is_integer
     )
     if fix !== nothing
-        fix!(com, var, fix)
+        fix!(com, var, fix; check_feasibility=false)
     end
     push!(com.search_space, var)
     push!(com.subscription, Int[])
