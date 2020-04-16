@@ -106,10 +106,13 @@ function fulfills_constraints(com::CS.CoM, index, value)
     feasible = true
     for ci in com.subscription[index]
         constraint = com.constraints[ci]
-        feasible =
-            still_feasible(com, constraint, constraint.std.fct, constraint.std.set, value, index)
-        if !feasible
-            break
+        # only call if the function got initialized already
+        if constraint.std.initialized 
+            feasible =
+                still_feasible(com, constraint, constraint.std.fct, constraint.std.set, value, index)
+            if !feasible
+                break
+            end
         end
     end
     return feasible
@@ -367,9 +370,23 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
     search_space = com.search_space
     for var in search_space
         v_idx = var.idx
-
         for change in Iterators.reverse(var.changes[backtrack_idx])
             single_reverse_pruning!(search_space, v_idx, change[4], change[3])
+        end
+    end
+    for var in search_space
+        var.idx > length(com.subscription) && continue
+        for ci in com.subscription[var.idx]
+            constraint = com.constraints[ci]
+            if constraint.std.single_reverse_pruning
+                single_reverse_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set,
+                                                    var.idx, var.changes[backtrack_idx])
+            end
+        end
+    end
+    for constraint in com.constraints
+        if constraint.std.reverse_pruning
+            reverse_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
         end
     end
 end

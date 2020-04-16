@@ -31,12 +31,32 @@ function add_to_mask(bitset::RSparseBitSet, add::Vector{UInt64})
     end
 end
 
+function intersect_mask_with_mask(bitset::RSparseBitSet, intersect_mask::Vector{UInt64})
+    for i=1:bitset.last_ptr
+        idx = bitset.indices[i]
+        bitset.mask[idx] &= intersect_mask[idx] 
+    end
+end
+
 function intersect_with_mask(bitset::RSparseBitSet)
     words = bitset.words
     mask = bitset.mask
     for i=bitset.last_ptr:-1:1
         idx = bitset.indices[i]
         w = words[idx] & mask[idx]
+        if w != words[idx]
+            words[idx] = w
+            # TODO: Change last_ptr here later
+        end
+    end
+end
+
+function rev_intersect_with_mask(bitset::RSparseBitSet)
+    words = bitset.words
+    mask = bitset.mask
+    for i=bitset.last_ptr:-1:1
+        idx = bitset.indices[i]
+        w = words[idx] | mask[idx]
         if w != words[idx]
             words[idx] = w
             # TODO: Change last_ptr here later

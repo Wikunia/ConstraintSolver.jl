@@ -46,6 +46,57 @@
         @test m.options.time_limit == 10.0
     end
 
+    @testset "Hard sudoku with table constraint" begin
+        grid = zeros(Int, (9, 9))
+        
+        grid[1, :] = [3 8 0 6 0 0 0 0 0]
+        grid[2, :] = [0 0 9 0 0 0 0 0 0]
+        grid[3, :] = [0 2 0 0 3 0 5 1 0]
+        grid[4, :] = [0 0 0 0 0 5 0 0 0]
+        grid[5, :] = [0 3 0 0 1 0 0 6 0]
+        grid[6, :] = [0 0 0 4 0 0 0 0 0]
+        grid[7, :] = [0 1 7 0 5 0 0 8 0]
+        grid[8, :] = [0 0 0 0 0 0 9 0 0]
+        grid[9, :] = [0 0 0 0 0 7 0 3 2]
+
+        m = Model(optimizer_with_attributes(CS.Optimizer))
+        @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
+        # set variables
+        nvars_set = 0
+        for r = 1:9, c = 1:9
+            if grid[r, c] != 0
+                @constraint(m, x[r, c] == grid[r, c])
+                nvars_set += 1
+            end
+        end
+
+        table = Array{Int64}(undef,(factorial(9),9))
+        i = 1
+        for row in permutations(1:9)
+            table[i,:] = row      
+            i += 1    
+        end
+
+        
+        # sudoku constraints
+        for rc = 1:9
+            @constraint(m, x[rc, :] in CS.TableSet(table))
+            @constraint(m, x[:, rc] in CS.TableSet(table))
+        end
+        
+        for br = 0:2
+            for bc = 0:2
+                @constraint(
+                    m,
+                    vec(x[br*3+1:(br+1)*3, bc*3+1:(bc+1)*3]) in CS.TableSet(table)
+                )
+            end
+        end
+
+        optimize!(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test jump_fulfills_sudoku_constr(JuMP.value.(x))
+    end
 
     @testset "Hard sudoku" begin
         com = CS.ConstraintSolverModel()

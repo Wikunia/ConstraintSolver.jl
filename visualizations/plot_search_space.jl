@@ -27,29 +27,29 @@ function plot_search_space(grid, com_grid, fname)
             x = ind[2] - 0.5
             y = 10 - ind[1] - 0.5
             if grid[ind] != 0
-                annotate!(x, y, text(CS.value(com_grid[ind]), 20, :black))
+                annotate!([x, y, text(string(CS.value(com_grid[ind])), 20, :black)])
             else
-                annotate!(x, y, text(CS.value(com_grid[ind]), 20, :blue))
+                annotate!([x, y, text(string(CS.value(com_grid[ind])), 20, :blue)])
             end
         else
-            vals = values(com_grid[ind])
+            vals = CS.values(com_grid[ind])
             sort!(vals)
             x = ind[2] - 0.5
             y = 10 - ind[1] - 0.2
             max_idx = min(3, length(vals))
             text_vals = join(vals[1:max_idx], ",")
-            annotate!(x, y, text(text_vals, 7))
+            annotate!([x, y, text(text_vals, 7)])
             if length(vals) > 3
                 y -= 0.25
                 max_idx = min(6, length(vals))
                 text_vals = join(vals[4:max_idx], ",")
-                annotate!(x, y, text(text_vals, 7))
+                annotate!([x, y, text(text_vals, 7)])
             end
             if length(vals) > 6
                 y -= 0.25
                 max_idx = length(vals)
                 text_vals = join(vals[7:max_idx], ",")
-                annotate!(x, y, text(text_vals, 7))
+                annotate!([x, y, text(text_vals, 7)])
             end
 
         end

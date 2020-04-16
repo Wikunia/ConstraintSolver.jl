@@ -164,8 +164,7 @@ end
     @test sort(CS.values(com.search_space[z.value])) == [1,2]
 end
 
-
-@testset "Table prune once more than 64" begin
+@testset "Table prune once, more than 64" begin
     m = CS.Optimizer()
     x = MOI.add_variable(m)
     y = MOI.add_variable(m)
@@ -176,17 +175,9 @@ end
 
     table = Array{Int64}(undef,(9*8*7,3))
     i = 1
-    for a=1:9
-        for b=1:9
-            if a != b
-                for c=1:9
-                    if a != c && b != c 
-                        table[i,:] = [a,b,c]
-                        i += 1
-                    end
-                end
-            end
-        end
+    for row in permutations(1:9, 3)
+        table[i,:] = row      
+        i += 1    
     end
 
     MOI.add_constraint(
@@ -223,5 +214,288 @@ end
         @test constraint.residues[com, y.value, i] >= 4
         @test constraint.residues[com, z.value, i] >= 4
     end
+end
+
+@testset "Table prune once and reverse" begin
+    m = CS.Optimizer()
+    x = MOI.add_variable(m)
+    y = MOI.add_variable(m)
+    z = MOI.add_variable(m)
+    MOI.add_constraint(m, x, CS.Integers([1,2]))
+    MOI.add_constraint(m, y, CS.Integers([1,2,4]))
+    MOI.add_constraint(m, z, CS.Integers([1,2,3]))
+
+    table = [
+        1 1 1;
+        1 1 2;
+        1 2 3;
+        2 1 1;
+        1 3 2;
+        1 2 2;
+        2 1 2;
+        2 2 1;
+        2 2 2
+    ]
+
+    MOI.add_constraint(
+        m,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table),
+    )
+
+    com = m.inner
+    constraint = com.constraints[1]
+
+    feasible = CS.init_constraint!(
+        com,
+        constraint,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table)
+    )
+    @test feasible
+
+    words_before_prune = copy(constraint.current.words)
+
+    CS.rm!(com, com.search_space[x.value], 1; changes=false)
+    feasible = CS.prune_constraint!(
+        com,
+        constraint,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table)
+    )
+
+    words_after_prune = copy(constraint.current.words)
+    @test words_before_prune != words_after_prune
+
+    # x.value 1 must be added again and z.value 3 as well (one removed value)
+    CS.single_reverse_pruning!(com.search_space, x.value, 1, 0)
+    CS.single_reverse_pruning!(com.search_space, z.value, 1, 0)
+
+    CS.single_reverse_pruning_constraint!(
+        com,
+        constraint,
+        constraint.std.fct,
+        constraint.std.set,
+        x.value,
+        [(:rm, 1, 0, 1)]
+    )
+
+    CS.reverse_pruning_constraint!(
+        com,
+        constraint,
+        constraint.std.fct,
+        constraint.std.set
+    )
+
+    words_after_rev_prune = copy(constraint.current.words)
+    @test words_before_prune == words_after_rev_prune
+
+    # the 3 should be possible again
+    @test sort(CS.values(com.search_space[z.value])) == [1,2,3]
+end
+
+@testset "2 Tables over same variables prune once" begin
+    m = CS.Optimizer()
+    x = MOI.add_variable(m)
+    y = MOI.add_variable(m)
+    z = MOI.add_variable(m)
+    MOI.add_constraint(m, x, CS.Integers([1,2]))
+    MOI.add_constraint(m, y, CS.Integers([1,2,4]))
+    MOI.add_constraint(m, z, CS.Integers([1,2,3]))
+
+    table = [
+        1 1 1;
+        1 1 2;
+        1 2 3;
+        2 1 1;
+        1 3 2;
+        1 2 2;
+        2 1 2;
+        2 2 1;
+        2 2 2
+    ]
+
+    table2 = [
+        2 1 2;
+        1 2 2
+    ]
+
+    MOI.add_constraint(
+        m,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table),
+    )
+
+    MOI.add_constraint(
+        m,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table2),
+    )
+
+    com = m.inner
+    constraint = com.constraints[1]
+    constraint2 = com.constraints[2]
+
+    feasible = CS.init_constraint!(
+        com,
+        constraint,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table)
+    )
+    @test feasible
+
+    feasible = CS.init_constraint!(
+        com,
+        constraint2,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table2)
+    )
+    @test feasible
+
+    # z = 2 should be fixed
+    @test CS.value(com.search_space[z.value]) == 2
+
+    CS.rm!(com, com.search_space[x.value], 1; changes=false)
+    feasible = CS.prune_constraint!(
+        com,
+        constraint,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table)
+    )
+    @test feasible
+
+    feasible = CS.prune_constraint!(
+        com,
+        constraint2,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table2)
+    )
+    @test feasible
+
+    @test CS.isfixed(com.search_space[x.value])
+    @test CS.isfixed(com.search_space[y.value])
+    @test CS.isfixed(com.search_space[z.value])
+
+    @test CS.value(com.search_space[x.value]) == 2
+    @test CS.value(com.search_space[y.value]) == 1
+    @test CS.value(com.search_space[z.value]) == 2
+end
+
+@testset "3 Tables over subset variables prune once" begin
+    m = CS.Optimizer()
+    x = MOI.add_variable(m)
+    y = MOI.add_variable(m)
+    z = MOI.add_variable(m)
+    a = MOI.add_variable(m)
+    b = MOI.add_variable(m)
+    c = MOI.add_variable(m)
+    MOI.add_constraint(m, x, CS.Integers([1,2]))
+    MOI.add_constraint(m, y, CS.Integers([1,2,4]))
+    MOI.add_constraint(m, z, CS.Integers([1,2,3,4]))
+    MOI.add_constraint(m, a, CS.Integers([1,2,3]))
+    MOI.add_constraint(m, b, CS.Integers([1,2,3]))
+    MOI.add_constraint(m, c, CS.Integers([1,2,3]))
+
+    table = [
+        1 1 1;
+        1 2 2;
+        1 2 3;
+        2 1 4;
+        1 3 2;
+        1 2 2;
+        2 1 2;
+        2 2 1;
+        2 2 3
+    ]
+
+    table2 = [
+        2 1 2;
+        1 2 2
+    ]
+
+    table3 = [
+        2 1 1;
+        2 1 2
+    ]
+
+    MOI.add_constraint(
+        m,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table),
+    )
+
+    MOI.add_constraint(
+        m,
+        MOI.VectorOfVariables([y,z,a]),
+        CS.TableSetInternal(3, table2),
+    )
+
+    MOI.add_constraint(
+        m,
+        MOI.VectorOfVariables([a,b,c]),
+        CS.TableSetInternal(3, table3),
+    )
+
+    com = m.inner
+    constraint = com.constraints[1]
+    constraint2 = com.constraints[2]
+    constraint3 = com.constraints[3]
+
+    feasible = CS.init_constraint!(
+        com,
+        constraint,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table)
+    )
+    @test feasible
+
+    feasible = CS.init_constraint!(
+        com,
+        constraint2,
+        MOI.VectorOfVariables([y,z,a]),
+        CS.TableSetInternal(3, table2)
+    )
+    @test feasible
+
+    feasible = CS.init_constraint!(
+        com,
+        constraint3,
+        MOI.VectorOfVariables([a,b,c]),
+        CS.TableSetInternal(3, table3)
+    )
+    @test feasible
+
+    @test CS.isfixed(com.search_space[a.value])
+    @test CS.isfixed(com.search_space[b.value])
+    @test CS.value(com.search_space[a.value]) == 2
+    @test CS.value(com.search_space[b.value]) == 1
+
+    feasible = CS.prune_constraint!(
+        com,
+        constraint,
+        MOI.VectorOfVariables([x,y,z]),
+        CS.TableSetInternal(3, table)
+    )
+    @test feasible
+
+    feasible = CS.prune_constraint!(
+        com,
+        constraint2,
+        MOI.VectorOfVariables([y,z,a]),
+        CS.TableSetInternal(3, table2)
+    )
+    @test feasible
+
+    feasible = CS.prune_constraint!(
+        com,
+        constraint3,
+        MOI.VectorOfVariables([y,z,a]),
+        CS.TableSetInternal(3, table3)
+    )
+    @test feasible
+
+    @test CS.value(com.search_space[x.value]) == 2
+    @test sort(CS.values(com.search_space[z.value])) == [1,2]
+    @test sort(CS.values(com.search_space[c.value])) == [1,2]
 end
 end

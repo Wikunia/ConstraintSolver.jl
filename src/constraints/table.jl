@@ -13,7 +13,7 @@ function update_table(com::CoM, constraint::TableConstraint)
         # TODO: Include incremental update
         # reset based update
         for value in CS.values(variables[vidx])
-            add_to_mask(current, supports[com, vidx, value])
+            add_to_mask(current, supports[com, local_vidx, value])
         end
         intersect_with_mask(current)
         is_empty(current) && break
@@ -29,14 +29,17 @@ function filter_domains(com::CoM, constraint::TableConstraint)
     for local_vidx in constraint.unfixed_vars
         vidx = indices[local_vidx]
         for value in CS.values(variables[vidx])
-            idx = residues[com, vidx, value]
-            if current.words[idx] & supports[com, vidx, value][idx] == UInt64(0)
-                idx = intersect_index(current, supports[com, vidx, value])
+            idx = residues[com, local_vidx, value]
+            if current.words[idx] & supports[com, local_vidx, value][idx] == UInt64(0)
+                idx = intersect_index(current, supports[com, local_vidx, value])
                 if idx != 0
-                    residues[com, vidx, value] = idx
+                    residues[com, local_vidx, value] = idx
                 else
-                    if !rm!(com, variables[vidx], value)
-                        return false # not feasible anymore
+                    if has(variables[vidx], value)
+                        if !rm!(com, variables[vidx], value)
+                            return false # not feasible anymore
+                        end
+                        @assert !has(variables[vidx], value) 
                     end
                 end 
             end
@@ -57,7 +60,8 @@ function init_constraint!(
     set::TableSetInternal,
 )
     num_pos_rows = size(set.table, 1)
-    
+    # println("before num_pos_rows: $num_pos_rows")
+
     possible_rows = trues(num_pos_rows)
     search_space = com.search_space
 
@@ -73,16 +77,19 @@ function init_constraint!(
             end
         end
     end
+    # println("num_pos_rows: $num_pos_rows")
     num_pos_rows == 0 && return false
 
     support = constraint.supports
     
-    support.var_start = cumsum([nvalues(search_space[vidx]) for vidx in indices])
+    support.var_start = cumsum([length(search_space[vidx].init_vals) for vidx in indices])
     support.var_start .+= 1
     num_supports = support.var_start[end]-1
 
     pushfirst!(support.var_start, 1)
+    # println("var_start: $(support.var_start)")
     num_64_words = cld(num_pos_rows, 64)
+    # println("num_64_words: $num_64_words")
 
     # define RSparseBitSet
     rsbs = constraint.current
@@ -121,7 +128,7 @@ function init_constraint!(
     # check if a support column is completely zero
     # that means that the variable corresponding to that column can't have the value corresponding to the column 
     feasible = true
-    for c = 1:size(support.values, 2)
+    for c = 1:num_supports
         if all(i->i==UInt64(0), support.values[:,c])
             # getting the correct index in indices
             var_i = 1
@@ -132,19 +139,24 @@ function init_constraint!(
             val_i = c-support.var_start[var_i]+1
             var = indices[var_i]
             val = search_space[var].init_vals[val_i]
-            feasible = rm!(com, search_space[var], val; changes=false)
-            !feasible && break
+            if has(search_space[var], val)
+                feasible = rm!(com, search_space[var], val; changes=false)
+                if !feasible  
+                    break
+                end
+            end
         end
     end
     !feasible && return false
 
     # define residues
     residues = constraint.residues
-    residues.var_start = support.var_start
+    residues.var_start = copy(support.var_start)
     residues.values = zeros(Int, num_supports)
     for sc=1:num_supports
         idx = support.values[:,sc]
         residues.values[sc] = intersect_index(rsbs, idx)
+        @assert residues.values[sc] <= num_64_words
     end
 
     # define last_sizes
@@ -176,10 +188,18 @@ function prune_constraint!(
         constraint.last_sizes[local_vidx] = CS.nvalues(variables[indices[local_vidx]])
     end
     constraint.unfixed_vars = findall(x->constraint.last_sizes[x] > 1, 1:length(indices))
-    update_table(com, constraint)
-    is_empty(current) && return false
-
-    return filter_domains(com, constraint)
+    if length(constraint.changed_vars) != 0
+        update_table(com, constraint)
+        if is_empty(current) 
+            clear_mask(current)
+            return false
+        end
+    end
+    
+    feasible = filter_domains(com, constraint)
+    # clear mask for `single_reverse_pruning_constraint!``
+    clear_mask(current)
+    return feasible
 end
 
 """
@@ -195,6 +215,113 @@ function still_feasible(
     value::Int,
     index::Int,
 )
-    # just a placeholder 
-    return true
+    current = constraint.current
+    supports = constraint.supports
+    indices = constraint.std.indices
+    clear_mask(current)
+    # all fulfilled at beginning
+    invert_mask(current)
+    for i = 1:length(indices)
+        if indices[i] == index
+            intersect_mask_with_mask(current, supports[com, i, value])
+        elseif isfixed(com.search_space[indices[i]])
+            intersect_mask_with_mask(current, supports[com, i, CS.value(com.search_space[indices[i]])])
+        end
+    end
+    copied_current = deepcopy(current)
+    intersect_with_mask(current)
+    feasible = !is_empty(current)
+    current = copied_current
+    clear_mask(current)
+    return feasible
+end
+
+"""
+    single_reverse_pruning_constraint!(
+        com::CoM,
+        constraint::TableConstraint,
+        fct::MOI.VectorOfVariables,
+        set::TableSetInternal,
+        var_idx::Int,
+        changes::Vector{Tuple{Symbol,Int,Int,Int}}
+    )
+
+It gets called after the variables returned to their state after backtracking.
+A single reverse pruning step for the TableConstraint. 
+Add the removed values to the mask and in `reverse_pruning_constraint` the corresponding table rows 
+will be reactivated.
+"""
+function single_reverse_pruning_constraint!(
+    com::CoM,
+    constraint::TableConstraint,
+    fct::MOI.VectorOfVariables,
+    set::TableSetInternal,
+    var_idx::Int,
+    changes::Vector{Tuple{Symbol,Int,Int,Int}}
+)
+    current = constraint.current
+    variables = com.search_space
+    supports = constraint.supports
+    indices = constraint.std.indices
+    local_var_idx = 1
+    while local_var_idx <= length(indices)
+        if var_idx == indices[local_var_idx]
+            break
+        end
+        local_var_idx += 1
+    end
+    @assert local_var_idx <= length(indices)
+    @assert indices[local_var_idx] == var_idx
+
+    got_fixed = false
+    nremoved = 0
+    for change in Iterators.reverse(changes)
+        if change[2] == :fix
+            # use complete domain
+            got_fixed = true
+            break
+        else
+            nremoved += change[4]
+        end
+    end
+    # TODO don't use CS.values as this creates a copy of the values
+    for value in CS.values(variables[var_idx])
+        add_to_mask(current, supports[com, local_var_idx, value])
+    end
+    constraint.last_sizes[local_var_idx] = CS.nvalues(variables[var_idx])
+    #=
+    if got_fixed
+        for value in CS.values(variables[var_idx])
+            add_to_mask(current, supports[com, local_var_idx, value])
+        end
+    else
+        for value in CS.values(variables[var_idx])[end-nremoved+1:end]
+            add_to_mask(current, supports[com, local_var_idx, value])
+        end
+    end
+    =#
+end
+
+"""
+    reverse_pruning_constraint!(
+        com::CoM,
+        constraint::TableConstraint,
+        fct::MOI.VectorOfVariables,
+        set::TableSetInternal,
+    )
+
+Is called after `single_reverse_pruning_constraint!`.
+Reverse intersect with mask to reactivate the removed table rows.
+"""
+function reverse_pruning_constraint!(
+    com::CoM,
+    constraint::TableConstraint,
+    fct::MOI.VectorOfVariables,
+    set::TableSetInternal,
+)
+   current = constraint.current
+#    println("before: $(bitstring(current.words[1]))")
+   rev_intersect_with_mask(current)
+#    println("after: $(bitstring(current.words[1]))")
+   clear_mask(current)
 end

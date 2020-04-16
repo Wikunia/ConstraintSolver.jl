@@ -3,7 +3,7 @@ function constraint_hash(constraint::Union{AllDifferentConstraint,BasicConstrain
 end
 
 function constraint_hash(constraint::TableConstraint)
-    return hash([string(typeof(constraint.set)), constraint.indices, constraint.set.table])
+    return hash([string(typeof(constraint.std.set)), constraint.std.indices, constraint.std.set.table])
 end
 
 function constraint_hash(constraint::LinearConstraint)

@@ -92,14 +92,23 @@ end
 
 function jump_fulfills_sudoku_constr(vals)
     for r = 1:9
-        !allunique(vals[r, :]) && return false
+        if !allunique(vals[r, :]) 
+            println("row $r not unique")
+            return false
+        end
     end
     for c = 1:9
-        !allunique(vals[:, c]) && return false
+        if !allunique(vals[:, c]) 
+            println("col $c not unique")
+            return false
+        end
     end
     for br = 0:2
         for bc = 0:2
-            !allunique(vec(vals[br*3+1:(br+1)*3, bc*3+1:(bc+1)*3])) && return false
+            if !allunique(vec(vals[br*3+1:(br+1)*3, bc*3+1:(bc+1)*3])) 
+                println("block $br, $bc not unique")
+                return false
+            end
         end
     end
     return true

@@ -61,6 +61,11 @@ struct TableSetInternal <: MOI.AbstractVectorSet
     table     :: Array{Int, 2}
 end
 
+struct TableSet <: JuMP.AbstractVectorSet 
+    table     :: Array{Int, 2}
+end
+JuMP.moi_set(ts::TableSet, dim) = TableSetInternal(dim, ts.table)
+
 struct EqualSet <: MOI.AbstractVectorSet
     dimension::Int
 end
@@ -139,6 +144,9 @@ mutable struct ConstraintInternals
     set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
     indices::Vector{Int}
     pvals::Vector{Int}
+    initialized::Bool 
+    single_reverse_pruning::Bool # true if there is a reverse_pruning_constraint function
+    reverse_pruning::Bool # true if there is a reverse_pruning_constraint function
     enforce_bound::Bool
     bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
     hash::UInt64

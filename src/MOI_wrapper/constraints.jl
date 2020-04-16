@@ -314,6 +314,7 @@ function init_constraints!(com::CS.CoM; constraints=com.constraints)
             feasible = init_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
             !feasible && break
         end
+        constraint.std.initialized = true
     end
     return feasible
 end
@@ -340,6 +341,37 @@ function set_enforce_bound!(com::CS.CoM)
             constraint.std.enforce_bound = true	
         else # just to be sure => set it to false otherwise	
             constraint.std.enforce_bound = false	
+        end	
+    end	
+end
+
+"""	
+    set_reverse_pruning!(com::CS.CoM)	
+Sets `std.single_reverse_pruning` and `std.reverse_pruning` in each constraint 
+if `single_reverse_pruning_constraint!`, `reverse_pruning_constraint!` are implemented for the constraint.
+"""	
+function set_reverse_pruning!(com::CS.CoM)	
+    for ci = 1:length(com.constraints)	
+        constraint = com.constraints[ci]	
+        c_type = typeof(constraint)	
+        c_fct_type = typeof(constraint.std.fct)	
+        c_set_type = typeof(constraint.std.set)	
+        if hasmethod(	
+            single_reverse_pruning_constraint!,	
+            (CS.CoM, c_type, c_fct_type, c_set_type, Int, Vector{Tuple{Symbol,Int,Int,Int}}),	
+        )	
+            constraint.std.single_reverse_pruning = true	
+        else # just to be sure => set it to false otherwise	
+            constraint.std.single_reverse_pruning = false	
+        end	
+
+        if hasmethod(	
+            reverse_pruning_constraint!,	
+            (CS.CoM, c_type, c_fct_type, c_set_type),	
+        )	
+            constraint.std.reverse_pruning = true	
+        else # just to be sure => set it to false otherwise	
+            constraint.std.reverse_pruning = false	
         end	
     end	
 end
