@@ -116,6 +116,7 @@ mutable struct RSparseBitSet
     indices   :: Vector{Int}
     last_ptr  :: Int
     mask      :: Vector{UInt64}
+    temp_mask :: Vector{UInt64}
     RSparseBitSet() = new() 
 end
 

@@ -26,6 +26,8 @@ function filter_domains(com::CoM, constraint::TableConstraint)
     residues = constraint.residues
     indices = constraint.std.indices
     variables = com.search_space
+    feasible = true
+    changed = false
     for local_vidx in constraint.unfixed_vars
         vidx = indices[local_vidx]
         for value in CS.values(variables[vidx])
@@ -36,8 +38,10 @@ function filter_domains(com::CoM, constraint::TableConstraint)
                     residues[com, local_vidx, value] = idx
                 else
                     if has(variables[vidx], value)
+                        changed = true
                         if !rm!(com, variables[vidx], value)
-                            return false # not feasible anymore
+                            feasible = false
+                            break
                         end
                         @assert !has(variables[vidx], value) 
                     end
@@ -45,8 +49,9 @@ function filter_domains(com::CoM, constraint::TableConstraint)
             end
         end
         constraint.last_sizes[local_vidx] = CS.nvalues(variables[vidx])
+        !feasible && break
     end
-    return true
+    return feasible, changed
 end
     
 """
@@ -96,7 +101,8 @@ function init_constraint!(
     rsbs.words = fill(~zero(UInt64), num_64_words)
     rsbs.indices = 1:num_64_words
     rsbs.last_ptr = num_64_words
-    rsbs.mask = zeros(UInt64, num_64_words)
+    rsbs.mask = fill(~zero(UInt64), num_64_words)
+    rsbs.temp_mask = zeros(UInt64, num_64_words)
     ending_ones = (num_pos_rows-1) % 64 +1
     rsbs.words[end] = rsbs.words[end] .⊻ ((UInt64(1) << (64-ending_ones))-1)
 
@@ -161,7 +167,6 @@ function init_constraint!(
 
     # define last_sizes
     constraint.last_sizes = [CS.nvalues(com.search_space[vidx]) for vidx in indices]
-
     return feasible
 end
 
@@ -178,27 +183,33 @@ function prune_constraint!(
     set::TableSetInternal;
     logs = true,
 )
+    # @infiltrate constraint.std.idx == 4
     current = constraint.current
     indices = constraint.std.indices
     variables = com.search_space
 
-    # All local indices (1 corresponds to indices[1]) which have changed
-    constraint.changed_vars = findall(x->CS.nvalues(variables[indices[x]]) != constraint.last_sizes[x], 1:length(indices))
-    for local_vidx in constraint.changed_vars
-        constraint.last_sizes[local_vidx] = CS.nvalues(variables[indices[local_vidx]])
-    end
-    constraint.unfixed_vars = findall(x->constraint.last_sizes[x] > 1, 1:length(indices))
-    if length(constraint.changed_vars) != 0
-        update_table(com, constraint)
-        if is_empty(current) 
-            clear_mask(current)
-            return false
+    changed = true
+    feasible = true
+    while changed
+        # All local indices (1 corresponds to indices[1]) which have changed
+        constraint.changed_vars = findall(x->CS.nvalues(variables[indices[x]]) != constraint.last_sizes[x], 1:length(indices))
+        for local_vidx in constraint.changed_vars
+            constraint.last_sizes[local_vidx] = CS.nvalues(variables[indices[local_vidx]])
         end
+        constraint.unfixed_vars = findall(x->constraint.last_sizes[x] > 1, 1:length(indices))
+        if length(constraint.changed_vars) != 0
+            update_table(com, constraint)
+            if is_empty(current) 
+                full_mask(current)
+                return false
+            end
+        end
+        
+        feasible, changed = filter_domains(com, constraint)
+        !feasible && break
     end
-    
-    feasible = filter_domains(com, constraint)
-    # clear mask for `single_reverse_pruning_constraint!``
-    clear_mask(current)
+    # full mask for `single_reverse_pruning_constraint!``
+    full_mask(current)
     return feasible
 end
 
@@ -218,9 +229,7 @@ function still_feasible(
     current = constraint.current
     supports = constraint.supports
     indices = constraint.std.indices
-    clear_mask(current)
-    # all fulfilled at beginning
-    invert_mask(current)
+    full_mask(current)
     for i = 1:length(indices)
         if indices[i] == index
             intersect_mask_with_mask(current, supports[com, i, value])
@@ -228,11 +237,9 @@ function still_feasible(
             intersect_mask_with_mask(current, supports[com, i, CS.value(com.search_space[indices[i]])])
         end
     end
-    copied_current = deepcopy(current)
-    intersect_with_mask(current)
-    feasible = !is_empty(current)
-    current = copied_current
-    clear_mask(current)
+    feasible = intersect_with_mask_feasible(current)
+
+    full_mask(current)
     return feasible
 end
 
@@ -262,6 +269,7 @@ function single_reverse_pruning_constraint!(
     current = constraint.current
     variables = com.search_space
     supports = constraint.supports
+    residues = constraint.residues
     indices = constraint.std.indices
     local_var_idx = 1
     while local_var_idx <= length(indices)
@@ -272,34 +280,28 @@ function single_reverse_pruning_constraint!(
     end
     @assert local_var_idx <= length(indices)
     @assert indices[local_var_idx] == var_idx
-
-    got_fixed = false
-    nremoved = 0
-    for change in Iterators.reverse(changes)
-        if change[2] == :fix
-            # use complete domain
-            got_fixed = true
-            break
-        else
-            nremoved += change[4]
-        end
-    end
-    # TODO don't use CS.values as this creates a copy of the values
-    for value in CS.values(variables[var_idx])
-        add_to_mask(current, supports[com, local_var_idx, value])
-    end
+    
     constraint.last_sizes[local_var_idx] = CS.nvalues(variables[var_idx])
-    #=
-    if got_fixed
-        for value in CS.values(variables[var_idx])
-            add_to_mask(current, supports[com, local_var_idx, value])
-        end
-    else
-        for value in CS.values(variables[var_idx])[end-nremoved+1:end]
-            add_to_mask(current, supports[com, local_var_idx, value])
+    # @infiltrate constraint.std.idx == 25
+    clear_temp_mask(current)
+    # TODO don't use CS.values as this creates a copy of the value
+    for value in CS.values(variables[var_idx])
+        add_to_temp_mask(current, supports[com, local_var_idx, value])
+    end
+    intersect_mask_with_mask(current, current.temp_mask)
+end
+
+function reset_residues!(constraint::TableConstraint)
+    support = constraint.supports
+    residues = constraint.residues
+    current = constraint.current
+    num_residues = length(residues.values)
+    for sc=1:num_residues
+        new_residue = intersect_index(current, support.values[:,sc])
+        if new_residue != 0
+            residues.values[sc] = new_residue
         end
     end
-    =#
 end
 
 """
@@ -319,9 +321,8 @@ function reverse_pruning_constraint!(
     fct::MOI.VectorOfVariables,
     set::TableSetInternal,
 )
-   current = constraint.current
-#    println("before: $(bitstring(current.words[1]))")
-   rev_intersect_with_mask(current)
-#    println("after: $(bitstring(current.words[1]))")
-   clear_mask(current)
+    current = constraint.current
+    rev_intersect_with_mask(current)
+    full_mask(current)
+    reset_residues!(constraint)
 end

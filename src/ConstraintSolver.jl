@@ -297,7 +297,6 @@ function prune!(
         else
             com.info.pre_backtrack_calls += 1
         end
-
         if !feasible
             break
         end
@@ -309,6 +308,8 @@ function prune!(
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
                 for ci in com.subscription[var.idx]
+                    # don't call the same constraint again. 
+                    # Each constraint should prune as much as possible 
                     if ci != constraint.std.idx
                         inner_constraint = com.constraints[ci]
                         # if initial check or don't add constraints => update only those which already have open possibilities
@@ -375,6 +376,7 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
         end
     end
     for var in search_space
+        length(var.changes[backtrack_idx]) == 0 && continue
         var.idx > length(com.subscription) && continue
         for ci in com.subscription[var.idx]
             constraint = com.constraints[ci]
@@ -811,7 +813,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         last_backtrack_id = backtrack_obj.idx
 
         # limit the variable bounds
-        !set_bounds!(com, backtrack_obj) && continue
+        if !set_bounds!(com, backtrack_obj) 
+            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
+            continue
+        end
 
         constraints = com.constraints[com.subscription[ind]]
         com.info.backtrack_fixes += 1
@@ -821,6 +826,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         if com.sense != MOI.FEASIBILITY_SENSE
             feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
             if !feasible
+                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
                 com.info.backtrack_reverses += 1
                 continue
             end
@@ -832,6 +838,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
             if !feasible
                 com.info.backtrack_reverses += 1
+                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
                 continue
             end
         end
