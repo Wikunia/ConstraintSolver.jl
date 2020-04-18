@@ -170,11 +170,11 @@ end
 
 
 """
-    prune!(com::CS.CoM, prune_steps::Vector{Int})
+    restore_prune!(com::CS.CoM, prune_steps::Union{Int,Vector{Int}})
 
 Prune the search space based on a list of backtracking indices `prune_steps`.
 """
-function prune!(com::CS.CoM, prune_steps::Vector{Int})
+function restore_prune!(com::CS.CoM, prune_steps::Union{Int,Vector{Int}})
     search_space = com.search_space
     for backtrack_idx in prune_steps
         for var in search_space
@@ -453,7 +453,7 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
 
         to = parent
         if backtrack_vec[prune_steps[1]].parent_idx == from.parent_idx
-            prune!(com, prune_steps)
+            restore_prune!(com, prune_steps)
             return
         end
     end
@@ -468,7 +468,7 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
         to = backtrack_vec[to.parent_idx]
     end
 
-    prune!(com, prune_steps)
+    restore_prune!(com, prune_steps)
 end
 
 """
@@ -556,7 +556,7 @@ function set_state_to_best_sol!(com::CS.CoM, last_backtrack_id::Int)
     backtrack_id = com.bt_solution_ids[sol_id]
     checkout_from_to!(com, last_backtrack_id, backtrack_id)
     # prune the last step as checkout_from_to! excludes the to part
-    prune!(com, [backtrack_id])
+    restore_prune!(com, backtrack_id)
 end
 
 """
