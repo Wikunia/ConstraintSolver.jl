@@ -64,25 +64,22 @@ function init_constraint!(
     fct::MOI.VectorOfVariables,
     set::TableSetInternal,
 )
-    num_pos_rows = size(set.table, 1)
-    # println("before num_pos_rows: $num_pos_rows")
+    table = set.table
+    num_pos_rows = size(table, 1)
 
     possible_rows = trues(num_pos_rows)
     search_space = com.search_space
 
     indices = constraint.std.indices
-    for row_id in 1:size(set.table)[1]
-        row = set.table[row_id,:]
+    for row_id in 1:size(table)[1]
         for (i, vidx) in enumerate(indices)
-            if !has(search_space[vidx], row[i])
-                # println("row_id: $row_id")
+            if !has(search_space[vidx], table[row_id, i])
                 possible_rows[row_id] = false
                 num_pos_rows -= 1
                 break
             end
         end
     end
-    # println("num_pos_rows: $num_pos_rows")
     num_pos_rows == 0 && return false
 
     support = constraint.supports
@@ -119,7 +116,7 @@ function init_constraint!(
             for (c, vidx) in enumerate(indices)
                 variable = search_space[vidx]
                 var_offset = variable.offset
-                table_val = set.table[r,c]
+                table_val = table[r,c]
                 val_idx = variable.init_val_to_index[table_val + var_offset]
                 @assert variable.init_vals[val_idx] == table_val
                 support_col_idx = support.var_start[c]+val_idx-1
