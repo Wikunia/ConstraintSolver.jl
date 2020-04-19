@@ -814,7 +814,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
         # limit the variable bounds
         if !set_bounds!(com, backtrack_obj) 
-            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
+            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
             continue
         end
 
@@ -826,7 +826,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         if com.sense != MOI.FEASIBILITY_SENSE
             feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
             if !feasible
-                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
+                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
                 com.info.backtrack_reverses += 1
                 continue
             end
@@ -838,7 +838,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
             if !feasible
                 com.info.backtrack_reverses += 1
-                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
+                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
                 continue
             end
         end

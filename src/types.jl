@@ -261,6 +261,7 @@ end
 mutable struct TreeLogNode{T<:Real}
     id::Int
     status::Symbol
+    feasible::Bool
     best_bound::T
     step_nr::Int
     var_idx::Int

@@ -19,6 +19,7 @@ function log_one_node(com, nvars, back_idx, step_nr)
     tree_log_node = TreeLogNode(
         back_idx,
         status,
+        true, # feasible
         best_bound,
         step_nr,
         var_idx,
@@ -47,9 +48,10 @@ function log_one_node(com, nvars, back_idx, step_nr)
     return tree_log_node
 end
 
-function log_node_state!(tree_log_node, bo, variables)
+function log_node_state!(tree_log_node, bo, variables; feasible=nothing)
     back_idx = tree_log_node.id
     bo !== nothing && (tree_log_node.status = bo.status)
+    feasible !== nothing && (tree_log_node.feasible = feasible)
     if tree_log_node.status == :Closed
         for var in variables
             # easier to visualize if we save it every step even if unchanged
@@ -137,7 +139,7 @@ function same_logs(log1, log2)
         if node1.id != node2.id || node1.status != node2.status ||
            node1.best_bound != node2.best_bound || node1.step_nr != node2.step_nr ||
            node1.var_idx != node2.var_idx || node1.lb != node2.lb ||
-           node1.ub != node2.ub || node1.var_states != node2.var_states
+           node1.ub != node2.ub || node1.var_states != node2.var_states || node1.feasible != node2.feasible
             println("Not identical at i=", i)
             println("node1: ")
             println(

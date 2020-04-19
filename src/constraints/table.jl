@@ -180,7 +180,6 @@ function prune_constraint!(
     set::TableSetInternal;
     logs = true,
 )
-    # @infiltrate constraint.std.idx == 4
     current = constraint.current
     indices = constraint.std.indices
     variables = com.search_space
@@ -279,7 +278,6 @@ function single_reverse_pruning_constraint!(
     @assert indices[local_var_idx] == var_idx
     
     constraint.last_sizes[local_var_idx] = CS.nvalues(variables[var_idx])
-    # @infiltrate constraint.std.idx == 25
     clear_temp_mask(current)
     # TODO don't use CS.values as this creates a copy of the value
     for value in CS.values(variables[var_idx])

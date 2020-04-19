@@ -5,9 +5,9 @@
         var_states = Dict{Int,Vector{Int}}()
         var_changes = Dict{Int,Vector{Tuple{Symbol,Int,Int,Int}}}()
         children = CS.TreeLogNode{Int}[]
-        l1 = CS.TreeLogNode(0, :Open, 0, 0, 0, 0, 0, var_states, var_changes, children)
+        l1 = CS.TreeLogNode(0, :Open, true, 0, 0, 0, 0, 0, var_states, var_changes, children)
         l2 =
-            CS.TreeLogNode(0, :Closed, 0, 0, 0, 0, 0, var_states, var_changes, children)
+            CS.TreeLogNode(0, :Closed, true, 0, 0, 0, 0, 0, var_states, var_changes, children)
         @test !CS.same_logs(l1, l2)
 
         # different children order
@@ -15,6 +15,7 @@
         tln1 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             1,
             0,
@@ -27,6 +28,7 @@
         tln2 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             2,
             0,
@@ -41,6 +43,7 @@
         l1 = CS.TreeLogNode(
             0,
             :Closed,
+            false,
             0,
             0,
             0,
@@ -53,6 +56,7 @@
         l2 = CS.TreeLogNode(
             0,
             :Closed,
+            false,
             0,
             0,
             0,
@@ -69,6 +73,7 @@
         tln1 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0.0,
             1,
             0,
@@ -81,6 +86,7 @@
         tln2 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0.0,
             2,
             0,
@@ -95,6 +101,7 @@
         l1 = CS.TreeLogNode(
             0,
             :Closed,
+            true,
             0.0,
             0,
             0,
@@ -107,6 +114,7 @@
         l2 = CS.TreeLogNode(
             0,
             :Closed,
+            true,
             0.0,
             0,
             0,
@@ -123,6 +131,7 @@
         tln13 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             3,
             0,
@@ -133,10 +142,11 @@
             CS.TreeLogNode{Int}[],
         )
         tln11 =
-            CS.TreeLogNode(0, :Open, 0, 1, 0, 0, 0, var_states, var_changes, [tln13])
+            CS.TreeLogNode(0, :Open, true, 0, 1, 0, 0, 0, var_states, var_changes, [tln13])
         tln12 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             2,
             0,
@@ -152,6 +162,7 @@
         tln23 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             3,
             0,
@@ -164,6 +175,7 @@
         tln21 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             1,
             0,
@@ -174,12 +186,13 @@
             CS.TreeLogNode{Int}[],
         )
         tln22 =
-            CS.TreeLogNode(0, :Open, 0, 2, 0, 0, 0, var_states, var_changes, [tln23])
+            CS.TreeLogNode(0, :Open, true, 0, 2, 0, 0, 0, var_states, var_changes, [tln23])
         push!(children2, tln21)
         push!(children2, tln22)
         l1 = CS.TreeLogNode(
             0,
             :Closed,
+            true,
             0,
             0,
             0,
@@ -192,6 +205,7 @@
         l2 = CS.TreeLogNode(
             0,
             :Closed,
+            true,
             0,
             0,
             0,
@@ -208,6 +222,7 @@
         tln13 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             3,
             0,
@@ -220,6 +235,7 @@
         tln14 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             4,
             0,
@@ -232,6 +248,7 @@
         tln11 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             1,
             0,
@@ -244,6 +261,7 @@
         tln12 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             2,
             0,
@@ -259,6 +277,7 @@
         tln23 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             3,
             0,
@@ -271,6 +290,7 @@
         tln24 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             4,
             0,
@@ -283,6 +303,7 @@
         tln21 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             1,
             0,
@@ -295,6 +316,7 @@
         tln22 = CS.TreeLogNode(
             0,
             :Open,
+            true,
             0,
             2,
             0,
@@ -309,6 +331,7 @@
         l1 = CS.TreeLogNode(
             0,
             :Closed,
+            true,
             0,
             0,
             0,
@@ -321,6 +344,7 @@
         l2 = CS.TreeLogNode(
             0,
             :Closed,
+            true,
             0,
             0,
             0,
