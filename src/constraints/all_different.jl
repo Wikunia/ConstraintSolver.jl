@@ -99,7 +99,7 @@ end
 """
     get_alldifferent_extrema(sorted_min, sorted_max, len)
 
-Return the minimum and maximum sum using `len` values of sorted_min while satisfying the all different constraint
+Return the minimum and maximum sum using `len` values of sorted_min/sorted_max while satisfying the all different constraint
 """
 function get_alldifferent_extrema(sorted_min, sorted_max, len)
     max_sum = sorted_max[1]

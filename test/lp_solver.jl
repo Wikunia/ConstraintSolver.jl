@@ -107,6 +107,44 @@
         @test JuMP.objective_value(model) ≈ 75
     end
 
+    @testset "Combine lp with table constraint" begin
+        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        model = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "lp_optimizer" => cbc_optimizer,
+            "logging" => [],
+        ))
+
+        # Variables
+        @variable(model, 1 <= x[1:10] <= 15, Int)
+        
+        # Constraints
+        @constraint(model, sum(x[1:5]) >= 10)
+        @constraint(model, sum(x[6:10]) <= 15)
+    
+        table_left = [
+            1 2 3 4 5; # sum 16
+            1 2 3 4 6; #     17
+            4 5 5 3 4; #     21
+        ]
+
+        table_right = [
+            1 2 3 1 1; # sum 8
+            1 3 2 2 1; #     9
+            1 1 1 1 4; #     8
+        ]
+
+        @constraint(model, x[1:5] in CS.TableSet(table_left))
+        @constraint(model, x[6:10] in CS.TableSet(table_right))
+    
+        @objective(model, Max, sum(x))
+        optimize!(model)
+
+        @test JuMP.objective_value(model) ≈ 30
+        @test sum(JuMP.value.(x[6:10])) ≈ 9
+        @test sum(JuMP.value.(x[1:5])) ≈ 21
+    end
+
     @testset "Combine lp with all different + not equal" begin
         cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
         model = Model(optimizer_with_attributes(
