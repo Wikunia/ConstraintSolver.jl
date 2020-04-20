@@ -283,7 +283,7 @@ function single_reverse_pruning_constraint!(
     for value in CS.values(variables[var_idx])
         add_to_temp_mask(current, supports[com, local_var_idx, value])
     end
-    intersect_mask_with_mask(current, current.temp_mask)
+    intersect_mask_with_mask_full(current, current.temp_mask)
 end
 
 function reset_residues!(constraint::TableConstraint)
