@@ -196,14 +196,15 @@ function prune_constraint!(
         if length(constraint.changed_vars) != 0
             update_table(com, constraint)
             if is_empty(current) 
-                full_mask(current)
-                return false
+                feasible = false
+                break
             end
         end
         
         feasible, changed = filter_domains(com, constraint)
         !feasible && break
     end
+    empty!(constraint.changed_vars)
     # full mask for `single_reverse_pruning_constraint!``
     full_mask(current)
     return feasible
@@ -276,25 +277,38 @@ function single_reverse_pruning_constraint!(
     end
     @assert local_var_idx <= length(indices)
     @assert indices[local_var_idx] == var_idx
+
+    push!(constraint.changed_vars, local_var_idx)
     
-    constraint.last_sizes[local_var_idx] = CS.nvalues(variables[var_idx])
+    var = variables[var_idx]
+    constraint.last_sizes[local_var_idx] = CS.nvalues(var)
     clear_temp_mask(current)
-    # TODO don't use CS.values as this creates a copy of the value
-    for value in CS.values(variables[var_idx])
-        add_to_temp_mask(current, supports[com, local_var_idx, value])
+    for val_idx in var.first_ptr:var.last_ptr
+        add_to_temp_mask(current, supports[com, local_var_idx, var.values[val_idx]])
     end
     intersect_mask_with_mask_full(current, current.temp_mask)
 end
 
-function reset_residues!(constraint::TableConstraint)
+"""
+    reset_residues!(com, constraint::TableConstraint)
+
+Reset residues for constraint.changed_vars
+"""
+function reset_residues!(com, constraint::TableConstraint)
     support = constraint.supports
     residues = constraint.residues
     current = constraint.current
+    indices = constraint.std.indices
+    variables = com.search_space
     num_residues = length(residues.values)
-    for sc=1:num_residues
-        new_residue = intersect_index(current, support.values[:,sc])
-        if new_residue != 0
-            residues.values[sc] = new_residue
+    for local_var_idx in constraint.changed_vars
+        var_idx = indices[local_var_idx]
+        var = variables[var_idx]
+        for val_idx in var.first_ptr:var.last_ptr
+            new_residue = intersect_index(current, support[com, local_var_idx, var.values[val_idx]])
+            if new_residue != 0
+                residues[com, local_var_idx, var.values[val_idx]] = new_residue
+            end
         end
     end
 end
@@ -316,8 +330,10 @@ function reverse_pruning_constraint!(
     fct::MOI.VectorOfVariables,
     set::TableSetInternal,
 )
+    isempty(constraint.changed_vars) && return
     current = constraint.current
     rev_intersect_with_mask(current)
     full_mask(current)
-    reset_residues!(constraint)
+    reset_residues!(com, constraint)
+    empty!(constraint.changed_vars)
 end

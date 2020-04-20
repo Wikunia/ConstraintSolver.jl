@@ -99,7 +99,6 @@ function intersect_with_mask(bitset::RSparseBitSet)
                 indices[i] = indices[bitset.last_ptr]
                 indices[bitset.last_ptr] = idx
                 bitset.last_ptr -= 1 
-                # @infiltrate
             end
         end
     end
@@ -113,19 +112,15 @@ function rev_intersect_with_mask(bitset::RSparseBitSet)
         idx = indices[i]
         w = words[idx] | mask[idx]
         if w != words[idx]
-            # @infiltrate
             if words[idx] == zero(UInt64) && i == bitset.last_ptr+1
                 bitset.last_ptr += 1
             elseif words[idx] == zero(UInt64)
-                # @infiltrate
                 @assert i > bitset.last_ptr
                 indices[i] = indices[bitset.last_ptr+1]
                 indices[bitset.last_ptr+1] = idx
                 bitset.last_ptr += 1
-                # @infiltrate
             end
             words[idx] = w
-            # TODO: Change last_ptr here later
         end
     end
 end

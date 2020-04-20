@@ -4,7 +4,6 @@ using MatrixNetworks
 using JSON
 using MathOptInterface
 using Statistics
-using Infiltrator
 using JuMP:
     @variable,
     @constraint,
