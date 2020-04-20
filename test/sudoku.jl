@@ -59,12 +59,15 @@
         grid[8, :] = [0 0 0 0 0 0 9 0 0]
         grid[9, :] = [0 0 0 0 0 7 0 3 2]
 
+        offset = -2
+        grid .+= offset
+
         m = Model(optimizer_with_attributes(CS.Optimizer))
-        @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
+        @variable(m, 1+offset <= x[1:9, 1:9] <= 9+offset, Int)
         # set variables
         nvars_set = 0
         for r = 1:9, c = 1:9
-            if grid[r, c] != 0
+            if grid[r, c] != offset
                 @constraint(m, x[r, c] == grid[r, c])
                 nvars_set += 1
             end
@@ -73,10 +76,9 @@
         table = Array{Int64}(undef,(factorial(9),9))
         i = 1
         for row in permutations(1:9)
-            table[i,:] = row      
+            table[i,:] = row .+ offset      
             i += 1    
         end
-
         
         # sudoku constraints
         for rc = 1:9
