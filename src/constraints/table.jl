@@ -1,58 +1,6 @@
 include("table/support.jl")
 include("table/residues.jl")
 include("table/RSparseBitSet.jl")
-
-function update_table(com::CoM, constraint::TableConstraint)
-    current = constraint.current
-    supports = constraint.supports
-    indices = constraint.std.indices
-    variables = com.search_space
-    for local_vidx in constraint.changed_vars
-        vidx = indices[local_vidx]
-        clear_mask(current)
-        # TODO: Include incremental update
-        # reset based update
-        for value in CS.values(variables[vidx])
-            add_to_mask(current, supports[com, local_vidx, value])
-        end
-        intersect_with_mask(current)
-        is_empty(current) && break
-    end
-end
-
-function filter_domains(com::CoM, constraint::TableConstraint)
-    current = constraint.current
-    supports = constraint.supports
-    residues = constraint.residues
-    indices = constraint.std.indices
-    variables = com.search_space
-    feasible = true
-    changed = false
-    for local_vidx in constraint.unfixed_vars
-        vidx = indices[local_vidx]
-        for value in CS.values(variables[vidx])
-            idx = residues[com, local_vidx, value]
-            if current.words[idx] & supports[com, local_vidx, value][idx] == UInt64(0)
-                idx = intersect_index(current, supports[com, local_vidx, value])
-                if idx != 0
-                    residues[com, local_vidx, value] = idx
-                else
-                    if has(variables[vidx], value)
-                        changed = true
-                        if !rm!(com, variables[vidx], value)
-                            feasible = false
-                            break
-                        end
-                        @assert !has(variables[vidx], value) 
-                    end
-                end 
-            end
-        end
-        constraint.last_sizes[local_vidx] = CS.nvalues(variables[vidx])
-        !feasible && break
-    end
-    return feasible, changed
-end
     
 """
     init_constraint!(com::CS.CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal)
@@ -199,6 +147,58 @@ function init_constraint!(
     # define last_sizes
     constraint.last_sizes = [CS.nvalues(com.search_space[vidx]) for vidx in indices]
     return feasible
+end
+
+function update_table(com::CoM, constraint::TableConstraint)
+    current = constraint.current
+    supports = constraint.supports
+    indices = constraint.std.indices
+    variables = com.search_space
+    for local_vidx in constraint.changed_vars
+        vidx = indices[local_vidx]
+        clear_mask(current)
+        # TODO: Include incremental update
+        # reset based update
+        for value in view_values(variables[vidx])
+            add_to_mask(current, supports[com, local_vidx, value])
+        end
+        intersect_with_mask(current)
+        is_empty(current) && break
+    end
+end
+
+function filter_domains(com::CoM, constraint::TableConstraint)
+    current = constraint.current
+    supports = constraint.supports
+    residues = constraint.residues
+    indices = constraint.std.indices
+    variables = com.search_space
+    feasible = true
+    changed = false
+    for local_vidx in constraint.unfixed_vars
+        vidx = indices[local_vidx]
+        for value in CS.values(variables[vidx])
+            idx = residues[com, local_vidx, value]
+            if current.words[idx] & supports[com, local_vidx, value][idx] == UInt64(0)
+                idx = intersect_index(current, supports[com, local_vidx, value])
+                if idx != 0
+                    residues[com, local_vidx, value] = idx
+                else
+                    if has(variables[vidx], value)
+                        changed = true
+                        if !rm!(com, variables[vidx], value)
+                            feasible = false
+                            break
+                        end
+                        @assert !has(variables[vidx], value) 
+                    end
+                end 
+            end
+        end
+        constraint.last_sizes[local_vidx] = CS.nvalues(variables[vidx])
+        !feasible && break
+    end
+    return feasible, changed
 end
 
 """
@@ -359,8 +359,8 @@ function single_reverse_pruning_constraint!(
     var = variables[var_idx]
     constraint.last_sizes[local_var_idx] = CS.nvalues(var)
     clear_temp_mask(current)
-    for val_idx in var.first_ptr:var.last_ptr
-        add_to_temp_mask(current, supports[com, local_var_idx, var.values[val_idx]])
+    for val in view_values(var)
+        add_to_temp_mask(current, supports[com, local_var_idx, val])
     end
     intersect_mask_with_mask_full(current, current.temp_mask)
 end
