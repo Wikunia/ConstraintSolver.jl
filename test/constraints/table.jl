@@ -152,7 +152,7 @@ end
     )
     @test feasible
 
-    CS.rm!(com, com.search_space[x.value], 1; changes=false)
+    CS.rm!(com, com.search_space[x.value], 1)
     feasible = CS.prune_constraint!(
         com,
         constraint,
@@ -197,7 +197,7 @@ end
     )
     @test feasible
 
-    CS.remove_below!(com, com.search_space[x.value], 5; changes=false)
+    CS.remove_below!(com, com.search_space[x.value], 5)
     # this changes residues
     feasible = CS.prune_constraint!(
         com,
@@ -256,7 +256,7 @@ end
 
     words_before_prune = copy(constraint.current.words)
 
-    CS.rm!(com, com.search_space[x.value], 1; changes=false)
+    CS.rm!(com, com.search_space[x.value], 1)
     feasible = CS.prune_constraint!(
         com,
         constraint,
@@ -355,7 +355,7 @@ end
     # z = 2 should be fixed
     @test CS.value(com.search_space[z.value]) == 2
 
-    CS.rm!(com, com.search_space[x.value], 1; changes=false)
+    CS.rm!(com, com.search_space[x.value], 1)
     feasible = CS.prune_constraint!(
         com,
         constraint,

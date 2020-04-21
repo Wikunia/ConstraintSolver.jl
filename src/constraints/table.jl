@@ -125,7 +125,7 @@ function init_constraint!(
             var = indices[var_i]
             val = search_space[var].init_vals[val_i]
             if has(search_space[var], val)
-                feasible = rm!(com, search_space[var], val; changes=false)
+                feasible = rm!(com, search_space[var], val)
                 if !feasible  
                     break
                 end
@@ -154,14 +154,24 @@ function update_table(com::CoM, constraint::TableConstraint)
     supports = constraint.supports
     indices = constraint.std.indices
     variables = com.search_space
+    backtrack_idx = com.c_backtrack_idx
     for local_vidx in constraint.changed_vars
         vidx = indices[local_vidx]
+        var = variables[vidx]
         clear_mask(current)
-        # TODO: Include incremental update
-        # reset based update
-        for value in view_values(variables[vidx])
-            add_to_mask(current, supports[com, local_vidx, value])
+        nremoved = num_removed(var, backtrack_idx)
+        if nremoved < nvalues(var)
+            for value in view_removed_values(variables[vidx], nremoved)
+                add_to_mask(current, supports[com, local_vidx, value])
+            end
+            invert_mask(current)
+        else
+            # reset based update
+            for value in view_values(var)
+                add_to_mask(current, supports[com, local_vidx, value])
+            end
         end
+       
         intersect_with_mask(current)
         is_empty(current) && break
     end
