@@ -231,7 +231,9 @@ function MOI.add_constraint(
         Int[], # will be changes later as it needs the number of words
         TableResidues(),
         Int[], # changed_vars
-        Int[]  # unfixed_vars
+        Int[],  # unfixed_vars
+        Int[], # sum_min
+        Int[]  # sum_max
     )
 
     push!(com.constraints, constraint)

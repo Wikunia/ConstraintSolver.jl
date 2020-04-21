@@ -81,6 +81,29 @@ function init_constraint!(
         end
     end
     num_pos_rows == 0 && return false
+    pos_rows_idx = findall(possible_rows)
+    row_sums = nothing
+
+    # if there is an lp model we compute bounds for the sum
+    if com.lp_model !== nothing
+        row_sums = sum(table[possible_rows,:]; dims=2)[:,1]
+        local_sort_perm = sortperm(row_sums)
+        row_sums = row_sums[local_sort_perm]
+        # initial bounds for sum(variables[indices])
+        table_min = row_sums[1]
+        table_max = row_sums[end]
+        pos_rows_idx = pos_rows_idx[local_sort_perm]
+        
+        lp_backend = backend(com.lp_model)
+        lp_var_idx = create_lp_variable!(com.lp_model, com.lp_x; lb=table_min, ub=table_max)
+        # create == constraint with sum of all variables equal the newly created variable
+        sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(var_idx)) for var_idx in indices]
+        push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_var_idx)))
+        saf = MOI.ScalarAffineFunction(sats, 0.0)
+        MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
+        constraint.std.bound_rhs = [BoundRhsVariable(lp_var_idx, table_min, table_max)]
+    end
+    
 
     support = constraint.supports
     
@@ -104,27 +127,38 @@ function init_constraint!(
     rsbs.words[end] = rsbs.words[end] .⊻ ((UInt64(1) << (64-ending_ones))-1)
 
     support.values = zeros(UInt64, (num_64_words, num_supports))
+    # if we have an LP model we store sum_min and sum_max for each 64 block
+    if row_sums !== nothing
+        constraint.sum_min = zeros(Int64, num_64_words)
+        constraint.sum_max = fill(row_sums[end], num_64_words)
+    end
 
     num_64_idx = 0
     rp_idx = 0
-    for r=1:length(possible_rows)
-        if possible_rows[r]
-            rp_idx += 1
+    for r in pos_rows_idx
+        rp_idx += 1
+        if rp_idx % 64 == 1
+            num_64_idx += 1
+        end
+        if row_sums !== nothing
+            # store the smallest number in the block
             if rp_idx % 64 == 1
-                num_64_idx += 1
+                constraint.sum_min[num_64_idx] = row_sums[rp_idx]
+            elseif rp_idx % 64 == 0 # store the biggest number in the block
+                constraint.sum_max[num_64_idx] = row_sums[rp_idx]
             end
-            for (c, vidx) in enumerate(indices)
-                variable = search_space[vidx]
-                var_offset = variable.offset
-                table_val = table[r,c]
-                val_idx = variable.init_val_to_index[table_val + var_offset]
-                @assert variable.init_vals[val_idx] == table_val
-                support_col_idx = support.var_start[c]+val_idx-1
-                # println("support_col_idx: $support_col_idx")
-                cell_64 = support.values[num_64_idx, support_col_idx]
-                pos_in_64 = (rp_idx-1) % 64 + 1
-                support.values[num_64_idx, support_col_idx] = cell_64 .| (UInt64(1) << (64-pos_in_64))
-            end
+        end
+        for (c, vidx) in enumerate(indices)
+            variable = search_space[vidx]
+            var_offset = variable.offset
+            table_val = table[r,c]
+            val_idx = variable.init_val_to_index[table_val + var_offset]
+            @assert variable.init_vals[val_idx] == table_val
+            support_col_idx = support.var_start[c]+val_idx-1
+            # println("support_col_idx: $support_col_idx")
+            cell_64 = support.values[num_64_idx, support_col_idx]
+            pos_in_64 = (rp_idx-1) % 64 + 1
+            support.values[num_64_idx, support_col_idx] = cell_64 .| (UInt64(1) << (64-pos_in_64))
         end
     end
 
@@ -238,6 +272,48 @@ function still_feasible(
 
     full_mask(current)
     return feasible
+end
+
+
+"""
+    update_best_bound_constraint!(com::CS.CoM,
+        constraint::TableConstraint,
+        fct::MOI.VectorOfVariables,
+        set::TableSetInternal,
+        var_idx::Int,
+        lb::Int,
+        ub::Int
+    )
+
+Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to 
+the possible values the table constraint allows. `var_idx`, `lb` and `ub` don't are not considered atm.
+Additionally only a rough estimated bound is used which can be computed relatively fast. 
+"""
+function update_best_bound_constraint!(com::CS.CoM,
+    constraint::TableConstraint,
+    fct::MOI.VectorOfVariables,
+    set::TableSetInternal,
+    var_idx::Int,
+    lb::Int,
+    ub::Int
+)
+    constraint.std.bound_rhs === nothing && return
+    sum_min = constraint.sum_min
+    sum_max = constraint.sum_max
+    bitset = constraint.current
+    
+    bound_rhs = constraint.std.bound_rhs[1]
+
+    lb = typemax(Int)
+    ub = typemin(Int)
+
+    @inbounds for i=1:bitset.last_ptr
+        idx = bitset.indices[i]
+        lb = min(lb, sum_min[idx])
+        ub = max(ub, sum_max[idx])
+    end
+    bound_rhs.lb = lb
+    bound_rhs.ub = ub
 end
 
 """

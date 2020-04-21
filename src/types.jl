@@ -199,6 +199,8 @@ mutable struct TableConstraint <: Constraint
     residues::TableResidues
     changed_vars::Vector{Int}
     unfixed_vars::Vector{Int}
+    sum_min::Vector{Int}
+    sum_max::Vector{Int}
 end
 
 #====================================================================================

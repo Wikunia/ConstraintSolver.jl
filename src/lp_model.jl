@@ -33,8 +33,8 @@ function create_lp_model!(model)
     com.lp_model = lp_model
 end
 
-function create_lp_variable!(lp_model, lp_x)
-    v = @variable(lp_model)
+function create_lp_variable!(lp_model, lp_x; lb=typemin(Int64), ub=typemax(Int64))
+    v = @variable(lp_model, lower_bound=lb, upper_bound=ub)
     push!(lp_x, v)
     return length(lp_x)
 end
