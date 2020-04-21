@@ -1,4 +1,4 @@
-# Supported constraints and objectives
+# Supported variables, constraints and objectives
 
 This solver is in a pre-release phase right now and not a lot of constraints or objectives are supported.
 If you want to be up to date you might want to check this page every couple of months. 
@@ -13,6 +13,27 @@ Currently the only objective supported is the linear objective i.e
 @objective(m, Min, 2x+3y)
 ```
 
+## Supported variables
+
+All variables need to be bounded and discrete. 
+
+```
+@variable(m, x) # does not work
+@variable(m, x, Int) # doesn't work because it isn't bounded
+@variable(m, x, Bin) # does work because it is discrete and bounded
+@variable(m, 1 <= x, Int) # doesn't work because it isn't bounded from above
+@variable(m, 1 <= x <= 7, Int) # does work
+```
+
+Additionally you can specify a set of allowed integers:
+
+```
+@variable(m, x, CS.Integers([1,3,5,7]))
+```
+
+### Missing
+- Interval variables for scheduling
+
 ## Supported constraints
 
 It's a bit more but still not as fully featured as I would like it to be.
@@ -23,11 +44,12 @@ It's a bit more but still not as fully featured as I would like it to be.
   - [X] `<=`
   - [X] `>=`
 - [X] All different
-  - `@constraint(m, x[1:9] in CS.AllDifferentSet())`
-  - Currently you have to specify the length of vector
+  - `@constraint(m, [x,y,z] in CS.AllDifferentSet())`
 - [X] Support for `!=`
   - [X] Supports `a != b` with `a` and `b` being single variables
   - [X] Support for linear unequal constraints [#66](https://github.com/Wikunia/ConstraintSolver.jl/issues/66)
+- [X] `TableSet` constraint [#130](https://github.com/Wikunia/ConstraintSolver.jl/pull/130)
+- [ ] Scheduling constraints
 - [ ] Cycle constraints
 
 If I miss something which would be helpful for your needs please open an issue.
