@@ -537,6 +537,7 @@
             CS.Optimizer,
             "all_optimal_solutions" => true,
             "time_limit" => 1.0,
+            "keep_logs" => true,
             "logging" => []
         ))
 
@@ -565,6 +566,8 @@
         # at least more than 1 but in that time frame it should find a lot ;)
         @test MOI.get(m, MOI.ResultCount()) >= 10 
         @test JuMP.termination_status(m) == MOI.TIME_LIMIT
+        com = JuMP.backend(m).optimizer.model.inner
+        general_tree_test(com)
     end
 
     @testset "All solutions" begin
