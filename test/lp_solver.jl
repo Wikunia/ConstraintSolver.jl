@@ -226,7 +226,8 @@
             "lp_optimizer" => cbc_optimizer,
             "logging" => [],
             "traverse_strategy" => :DFS,
-            "branch_split" => :Biggest
+            "branch_split" => :Biggest,
+            "keep_logs" => true
         ))
 
         # Variables
@@ -246,6 +247,9 @@
         @test JuMP.objective_value(model) ≈ 80
         @test sum(JuMP.value.(x[6:10])) ≈ 15
         @test !(1.5*JuMP.value(x[1]) + 2*JuMP.value(x[2]) ≈ 40.5)
+
+        com = JuMP.backend(model).optimizer.model.inner
+        general_tree_test(com)
     end
 
     @testset "Combine lp with all different + not equal + DFS + Split Half" begin

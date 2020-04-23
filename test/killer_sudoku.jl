@@ -217,7 +217,10 @@ end
         for s in sums
             @test -s.result == sum([JuMP.value(com_grid[i...]) for i in s.indices])
         end
-        return JuMP.backend(m).optimizer.model.inner
+        com = JuMP.backend(m).optimizer.model.inner
+        @test general_tree_test(com)
+       
+        return com
     end
 
     @testset "Killer Sudoku niallsudoku_5503 with negative coefficients and -9 to -1" begin

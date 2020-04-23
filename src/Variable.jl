@@ -61,8 +61,8 @@ function has(v::CS.Variable, x::Int)
     return v.first_ptr <= ind <= v.last_ptr
 end
 
-function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several = false, changes = true)
-    if !in_remove_several
+function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several = false, changes = true, check_feasibility=true)
+    if !in_remove_several && check_feasibility
         # after removing nothing would be possible
         len_vals = nvalues(v)
         if len_vals == 1
@@ -118,16 +118,18 @@ function isfixed(v::CS.Variable)
     return v.last_ptr == v.first_ptr
 end
 
-function remove_below!(com::CS.CoM, var::CS.Variable, val::Int; changes = true)
+function remove_below!(com::CS.CoM, var::CS.Variable, val::Int; changes = true, check_feasibility=true)
     vals = values(var)
     still_possible = filter(v -> v >= val, vals)
-    if length(still_possible) == 0
-        com.bt_infeasible[var.idx] += 1
-        return false
-    elseif length(still_possible) == 1
-        if !fulfills_constraints(com, var.idx, still_possible[1])
+    if check_feasibility
+        if length(still_possible) == 0
             com.bt_infeasible[var.idx] += 1
             return false
+        elseif length(still_possible) == 1
+            if !fulfills_constraints(com, var.idx, still_possible[1])
+                com.bt_infeasible[var.idx] += 1
+                return false
+            end
         end
     end
 
@@ -146,16 +148,18 @@ function remove_below!(com::CS.CoM, var::CS.Variable, val::Int; changes = true)
     return true
 end
 
-function remove_above!(com::CS.CoM, var::CS.Variable, val::Int; changes = true)
+function remove_above!(com::CS.CoM, var::CS.Variable, val::Int; changes = true, check_feasibility=true)
     vals = values(var)
     still_possible = filter(v -> v <= val, vals)
-    if length(still_possible) == 0
-        com.bt_infeasible[var.idx] += 1
-        return false
-    elseif length(still_possible) == 1
-        if !fulfills_constraints(com, var.idx, still_possible[1])
+    if check_feasibility
+        if length(still_possible) == 0
             com.bt_infeasible[var.idx] += 1
             return false
+        elseif length(still_possible) == 1
+            if !fulfills_constraints(com, var.idx, still_possible[1])
+                com.bt_infeasible[var.idx] += 1
+                return false
+            end
         end
     end
 
