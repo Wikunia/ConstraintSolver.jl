@@ -163,11 +163,11 @@ end
 
 
 """
-    prune!(com::CS.CoM, prune_steps::Vector{Int})
+    restore_prune!(com::CS.CoM, prune_steps)
 
 Prune the search space based on a list of backtracking indices `prune_steps`.
 """
-function prune!(com::CS.CoM, prune_steps::Vector{Int})
+function restore_prune!(com::CS.CoM, prune_steps)
     search_space = com.search_space
     for backtrack_idx in prune_steps
         for var in search_space
@@ -175,18 +175,19 @@ function prune!(com::CS.CoM, prune_steps::Vector{Int})
                 fct_symbol = change[1]
                 val = change[2]
                 if fct_symbol == :fix
-                    fix!(com, var, val; changes = false)
+                    fix!(com, var, val; changes = false, check_feasibility = false)
                 elseif fct_symbol == :rm
-                    rm!(com, var, val; changes = false)
+                    rm!(com, var, val; changes = false, check_feasibility = false)
                 elseif fct_symbol == :remove_above
-                    remove_above!(com, var, val; changes = false)
+                    remove_above!(com, var, val; changes = false, check_feasibility = false)
                 elseif fct_symbol == :remove_below
-                    remove_below!(com, var, val; changes = false)
+                    remove_below!(com, var, val; changes = false, check_feasibility = false)
                 else
                     throw(ErrorException("There is no pruning function for $fct_symbol"))
                 end
             end
         end
+        com.c_backtrack_idx = backtrack_idx
     end
 end
 
@@ -430,7 +431,7 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
 
         to = parent
         if backtrack_vec[prune_steps[1]].parent_idx == from.parent_idx
-            prune!(com, prune_steps)
+            restore_prune!(com, prune_steps)
             return
         end
     end
@@ -445,7 +446,7 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
         to = backtrack_vec[to.parent_idx]
     end
 
-    prune!(com, prune_steps)
+    restore_prune!(com, prune_steps)
 end
 
 """
@@ -533,7 +534,7 @@ function set_state_to_best_sol!(com::CS.CoM, last_backtrack_id::Int)
     backtrack_id = com.bt_solution_ids[sol_id]
     checkout_from_to!(com, last_backtrack_id, backtrack_id)
     # prune the last step as checkout_from_to! excludes the to part
-    prune!(com, [backtrack_id])
+    restore_prune!(com, backtrack_id)
 end
 
 """
