@@ -107,7 +107,7 @@ function fulfills_constraints(com::CS.CoM, index, value)
     for ci in com.subscription[index]
         constraint = com.constraints[ci]
         # only call if the function got initialized already
-        if constraint.std.initialized 
+        if constraint.std.impl.init
             feasible =
                 still_feasible(com, constraint, constraint.std.fct, constraint.std.set, value, index)
             if !feasible
@@ -196,6 +196,7 @@ function restore_prune!(com::CS.CoM, prune_steps)
         end
         com.c_backtrack_idx = backtrack_idx
     end
+    call_restore_pruning!(com, prune_steps)
 end
 
 """
@@ -369,6 +370,7 @@ end
 Reverse the changes made by a specific backtrack object
 """
 function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
+    com.c_backtrack_idx = backtrack_idx
     search_space = com.search_space
     for var in search_space
         v_idx = var.idx
@@ -381,17 +383,18 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
         var.idx > length(com.subscription) && continue
         for ci in com.subscription[var.idx]
             constraint = com.constraints[ci]
-            if constraint.std.single_reverse_pruning
+            if constraint.std.impl.single_reverse_pruning
                 single_reverse_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set,
                                                     var.idx, var.changes[backtrack_idx])
             end
         end
     end
     for constraint in com.constraints
-        if constraint.std.reverse_pruning
-            reverse_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
+        if constraint.std.impl.reverse_pruning
+            reverse_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set, backtrack_idx)
         end
     end
+    com.c_backtrack_idx = com.backtrack_vec[backtrack_idx].parent_idx
 end
 
 """
@@ -454,7 +457,7 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
 
         to = parent
         if backtrack_vec[prune_steps[1]].parent_idx == from.parent_idx
-            restore_prune!(com, prune_steps)
+            !isempty(prune_steps) && restore_prune!(com, prune_steps)
             return
         end
     end
@@ -469,7 +472,7 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
         to = backtrack_vec[to.parent_idx]
     end
 
-    restore_prune!(com, prune_steps)
+    !isempty(prune_steps) && restore_prune!(com, prune_steps)
 end
 
 """
@@ -836,7 +839,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         if further_pruning
             # prune completely start with all that changed by the fix or by updating best bound
             feasible = prune!(com)
-
+            call_finished_pruning!(com)
             if !feasible
                 com.info.backtrack_reverses += 1
                 com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
@@ -1116,6 +1119,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
 
     # check if all feasible even if for example everything is fixed
     feasible = prune!(com; pre_backtrack = true, initial_check = true)
+    call_finished_pruning!(com)
 
     if !feasible
         com.solve_time = time() - com.start_time

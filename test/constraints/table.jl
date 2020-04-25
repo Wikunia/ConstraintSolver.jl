@@ -284,11 +284,13 @@ end
         com,
         constraint,
         constraint.std.fct,
-        constraint.std.set
+        constraint.std.set,
+        1
     )
 
     words_after_rev_prune = copy(constraint.current.words)
-    @test words_before_prune == words_after_rev_prune
+    # before init 
+    @test words_after_rev_prune == fill(~zero(UInt64), 1)
 
     # the 3 should be possible again
     @test sort(CS.values(com.search_space[z.value])) == [1,2,3]

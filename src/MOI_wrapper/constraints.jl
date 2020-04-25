@@ -230,6 +230,7 @@ function MOI.add_constraint(
         TableSupport(), # will be filled in init_constraint!
         Int[], # will be changes later as it needs the number of words
         TableResidues(),
+        Vector{TableBacktrackInfo}(),
         Int[], # changed_vars
         Int[],  # unfixed_vars
         Int[], # sum_min
@@ -316,17 +317,17 @@ function init_constraints!(com::CS.CoM; constraints=com.constraints)
             feasible = init_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
             !feasible && break
         end
-        constraint.std.initialized = true
+        constraint.std.impl.init = true
     end
     return feasible
 end
 
 """	
-    set_enforce_bound!(com::CS.CoM)	
-Sets `enforce_bound` in each constraint if we have an objective function and:	
+    set_update_best_bound!(com::CS.CoM)	
+Sets `update_best_bound` in each constraint if we have an objective function and:	
 - the constraint type has a function `update_best_bound_constraint!`	
 """	
-function set_enforce_bound!(com::CS.CoM)	
+function set_update_best_bound!(com::CS.CoM)	
     if com.sense == MOI.FEASIBILITY_SENSE	
         return	
     end	
@@ -340,16 +341,16 @@ function set_enforce_bound!(com::CS.CoM)
             update_best_bound_constraint!,	
             (CS.CoM, c_type, c_fct_type, c_set_type, Int, Int, Int),	
         )	
-            constraint.std.enforce_bound = true	
+            constraint.std.impl.update_best_bound = true	
         else # just to be sure => set it to false otherwise	
-            constraint.std.enforce_bound = false	
+            constraint.std.impl.update_best_bound = false	
         end	
     end	
 end
 
 """	
     set_reverse_pruning!(com::CS.CoM)	
-Sets `std.single_reverse_pruning` and `std.reverse_pruning` in each constraint 
+Sets `std.impl.single_reverse_pruning` and `std.impl.reverse_pruning` in each constraint 
 if `single_reverse_pruning_constraint!`, `reverse_pruning_constraint!` are implemented for the constraint.
 """	
 function set_reverse_pruning!(com::CS.CoM)	
@@ -362,20 +363,78 @@ function set_reverse_pruning!(com::CS.CoM)
             single_reverse_pruning_constraint!,	
             (CS.CoM, c_type, c_fct_type, c_set_type, Int, Vector{Tuple{Symbol,Int,Int,Int}}),	
         )	
-            constraint.std.single_reverse_pruning = true	
+            constraint.std.impl.single_reverse_pruning = true	
         else # just to be sure => set it to false otherwise	
-            constraint.std.single_reverse_pruning = false	
+            constraint.std.impl.single_reverse_pruning = false	
         end	
 
         if hasmethod(	
             reverse_pruning_constraint!,	
-            (CS.CoM, c_type, c_fct_type, c_set_type),	
+            (CS.CoM, c_type, c_fct_type, c_set_type, Int),	
         )	
-            constraint.std.reverse_pruning = true	
+            constraint.std.impl.reverse_pruning = true	
         else # just to be sure => set it to false otherwise	
-            constraint.std.reverse_pruning = false	
+            constraint.std.impl.reverse_pruning = false	
         end	
     end	
 end
 
+"""	
+    set_finished_pruning!(com::CS.CoM)	
+Sets `std.impl.finished_pruning` in each constraint 
+if `finished_pruning_constraint!`  is implemented for the constraint.
+"""	
+function set_finished_pruning!(com::CS.CoM)	
+    for ci = 1:length(com.constraints)	
+        constraint = com.constraints[ci]	
+        c_type = typeof(constraint)	
+        c_fct_type = typeof(constraint.std.fct)	
+        c_set_type = typeof(constraint.std.set)	
+        if hasmethod(	
+            finished_pruning_constraint!,	
+            (CS.CoM, c_type, c_fct_type, c_set_type)
+        )	
+            constraint.std.impl.finished_pruning = true	
+        else # just to be sure => set it to false otherwise	
+            constraint.std.impl.finished_pruning = false	
+        end
+    end	
+end
 
+"""	
+    set_restore_pruning!(com::CS.CoM)	
+Sets `std.impl.restore_pruning` in each constraint 
+if `restore_pruning_constraint!`  is implemented for the constraint.
+"""	
+function set_restore_pruning!(com::CS.CoM)	
+    for ci = 1:length(com.constraints)	
+        constraint = com.constraints[ci]	
+        c_type = typeof(constraint)	
+        c_fct_type = typeof(constraint.std.fct)	
+        c_set_type = typeof(constraint.std.set)	
+        if hasmethod(	
+            restore_pruning_constraint!,	
+            (CS.CoM, c_type, c_fct_type, c_set_type, Union{Int, Vector{Int}})
+        )	
+            constraint.std.impl.restore_pruning = true	
+        else # just to be sure => set it to false otherwise	
+            constraint.std.impl.restore_pruning = false	
+        end
+    end	
+end
+
+function call_finished_pruning!(com)
+    for constraint in com.constraints
+        if constraint.std.impl.finished_pruning
+            finished_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
+        end
+    end
+end
+
+function call_restore_pruning!(com, prune_steps)
+    for constraint in com.constraints
+        if constraint.std.impl.restore_pruning
+            restore_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set, prune_steps)
+        end
+    end
+end

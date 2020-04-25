@@ -63,15 +63,6 @@ function intersect_mask_with_mask(bitset::RSparseBitSet, intersect_mask::Vector{
     end
 end
 
-function intersect_mask_with_mask_full(bitset::RSparseBitSet, intersect_mask::Vector{UInt64})
-    indices = bitset.indices
-    mask = bitset.mask
-    @inbounds for i=1:length(indices)
-        idx = indices[i]
-        mask[idx] &= intersect_mask[idx] 
-    end
-end
-
 function intersect_with_mask_feasible(bitset::RSparseBitSet)
     words = bitset.words
     mask = bitset.mask

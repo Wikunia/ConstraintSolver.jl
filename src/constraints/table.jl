@@ -254,6 +254,23 @@ function prune_constraint!(
     return feasible
 end
 
+function finished_pruning_constraint!(com::CS.CoM,
+    constraint::TableConstraint,
+    fct::MOI.VectorOfVariables,
+    set::TableSetInternal)
+    
+    @assert com.c_backtrack_idx > 0
+
+    backtrack = constraint.backtrack
+    while length(backtrack) < com.c_backtrack_idx
+        push!(backtrack, TableBacktrackInfo(UInt64[], zero(UInt64), Int[]))
+    end
+   
+    backtrack[com.c_backtrack_idx].words = copy(constraint.current.words)
+    backtrack[com.c_backtrack_idx].last_ptr = constraint.current.last_ptr
+    backtrack[com.c_backtrack_idx].indices = copy(constraint.current.indices)
+end
+
 """
     still_feasible(com::CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal, value::Int, index::Int)
 
@@ -364,15 +381,9 @@ function single_reverse_pruning_constraint!(
     @assert local_var_idx <= length(indices)
     @assert indices[local_var_idx] == var_idx
 
+    constraint.last_sizes[local_var_idx] = CS.nvalues(variables[var_idx])
+
     push!(constraint.changed_vars, local_var_idx)
-    
-    var = variables[var_idx]
-    constraint.last_sizes[local_var_idx] = CS.nvalues(var)
-    clear_temp_mask(current)
-    for val in view_values(var)
-        add_to_temp_mask(current, supports[com, local_var_idx, val])
-    end
-    intersect_mask_with_mask_full(current, current.temp_mask)
 end
 
 """
@@ -408,17 +419,62 @@ end
     )
 
 Is called after `single_reverse_pruning_constraint!`.
-Reverse intersect with mask to reactivate the removed table rows.
 """
 function reverse_pruning_constraint!(
     com::CoM,
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
     set::TableSetInternal,
+    backtrack_id::Int
 )
+    
     isempty(constraint.changed_vars) && return
     current = constraint.current
-    rev_intersect_with_mask(current)
+    if backtrack_id == 1
+        current.last_ptr = length(current.words)
+        current.words = fill(~zero(UInt64), current.last_ptr)
+        current.indices = 1:current.last_ptr
+    else
+        parent = com.backtrack_vec[backtrack_id].parent_idx
+        if parent <= length(constraint.backtrack) && !isempty(constraint.backtrack[parent].words)
+            current.last_ptr = constraint.backtrack[parent].last_ptr
+            current.words = copy(constraint.backtrack[parent].words)
+            current.indices = copy(constraint.backtrack[parent].indices)
+        end
+        # otherwise there is nothing to reverse
+    end
+    full_mask(current)
+    reset_residues!(com, constraint)
+    empty!(constraint.changed_vars)
+end
+
+"""
+    restore_pruning_constraint!(
+        com::CoM,
+        constraint::TableConstraint,
+        fct::MOI.VectorOfVariables,
+        set::TableSetInternal,
+    )
+
+Is called after `restore_prune!`.
+"""
+function restore_pruning_constraint!(
+    com::CoM,
+    constraint::TableConstraint,
+    fct::MOI.VectorOfVariables,
+    set::TableSetInternal,
+    prune_steps::Union{Int, Vector{Int}}
+)
+    # revert to the last of prune steps
+    constraint.changed_vars = 1:length(constraint.std.indices)
+    current = constraint.current
+    backtrack_id = last(prune_steps)
+    while backtrack_id > length(backtrack_id) || isempty(constraint.backtrack[backtrack_id].words)
+        backtrack_id = com.backtrack_vec[backtrack_id].parent_idx
+    end
+    current.last_ptr = constraint.backtrack[backtrack_id].last_ptr
+    current.words = copy(constraint.backtrack[backtrack_id].words)
+    current.indices = copy(constraint.backtrack[backtrack_id].indices)
     full_mask(current)
     reset_residues!(com, constraint)
     empty!(constraint.changed_vars)

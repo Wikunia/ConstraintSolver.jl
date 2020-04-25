@@ -120,7 +120,9 @@ function MOI.optimize!(model::Optimizer)
     set_pvals!(model)
 
     create_lp_model!(model)
-    set_enforce_bound!(model.inner)
+    set_update_best_bound!(model.inner)
+    set_finished_pruning!(model.inner)
+    set_restore_pruning!(model.inner)
     set_reverse_pruning!(model.inner)
 
     status = solve!(model)
