@@ -9,15 +9,6 @@ function clear_mask(bitset::RSparseBitSet)
     end
 end
 
-function clear_temp_mask(bitset::RSparseBitSet)
-    indices = bitset.indices
-    temp_mask = bitset.temp_mask
-    @inbounds for i=1:length(indices)
-        idx = indices[i]
-        temp_mask[idx] = UInt64(0)
-    end
-end
-
 function full_mask(bitset::RSparseBitSet)
     indices = bitset.indices
     mask = bitset.mask
@@ -42,15 +33,6 @@ function add_to_mask(bitset::RSparseBitSet, add::Vector{UInt64})
     @inbounds for i=1:bitset.last_ptr
         idx = indices[i]
         mask[idx] |= add[idx] 
-    end
-end
-
-function add_to_temp_mask(bitset::RSparseBitSet, add::Vector{UInt64})
-    indices = bitset.indices
-    temp_mask = bitset.temp_mask
-    @inbounds for i=1:length(indices)
-        idx = indices[i]
-        temp_mask[idx] |= add[idx] 
     end
 end
 
@@ -91,27 +73,6 @@ function intersect_with_mask(bitset::RSparseBitSet)
                 indices[bitset.last_ptr] = idx
                 bitset.last_ptr -= 1 
             end
-        end
-    end
-end
-
-function rev_intersect_with_mask(bitset::RSparseBitSet)
-    words = bitset.words
-    mask = bitset.mask
-    indices = bitset.indices
-    @inbounds for i=1:length(words)
-        idx = indices[i]
-        w = words[idx] | mask[idx]
-        if w != words[idx]
-            if words[idx] == zero(UInt64) && i == bitset.last_ptr+1
-                bitset.last_ptr += 1
-            elseif words[idx] == zero(UInt64)
-                @assert i > bitset.last_ptr
-                indices[i] = indices[bitset.last_ptr+1]
-                indices[bitset.last_ptr+1] = idx
-                bitset.last_ptr += 1
-            end
-            words[idx] = w
         end
     end
 end

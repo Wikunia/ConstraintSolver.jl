@@ -70,7 +70,6 @@ function init_constraint!(
     rsbs.indices = 1:num_64_words
     rsbs.last_ptr = num_64_words
     rsbs.mask = fill(~zero(UInt64), num_64_words)
-    rsbs.temp_mask = zeros(UInt64, num_64_words)
     ending_ones = (num_pos_rows-1) % 64 +1
     rsbs.words[end] = rsbs.words[end] .⊻ ((UInt64(1) << (64-ending_ones))-1)
 
