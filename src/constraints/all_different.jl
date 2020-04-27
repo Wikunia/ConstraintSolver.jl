@@ -31,7 +31,7 @@ end
 """
     init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal)
 
-Initialize the AllDifferentConstraint by filling 
+Initialize the AllDifferentConstraint by filling matching_init
 """
 function init_constraint!(
     com::CS.CoM,
@@ -69,7 +69,7 @@ function init_constraint!(
     )
 
     # check if lp model exists and then add an equality constraint for better bound computation
-    com.lp_model === nothing && return 
+    com.lp_model === nothing && return true # return feasibility
 
     lp_backend = backend(com.lp_model)
     lp_var_idx = create_lp_variable!(com.lp_model, com.lp_x)
@@ -93,12 +93,13 @@ function init_constraint!(
         MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
         push!(constraint.std.bound_rhs, BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int)))
     end
+    return true # still feasible
 end
 
 """
     get_alldifferent_extrema(sorted_min, sorted_max, len)
 
-Return the minimum and maximum sum using `len` values of sorted_min while satisfying the all different constraint
+Return the minimum and maximum sum using `len` values of sorted_min/sorted_max while satisfying the all different constraint
 """
 function get_alldifferent_extrema(sorted_min, sorted_max, len)
     max_sum = sorted_max[1]

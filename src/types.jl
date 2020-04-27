@@ -6,6 +6,8 @@ mutable struct Variable
     last_ptr::Int
     values::Vector{Int}
     indices::Vector{Int}
+    init_vals::Vector{Int} # saves all initial values
+    init_val_to_index::Vector{Int} # saves the index in which val appears in init_vals
     offset::Int
     min::Int # the minimum value during the solving process
     max::Int # for initial see lower/upper_bound
@@ -26,6 +28,7 @@ mutable struct NumberConstraintTypes
     inequality::Int
     notequal::Int
     alldifferent::Int
+    table::Int
 end
 
 mutable struct CSInfo
@@ -57,6 +60,11 @@ struct TableSetInternal <: MOI.AbstractVectorSet
     dimension :: Int
     table     :: Array{Int, 2}
 end
+
+struct TableSet <: JuMP.AbstractVectorSet 
+    table     :: Array{Int, 2}
+end
+JuMP.moi_set(ts::TableSet, dim) = TableSetInternal(dim, ts.table)
 
 struct EqualSet <: MOI.AbstractVectorSet
     dimension::Int
@@ -95,18 +103,64 @@ mutable struct MatchingInit
 end
 
 """
-    ConstraintInternals
+    RSparseBitSet  
 
-All fields which are used by all constraints and need to be added to each constraint as `std`
+See https://arxiv.org/pdf/1604.06641.pdf
+words[x] will save 64 possibilities in a TableConstraint a `1` at position y will mean that the 
+words in row (x-1)*64+y of the table are possible a 0 means that they aren't
+Similar to `Variable` a whole block of 64 rows can be removed by changing the `indices` and `last_ptr`.
+The `mask` saves the current mask to change words
 """
+mutable struct RSparseBitSet
+    words     :: Vector{UInt64}
+    indices   :: Vector{Int}
+    last_ptr  :: Int
+    mask      :: Vector{UInt64}
+    RSparseBitSet() = new() 
+end
+
+mutable struct TableSupport
+    # defines the range for each variable 
+    # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
+    var_start   :: Vector{Int} 
+    values      :: Array{UInt64, 2}
+    TableSupport() = new()
+end
+
+mutable struct TableResidues
+    # defines the range for each variable 
+    # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
+    var_start   :: Vector{Int} 
+    values      :: Vector{Int}
+    TableResidues() = new()
+end
+
+mutable struct TableBacktrackInfo
+    words    :: Vector{UInt64}
+    last_ptr :: Int
+    indices  :: Vector{Int}
+end
+
+#====================================================================================
+====================================================================================#
+
+mutable struct ImplementedConstraintFunctions
+    init :: Bool 
+    finished_pruning :: Bool
+    restore_pruning :: Bool
+    single_reverse_pruning :: Bool
+    reverse_pruning :: Bool
+    update_best_bound :: Bool
+end
+
 mutable struct ConstraintInternals
     idx::Int
     fct::Union{MOI.AbstractScalarFunction,MOI.AbstractVectorFunction}
     set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
     indices::Vector{Int}
     pvals::Vector{Int}
-    enforce_bound::Bool
-    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `enforce_bound` is true
+    impl :: ImplementedConstraintFunctions
+    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `update_best_bound` is true
     hash::UInt64
 end
 
@@ -146,6 +200,22 @@ mutable struct LinearConstraint{T<:Real} <: Constraint
     maxs::Vector{T}
     pre_mins::Vector{T}
     pre_maxs::Vector{T}
+end
+
+mutable struct TableConstraint <: Constraint
+    std::ConstraintInternals
+    current::RSparseBitSet
+    supports::TableSupport
+    last_sizes::Vector{Int}
+    residues::TableResidues
+    # holds current, last_ptr and indices from each node 
+    # maybe it's better to compute some of them to save some space...
+    # This is the easy implementation first
+    backtrack::Vector{TableBacktrackInfo}
+    changed_vars::Vector{Int}
+    unfixed_vars::Vector{Int}
+    sum_min::Vector{Int}
+    sum_max::Vector{Int}
 end
 
 #====================================================================================
@@ -208,6 +278,7 @@ end
 mutable struct TreeLogNode{T<:Real}
     id::Int
     status::Symbol
+    feasible::Bool
     best_bound::T
     step_nr::Int
     var_idx::Int

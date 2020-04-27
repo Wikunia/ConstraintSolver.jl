@@ -107,6 +107,90 @@
         @test JuMP.objective_value(model) ≈ 75
     end
 
+    @testset "Combine lp with table constraint" begin
+        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        model = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "lp_optimizer" => cbc_optimizer,
+            "logging" => [],
+        ))
+
+        # Variables
+        @variable(model, 1 <= x[1:10] <= 15, Int)
+        
+        # Constraints
+        @constraint(model, sum(x[1:5]) >= 10)
+        @constraint(model, sum(x[6:10]) <= 15)
+    
+        table_left = [
+            1 2 3 4 5; # sum 16
+            1 2 3 4 6; #     17
+            4 5 5 3 4; #     21
+        ]
+
+        table_right = [
+            1 2 3 1 1; # sum 8
+            1 3 2 2 1; #     9
+            1 1 1 1 4; #     8
+        ]
+
+        @constraint(model, x[1:5] in CS.TableSet(table_left))
+        @constraint(model, x[6:10] in CS.TableSet(table_right))
+    
+        @objective(model, Max, sum(x))
+        optimize!(model)
+
+        @test JuMP.objective_value(model) ≈ 30
+        @test sum(JuMP.value.(x[6:10])) ≈ 9
+        @test sum(JuMP.value.(x[1:5])) ≈ 21
+    end
+
+    @testset "LP with bigger table constraint" begin
+        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        model = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "lp_optimizer" => cbc_optimizer,
+            "logging" => [],
+            "keep_logs" => true
+        ))
+
+        # Variables
+        @variable(model, 1 <= x[1:10] <= 15, Int)
+        
+        # Constraints
+        @constraint(model, sum(x[1:4]) >= 10)
+        @constraint(model, sum(x[5:10]) <= 15)
+
+
+        table_left = Array{Int, 2}(undef, (0,5))
+        for r in permutations(1:10, 5)
+            s = sum(r)
+            if 10 < s < 20 || 28 < s < 47
+                table_left = vcat(table_left, r')
+            end
+        end
+
+        table_right = [
+            1 2 3 1 1; # sum 8
+            1 3 3 2 1; #    10
+            1 1 3 2 1; #     8
+            1 1 1 2 4; #     9
+            4 5 5 3 4; #     21
+        ]
+
+        @constraint(model, x[1:5] in CS.TableSet(table_left))
+        @constraint(model, x[6:10] in CS.TableSet(table_right))
+
+        @objective(model, Max, sum(x))
+        optimize!(model)
+
+        @test JuMP.termination_status(model) == MOI.OPTIMAL
+        @test JuMP.objective_value(model) ≈ 49
+        @test sum(JuMP.value.(x[1:4])) >= 10
+        @test sum(JuMP.value.(x[5:10])) <= 15
+        @test allunique(JuMP.value.(x[1:5]))
+    end
+
     @testset "Combine lp with all different + not equal" begin
         cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
         model = Model(optimizer_with_attributes(

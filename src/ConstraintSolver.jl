@@ -53,6 +53,8 @@ include("constraints/svc.jl")
 include("constraints/equal.jl")
 include("constraints/not_equal.jl")
 
+include("constraints/table.jl")
+
 """
     add_var!(com::CS.CoM, from::Int, to::Int; fix=nothing)
 
@@ -64,21 +66,23 @@ function add_var!(com::CS.CoM, from::Int, to::Int; fix = nothing)
     changes = Vector{Vector{Tuple{Symbol,Int,Int,Int}}}()
     push!(changes, Vector{Tuple{Symbol,Int,Int,Int}}())
     var = Variable(
-        ind,
-        from,
-        to,
-        1,
-        to - from + 1,
-        from:to,
-        1:to-from+1,
-        1 - from,
-        from,
-        to,
+        ind, # idx
+        from, # lower_bound
+        to, # upper_bound
+        1, # first_ptr
+        to - from + 1, # last_ptr
+        from:to, # values
+        1:to-from+1, # indices
+        from:to, # init_vals
+        1:to-from+1, # init_val_to_index
+        1 - from, # offset
+        from, # min
+        to, # max
         changes,
-        true,
-        true,
-        fix !== nothing,
-        true,
+        true, # has_upper_bound
+        true, # has_lower_bound
+        fix !== nothing, # is_fixed
+        true, # is_integer
     )
     if fix !== nothing
         fix!(com, var, fix; check_feasibility=false)
@@ -102,10 +106,13 @@ function fulfills_constraints(com::CS.CoM, index, value)
     feasible = true
     for ci in com.subscription[index]
         constraint = com.constraints[ci]
-        feasible =
-            still_feasible(com, constraint, constraint.std.fct, constraint.std.set, value, index)
-        if !feasible
-            break
+        # only call if the function got initialized already
+        if constraint.std.impl.init
+            feasible =
+                still_feasible(com, constraint, constraint.std.fct, constraint.std.set, value, index)
+            if !feasible
+                break
+            end
         end
     end
     return feasible
@@ -189,6 +196,7 @@ function restore_prune!(com::CS.CoM, prune_steps)
         end
         com.c_backtrack_idx = backtrack_idx
     end
+    call_restore_pruning!(com, prune_steps)
 end
 
 """
@@ -291,7 +299,6 @@ function prune!(
         else
             com.info.pre_backtrack_calls += 1
         end
-
         if !feasible
             break
         end
@@ -303,6 +310,8 @@ function prune!(
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
                 for ci in com.subscription[var.idx]
+                    # don't call the same constraint again. 
+                    # Each constraint should prune as much as possible 
                     if ci != constraint.std.idx
                         inner_constraint = com.constraints[ci]
                         # if initial check or don't add constraints => update only those which already have open possibilities
@@ -361,14 +370,31 @@ end
 Reverse the changes made by a specific backtrack object
 """
 function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
+    com.c_backtrack_idx = backtrack_idx
     search_space = com.search_space
     for var in search_space
         v_idx = var.idx
-
         for change in Iterators.reverse(var.changes[backtrack_idx])
             single_reverse_pruning!(search_space, v_idx, change[4], change[3])
         end
     end
+    for var in search_space
+        length(var.changes[backtrack_idx]) == 0 && continue
+        var.idx > length(com.subscription) && continue
+        for ci in com.subscription[var.idx]
+            constraint = com.constraints[ci]
+            if constraint.std.impl.single_reverse_pruning
+                single_reverse_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set,
+                                                    var.idx, var.changes[backtrack_idx])
+            end
+        end
+    end
+    for constraint in com.constraints
+        if constraint.std.impl.reverse_pruning
+            reverse_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set, backtrack_idx)
+        end
+    end
+    com.c_backtrack_idx = com.backtrack_vec[backtrack_idx].parent_idx
 end
 
 """
@@ -431,7 +457,7 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
 
         to = parent
         if backtrack_vec[prune_steps[1]].parent_idx == from.parent_idx
-            restore_prune!(com, prune_steps)
+            !isempty(prune_steps) && restore_prune!(com, prune_steps)
             return
         end
     end
@@ -446,7 +472,7 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
         to = backtrack_vec[to.parent_idx]
     end
 
-    restore_prune!(com, prune_steps)
+    !isempty(prune_steps) && restore_prune!(com, prune_steps)
 end
 
 """
@@ -791,7 +817,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         last_backtrack_id = backtrack_obj.idx
 
         # limit the variable bounds
-        !set_bounds!(com, backtrack_obj) && continue
+        if !set_bounds!(com, backtrack_obj) 
+            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
+            continue
+        end
 
         constraints = com.constraints[com.subscription[ind]]
         com.info.backtrack_fixes += 1
@@ -801,6 +830,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         if com.sense != MOI.FEASIBILITY_SENSE
             feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
             if !feasible
+                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
                 com.info.backtrack_reverses += 1
                 continue
             end
@@ -809,9 +839,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         if further_pruning
             # prune completely start with all that changed by the fix or by updating best bound
             feasible = prune!(com)
-
+            call_finished_pruning!(com)
             if !feasible
                 com.info.backtrack_reverses += 1
+                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
                 continue
             end
         end
@@ -1069,7 +1100,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     set_in_all_different!(com)
 
     # initialize constraints if `init_constraint!` exists for the constraint
-    init_constraints!(com)
+    !init_constraints!(com) && return :Infeasible
 
     com.input[:logs] = keep_logs
     if keep_logs
@@ -1081,13 +1112,14 @@ function solve!(com::CS.CoM, options::SolverOptions)
     added_con_idxs = simplify!(com)
     if length(added_con_idxs) > 0
         set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
-        init_constraints!(com; constraints=com.constraints[added_con_idxs])
+        !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
     end
 
     set_constraint_hashes!(com)
 
     # check if all feasible even if for example everything is fixed
     feasible = prune!(com; pre_backtrack = true, initial_check = true)
+    call_finished_pruning!(com)
 
     if !feasible
         com.solve_time = time() - com.start_time

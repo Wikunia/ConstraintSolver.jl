@@ -6,6 +6,8 @@ Variable(idx) = Variable(
     0,
     [],
     [],
+    [],
+    [],
     0,
     0,
     0,
@@ -20,8 +22,12 @@ MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[
 
 function ConstraintInternals(idx::Int, fct, set, indices::Vector{Int})
     return ConstraintInternals(
-        idx, fct, set, indices, Int[], false, nothing, zero(UInt64)
+        idx, fct, set, indices, Int[], ImplementedConstraintFunctions(), nothing, zero(UInt64)
     )
+end
+
+function ImplementedConstraintFunctions()
+   return ImplementedConstraintFunctions([false for f in fieldnames(ImplementedConstraintFunctions)]...)
 end
 
 function LinearConstraint(
@@ -99,7 +105,7 @@ end
 @deprecate init() ConstraintSolverModel()
 
 function NumberConstraintTypes()
-    return NumberConstraintTypes(0, 0, 0, 0)
+    return NumberConstraintTypes(zeros(Int, length(fieldnames(NumberConstraintTypes)))...)
 end
 
 function BacktrackObj(com::CS.CoM)

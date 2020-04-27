@@ -7,9 +7,8 @@ const CI = MOI.ConstraintIndex
 
 const VAR_TYPES = Union{MOI.ZeroOne,MOI.Integer}
 
-var_idx(x::JuMP.VariableRef) = x.index.value
+var_idx(x::JuMP.VariableRef) = JuMP.optimizer_index(x).value
 var_idx(x::MOI.VariableIndex) = x.value
-
 # support for @variable(m, x, Set)
 function JuMP.build_variable(_error::Function, info::JuMP.VariableInfo, set::T) where T<:MOI.AbstractScalarSet
     return JuMP.VariableConstrainedOnCreation(JuMP.ScalarVariable(info), set)
@@ -121,7 +120,10 @@ function MOI.optimize!(model::Optimizer)
     set_pvals!(model)
 
     create_lp_model!(model)
-    set_enforce_bound!(model.inner)
+    set_update_best_bound!(model.inner)
+    set_finished_pruning!(model.inner)
+    set_restore_pruning!(model.inner)
+    set_reverse_pruning!(model.inner)
 
     status = solve!(model)
     set_status!(model, status)

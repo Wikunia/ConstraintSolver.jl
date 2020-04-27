@@ -2,6 +2,10 @@ function constraint_hash(constraint::Union{AllDifferentConstraint,BasicConstrain
     return hash([string(typeof(constraint.std.set)), constraint.std.indices])
 end
 
+function constraint_hash(constraint::TableConstraint)
+    return hash([string(typeof(constraint.std.set)), constraint.std.indices, constraint.std.set.table])
+end
+
 function constraint_hash(constraint::LinearConstraint)
     coeffs = [t.coefficient for t in constraint.std.fct.terms]
     if isa(constraint.std.set, MOI.EqualTo)

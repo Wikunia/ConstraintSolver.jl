@@ -91,3 +91,44 @@ You can directly write:
 ```
 
 this removes unnecessary constraints. 
+
+## How to define a set of possibilities for more than one variable?
+
+In some cases it is useful to define that some variables can only have a fixed number of combinations
+together which can't be easily specified by any other constraint.
+
+Then you can use the table constraint.
+
+```
+cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+model = Model(optimizer_with_attributes(
+    CS.Optimizer,
+    "lp_optimizer" => cbc_optimizer,
+))
+
+# Variables
+@variable(model, 1 <= x[1:5] <= 5, Int)
+
+#=
+    Specify that only the following 5 options are possible.
+    First row means:
+    x[1] = 1, x[2] = 2, x[3] = 3, x[4] = 1, x[5] = 1 is one possible combination.
+    The last row shows that when x[1] = 4 all other variables are fixed as well.
+    For x[1]={2,3} there is no solution
+=#
+table = [
+    1 2 3 1 1;
+    1 3 3 2 1;
+    1 1 3 2 1;
+    1 1 1 2 4;
+    4 5 5 3 4;
+]
+
+@constraint(model, x in CS.TableSet(table))
+
+@objective(model, Max, sum(x))
+optimize!(model)
+```
+
+Table constraints can represent a lot of constraints including alldifferent but it's always reasonable to use
+one of the other constraints if it directly represents the problem.
