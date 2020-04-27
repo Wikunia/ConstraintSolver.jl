@@ -1,5 +1,9 @@
 # ConstrainSolver.jl - Changelog
 
+## v0.1.2 (27th of April 2020)
+- Table constraint
+  - `@constraint(m, x in CS.TableSet(2dArr))`
+
 ## v0.1.1 (15th of April 2020)
 - CS.Integers
   - i.e `@variable(m, x, CS.Integers([1,2,5]))`
