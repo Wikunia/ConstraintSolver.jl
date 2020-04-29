@@ -90,6 +90,8 @@ This constraint solver works only with bounded discrete variables.
 - [Table logging](https://opensourc.es/blog/table-logging)
 - [Bound computation](https://opensourc.es/blog/constraint-solver-bounds)
 - [v0.1.0](https://opensourc.es/blog/constraint-solver-v0.1.0)
+- [Table Constraint](https://opensourc.es/blog/constraint-solver-table-constraint)
+- [Solving Str8ts](https://opensourc.es/blog/constraint-solver-str8ts)
 
 ## Notice
 I'm a MSc student in computer science so I don't have much knowledge on how constraint programming works but I'm keen to find out ;)
