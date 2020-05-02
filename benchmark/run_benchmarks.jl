@@ -28,16 +28,18 @@ if isinteractive() == false
     using GitHub, JSON
 
     github_auth = GitHub.authenticate(ENV["GITHUB_AUTH"])
+    target = args["target"]
+    base = args["base"]
 
-    baseline_config = BenchmarkConfig(id = args["base"], juliacmd = `julia -O3`)
-    target_config = BenchmarkConfig(id = args["target"], juliacmd = `julia -O3`)
+    baseline_config = BenchmarkConfig(id = base, juliacmd = `julia -O3`)
+    target_config = BenchmarkConfig(id = target, juliacmd = `julia -O3`)
     
     judged = judge("ConstraintSolver", target_config, baseline_config)
     
     gist_json = JSON.parse(
         """
         {
-        "description": "ConstraintSolver $(args["target"]) vs $(args["base"])",
+        "description": "ConstraintSolver $target vs $base",
         "public": false,
         "files": {
             "benchmark.md": {
@@ -48,6 +50,7 @@ if isinteractive() == false
         """
     )
 
+    export_markdown(joinpath(pkgdir(ConstraintSolver), "benchmark/results/$target-$base.md"), judged)
     
     posted_gist = create_gist(params = gist_json; auth=github_auth);
     url = get(posted_gist.html_url)
