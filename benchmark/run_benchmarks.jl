@@ -46,7 +46,8 @@ if isinteractive() == false
         """
     )
 
-    posted_gist = create_gist(params = gist_json);
+    myauth = GitHub.authenticate(ENV["GitHub_Auth"])
+    posted_gist = create_gist(params = gist_json; auth=myauth);
     url = get(posted_gist.html_url)
     println("Gist url: $url")
 end
