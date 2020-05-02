@@ -13,7 +13,7 @@ function from_file(filename, sep = '\n')
     return grids
 end
 
-function benchmark_sudoku(suite, grids)
+function benchmark_sudoku!(suite, grids)
     grids = grids
     for (i, grid) in enumerate(grids[1:5:end])
         m = CS.Optimizer(logging = [])
