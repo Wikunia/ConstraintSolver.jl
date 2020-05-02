@@ -27,6 +27,8 @@ if isinteractive() == false
     using ConstraintSolver
     using GitHub, JSON
 
+    github_auth = GitHub.authenticate(ENV["GITHUB_AUTH"])
+
     baseline_config = BenchmarkConfig(id = args["base"], juliacmd = `julia -O3`)
     target_config = BenchmarkConfig(id = args["target"], juliacmd = `julia -O3`)
     
@@ -46,8 +48,8 @@ if isinteractive() == false
         """
     )
 
-    myauth = GitHub.authenticate(ENV["GitHub_Auth"])
-    posted_gist = create_gist(params = gist_json; auth=myauth);
+    
+    posted_gist = create_gist(params = gist_json; auth=github_auth);
     url = get(posted_gist.html_url)
     println("Gist url: $url")
 end
