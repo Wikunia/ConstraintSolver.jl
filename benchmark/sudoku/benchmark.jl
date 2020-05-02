@@ -62,7 +62,7 @@ function benchmark_sudoku!(suite, grids)
             end
         end
 
-        suite["top95_$i"] = @benchmarkable MOI.optimize!($m) seconds=2
+        suite["top95_$i"] = @benchmarkable MOI.optimize!(m) seconds=2
     end
 end
 
