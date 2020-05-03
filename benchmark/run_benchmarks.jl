@@ -50,11 +50,9 @@ if isinteractive() == false
         """
     )
 
-    export_markdown(joinpath(pkgdir(ConstraintSolver), "benchmark/results/$target-$base.md"), judged)
+    markdown = escape_string(sprint(export_markdown, judged))
     
-    posted_gist = create_gist(params = gist_json; auth=github_auth);
-    url = get(posted_gist.html_url)
-    println("Gist url: $url")
+    println("Comment: $markdown")
 end
 
 
