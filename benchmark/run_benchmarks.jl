@@ -36,20 +36,6 @@ if isinteractive() == false
     
     judged = judge("ConstraintSolver", target_config, baseline_config)
     
-    gist_json = JSON.parse(
-        """
-        {
-        "description": "ConstraintSolver $target vs $base",
-        "public": false,
-        "files": {
-            "benchmark.md": {
-            "content": "$(escape_string(sprint(export_markdown, judged)))"
-            }
-        }
-        }
-        """
-    )
-
     markdown = escape_string(sprint(export_markdown, judged))
     
     println("Comment: $markdown")
