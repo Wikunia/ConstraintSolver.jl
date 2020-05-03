@@ -15,6 +15,9 @@ function parse_commandline()
             help = "Target commit id or branch"
             arg_type = String
             required = true
+        "--pr"
+            help = "ID of the PR to comment on"
+            arg_type = Int
     end
 
     return parse_args(s)
@@ -37,8 +40,10 @@ if isinteractive() == false
     judged = judge("ConstraintSolver", target_config, baseline_config)
     
     markdown = escape_string(sprint(export_markdown, judged))
-    
-    println("Comment: $markdown")
+    if args["pr"] !== nothing
+        comment = create_comment("Wikunia/ConstraintSolver.jl", PullRequest(args["pr"]), markdown; auth=github_auth)
+        println("Comment id: $(comment.id)")
+    end
 end
 
 
