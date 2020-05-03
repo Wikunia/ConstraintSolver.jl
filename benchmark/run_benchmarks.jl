@@ -39,7 +39,7 @@ if isinteractive() == false
     
     judged = judge("ConstraintSolver", target_config, baseline_config)
     
-    markdown = escape_string(sprint(export_markdown, judged))
+    markdown = sprint(export_markdown, judged)
     if args["pr"] !== nothing
         comment = create_comment("Wikunia/ConstraintSolver.jl", PullRequest(args["pr"]), markdown; auth=github_auth)
         println("Comment id: $(comment.id)")
