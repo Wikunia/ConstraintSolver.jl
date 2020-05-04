@@ -161,13 +161,13 @@ function update_table(com::CoM, constraint::TableConstraint)
         nremoved = num_removed(var, backtrack_idx)
         if nremoved < nvalues(var)
             for value in view_removed_values(variables[vidx], nremoved)
-                add_to_mask(current, supports[com, local_vidx, value])
+                add_to_mask(current, supports[com, vidx, local_vidx, value])
             end
             invert_mask(current)
         else
             # reset based update
             for value in view_values(var)
-                add_to_mask(current, supports[com, local_vidx, value])
+                add_to_mask(current, supports[com, vidx, local_vidx, value])
             end
         end
        
@@ -187,11 +187,11 @@ function filter_domains(com::CoM, constraint::TableConstraint)
     for local_vidx in constraint.unfixed_vars
         vidx = indices[local_vidx]
         for value in CS.values(variables[vidx])
-            idx = residues[com, local_vidx, value]
-            if current.words[idx] & supports[com, local_vidx, value][idx] == UInt64(0)
-                idx = intersect_index(current, supports[com, local_vidx, value])
+            idx = residues[com, vidx, local_vidx, value]
+            if current.words[idx] & supports[com, vidx, local_vidx, value][idx] == UInt64(0)
+                idx = intersect_index(current, supports[com, vidx, local_vidx, value])
                 if idx != 0
-                    residues[com, local_vidx, value] = idx
+                    residues[com, vidx, local_vidx, value] = idx
                 else
                     if has(variables[vidx], value)
                         changed = true
@@ -289,9 +289,9 @@ function still_feasible(
     full_mask(current)
     for i = 1:length(indices)
         if indices[i] == index
-            intersect_mask_with_mask(current, supports[com, i, value])
+            intersect_mask_with_mask(current, supports[com, index, i, value])
         elseif isfixed(com.search_space[indices[i]])
-            intersect_mask_with_mask(current, supports[com, i, CS.value(com.search_space[indices[i]])])
+            intersect_mask_with_mask(current, supports[com, indices[i], i, CS.value(com.search_space[indices[i]])])
         end
     end
     feasible = intersect_with_mask_feasible(current)
@@ -401,9 +401,9 @@ function reset_residues!(com, constraint::TableConstraint)
         var_idx = indices[local_var_idx]
         var = variables[var_idx]
         for val_idx in var.first_ptr:var.last_ptr
-            new_residue = intersect_index(current, support[com, local_var_idx, var.values[val_idx]])
+            new_residue = intersect_index(current, support[com, var_idx, local_var_idx, var.values[val_idx]])
             if new_residue != 0
-                residues[com, local_var_idx, var.values[val_idx]] = new_residue
+                residues[com, var_idx, local_var_idx, var.values[val_idx]] = new_residue
             end
         end
     end

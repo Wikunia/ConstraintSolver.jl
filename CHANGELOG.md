@@ -1,5 +1,9 @@
 # ConstrainSolver.jl - Changelog
 
+## v0.1.3 (4th of May 2020)
+- **Bugfixes:**
+  - Use correct offset in table constraint `support` and `residues`
+
 ## v0.1.2 (27th of April 2020)
 - Table constraint
   - `@constraint(m, x in CS.TableSet(2dArr))`
