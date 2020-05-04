@@ -40,12 +40,12 @@
     # 4 should be removed from y
     @test sort(CS.values(com.search_space[y.value])) == [1,2]
     # y,4 has no support
-    @test constraint.supports[com, y.value, 4] == [UInt64(0)]
+    @test constraint.supports[com, y.value, y.value, 4] == [UInt64(0)]
     # z,2 specific support test
     # 0x4d00000000000000 == 0x0100110100000000000000000000000000000000000000000000000000000000
-    @test constraint.supports[com, z.value, 2] == [0x4d00000000000000]
-    @test constraint.residues[com, y.value, 4] == 0 # no support 
-    @test constraint.residues[com, x.value, 1] == 1
+    @test constraint.supports[com, z.value, z.value, 2] == [0x4d00000000000000]
+    @test constraint.residues[com, y.value, y.value, 4] == 0 # no support 
+    @test constraint.residues[com, x.value, x.value, 1] == 1
 
     ############### NOT FEASIBLE IN INIT
     m = CS.Optimizer()
@@ -211,8 +211,8 @@ end
     @test sort(CS.values(com.search_space[y.value])) == 1:9
     @test sort(CS.values(com.search_space[z.value])) == 1:9
     for i=1:9
-        @test constraint.residues[com, y.value, i] >= 4
-        @test constraint.residues[com, z.value, i] >= 4
+        @test constraint.residues[com, y.value, y.value, i] >= 4
+        @test constraint.residues[com, z.value, z.value, i] >= 4
     end
 end
 
