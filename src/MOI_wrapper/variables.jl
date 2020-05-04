@@ -326,6 +326,9 @@ function link_variables!(com::CS.CoM, v1_idx, v2_idx)
     set_vals = intersect(CS.values(variables[v1_idx]), CS.values(variables[v2_idx]))
     var1 = variables[v1_idx]
     var2 = variables[v2_idx]
+    if v1_idx == v2_idx
+        return
+    end
     if var1.link_to !== nothing && var1.link_to.idx == v2_idx
         return
     end
@@ -334,21 +337,25 @@ function link_variables!(com::CS.CoM, v1_idx, v2_idx)
     end
 
     if var1.link_to !== nothing
-        println("h1")
         set_vals = intersect(set_vals, CS.values(var1.link_to))
         set_variable_from_integers!(var1.link_to, set_vals)
         push!(com.linked_var_pairs, (var1.link_to.idx, v2_idx))
         variables[v2_idx].link_to = var1
     elseif var2.link_to !== nothing
-        println("h2")
         set_vals = intersect(set_vals, CS.values(var2.link_to))
         set_variable_from_integers!(var2.link_to, set_vals)
         push!(com.linked_var_pairs, (var2.link_to.idx, v1_idx))
         variables[v1_idx].link_to = var2
     else
-        set_variable_from_integers!(var1, set_vals)
-        push!(com.linked_var_pairs, (v1_idx, v2_idx))
-        variables[v2_idx].link_to = var1
+        if v1_idx < v2_idx
+            set_variable_from_integers!(var1, set_vals)
+            push!(com.linked_var_pairs, (v1_idx, v2_idx))
+            variables[v2_idx].link_to = var1
+        else
+            set_variable_from_integers!(var2, set_vals)
+            push!(com.linked_var_pairs, (v2_idx, v1_idx))
+            variables[v1_idx].link_to = var2
+        end
     end
 end
 
@@ -359,6 +366,7 @@ Go through all linked_var_pairs in com and update com.constraints[...].std.indic
 + com.subscription
 """
 function link_variables!(com::CS.CoM)
+    !isempty(com.linked_var_pairs) && println("com.linked_var_pairs: ", com.linked_var_pairs)
     for link in com.linked_var_pairs
         com.subscription[link[1]] = union(com.subscription[link[1]], com.subscription[link[2]])
         for constraint in com.constraints[com.subscription[link[2]]]

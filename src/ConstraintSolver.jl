@@ -1099,6 +1099,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     com.start_time = time()
 
     set_init_fixes!(com)
+    set_constraint_hashes!(com)
     link_variables!(com)    
     set_in_all_different!(com)
 
@@ -1115,10 +1116,11 @@ function solve!(com::CS.CoM, options::SolverOptions)
     added_con_idxs = simplify!(com)
     if length(added_con_idxs) > 0
         set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
+        set_constraint_hashes!(com; constraints=com.constraints[added_con_idxs])
         !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
     end
 
-    set_constraint_hashes!(com)
+    
 
     # check if all feasible even if for example everything is fixed
     feasible = prune!(com; pre_backtrack = true, initial_check = true)

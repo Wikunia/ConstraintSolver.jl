@@ -304,9 +304,9 @@ function set_pvals!(model::CS.Optimizer)
     end
 end
 
-function set_constraint_hashes!(com::CS.CoM)
-    for ci = 1:length(com.constraints)
-        com.constraints[ci].std.hash = constraint_hash(com.constraints[ci])
+function set_constraint_hashes!(com::CS.CoM; constraints=com.constraints)
+    for constraint in constraints
+        constraint.std.hash = constraint_hash(constraint)
     end
 end
 
