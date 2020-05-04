@@ -137,39 +137,10 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::Integers)
     model.variable_info[vi.value].is_integer = true
 
     set_vals = t.values
+    set_variable_from_integers!(model.variable_info[vi.value], set_vals)
 
-    min_val, max_val = extrema(set_vals)
-    range = max_val-min_val+1
-    vals = copy(set_vals)
-    append!(vals, zeros(Int, range-length(vals)))
-
-    # fill the indices such that 1:length(set_vals) map to set_vals
-    indices = zeros(Int, range)
-    # .- needed for the offset
-    indices[set_vals .- (min_val-1)] = 1:length(set_vals)
-    j = length(set_vals)+1
-    for i=1:range
-        if indices[i] == 0
-            indices[i] = j
-            j += 1
-        end
-    end
-
-    model.variable_info[vi.value].upper_bound = max_val
-    model.variable_info[vi.value].max = max_val
-    model.variable_info[vi.value].has_upper_bound = true
-    model.variable_info[vi.value].lower_bound = min_val
-    model.variable_info[vi.value].min = min_val
-    model.variable_info[vi.value].has_lower_bound = true
-    model.variable_info[vi.value].values = vals
-    model.variable_info[vi.value].init_vals = copy(vals)
-    model.variable_info[vi.value].offset = 1 - min_val
-    model.variable_info[vi.value].indices = indices
-    # needs copy to be different
-    model.variable_info[vi.value].init_val_to_index = copy(indices)
-    model.variable_info[vi.value].first_ptr = 1
-    model.variable_info[vi.value].last_ptr = length(set_vals)
     addupd_var_in_inner_model(model, vi.value)
+    min_val, max_val = model.variable_info[vi.value].min, model.variable_info[vi.value].max
 
     cindex = length(model.var_constraints) + 1
     # TODO: If we want to do something with var_constraints later we need to save the actual input values
@@ -308,4 +279,108 @@ function MOI.add_constraint(model::Optimizer, v::SVF, eq::MOI.EqualTo{T}) where 
     cindex = length(model.var_constraints) + 1
     push!(model.var_constraints, (vi.value, :eq, eq.value, eq.value))
     return MOI.ConstraintIndex{SVF,MOI.EqualTo{T}}(cindex)
+end
+
+function set_variable_from_integers!(var::Variable, set_vals)
+    min_val, max_val = extrema(set_vals)
+    range = max_val-min_val+1
+    vals = copy(set_vals)
+    append!(vals, zeros(Int, range-length(vals)))
+
+    # fill the indices such that 1:length(set_vals) map to set_vals
+    indices = zeros(Int, range)
+    # .- needed for the offset
+    indices[set_vals .- (min_val-1)] = 1:length(set_vals)
+    j = length(set_vals)+1
+    for i=1:range
+        if indices[i] == 0
+            indices[i] = j
+            j += 1
+        end
+    end
+
+    var.upper_bound = max_val
+    var.max = max_val
+    var.has_upper_bound = true
+    var.lower_bound = min_val
+    var.min = min_val
+    var.has_lower_bound = true
+    var.values = vals
+    var.init_vals = copy(vals)
+    var.offset = 1 - min_val
+    var.indices = indices
+    # needs copy to be different
+    var.init_val_to_index = copy(indices)
+    var.first_ptr = 1
+    var.last_ptr = length(set_vals)
+end
+
+"""
+    link_variables!(com::CS.CoM, v1_idx, v2_idx)
+
+Linking v2_idx to v1_idx because they are the same.
+Uses the intersection of both values
+"""
+function link_variables!(com::CS.CoM, v1_idx, v2_idx)
+    variables = com.search_space
+    set_vals = intersect(CS.values(variables[v1_idx]), CS.values(variables[v2_idx]))
+    var1 = variables[v1_idx]
+    var2 = variables[v2_idx]
+    if var1.link_to !== nothing && var1.link_to.idx == v2_idx
+        return
+    end
+    if var2.link_to !== nothing && var2.link_to.idx == v1_idx
+        return
+    end
+
+    if var1.link_to !== nothing
+        println("h1")
+        set_vals = intersect(set_vals, CS.values(var1.link_to))
+        set_variable_from_integers!(var1.link_to, set_vals)
+        push!(com.linked_var_pairs, (var1.link_to.idx, v2_idx))
+        variables[v2_idx].link_to = var1
+    elseif var2.link_to !== nothing
+        println("h2")
+        set_vals = intersect(set_vals, CS.values(var2.link_to))
+        set_variable_from_integers!(var2.link_to, set_vals)
+        push!(com.linked_var_pairs, (var2.link_to.idx, v1_idx))
+        variables[v1_idx].link_to = var2
+    else
+        set_variable_from_integers!(var1, set_vals)
+        push!(com.linked_var_pairs, (v1_idx, v2_idx))
+        variables[v2_idx].link_to = var1
+    end
+end
+
+"""
+    link_variables!(com::CS.CoM)
+
+Go through all linked_var_pairs in com and update com.constraints[...].std.indices
++ com.subscription
+"""
+function link_variables!(com::CS.CoM)
+    for link in com.linked_var_pairs
+        com.subscription[link[1]] = union(com.subscription[link[1]], com.subscription[link[2]])
+        for constraint in com.constraints[com.subscription[link[2]]]
+            for i=1:length(constraint.std.indices)
+                if constraint.std.indices[i] == link[2]
+                    constraint.std.indices[i] = link[1]
+                end
+            end
+        end
+    end
+end
+
+"""
+    set_init_fixes!(com::CS.CoM)
+
+Redefines variables if they are fixed to a specific value
+"""
+function set_init_fixes!(com::CS.CoM)
+    for fixes in com.init_fixes
+        var_idx = fixes[1]
+        val = fixes[2]
+        var = com.search_space[var_idx]
+        set_variable_from_integers!(var, [val])
+    end
 end

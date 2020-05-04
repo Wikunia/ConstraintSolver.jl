@@ -21,6 +21,7 @@ mutable struct Variable
     has_lower_bound::Bool # must be true to work
     is_fixed::Bool
     is_integer::Bool # must be true to work
+    link_to::Union{Nothing, Variable}
 end
 
 mutable struct NumberConstraintTypes
@@ -299,6 +300,8 @@ mutable struct ConstraintSolverModel{T<:Real}
     lp_x::Vector{VariableRef}
     init_search_space::Vector{Variable}
     search_space::Vector{Variable}
+    linked_var_pairs::Vector{Tuple} # i.e [(2,3)] means that variable 2 and 3 are the same variable
+    init_fixes::Vector{Tuple} # i.e [(5,7)] means that variable 5 is fixed to 7
     subscription::Vector{Vector{Int}}
     constraints::Vector{Constraint}
     bt_infeasible::Vector{Int}

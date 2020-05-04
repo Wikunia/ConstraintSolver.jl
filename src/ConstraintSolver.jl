@@ -83,6 +83,7 @@ function add_var!(com::CS.CoM, from::Int, to::Int; fix = nothing)
         true, # has_lower_bound
         fix !== nothing, # is_fixed
         true, # is_integer
+        nothing # link_to
     )
     if fix !== nothing
         fix!(com, var, fix; check_feasibility=false)
@@ -378,6 +379,7 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
             single_reverse_pruning!(search_space, v_idx, change[4], change[3])
         end
     end
+
     for var in search_space
         length(var.changes[backtrack_idx]) == 0 && continue
         var.idx > length(com.subscription) && continue
@@ -1096,7 +1098,8 @@ function solve!(com::CS.CoM, options::SolverOptions)
     end
     com.start_time = time()
 
-    
+    set_init_fixes!(com)
+    link_variables!(com)    
     set_in_all_different!(com)
 
     # initialize constraints if `init_constraint!` exists for the constraint

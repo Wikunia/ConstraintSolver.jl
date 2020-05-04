@@ -54,7 +54,6 @@ function init_constraint!(
     
 
     support = constraint.supports
-    
     support.var_start = cumsum([length(search_space[vidx].init_vals) for vidx in indices])
     support.var_start .+= 1
     num_supports = support.var_start[end]-1
@@ -102,7 +101,6 @@ function init_constraint!(
             val_idx = variable.init_val_to_index[table_val + var_offset]
             @assert variable.init_vals[val_idx] == table_val
             support_col_idx = support.var_start[c]+val_idx-1
-            # println("support_col_idx: $support_col_idx")
             cell_64 = support.values[num_64_idx, support_col_idx]
             pos_in_64 = (rp_idx-1) % 64 + 1
             support.values[num_64_idx, support_col_idx] = cell_64 .| (UInt64(1) << (64-pos_in_64))
@@ -188,6 +186,12 @@ function filter_domains(com::CoM, constraint::TableConstraint)
         vidx = indices[local_vidx]
         for value in CS.values(variables[vidx])
             idx = residues[com, vidx, local_vidx, value]
+            if idx == 0
+                println("constraint.std.idx: ", constraint.std.idx)
+                println("vidx: ", vidx)
+                println("local_vidx: ", local_vidx)
+                println("value: ", value)
+            end
             if current.words[idx] & supports[com, vidx, local_vidx, value][idx] == UInt64(0)
                 idx = intersect_index(current, supports[com, vidx, local_vidx, value])
                 if idx != 0
@@ -426,7 +430,6 @@ function reverse_pruning_constraint!(
     set::TableSetInternal,
     backtrack_id::Int
 )
-    
     isempty(constraint.changed_vars) && return
     current = constraint.current
     if backtrack_id == 1

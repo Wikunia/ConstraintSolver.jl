@@ -1,4 +1,8 @@
-@inline nvalues(v::CS.Variable) = v.last_ptr - v.first_ptr + 1
+function nvalues(v::CS.Variable) 
+    v.link_to !== nothing && return nvalues(v.link_to)
+    v.last_ptr - v.first_ptr + 1
+end
+
 
 
 """
@@ -7,9 +11,15 @@
 Get the value of the variable if it is fixed. Otherwise one of the possible values is returned.
 Can be used if the status is :Solved as then all variables are fixed.
 """
-@inline value(v::CS.Variable) = v.values[v.last_ptr]
+function value(v::CS.Variable)
+    v.link_to !== nothing && return value(v.link_to) 
+    v.values[v.last_ptr]
+end
 
-@inline values(v::CS.Variable) = v.values[v.first_ptr:v.last_ptr]
+function values(v::CS.Variable) 
+    v.link_to !== nothing && return values(v.link_to) 
+    v.values[v.first_ptr:v.last_ptr]
+end
 
 """
     values(m::Model, v::VariableRef)
@@ -21,14 +31,20 @@ function values(m::Model, v::VariableRef)
     return values(com.search_space[v.index.value])
 end
 
-@inline view_values(v::CS.Variable) = @views v.values[v.first_ptr:v.last_ptr]
+function view_values(v::CS.Variable) 
+    v.link_to !== nothing && return view_values(v.link_to) 
+    @views v.values[v.first_ptr:v.last_ptr]
+end
 
 """
     view_removed_values(v::CS.Variable, nremoved)
 
 Return a view of the last `nremoved` values of the variable `v`.
 """
-@inline view_removed_values(v::CS.Variable, nremoved) = @views v.values[v.last_ptr+1:v.last_ptr+nremoved]
+function view_removed_values(v::CS.Variable, nremoved)
+    v.link_to !== nothing && return view_removed_values(v.link_to, nremoved) 
+    @views v.values[v.last_ptr+1:v.last_ptr+nremoved]
+end
 
 """
     num_removed(var::CS.Variable, backtrack_idx)
@@ -37,6 +53,7 @@ Return the number of removed values in a backtracking step.
 **Attention:** This does not work if a variable got fixed.
 """
 function num_removed(var::CS.Variable, backtrack_idx)
+    var.link_to !== nothing && return num_removed(var.link_to, backtrack_idx) 
     changes = var.changes[backtrack_idx]
     nremoved = 0
     for change in changes
@@ -46,6 +63,7 @@ function num_removed(var::CS.Variable, backtrack_idx)
 end
 
 function issetto(v::CS.Variable, x::Int)
+    v.link_to !== nothing && return issetto(v.link_to, x) 
     if !isfixed(v)
         return false
     else
@@ -54,6 +72,7 @@ function issetto(v::CS.Variable, x::Int)
 end
 
 function has(v::CS.Variable, x::Int)
+    v.link_to !== nothing && return has(v.link_to, x) 
     if x > v.max || x < v.min
         return false
     end
@@ -62,6 +81,7 @@ function has(v::CS.Variable, x::Int)
 end
 
 function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several = false, changes = true, check_feasibility=true)
+    v.link_to !== nothing && return rm!(com, v.link_to, x; in_remove_several = in_remove_several, changes = changes, check_feasibility=check_feasibility) 
     if !in_remove_several && check_feasibility
         # after removing nothing would be possible
         len_vals = nvalues(v)
@@ -99,6 +119,7 @@ function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several = false, cha
 end
 
 function fix!(com::CS.CoM, v::CS.Variable, x::Int; changes = true, check_feasibility=true)
+    v.link_to !== nothing && return fix!(com, v.link_to, x; changes = changes, check_feasibility=check_feasibility) 
     if check_feasibility && !fulfills_constraints(com, v.idx, x)
         com.bt_infeasible[v.idx] += 1
         return false
@@ -115,10 +136,12 @@ function fix!(com::CS.CoM, v::CS.Variable, x::Int; changes = true, check_feasibi
 end
 
 function isfixed(v::CS.Variable)
+    v.link_to !== nothing && return isfixed(v.link_to) 
     return v.last_ptr == v.first_ptr
 end
 
 function remove_below!(com::CS.CoM, var::CS.Variable, val::Int; changes = true, check_feasibility=true)
+    var.link_to !== nothing && return remove_below!(com, var.link_to, val; changes = changes, check_feasibility=check_feasibility)
     vals = values(var)
     still_possible = filter(v -> v >= val, vals)
     if check_feasibility
@@ -149,6 +172,7 @@ function remove_below!(com::CS.CoM, var::CS.Variable, val::Int; changes = true, 
 end
 
 function remove_above!(com::CS.CoM, var::CS.Variable, val::Int; changes = true, check_feasibility=true)
+    var.link_to !== nothing && return remove_above!(com, var.link_to, val; changes = changes, check_feasibility=check_feasibility)
     vals = values(var)
     still_possible = filter(v -> v <= val, vals)
     if check_feasibility
@@ -179,5 +203,6 @@ function remove_above!(com::CS.CoM, var::CS.Variable, val::Int; changes = true, 
 end
 
 function feasible(var::CS.Variable)
+    var.link_to !== nothing && return feasible(var.link_to)
     return var.last_ptr >= var.first_ptr
 end

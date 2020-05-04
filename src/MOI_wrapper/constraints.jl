@@ -54,13 +54,16 @@ function MOI.add_constraint(
     check_inbounds(model, func)
 
     if length(func.terms) == 1
-        fix!(
-            model.inner,
-            model.variable_info[func.terms[1].variable_index.value],
-            convert(Int, set.value / func.terms[1].coefficient);
-            check_feasibility = false
-        )
+        var_idx = func.terms[1].variable_index.value
+        val = convert(Int, set.value / func.terms[1].coefficient)
+        push!(model.inner.init_fixes, (var_idx, val))
         return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(0)
+    elseif length(func.terms) == 2 && set.value == zero(T)
+        if func.terms[1].coefficient == -func.terms[2].coefficient
+            # we have the form a == b
+            link_variables!(model.inner, func.terms[1].variable_index.value, func.terms[2].variable_index.value)
+            return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(0)
+        end
     end
 
     indices = [v.variable_index.value for v in func.terms]
