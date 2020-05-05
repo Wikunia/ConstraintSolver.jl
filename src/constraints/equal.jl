@@ -87,8 +87,24 @@ function prune_constraint!(
             logs && @warn "The problem is infeasible"
             return false
         elseif length(fixed_vals_set) == 0
-            # TODO: we can do more here...
-            # see case for two variables
+            for i=1:length(indices)
+                v1 = search_space[indices[i]] 
+                v1_changes = v1.changes[com.c_backtrack_idx]
+                isempty(v1_changes) && continue
+                for j=1:length(indices)
+                    i == j && continue
+                    v2 = search_space[indices[j]] 
+                    for change in v1_changes
+                        if change[1] == :remove_below
+                            !remove_below!(com, v2, change[2]) && return false
+                        elseif change[1] == :remove_above
+                            !remove_above!(com, v2, change[2]) && return false
+                        elseif change[1] == :rm && has(v2, change[2])
+                            !rm!(com, v2, change[2]) && return false
+                        end
+                    end
+                end
+            end
             return true
         end
 
@@ -122,13 +138,6 @@ function prune_constraint!(
                     end
                 end
             end
-            #=
-            println("v1: $(sort(CS.values(v1)))")
-            println("v2: $(sort(CS.values(v2)))")
-            println("changes 1: $(changes_v1)")
-            println("changes 2: $(changes_v2)")
-            =#
-            @assert sort(CS.values(v1)) == sort(CS.values(v2))
             return true
         elseif fixed_v1 && fixed_v2
             if CS.value(v1) != CS.value(v2)
@@ -165,8 +174,11 @@ function still_feasible(
     value::Int,
     index::Int,
 )
-
-    indices = filter(i -> i != index, constraint.std.indices)
-    feasible = all(v -> issetto(v, value) || (!isfixed(v) && has(v, value)), com.search_space[indices])
-    return feasible
+    variables = com.search_space
+    for ind in constraint.std.indices
+        ind == index && continue
+        v = variables[ind]
+        !has(v, value) && return false
+    end
+    return true
 end

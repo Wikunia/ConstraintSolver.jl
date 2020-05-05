@@ -84,4 +84,42 @@ end
 
     status = JuMP.termination_status(m)
     @test status == MOI.OPTIMAL
+
+    # testing that constraints are fulfilled
+    sp = convert.(Int, JuMP.value.(p))
+    spu = convert.(Int, JuMP.value.(pu))
+    spr = convert.(Int, JuMP.value.(pr))
+    spd = convert.(Int, JuMP.value.(pd))
+    spl = convert.(Int, JuMP.value.(pl))
+    @test allunique(sp)
+
+    for i=1:height, j=1:width
+        @test findfirst(ri->rotations[ri,:] == [sp[i,j], spu[i,j], spr[i,j], spd[i,j], spl[i,j]], 1:length(rotations)) !== nothing
+    end
+
+    for j=1:width
+        @test spu[1,j] == 0
+        @test spd[height,j] == 0
+
+        if j != width
+            @test spr[1,j] == spl[1,j+1]
+            @test spr[height,j] == spl[height,j+1]
+        end
+    end
+
+     # right and left
+     for i=1:height
+        @test spl[i,1] == 0
+        @test spr[i,width] == 0
+
+        if i != height
+            @test spd[i,1] == spu[i+1,1]
+            @test spd[i,width] == spu[i+1,width]
+        end
+    end
+
+    for i=1:height-1, j=1:width-1
+        @test spd[i,j] == spu[i+1, j]
+        @test spr[i,j] == spl[i, j+1]
+    end
 end
