@@ -21,7 +21,7 @@ Change the `BasicConstraint` to describe the opposite of it.
 Can be used i.e by `add_constraint!(com, x != z)`.
 """
 function Base.:!(bc::CS.BasicConstraint)
-    if !isa(bc.std.set, EqualSet)
+    if !isa(bc.std.set, EqualSetInternal)
         throw(ErrorException("!BasicConstraint is only implemented for !equal"))
     end
     if length(bc.std.indices) != 2

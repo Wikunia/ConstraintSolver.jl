@@ -390,8 +390,10 @@
         @constraint(m, south_carolina != georgia)
         @constraint(m, georgia != florida)
 
+        @constraint(m, california + south_carolina == 3)
+        @constraint(m, sum([washington, florida, maryland]) <= 6)
         # test for EqualSet constraint
-        @constraint(m, [california, new_york, florida] in CS.EqualSet(3))
+        @constraint(m, [california, new_york, florida, ohio] in CS.EqualSet())
 
         @constraint(m, max_color .>= states)
 
@@ -399,15 +401,15 @@
         @objective(m, Min, max_color + 1.1)
 
         optimize!(m)
-
+        
         status = JuMP.termination_status(m)
 
         com = JuMP.backend(m).optimizer.model.inner
         # -1 for equal Set - length(states) for max_color
-        not_equal_constraints = length(com.constraints) - 1 - length(states)
+        not_equal_constraints = length(com.constraints) - 2 - (length(states)+1)
         @test com.info.n_constraint_types.notequal == not_equal_constraints
-        @test com.info.n_constraint_types.equality == 1
-        @test com.info.n_constraint_types.inequality == length(states)
+        @test com.info.n_constraint_types.equality == 2
+        @test com.info.n_constraint_types.inequality == length(states)+1
         @test com.info.n_constraint_types.alldifferent == 0
 
         CS.save_logs(com, "graph_color_optimize.json")
@@ -419,11 +421,14 @@
             v -> v == JuMP.value(california),
             JuMP.value.([california, new_york, florida]),
         )
-        # all values fixed
-        @test com.best_sol ≈ 5.1
-        @test all([length(CS.values(m, var)) == 1 for var in states])
-        @test maximum([JuMP.value(var) for var in states]) == JuMP.value(max_color) == 4
+        @test JuMP.value(california) + JuMP.value(south_carolina) ≈ 3
+        @test JuMP.value(washington) + JuMP.value(florida) + JuMP.value(maryland) ≈ 6
 
+        # all values fixed
+        @test all([length(CS.values(m, var)) == 1 for var in states])
+            
+        @test com.best_sol ≈ 5.1
+        @test maximum([JuMP.value(var) for var in states]) == JuMP.value(max_color) == 4
     end
 
     @testset "49 US states + DC only 3 colors" begin

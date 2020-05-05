@@ -8,7 +8,7 @@ function equal(variables::Vector{Variable})
     internals = ConstraintInternals(
         0, # idx will be changed later
         var_vector_to_moi(variables),
-        EqualSet(length(variables)),
+        EqualSetInternal(length(variables)),
         Int[v.idx for v in variables]
     )
     constraint = BasicConstraint(
@@ -29,7 +29,7 @@ function Base.:(==)(x::Variable, y::Variable)
     internals = ConstraintInternals(
         0, # idx will be changed later
         var_vector_to_moi(variables),
-        EqualSet(2),
+        EqualSetInternal(2),
         Int[x.idx, y.idx]
     )
     bc = BasicConstraint(
@@ -43,7 +43,7 @@ function init_constraint!(
     com::CS.CoM,
     constraint::BasicConstraint,
     fct::MOI.VectorOfVariables,
-    set::CS.EqualSet,
+    set::CS.EqualSetInternal,
 )
     indices = constraint.std.indices
     search_space = com.search_space
@@ -61,8 +61,21 @@ function init_constraint!(
 
     return true
 end
+
+function apply_changes!(com::CS.CoM, v::Variable, changes::Vector{Tuple{Symbol, Int, Int, Int}})
+    for change in changes
+        if change[1] == :remove_below
+            !remove_below!(com, v, change[2]) && return false
+        elseif change[1] == :remove_above
+            !remove_above!(com, v, change[2]) && return false
+        elseif change[1] == :rm && has(v, change[2])
+            !rm!(com, v, change[2]) && return false
+        end
+    end
+end
+
 """
-    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::EqualSet; logs = true)
+    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::EqualSetInternal; logs = true)
 
 Reduce the number of possibilities given the equality constraint which sets all variables in `MOI.VectorOfVariables` to the same value.
 Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
@@ -71,7 +84,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::BasicConstraint,
     fct::MOI.VectorOfVariables,
-    set::EqualSet;
+    set::EqualSetInternal;
     logs = true,
 )
     indices = constraint.std.indices
@@ -94,15 +107,7 @@ function prune_constraint!(
                 for j=1:length(indices)
                     i == j && continue
                     v2 = search_space[indices[j]] 
-                    for change in v1_changes
-                        if change[1] == :remove_below
-                            !remove_below!(com, v2, change[2]) && return false
-                        elseif change[1] == :remove_above
-                            !remove_above!(com, v2, change[2]) && return false
-                        elseif change[1] == :rm && has(v2, change[2])
-                            !rm!(com, v2, change[2]) && return false
-                        end
-                    end
+                    apply_changes!(com, v2, v1_changes)
                 end
             end
             return true
@@ -127,17 +132,8 @@ function prune_constraint!(
             if isempty(changes_v1) && isempty(changes_v2)
                 return true
             end
-            for (changes, other_var) in zip((changes_v1, changes_v2), (v2, v1))
-                for change in changes
-                    if change[1] == :remove_below
-                        !remove_below!(com, other_var, change[2]) && return false
-                    elseif change[1] == :remove_above
-                        !remove_above!(com, other_var, change[2]) && return false
-                    elseif change[1] == :rm && has(other_var, change[2])
-                        !rm!(com, other_var, change[2]) && return false
-                    end
-                end
-            end
+            apply_changes!(com, v2, changes_v1)
+            apply_changes!(com, v1, changes_v2)
             return true
         elseif fixed_v1 && fixed_v2
             if CS.value(v1) != CS.value(v2)
@@ -162,7 +158,7 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::Constraint, fct::MOI.VectorOfVariables, set::EqualSet, value::Int, index::Int)
+    still_feasible(com::CoM, constraint::Constraint, fct::MOI.VectorOfVariables, set::EqualSetInternal, value::Int, index::Int)
 
 Return whether the constraint can be still fulfilled.
 """
@@ -170,7 +166,7 @@ function still_feasible(
     com::CoM,
     constraint::Constraint,
     fct::MOI.VectorOfVariables,
-    set::EqualSet,
+    set::EqualSetInternal,
     value::Int,
     index::Int,
 )

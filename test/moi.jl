@@ -3,7 +3,7 @@
         optimizer = CSTestSolver()
         @test MOI.get(optimizer, MOI.SolverName()) == "ConstraintSolver"
         @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.AllDifferentSetInternal)
-        @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.EqualSet)
+        @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.EqualSetInternal)
         @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.TableSetInternal)
         @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.ZeroOne)
         @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.Integer)
