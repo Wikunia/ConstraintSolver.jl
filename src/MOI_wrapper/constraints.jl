@@ -61,8 +61,24 @@ function MOI.add_constraint(
     elseif length(func.terms) == 2 && set.value == zero(T)
         if func.terms[1].coefficient == -func.terms[2].coefficient
             # we have the form a == b
-            link_variables!(model.inner, func.terms[1].variable_index.value, func.terms[2].variable_index.value)
-            return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(0)
+            vecOfvar = MOI.VectorOfVariables([func.terms[1].variable_index, func.terms[2].variable_index])
+            com = model.inner
+            internals = ConstraintInternals(
+                length(com.constraints) + 1,
+                vecOfvar,
+                CS.EqualSet(2),
+                Int[v.value for v in vecOfvar.variables]
+            )
+            constraint = BasicConstraint(
+               internals
+            )
+        
+            push!(com.constraints, constraint)
+            for (i, ind) in enumerate(constraint.std.indices)
+                push!(com.subscription[ind], constraint.std.idx)
+            end
+            com.info.n_constraint_types.equality += 1
+            return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(length(model.inner.constraints))
         end
     end
 

@@ -39,6 +39,28 @@ function Base.:(==)(x::Variable, y::Variable)
     return bc
 end
 
+function init_constraint!(
+    com::CS.CoM,
+    constraint::BasicConstraint,
+    fct::MOI.VectorOfVariables,
+    set::CS.EqualSet,
+)
+    indices = constraint.std.indices
+    search_space = com.search_space
+    intersect_vals = Set(intersect(CS.values.(search_space[indices])...))
+    if isempty(intersect_vals)
+        return false
+    end
+    for ind in indices
+        for val in CS.values(search_space[ind])
+            if !(val in intersect_vals)
+                !rm!(com, search_space[ind], val) && return false
+            end
+        end
+    end
+
+    return true
+end
 """
     prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::EqualSet; logs = true)
 
@@ -65,6 +87,8 @@ function prune_constraint!(
             logs && @warn "The problem is infeasible"
             return false
         elseif length(fixed_vals_set) == 0
+            # TODO: we can do more here...
+            # see case for two variables
             return true
         end
 
@@ -82,6 +106,29 @@ function prune_constraint!(
         fixed_v1 = isfixed(v1)
         fixed_v2 = isfixed(v2)
         if !fixed_v1 && !fixed_v2
+            changes_v1 = v1.changes[com.c_backtrack_idx]
+            changes_v2 = v2.changes[com.c_backtrack_idx]
+            if isempty(changes_v1) && isempty(changes_v2)
+                return true
+            end
+            for (changes, other_var) in zip((changes_v1, changes_v2), (v2, v1))
+                for change in changes
+                    if change[1] == :remove_below
+                        !remove_below!(com, other_var, change[2]) && return false
+                    elseif change[1] == :remove_above
+                        !remove_above!(com, other_var, change[2]) && return false
+                    elseif change[1] == :rm && has(other_var, change[2])
+                        !rm!(com, other_var, change[2]) && return false
+                    end
+                end
+            end
+            #=
+            println("v1: $(sort(CS.values(v1)))")
+            println("v2: $(sort(CS.values(v2)))")
+            println("changes 1: $(changes_v1)")
+            println("changes 2: $(changes_v2)")
+            =#
+            @assert sort(CS.values(v1)) == sort(CS.values(v2))
             return true
         elseif fixed_v1 && fixed_v2
             if CS.value(v1) != CS.value(v2)
@@ -91,7 +138,6 @@ function prune_constraint!(
         end
         # one is fixed and one isn't
         if fixed_v1
-            fix_v = 2
             feasible = fix!(com, v2, CS.value(v1))
             if !feasible
                 return false
@@ -101,7 +147,6 @@ function prune_constraint!(
             if !feasible
                 return false
             end
-            fix_v = 1
         end
     end
     return true
@@ -120,6 +165,8 @@ function still_feasible(
     value::Int,
     index::Int,
 )
+
     indices = filter(i -> i != index, constraint.std.indices)
-    return all(v -> issetto(v, value) || !isfixed(v), com.search_space[indices])
+    feasible = all(v -> issetto(v, value) || (!isfixed(v) && has(v, value)), com.search_space[indices])
+    return feasible
 end

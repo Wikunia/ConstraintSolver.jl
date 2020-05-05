@@ -83,7 +83,6 @@ function add_var!(com::CS.CoM, from::Int, to::Int; fix = nothing)
         true, # has_lower_bound
         fix !== nothing, # is_fixed
         true, # is_integer
-        nothing # link_to
     )
     if fix !== nothing
         fix!(com, var, fix; check_feasibility=false)
@@ -1100,7 +1099,6 @@ function solve!(com::CS.CoM, options::SolverOptions)
 
     set_init_fixes!(com)
     set_constraint_hashes!(com)
-    link_variables!(com)    
     set_in_all_different!(com)
 
     # initialize constraints if `init_constraint!` exists for the constraint

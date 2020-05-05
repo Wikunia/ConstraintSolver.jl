@@ -15,8 +15,7 @@ Variable(idx) = Variable(
     false,
     false,
     false,
-    false,
-    nothing
+    false
 )
 
 MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[], Bool[])
@@ -81,7 +80,6 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         Vector{VariableRef}(), # lp_x
         Vector{Variable}(), # init_search_space
         Vector{Variable}(), # search_space
-        Vector{Tuple}(), # linked_var_pairs
         Vector{Tuple}(), # init_fixes
         Vector{Vector{Int}}(), # subscription
         Vector{Constraint}(), # constraints

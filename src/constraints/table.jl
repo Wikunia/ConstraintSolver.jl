@@ -156,8 +156,9 @@ function update_table(com::CoM, constraint::TableConstraint)
         vidx = indices[local_vidx]
         var = variables[vidx]
         clear_mask(current)
+        # returns -1 if a value got fixed then reset based update is used
         nremoved = num_removed(var, backtrack_idx)
-        if nremoved < nvalues(var)
+        if 0 <= nremoved < nvalues(var)
             for value in view_removed_values(variables[vidx], nremoved)
                 add_to_mask(current, supports[com, vidx, local_vidx, value])
             end
@@ -186,12 +187,6 @@ function filter_domains(com::CoM, constraint::TableConstraint)
         vidx = indices[local_vidx]
         for value in CS.values(variables[vidx])
             idx = residues[com, vidx, local_vidx, value]
-            if idx == 0
-                println("constraint.std.idx: ", constraint.std.idx)
-                println("vidx: ", vidx)
-                println("local_vidx: ", local_vidx)
-                println("value: ", value)
-            end
             if current.words[idx] & supports[com, vidx, local_vidx, value][idx] == UInt64(0)
                 idx = intersect_index(current, supports[com, vidx, local_vidx, value])
                 if idx != 0
@@ -247,7 +242,6 @@ function prune_constraint!(
                 break
             end
         end
-        
         feasible, changed = filter_domains(com, constraint)
         !feasible && break
     end
