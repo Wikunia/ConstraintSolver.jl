@@ -35,7 +35,7 @@ end
 
     ncolors = maximum(puzzle[:,2:end])
 
-    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true))
+    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true, "logging"=>[]))
     @variable(m, 1 <= p[1:height, 1:width] <= npieces, Int)
     @variable(m, 0 <= pu[1:height, 1:width] <= ncolors, Int)
     @variable(m, 0 <= pr[1:height, 1:width] <= ncolors, Int)

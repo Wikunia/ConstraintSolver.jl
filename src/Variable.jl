@@ -24,11 +24,11 @@ end
 @inline view_values(v::CS.Variable) = @views v.values[v.first_ptr:v.last_ptr]
 
 """
-    view_values_from(v::CS.Variable, from)
+    view_removed_values(v::CS.Variable)
 
-Return a view of values from `from` to the end
+Return a view of all removed values
 """
-@inline view_values_from(v::CS.Variable, from) = @views v.values[from:end]
+@inline view_removed_values(v::CS.Variable) = @views v.values[v.last_ptr+1:end]
 
 function num_removed(var::CS.Variable)
     return length(var.values)-var.last_ptr
