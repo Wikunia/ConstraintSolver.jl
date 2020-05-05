@@ -69,8 +69,9 @@ function MOI.add_constraint(
                 CS.EqualSetInternal(2),
                 Int[v.value for v in vecOfvar.variables]
             )
-            constraint = BasicConstraint(
-               internals
+            constraint = EqualConstraint(
+               internals,
+               ones(Int, 2)
             )
         
             push!(com.constraints, constraint)
@@ -182,8 +183,9 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
         set,
         Int[v.value for v in vars.variables]
     )
-    constraint = BasicConstraint(
-       internals
+    constraint = EqualConstraint(
+        internals,
+        ones(Int, length(vars.variables))
     )
 
     push!(com.constraints, constraint)

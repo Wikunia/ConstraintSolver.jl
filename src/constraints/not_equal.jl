@@ -20,13 +20,14 @@ end
 Change the `BasicConstraint` to describe the opposite of it.
 Can be used i.e by `add_constraint!(com, x != z)`.
 """
-function Base.:!(bc::CS.BasicConstraint)
-    if !isa(bc.std.set, EqualSetInternal)
-        throw(ErrorException("!BasicConstraint is only implemented for !equal"))
+function Base.:!(ec::CS.EqualConstraint)
+    if !isa(ec.std.set, EqualSetInternal)
+        throw(ErrorException("!EqualConstraint is only implemented for !equal"))
     end
-    if length(bc.std.indices) != 2
-        throw(ErrorException("!BasicConstraint is only implemented for !equal with exactly 2 variables"))
+    if length(ec.std.indices) != 2
+        throw(ErrorException("!EqualConstraint is only implemented for !equal with exactly 2 variables"))
     end
+    bc = BasicConstraint(ec.std)
     bc.std.fct, T = linear_combination_to_saf(LinearCombination(bc.std.indices, [1, -1]))
     bc.std.set = NotEqualSet{T}(zero(T))
     return bc

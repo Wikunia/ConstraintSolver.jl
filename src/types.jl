@@ -178,6 +178,11 @@ mutable struct BasicConstraint <: Constraint
     std::ConstraintInternals
 end
 
+mutable struct EqualConstraint <: Constraint
+    std::ConstraintInternals
+    first_ptrs::Vector{Int} # for faster apply_changes!
+end
+
 mutable struct AllDifferentConstraint <: Constraint
     std::ConstraintInternals
     pval_mapping::Vector{Int}

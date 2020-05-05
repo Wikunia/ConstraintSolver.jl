@@ -1,7 +1,7 @@
 """
     equal(variables::Vector{Variable})
 
-Create a BasicConstraint which will later be used by `equal(com, constraint)` \n
+Create an EqualConstraint which will later be used by `equal(com, constraint)` \n
 Can be used i.e by `add_constraint!(com, CS.equal([x,y,z])`.
 """
 function equal(variables::Vector{Variable})
@@ -11,8 +11,9 @@ function equal(variables::Vector{Variable})
         EqualSetInternal(length(variables)),
         Int[v.idx for v in variables]
     )
-    constraint = BasicConstraint(
-      internals
+    constraint = EqualConstraint(
+      internals,
+      ones(Int, length(variables))
     )
     constraint.std.hash = constraint_hash(constraint)
     return constraint
@@ -21,7 +22,7 @@ end
 """
     Base.:(==)(x::Variable, y::Variable)
 
-Create a BasicConstraint which will later be used by `equal(com, constraint)` \n
+Create an EqualConstraint which will later be used by `equal(com, constraint)` \n
 Can be used i.e by `add_constraint!(com, x == y)`.
 """
 function Base.:(==)(x::Variable, y::Variable)
@@ -32,8 +33,9 @@ function Base.:(==)(x::Variable, y::Variable)
         EqualSetInternal(2),
         Int[x.idx, y.idx]
     )
-    bc = BasicConstraint(
-       internals
+    bc = EqualConstraint(
+       internals,
+       ones(Int, 2)
     )
     bc.std.hash = constraint_hash(bc)
     return bc
@@ -41,7 +43,7 @@ end
 
 function init_constraint!(
     com::CS.CoM,
-    constraint::BasicConstraint,
+    constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
     set::CS.EqualSetInternal,
 )
@@ -62,8 +64,9 @@ function init_constraint!(
     return true
 end
 
-function apply_changes!(com::CS.CoM, v::Variable, changes::Vector{Tuple{Symbol, Int, Int, Int}})
-    for change in changes
+function apply_changes!(com::CS.CoM, v::Variable, changes::Vector{Tuple{Symbol, Int, Int, Int}}, first_ptr::Int)
+    for i=first_ptr:length(changes)
+        change = changes[i]
         if change[1] == :remove_below
             !remove_below!(com, v, change[2]) && return false
         elseif change[1] == :remove_above
@@ -82,7 +85,7 @@ Return if still feasible and throw a warning if infeasible and `logs` is set to 
 """
 function prune_constraint!(
     com::CS.CoM,
-    constraint::BasicConstraint,
+    constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
     set::EqualSetInternal;
     logs = true,
@@ -107,7 +110,8 @@ function prune_constraint!(
                 for j=1:length(indices)
                     i == j && continue
                     v2 = search_space[indices[j]] 
-                    apply_changes!(com, v2, v1_changes)
+                    apply_changes!(com, v2, v1_changes, constraint.first_ptrs[i])
+                    constraint.first_ptrs[i] = length(v1_changes)+1
                 end
             end
             return true
@@ -132,8 +136,10 @@ function prune_constraint!(
             if isempty(changes_v1) && isempty(changes_v2)
                 return true
             end
-            apply_changes!(com, v2, changes_v1)
-            apply_changes!(com, v1, changes_v2)
+            apply_changes!(com, v2, changes_v1, constraint.first_ptrs[1])
+            apply_changes!(com, v1, changes_v2, constraint.first_ptrs[2])
+            constraint.first_ptrs[1] = length(changes_v1)+1
+            constraint.first_ptrs[2] = length(changes_v2)+1
             return true
         elseif fixed_v1 && fixed_v2
             if CS.value(v1) != CS.value(v2)
@@ -157,6 +163,14 @@ function prune_constraint!(
     return true
 end
 
+function finished_pruning_constraint!(com::CS.CoM,
+    constraint::EqualConstraint,
+    fct::MOI.VectorOfVariables,
+    set::EqualSetInternal)
+
+    constraint.first_ptrs .= 1
+end
+
 """
     still_feasible(com::CoM, constraint::Constraint, fct::MOI.VectorOfVariables, set::EqualSetInternal, value::Int, index::Int)
 
@@ -164,7 +178,7 @@ Return whether the constraint can be still fulfilled.
 """
 function still_feasible(
     com::CoM,
-    constraint::Constraint,
+    constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
     set::EqualSetInternal,
     value::Int,
