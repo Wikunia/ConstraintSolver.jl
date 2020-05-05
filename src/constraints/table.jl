@@ -156,9 +156,9 @@ function update_table(com::CoM, constraint::TableConstraint)
         vidx = indices[local_vidx]
         var = variables[vidx]
         clear_mask(current)
-        # returns -1 if a value got fixed then reset based update is used
         nremoved = num_removed(var, backtrack_idx)
-        if 0 <= nremoved < nvalues(var)
+        # don't use for fixed variables or if number of values is smaller than removed values
+        if nremoved < nvalues(var) && nvalues(var) != 1
             for value in view_removed_values(variables[vidx], nremoved)
                 add_to_mask(current, supports[com, vidx, local_vidx, value])
             end
