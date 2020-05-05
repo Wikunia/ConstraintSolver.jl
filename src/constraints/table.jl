@@ -158,9 +158,8 @@ function update_table(com::CoM, constraint::TableConstraint)
         vidx = indices[local_vidx]
         var = variables[vidx]
         clear_mask(current)
-        nremoved = num_removed(var, backtrack_idx)
-        if nremoved < nvalues(var)
-            for value in view_removed_values(variables[vidx], nremoved)
+        if num_removed(var) < nvalues(var) && !isfixed(var)
+            for value in view_values_from(var, var.last_ptr+1)
                 add_to_mask(current, supports[com, vidx, local_vidx, value])
             end
             invert_mask(current)
@@ -170,7 +169,7 @@ function update_table(com::CoM, constraint::TableConstraint)
                 add_to_mask(current, supports[com, vidx, local_vidx, value])
             end
         end
-       
+
         intersect_with_mask(current)
         is_empty(current) && break
     end

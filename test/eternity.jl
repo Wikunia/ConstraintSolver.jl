@@ -35,7 +35,7 @@ end
 
     ncolors = maximum(puzzle[:,2:end])
 
-    m = Model(CSJuMPTestSolver())
+    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true))
     @variable(m, 1 <= p[1:height, 1:width] <= npieces, Int)
     @variable(m, 0 <= pu[1:height, 1:width] <= ncolors, Int)
     @variable(m, 0 <= pr[1:height, 1:width] <= ncolors, Int)
@@ -84,4 +84,7 @@ end
 
     status = JuMP.termination_status(m)
     @test status == MOI.OPTIMAL
+
+    com = JuMP.backend(m).optimizer.model.inner
+    @test general_tree_test(com)
 end
