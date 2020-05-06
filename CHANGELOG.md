@@ -1,6 +1,6 @@
 # ConstrainSolver.jl - Changelog
 
-## Unreleased
+## v0.1.5 (6th of May 2020)
 - **Bugfixes:**
   - EqualSet feasibility: Check if other vars have value + no memory allocation
   - Call `call_finished_pruning!(com)` after second `prune!` before backtracking
