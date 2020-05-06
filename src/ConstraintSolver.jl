@@ -1122,7 +1122,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
 
     # check if all feasible even if for example everything is fixed
     feasible = prune!(com; pre_backtrack = true, initial_check = true)
-    call_finished_pruning!(com)
+    # finished pruning will be called in second call a few lines down...
 
     if !feasible
         com.solve_time = time() - com.start_time
@@ -1137,6 +1137,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
         return :Solved
     end
     feasible = prune!(com; pre_backtrack = true)
+    call_finished_pruning!(com)
 
     com.best_bound = get_best_bound(com, BacktrackObj(com))
     if keep_logs
