@@ -7,6 +7,8 @@
         @constraint(m, sum(weights .* x) == max_val)
         @objective(m, Max, max_val)
         optimize!(m)
+        com = JuMP.backend(m).optimizer.model.inner
+        @test is_solved(com)
         @test JuMP.termination_status(m) == MOI.OPTIMAL
         @test JuMP.objective_value(m) == 4
         @test JuMP.value.(x) == [1, 1, 1, 1]

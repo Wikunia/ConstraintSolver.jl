@@ -137,39 +137,11 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::Integers)
     model.variable_info[vi.value].is_integer = true
 
     set_vals = t.values
+    set_variable_from_integers!(model.variable_info[vi.value], set_vals)
 
-    min_val, max_val = extrema(set_vals)
-    range = max_val-min_val+1
-    vals = copy(set_vals)
-    append!(vals, zeros(Int, range-length(vals)))
-
-    # fill the indices such that 1:length(set_vals) map to set_vals
-    indices = zeros(Int, range)
-    # .- needed for the offset
-    indices[set_vals .- (min_val-1)] = 1:length(set_vals)
-    j = length(set_vals)+1
-    for i=1:range
-        if indices[i] == 0
-            indices[i] = j
-            j += 1
-        end
-    end
-
-    model.variable_info[vi.value].upper_bound = max_val
-    model.variable_info[vi.value].max = max_val
-    model.variable_info[vi.value].has_upper_bound = true
-    model.variable_info[vi.value].lower_bound = min_val
-    model.variable_info[vi.value].min = min_val
-    model.variable_info[vi.value].has_lower_bound = true
-    model.variable_info[vi.value].values = vals
-    model.variable_info[vi.value].init_vals = copy(vals)
-    model.variable_info[vi.value].offset = 1 - min_val
-    model.variable_info[vi.value].indices = indices
-    # needs copy to be different
-    model.variable_info[vi.value].init_val_to_index = copy(indices)
-    model.variable_info[vi.value].first_ptr = 1
-    model.variable_info[vi.value].last_ptr = length(set_vals)
     addupd_var_in_inner_model(model, vi.value)
+    min_val = model.variable_info[vi.value].min
+    max_val = model.variable_info[vi.value].max
 
     cindex = length(model.var_constraints) + 1
     # TODO: If we want to do something with var_constraints later we need to save the actual input values
@@ -308,4 +280,55 @@ function MOI.add_constraint(model::Optimizer, v::SVF, eq::MOI.EqualTo{T}) where 
     cindex = length(model.var_constraints) + 1
     push!(model.var_constraints, (vi.value, :eq, eq.value, eq.value))
     return MOI.ConstraintIndex{SVF,MOI.EqualTo{T}}(cindex)
+end
+
+function set_variable_from_integers!(var::Variable, set_vals)
+    min_val, max_val = extrema(set_vals)
+    range = max_val-min_val+1
+    vals = copy(set_vals)
+    append!(vals, zeros(Int, range-length(vals)))
+
+    # fill the indices such that 1:length(set_vals) map to set_vals
+    indices = zeros(Int, range)
+    # .- needed for the offset
+    indices[set_vals .- (min_val-1)] = 1:length(set_vals)
+    j = length(set_vals)+1
+    for i=1:range
+        if indices[i] == 0
+            indices[i] = j
+            j += 1
+        end
+    end
+
+    var.upper_bound = max_val
+    var.max = max_val
+    var.has_upper_bound = true
+    var.lower_bound = min_val
+    var.min = min_val
+    var.has_lower_bound = true
+    var.values = vals
+    var.init_vals = copy(vals)
+    var.offset = 1 - min_val
+    var.indices = indices
+    # needs copy to be different
+    var.init_val_to_index = copy(indices)
+    var.first_ptr = 1
+    var.last_ptr = length(set_vals)
+end
+
+"""
+    set_init_fixes!(com::CS.CoM)
+
+Redefines variables if they are fixed to a specific value.
+Return feasibility
+"""
+function set_init_fixes!(com::CS.CoM)
+    for fixes in com.init_fixes
+        var_idx = fixes[1]
+        val = fixes[2]
+        var = com.search_space[var_idx]
+        !has(var, val) && return false
+        set_variable_from_integers!(var, [val])
+    end
+    return true
 end
