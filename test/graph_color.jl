@@ -416,23 +416,15 @@
         rm("graph_color_optimize.json")
 
         @test status == MOI.OPTIMAL
-
-        @test all(
-            v -> v == JuMP.value(california),
-            JuMP.value.([california, new_york, florida]),
-        )
-        @test JuMP.value(california) + JuMP.value(south_carolina) ≈ 3
-        @test JuMP.value(washington) + JuMP.value(florida) + JuMP.value(maryland) ≈ 6
-
+     
         # all values fixed
-        @test all([length(CS.values(m, var)) == 1 for var in states])
-            
         @test com.best_sol ≈ 5.1
         @test maximum([JuMP.value(var) for var in states]) == JuMP.value(max_color) == 4
+        @test is_solved(com)
     end
 
     @testset "49 US states + DC only 3 colors" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         num_colors = 3
 
         @variable(m, 1 <= states[1:50] <= num_colors, Int)
@@ -599,7 +591,7 @@
     end
 
     @testset "Maximization objective" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         num_colors = 20
 
         @variable(m, 1 <= states[1:50] <= num_colors, Int)

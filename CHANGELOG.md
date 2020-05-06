@@ -1,11 +1,17 @@
 # ConstrainSolver.jl - Changelog
 
-## v0.1.4 (5th of May 2020)
+## v0.1.5 (6th of May 2020)
 - Use `EqualSet` for `x == y` 
 - Real pruning in `EqualSet`
 - **Bugfixes:**
   - Feasibility checking in `EqualSet`
 
+## v0.1.4 (6th of May 2020)
+- Added `is_solved_constraint` functions to check whether problem gets actually solved
+- **Bugfixes:**
+  - Correct incremental update in table constraint
+  - Fixed `restore_pruning_constraint!` in table
+  
 ## v0.1.3 (4th of May 2020)
 - **Bugfixes:**
   - Use correct offset in table constraint `support` and `residues`

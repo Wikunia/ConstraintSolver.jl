@@ -8,8 +8,8 @@ const MOI = MathOptInterface
 const CS = ConstraintSolver
 const MOIU = MOI.Utilities
 
-CSTestSolver() = CS.Optimizer(logging = [])
-CSJuMPTestSolver() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging" => [])
+CSTestOptimizer() = CS.Optimizer(logging = [])
+CSJuMPTestOptimizer() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging" => [])
 
 test_stime = time()
 

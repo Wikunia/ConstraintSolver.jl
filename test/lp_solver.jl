@@ -249,7 +249,8 @@
         @test !(1.5*JuMP.value(x[1]) + 2*JuMP.value(x[2]) ≈ 40.5)
 
         com = JuMP.backend(model).optimizer.model.inner
-        general_tree_test(com)
+        @test is_solved(com)
+        @test general_tree_test(com)
     end
 
     @testset "Combine lp with all different + not equal + DFS + Split Half" begin

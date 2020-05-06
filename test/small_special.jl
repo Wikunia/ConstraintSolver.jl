@@ -569,7 +569,7 @@
     end
 
     @testset "Fix variable" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x <= 9, Int)
         @variable(m, y == 2, Int)
         # should just return optimal with any 1-9 for x and y is fixed
@@ -579,7 +579,7 @@
         @test 1 <= JuMP.value(x) <= 9 && length(CS.values(m, x)) == 1
         @test JuMP.value(y) == 2
 
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x <= 9, Int)
         @variable(m, y == 2, Int)
         @constraint(m, x + y == 10)
@@ -591,7 +591,7 @@
     end
 
     @testset "LessThan constraints JuMP" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         @constraint(m, sum(x) >= 20)
@@ -604,7 +604,7 @@
         @test JuMP.objective_value(m) == 99
 
         # minimize
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         @constraint(m, sum(x) >= 20)
@@ -617,7 +617,7 @@
         @test JuMP.objective_value(m) == 37
 
         # minimize with negative and positive real weights
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         weights = [-0.1, 0.2, -0.3, 0.4, 0.5]
@@ -656,7 +656,7 @@
     end
 
     @testset "Knapsack problems" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
 
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
@@ -676,7 +676,7 @@
         @test JuMP.objective_value(m) ≈ 51.8
 
         # less variables in the objective
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
 
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
@@ -694,7 +694,7 @@
         @test JuMP.objective_value(m) ≈ 32.3
 
         # minimize
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
 
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) >= 25)
@@ -714,7 +714,7 @@
         @test JuMP.objective_value(m) ≈ 51.6
 
         # minimize only part of the weights and some are negative
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
 
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) >= 25)
@@ -733,7 +733,7 @@
         @test sum(x_vals) >= 25
         @test JuMP.objective_value(m) ≈ -4
 
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         @constraint(m, -x[1] - x[2] - x[3] + x[4] + x[5] >= 5)
@@ -749,23 +749,23 @@
     end
 
     @testset "Not supported constraints" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         # must be an Integer upper bound
         @variable(m, 1 <= x[1:5] <= NaN, Int)
         @test_throws ErrorException optimize!(m)
 
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         # must be an Integer lower bound
         @variable(m, NaN <= x[1:5] <= 2, Int)
         @test_throws ErrorException optimize!(m)
 
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:5] <= 2, Int)
 
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:5] <= 2, Int)
 
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:5] <= 2, Int)
     end
 
@@ -827,7 +827,7 @@
     end
 
     @testset "Not equal" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
 
         @variable(m, 1 <= x <= 10, Int)
         @variable(m, 1 <= y <= 1, Int)
@@ -855,7 +855,7 @@
     end
 
     @testset "Integers basic" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, x, CS.Integers([1,2,4]))
         @variable(m, y, CS.Integers([2,3,5,6]))
         @constraint(m, x == y)
@@ -882,7 +882,7 @@
     end
 
     @testset "Biggest cube square number up to 100" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, x, CS.Integers([i^2 for i=1:20 if i^2 < 100]))
         @variable(m, y, CS.Integers([i^3 for i=1:20 if i^3 < 100]))
         @constraint(m, x == y)

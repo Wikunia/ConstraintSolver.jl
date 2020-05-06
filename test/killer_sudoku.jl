@@ -19,7 +19,7 @@ end
 @testset "Killer Sudoku" begin
 
     @testset "Killer Sudoku from wikipedia" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
 
         sums = parseKillerJSON(JSON.parsefile("data/killer_wikipedia"))
@@ -58,7 +58,7 @@ end
     end
 
     @testset "Killer Sudoku from wikipedia with normal rules" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
 
         sums = parseKillerJSON(JSON.parsefile("data/killer_wikipedia"))

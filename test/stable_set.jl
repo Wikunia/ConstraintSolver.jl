@@ -57,7 +57,7 @@ using LinearAlgebra: dot
             1 1 0 1
             0 0 1 0
         ]
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         x = @variable(m, x[1:4], Bin)
         for i = 1:4, j = i+1:4
             if matrix[i, j] == 1
@@ -90,7 +90,7 @@ using LinearAlgebra: dot
             1 0 0 0 0 0 0 0 1 0
         ]
         n = 10
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, x[1:n], Bin)
         nconstraints = 0
         for i = 1:n, j = i+1:n
@@ -103,6 +103,7 @@ using LinearAlgebra: dot
         @objective(m, Max, dot(w, x))
         optimize!(m)
         com = JuMP.backend(m).optimizer.model.inner
+        @test is_solved(com)
         @test com.info.n_constraint_types.inequality == length(com.constraints)
         @test com.info.n_constraint_types.inequality == nconstraints
 

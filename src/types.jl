@@ -74,7 +74,7 @@ struct EqualSetInternal <: MOI.AbstractVectorSet
     dimension::Int
 end
 
-struct NotEqualSet{T} <: MOI.AbstractScalarSet
+struct NotEqualTo{T} <: MOI.AbstractScalarSet
     value::T
 end
 

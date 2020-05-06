@@ -31,6 +31,28 @@ function general_tree_test(com::CS.CoM)
         end
         
         CS.checkout_from_to!(com, c_backtrack_idx, next_idx)
+
+        if com.backtrack_vec[next_idx].parent_idx != 0
+            c_backtrack_idx = com.backtrack_vec[next_idx].parent_idx
+
+            c_search_space = com.search_space
+            # this is a dict =>
+            expected_search_space = com.logs[c_backtrack_idx].var_states
+            correct = true
+            for var in c_search_space
+                if sort(CS.values(var)) != sort(expected_search_space[var.idx])
+                    println("var.idx: $(var.idx)")
+                    println("vals: $(CS.values(var))")
+                    println("expected: $(expected_search_space[var.idx])")
+                    correct = false
+                    all_correct = false
+                end
+            end
+            if !correct
+                @error "There were errors on the jump path: $path before pruning the last step"
+            end
+        end
+
         c_backtrack_idx = next_idx
     
         # if it has children
@@ -46,6 +68,7 @@ function general_tree_test(com::CS.CoM)
             @assert CS.remove_below!(com, com.search_space[var_idx], com.logs[c_backtrack_idx].lb)
 
             @assert CS.prune!(com)
+            CS.call_finished_pruning!(com)
             push!(path_type, :prune)
         else
             # prune the last step based on saved information instead
@@ -84,4 +107,22 @@ function general_tree_test(com::CS.CoM)
     CS.restore_prune!(com, path[1])
 
     return all_correct
+end
+
+function is_solved(com::CS.CoM)
+    variables = com.search_space
+    all_fixed = all(v->CS.isfixed(v), variables)
+    if !all_fixed 
+        @error "Not all variables are fixed"
+        return false
+    end
+    for constraint in com.constraints
+        c_solved = CS.is_solved_constraint(com, constraint, constraint.std.fct, constraint.std.set)
+        if !c_solved
+            @error "Constraint $(constraint.std.idx) is not solved"
+            @error "Info about constraint: $(typeof(constraint)), $(typeof(constraint.std.fct)), $(typeof(constraint.std.set))"
+            return false
+        end
+    end
+    return true
 end

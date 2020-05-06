@@ -8,7 +8,7 @@ end
 
 function constraint_hash(constraint::LinearConstraint)
     coeffs = [t.coefficient for t in constraint.std.fct.terms]
-    if isa(constraint.std.set, MOI.EqualTo)
+    if isa(constraint.std.set, Union{MOI.EqualTo, CS.NotEqualTo})
         rhs = constraint.std.set.value - constraint.std.fct.constant
     end
     if isa(constraint.std.set, MOI.LessThan)

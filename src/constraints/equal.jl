@@ -192,3 +192,12 @@ function still_feasible(
     end
     return true
 end
+
+function is_solved_constraint(com::CoM,
+    constraint::Constraint,
+    fct::MOI.VectorOfVariables,
+    set::EqualSet,
+) 
+    values = CS.value.(com.search_space[constraint.std.indices])
+    return all(v->v == values[1], values)
+end
