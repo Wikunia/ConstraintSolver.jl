@@ -3,6 +3,7 @@
 ## Unreleased
 - **Bugfixes:**
   - EqualSet feasibility: Check if other vars have value + no memory allocation
+  - Call `call_finished_pruning!(com)` after second `prune!` before backtracking
 
 ## v0.1.4 (6th of May 2020)
 - Added `is_solved_constraint` functions to check whether problem gets actually solved
