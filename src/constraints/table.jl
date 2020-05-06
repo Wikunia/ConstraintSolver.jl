@@ -158,9 +158,8 @@ function update_table(com::CoM, constraint::TableConstraint)
         vidx = indices[local_vidx]
         var = variables[vidx]
         clear_mask(current)
-        nremoved = num_removed(var, backtrack_idx)
-        if nremoved < nvalues(var)
-            for value in view_removed_values(variables[vidx], nremoved)
+        if num_removed(var) < nvalues(var) && !isfixed(var)
+            for value in view_removed_values(var)
                 add_to_mask(current, supports[com, vidx, local_vidx, value])
             end
             invert_mask(current)
@@ -170,7 +169,7 @@ function update_table(com::CoM, constraint::TableConstraint)
                 add_to_mask(current, supports[com, vidx, local_vidx, value])
             end
         end
-       
+
         intersect_with_mask(current)
         is_empty(current) && break
     end
@@ -248,8 +247,6 @@ function prune_constraint!(
         !feasible && break
     end
     empty!(constraint.changed_vars)
-    # full mask for `single_reverse_pruning_constraint!``
-    full_mask(current)
     return feasible
 end
 
@@ -296,7 +293,6 @@ function still_feasible(
     end
     feasible = intersect_with_mask_feasible(current)
 
-    full_mask(current)
     return feasible
 end
 
@@ -442,7 +438,6 @@ function reverse_pruning_constraint!(
         end
         # otherwise there is nothing to reverse
     end
-    full_mask(current)
     reset_residues!(com, constraint)
     empty!(constraint.changed_vars)
 end
@@ -468,13 +463,12 @@ function restore_pruning_constraint!(
     constraint.changed_vars = 1:length(constraint.std.indices)
     current = constraint.current
     backtrack_id = last(prune_steps)
-    while backtrack_id > length(backtrack_id) || isempty(constraint.backtrack[backtrack_id].words)
+    while backtrack_id > length(constraint.backtrack) || isempty(constraint.backtrack[backtrack_id].words)
         backtrack_id = com.backtrack_vec[backtrack_id].parent_idx
     end
     current.last_ptr = constraint.backtrack[backtrack_id].last_ptr
     current.words = copy(constraint.backtrack[backtrack_id].words)
     current.indices = copy(constraint.backtrack[backtrack_id].indices)
-    full_mask(current)
     reset_residues!(com, constraint)
     empty!(constraint.changed_vars)
 end

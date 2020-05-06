@@ -1,6 +1,6 @@
 @testset "Real coefficients" begin
     @testset "Basic all true" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, x[1:4], Bin)
         weights = [1.7, 0.7, 0.3, 1.3]
         @variable(m, 0 <= max_val <= 10, Int)
@@ -14,7 +14,7 @@
 
     @testset "Some true some false" begin
         # disallow that x1 and x2 are both allowed
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, x[1:4], Bin)
         @variable(m, z, Bin)
         # x[1]+x[2] <= 1
@@ -32,7 +32,7 @@
 
     @testset "Negative coefficients" begin
         # must use negative coefficient for optimum
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, x[1:4], Bin)
         @variable(m, z, Bin)
         # x[1]+x[2] <= 1
@@ -50,7 +50,7 @@
 
     @testset "Minimization negative coefficients" begin
         # must use negative coefficient for optimum
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, x[1:4], Bin)
         @variable(m, z, Bin)
         # x[1]+x[2] <= 1
@@ -68,7 +68,7 @@
 
     @testset "Getting safe upper/lower bounds" begin
         # must use negative coefficient for optimum
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, x[1:4], Bin)
         @variable(m, z, Bin)
 
@@ -83,7 +83,7 @@
     end
 
     @testset "Test where min sum is a bit bigger than 0" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:2] <= 3, Int)
         weights = [0.2, 0.1]
         @variable(m, 1 <= min_val <= 2, Int)

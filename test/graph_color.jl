@@ -427,7 +427,7 @@
     end
 
     @testset "49 US states + DC only 3 colors" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         num_colors = 3
 
         @variable(m, 1 <= states[1:50] <= num_colors, Int)
@@ -594,7 +594,7 @@
     end
 
     @testset "Maximization objective" begin
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         num_colors = 20
 
         @variable(m, 1 <= states[1:50] <= num_colors, Int)

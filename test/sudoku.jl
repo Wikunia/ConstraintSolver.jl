@@ -136,7 +136,7 @@
             0 0 0 0 0 0 8 0 6
         ]
 
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
         for r = 1:9, c = 1:9
@@ -164,7 +164,7 @@
         grid[8, :] = [0 8 0 0 7 3 0 5 0]
         grid[9, :] = [0 0 0 0 0 0 0 0 0]
 
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
         nvars_set = 0
@@ -206,7 +206,7 @@
         grid[8, :] = [0 0 0 0 7 0 0 5 0]
         grid[9, :] = [0 0 1 0 0 0 0 0 0]
 
-        m = Model(CSJuMPTestSolver())
+        m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
         nvars_set = 0

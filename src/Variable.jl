@@ -24,25 +24,14 @@ end
 @inline view_values(v::CS.Variable) = @views v.values[v.first_ptr:v.last_ptr]
 
 """
-    view_removed_values(v::CS.Variable, nremoved)
+    view_removed_values(v::CS.Variable)
 
-Return a view of the last `nremoved` values of the variable `v`.
+Return a view of all removed values
 """
-@inline view_removed_values(v::CS.Variable, nremoved) = @views v.values[v.last_ptr+1:v.last_ptr+nremoved]
+@inline view_removed_values(v::CS.Variable) = @views v.values[v.last_ptr+1:end]
 
-"""
-    num_removed(var::CS.Variable, backtrack_idx)
-
-Return the number of removed values in a backtracking step.
-**Attention:** This does not work if a variable got fixed.
-"""
-function num_removed(var::CS.Variable, backtrack_idx)
-    changes = var.changes[backtrack_idx]
-    nremoved = 0
-    for change in changes
-        nremoved += change[4]
-    end
-    return nremoved
+function num_removed(var::CS.Variable)
+    return length(var.values)-var.last_ptr
 end
 
 function issetto(v::CS.Variable, x::Int)

@@ -232,7 +232,7 @@ function MOI.add_constraint(
         TableResidues(),
         Vector{TableBacktrackInfo}(),
         Int[], # changed_vars
-        Int[],  # unfixed_vars
+        Int[], # unfixed_vars
         Int[], # sum_min
         Int[]  # sum_max
     )
