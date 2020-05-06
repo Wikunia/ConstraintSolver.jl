@@ -1,9 +1,8 @@
-function solve_us_graph_coloring()    
+function solve_us_graph_coloring(;num_colors=8, equality=false)    
     m = Model(optimizer_with_attributes(
         CS.Optimizer,
         "logging" => [],
     ))
-    num_colors = 8
     @variable(m, 1 <= max_color <= num_colors, Int)
 
     @variable(m, 1 <= states[1:50] <= num_colors, Int)
@@ -166,8 +165,10 @@ function solve_us_graph_coloring()
     @constraint(m, georgia != florida)
 
     # test for EqualSet constraint
-    @constraint(m, [california, new_york, florida] in CS.EqualSet(3))
-    @constraint(m, [maryland, alabama, wisconsin, south_carolina] in CS.EqualSet(4))
+    if equality
+        @constraint(m, [california, new_york, florida] in CS.EqualSet(3))
+        @constraint(m, [maryland, alabama, wisconsin, south_carolina] in CS.EqualSet(4))
+    end
 
     @constraint(m, max_color .>= states)
     @objective(m, Min, max_color)
@@ -175,6 +176,10 @@ function solve_us_graph_coloring()
     optimize!(m)
 
     status = JuMP.termination_status(m)
-    @assert status == MOI.OPTIMAL
-    @assert JuMP.objective_value(m) ≈ 4
+    if num_colors >= 4
+        @assert status == MOI.OPTIMAL
+        @assert JuMP.objective_value(m) ≈ 4
+    else
+        @assert status == MOI.INFEASIBLE
+    end
 end
