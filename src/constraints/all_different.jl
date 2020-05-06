@@ -454,3 +454,12 @@ function still_feasible(
     end
     return true
 end
+
+function is_solved_constraint(com::CoM,
+    constraint::AllDifferentConstraint,
+    fct::MOI.VectorOfVariables,
+    set::AllDifferentSetInternal
+)
+    values = CS.value.(com.search_space[constraint.std.indices])
+    return allunique(values)
+end

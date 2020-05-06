@@ -53,3 +53,14 @@ function still_feasible(
         error("This should not happen but if it does please open an issue with the information: SingleVariableConstraint index is neither lhs nor rhs and your model.")
     end
 end
+
+function is_solved_constraint(
+    com::CoM,
+    constraint::CS.SingleVariableConstraint,
+    fct::SAF{T},
+    set::MOI.LessThan{T},
+) where {T<:Real}
+
+    variables = com.search_space
+    return CS.value(variables[constraint.lhs]) <= CS.value(variables[constraint.rhs])
+end

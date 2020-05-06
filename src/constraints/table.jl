@@ -472,3 +472,14 @@ function restore_pruning_constraint!(
     reset_residues!(com, constraint)
     empty!(constraint.changed_vars)
 end
+
+function is_solved_constraint(com::CoM,
+    constraint::TableConstraint,
+    fct::MOI.VectorOfVariables,
+    set::TableSetInternal,
+)
+
+    values = CS.value.(com.search_space[constraint.std.indices])
+    table = set.table
+    return findfirst(ri->table[ri,:] == values, 1:size(table)[1]) !== nothing
+end

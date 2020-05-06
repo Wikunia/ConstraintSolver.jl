@@ -265,7 +265,7 @@
         options = CS.combine_options(options)
 
         @test CS.solve!(com, options) == :Solved
-        @test fulfills_sudoku_constr(com_grid)
+        @test is_solved(com)
     end
 
     @testset "Hard fsudoku repo 0-8 Int8 Objective" begin
@@ -311,7 +311,7 @@
         options = CS.combine_options(options)
 
         @test CS.solve!(com, options) == :Solved
-        @test fulfills_sudoku_constr(com_grid)
+        @test is_solved(com)
         @test typeof(com.best_bound) == Int8
         @test typeof(com.best_sol) == Int8
     end
@@ -344,7 +344,7 @@
             @test typeof(com.best_sol) == Int8
             @test JuMP.objective_value(m) == JuMP.value(x[1, 1]) == com.best_sol
             @test JuMP.termination_status(m) == MOI.OPTIMAL
-            @test jump_fulfills_sudoku_constr(JuMP.value.(x))
+            @test is_solved(com)
             c += 1
         end
         # check that actually all 95 problems were tested
