@@ -18,6 +18,12 @@ function parse_commandline()
         "--pr"
             help = "ID of the PR to comment on"
             arg_type = Int
+        "--comment", "-c"
+            help = "ID of the comment you want to update"
+            arg_type = Int
+        "--file", "-f"
+            help = "Markdown filename"
+            arg_type = String
     end
 
     return parse_args(s)
@@ -40,10 +46,16 @@ if isinteractive() == false
     judged = judge("ConstraintSolver", target_config, baseline_config)
     
     markdown = sprint(export_markdown, judged)
-    if args["pr"] !== nothing
+    if args["comment"] !== nothing
+        comment = edit_comment("Wikunia/ConstraintSolver.jl", Comment(args["comment"]), :pr; params = Dict(
+            :body => markdown
+        ), auth=github_auth)
+        println("Updated comment: $(comment.html_url)")
+    elseif args["pr"] !== nothing
         comment = create_comment("Wikunia/ConstraintSolver.jl", PullRequest(args["pr"]), markdown; auth=github_auth)
-        println("Comment id: $(comment.id)")
+        println("New comment: $(comment.html_url)")
+    end
+    if args["file"] !== nothing
+        export_markdown(args["file"], judged)
     end
 end
-
-
