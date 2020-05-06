@@ -27,7 +27,7 @@ function get_rotations(puzzle)
     return rotations
 end
 
-function solve_eternity(fname="eternity_7"; height=nothing, width=nothing)
+function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_solutions=false)
     puzzle = read_puzzle(fname)
     rotations = get_rotations(puzzle)
     npieces = size(puzzle)[1]
@@ -35,7 +35,7 @@ function solve_eternity(fname="eternity_7"; height=nothing, width=nothing)
     height === nothing && (height = convert(Int, sqrt(npieces)))
     ncolors = maximum(puzzle[:,2:end])
 
-    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_solutions"=>all_solutions))
     @variable(m, 1 <= p[1:height, 1:width] <= npieces, Int)
     @variable(m, 0 <= pu[1:height, 1:width] <= ncolors, Int)
     @variable(m, 0 <= pr[1:height, 1:width] <= ncolors, Int)
@@ -83,4 +83,5 @@ function solve_eternity(fname="eternity_7"; height=nothing, width=nothing)
     optimize!(m)
 
     status = JuMP.termination_status(m)
+    @assert status == MOI.OPTIMAL
 end
