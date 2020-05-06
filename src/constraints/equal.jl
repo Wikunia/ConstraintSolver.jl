@@ -172,7 +172,7 @@ function finished_pruning_constraint!(com::CS.CoM,
 end
 
 """
-    still_feasible(com::CoM, constraint::Constraint, fct::MOI.VectorOfVariables, set::EqualSetInternal, value::Int, index::Int)
+    still_feasible(com::CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::EqualSetInternal, value::Int, index::Int)
 
 Return whether the constraint can be still fulfilled.
 """
@@ -194,9 +194,9 @@ function still_feasible(
 end
 
 function is_solved_constraint(com::CoM,
-    constraint::Constraint,
+    constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
-    set::EqualSet,
+    set::EqualSetInternal,
 ) 
     values = CS.value.(com.search_space[constraint.std.indices])
     return all(v->v == values[1], values)
