@@ -30,7 +30,7 @@
         @test MOI.supports_constraint(
             optimizer,
             MOI.ScalarAffineFunction{Float64},
-            CS.NotEqualSet{Float64},
+            CS.NotEqualTo{Float64},
         )
 
         # TimeLimit

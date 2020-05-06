@@ -108,3 +108,21 @@ function general_tree_test(com::CS.CoM)
 
     return all_correct
 end
+
+function is_solved(com::CS.CoM)
+    variables = com.search_space
+    all_fixed = all(v->CS.isfixed(v), variables)
+    if !all_fixed 
+        @error "Not all variables are fixed"
+        return false
+    end
+    for constraint in com.constraints
+        c_solved = CS.is_solved_constraint(com, constraint, constraint.std.fct, constraint.std.set)
+        if !c_solved
+            @error "Constraint $(constraint.std.idx) is not solved"
+            @error "Info about constraint: $(typeof(constraint)), $(typeof(constraint.std.fct)), $(typeof(constraint.std.set))"
+            return false
+        end
+    end
+    return true
+end

@@ -38,10 +38,11 @@ function LinearConstraint(
     # get common type for rhs and coeffs
     # use the first value (can be .upper, .lower, .value) and subtract left constant
     rhs = -fct.constant
-    if isa(set, MOI.EqualTo)
+    if isa(set, Union{MOI.EqualTo, CS.NotEqualTo})
         rhs += set.value
+    elseif isa(set, MOI.LessThan)
+        rhs += set.upper
     end
-    # TODO: for LessThan/GreaterThan
     coeffs = [t.coefficient for t in fct.terms]
     promote_T = promote_type(typeof(rhs), eltype(coeffs))
     if promote_T != eltype(coeffs)

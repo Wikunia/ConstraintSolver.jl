@@ -81,10 +81,11 @@ end
     end
 
     optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+    @test is_solved(com)
 
     status = JuMP.termination_status(m)
     @test status == MOI.OPTIMAL
 
-    com = JuMP.backend(m).optimizer.model.inner
     @test general_tree_test(com)
 end

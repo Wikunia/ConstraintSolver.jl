@@ -123,3 +123,12 @@ function still_feasible(
     indices = filter(i -> i != index, constraint.std.indices)
     return all(v -> issetto(v, value) || !isfixed(v), com.search_space[indices])
 end
+
+function is_solved_constraint(com::CoM,
+    constraint::Constraint,
+    fct::MOI.VectorOfVariables,
+    set::EqualSet,
+) 
+    values = CS.value.(com.search_space[constraint.std.indices])
+    return all(v->v == values[1], values)
+end

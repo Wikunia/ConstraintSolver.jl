@@ -8,10 +8,8 @@ function Base.:!(lc::CS.LinearConstraint)
     if !isa(lc.std.set, MOI.EqualTo)
         throw(ErrorException("!BasicConstraint is only implemented for !equal"))
     end
-    set = NotEqualSet{typeof(lc.std.set.value)}(lc.std.set.value)
-    internals = ConstraintInternals(lc.std.idx, lc.std.fct, set, lc.std.indices)
-    bc = BasicConstraint(internals)
-    return bc
+    lc.std.set = NotEqualTo{typeof(lc.std.set.value)}(lc.std.set.value)
+    return lc
 end
 
 """
@@ -27,22 +25,25 @@ function Base.:!(bc::CS.BasicConstraint)
     if length(bc.std.indices) != 2
         throw(ErrorException("!BasicConstraint is only implemented for !equal with exactly 2 variables"))
     end
-    bc.std.fct, T = linear_combination_to_saf(LinearCombination(bc.std.indices, [1, -1]))
-    bc.std.set = NotEqualSet{T}(zero(T))
-    return bc
+    
+    func, T = linear_combination_to_saf(LinearCombination(bc.std.indices, [1, -1]))
+    indices = [v.variable_index.value for v in func.terms]
+    lc = LinearConstraint(func, CS.NotEqualTo(0), indices)
+    lc.std.idx = bc.std.idx
+    return lc
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualSet{T}; logs = true) where T <: Real
+    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualTo{T}; logs = true) where T <: Real
 
 Reduce the number of possibilities given the not equal constraint.
 Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
 """
 function prune_constraint!(
     com::CS.CoM,
-    constraint::BasicConstraint,
+    constraint::LinearConstraint,
     fct::SAF{T},
-    set::NotEqualSet{T};
+    set::NotEqualTo{T};
     logs = true,
 ) where {T<:Real}
     indices = constraint.std.indices
@@ -82,15 +83,15 @@ function prune_constraint!(
 end
 
 """
-still_feasible(com::CoM, constraint::Constraint, fct::MOI.ScalarAffineFunction{T}, set::NotEqualSet{T}, value::Int, index::Int) where T <: Real
+still_feasible(com::CoM, constraint::Constraint, fct::MOI.ScalarAffineFunction{T}, set::NotEqualTo{T}, value::Int, index::Int) where T <: Real
 
 Return whether the `not_equal` constraint can be still fulfilled.
 """
 function still_feasible(
     com::CoM,
-    constraint::Constraint,
+    constraint::LinearConstraint,
     fct::SAF{T},
-    set::NotEqualSet{T},
+    set::NotEqualTo{T},
     value::Int,
     index::Int,
 ) where {T<:Real}
@@ -122,4 +123,16 @@ function still_feasible(
         return true
     end
     return true
+end
+
+function is_solved_constraint(com::CoM,
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::NotEqualTo{T},
+) where {T<:Real}
+
+    indices = [t.variable_index.value for t in fct.terms]
+    coeffs = [t.coefficient for t in fct.terms]
+    values = CS.value.(com.search_space[indices])
+    return get_approx_discrete(sum(values .* coeffs)+fct.constant) != set.value
 end

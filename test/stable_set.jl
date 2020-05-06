@@ -103,6 +103,7 @@ using LinearAlgebra: dot
         @objective(m, Max, dot(w, x))
         optimize!(m)
         com = JuMP.backend(m).optimizer.model.inner
+        @test is_solved(com)
         @test com.info.n_constraint_types.inequality == length(com.constraints)
         @test com.info.n_constraint_types.inequality == nconstraints
 

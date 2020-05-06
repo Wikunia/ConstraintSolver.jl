@@ -1,11 +1,11 @@
 """
 JuMP constraints
 """
-sense_to_set(::Function, ::Val{:!=}) = NotEqualSet(0.0)
+sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
 
 ### !=
 
-MOIU.shift_constant(set::NotEqualSet, value) = NotEqualSet(set.value + value)
+MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 
 """
 MOI constraints
@@ -249,49 +249,44 @@ end
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{SAF{T}},
-    ::Type{NotEqualSet{T}},
+    ::Type{NotEqualTo{T}},
 ) where {T<:Real} = true
 
 function MOI.add_constraint(
     model::Optimizer,
-    aff::SAF{T},
-    set::NotEqualSet{T},
+    func::SAF{T},
+    set::NotEqualTo{T},
 ) where {T<:Real}
     com = model.inner
     com.info.n_constraint_types.notequal += 1
 
     # support for cx != a where a and c are constants
-    if length(aff.terms) == 1
+    if length(func.terms) == 1
         # reformulate to x != a where x is variable and a a constant
-        rhs = set.value / aff.terms[1].coefficient
+        rhs = set.value / func.terms[1].coefficient
         if isapprox_discrete(com, rhs)
             rhs = get_approx_discrete(rhs)
             rm!(
                 com,
-                com.search_space[aff.terms[1].variable_index.value],
+                com.search_space[func.terms[1].variable_index.value],
                 rhs;
                 changes = false,
             )
         end
-        return MOI.ConstraintIndex{SAF{T},NotEqualSet{T}}(0)
+        return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(0)
     end
 
-    internals = ConstraintInternals(
-        length(com.constraints) + 1,
-        aff,
-        set,
-        Int[t.variable_index.value for t in aff.terms]
-    )
-    constraint = BasicConstraint(
-        internals
-    )
+    indices = [v.variable_index.value for v in func.terms]
 
-    push!(com.constraints, constraint)
-    for (i, ind) in enumerate(constraint.std.indices)
-        push!(com.subscription[ind], constraint.std.idx)
+    lc = LinearConstraint(func, set, indices)
+    lc.std.idx = length(model.inner.constraints) + 1
+
+    push!(com.constraints, lc)
+    for (i, ind) in enumerate(lc.std.indices)
+        push!(com.subscription[ind], lc.std.idx)
     end
 
-    return MOI.ConstraintIndex{SAF{T},NotEqualSet{T}}(length(com.constraints))
+    return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(length(com.constraints))
 end
 
 function set_pvals!(model::CS.Optimizer)
