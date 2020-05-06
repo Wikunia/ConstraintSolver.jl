@@ -120,8 +120,13 @@ function still_feasible(
     value::Int,
     index::Int,
 )
-    indices = filter(i -> i != index, constraint.std.indices)
-    return all(v -> issetto(v, value) || !isfixed(v), com.search_space[indices])
+   variables = com.search_space
+   for ind in constraint.std.indices
+        ind == index && continue
+        v = variables[ind]
+        !has(v, value) && return false
+    end
+    return true
 end
 
 function is_solved_constraint(com::CoM,
