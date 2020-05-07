@@ -47,6 +47,7 @@ function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_s
         @constraint(m, [p[i,j], pu[i,j], pr[i,j], pd[i,j], pl[i,j]] in CS.TableSet(rotations))
     end
 
+    #=
     # borders
     # up and down
     for j=1:width
@@ -79,8 +80,15 @@ function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_s
         start_piece = findfirst(i->count(c->c == 0, puzzle[i,:]) == 2,1:npieces)
         @constraint(m, p[1,1] == start_piece)
     end
+    =#
 
     optimize!(m)
+    for i=1:height
+        println([v.value for v in JuMP.optimizer_index.(p[i,:])])
+    end
+    for i=1:height
+        println([v.value for v in JuMP.optimizer_index.(pu[i,:])])
+    end
 
     status = JuMP.termination_status(m)
     @assert status == MOI.OPTIMAL

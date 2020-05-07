@@ -30,13 +30,13 @@ MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{Equal
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
-    ::Type{AllDifferentSetInternal},
+    ::Type{TableSetInternal},
 ) = true
 
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
-    ::Type{TableSetInternal},
+    ::Type{AllDifferentSetInternal},
 ) = true
 
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
@@ -179,40 +179,6 @@ end
 function MOI.add_constraint(
     model::Optimizer,
     vars::MOI.VectorOfVariables,
-    set::AllDifferentSetInternal,
-)
-    com = model.inner
-
-    internals = ConstraintInternals(
-        length(com.constraints) + 1,
-        vars,
-        set,
-        Int[v.value for v in vars.variables]
-    )
-
-    constraint = AllDifferentConstraint(
-        internals,
-        Int[], # pval_mapping will be filled later
-        Int[], # vertex_mapping => later
-        Int[], # vertex_mapping_bw => later
-        Int[], # di_ei => later
-        Int[], # di_ej => later
-        MatchingInit(),
-        Int[]
-    )
-
-    push!(com.constraints, constraint)
-    for (i, ind) in enumerate(constraint.std.indices)
-        push!(com.subscription[ind], constraint.std.idx)
-    end
-    com.info.n_constraint_types.alldifferent += 1
-
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,AllDifferentSetInternal}(length(com.constraints))
-end
-
-function MOI.add_constraint(
-    model::Optimizer,
-    vars::MOI.VectorOfVariables,
     set::TableSetInternal,
 )
     com = model.inner
@@ -244,6 +210,40 @@ function MOI.add_constraint(
     com.info.n_constraint_types.table += 1
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,TableSetInternal}(length(com.constraints))
+end
+
+function MOI.add_constraint(
+    model::Optimizer,
+    vars::MOI.VectorOfVariables,
+    set::AllDifferentSetInternal,
+)
+    com = model.inner
+
+    internals = ConstraintInternals(
+        length(com.constraints) + 1,
+        vars,
+        set,
+        Int[v.value for v in vars.variables]
+    )
+
+    constraint = AllDifferentConstraint(
+        internals,
+        Int[], # pval_mapping will be filled later
+        Int[], # vertex_mapping => later
+        Int[], # vertex_mapping_bw => later
+        Int[], # di_ei => later
+        Int[], # di_ej => later
+        MatchingInit(),
+        Int[]
+    )
+
+    push!(com.constraints, constraint)
+    for (i, ind) in enumerate(constraint.std.indices)
+        push!(com.subscription[ind], constraint.std.idx)
+    end
+    com.info.n_constraint_types.alldifferent += 1
+
+    return MOI.ConstraintIndex{MOI.VectorOfVariables,AllDifferentSetInternal}(length(com.constraints))
 end
 
 MOI.supports_constraint(
