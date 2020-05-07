@@ -34,7 +34,7 @@ if isinteractive() == false
     args = parse_commandline()
     using PkgBenchmark
     using ConstraintSolver
-    using GitHub, JSON
+    using GitHub, JSON, Statistics
 
     github_auth = GitHub.authenticate(ENV["GITHUB_AUTH"])
     target = args["target"]
@@ -43,9 +43,12 @@ if isinteractive() == false
     baseline_config = BenchmarkConfig(id = base, juliacmd = `julia -O3`)
     target_config = BenchmarkConfig(id = target, juliacmd = `julia -O3`)
     
-    judged = judge("ConstraintSolver", target_config, baseline_config)
+    judged = judge("ConstraintSolver", target_config, baseline_config; f=median)
     
     markdown = sprint(export_markdown, judged)
+    if args["file"] !== nothing
+        export_markdown(args["file"], judged)
+    end
     if args["comment"] !== nothing
         comment = edit_comment("Wikunia/ConstraintSolver.jl", Comment(args["comment"]), :pr; params = Dict(
             :body => markdown
@@ -54,8 +57,5 @@ if isinteractive() == false
     elseif args["pr"] !== nothing
         comment = create_comment("Wikunia/ConstraintSolver.jl", PullRequest(args["pr"]), markdown; auth=github_auth)
         println("New comment: $(comment.html_url)")
-    end
-    if args["file"] !== nothing
-        export_markdown(args["file"], judged)
     end
 end

@@ -39,3 +39,12 @@ SUITE["killer_sudoku"] = BenchmarkGroup(["alldifferent", "equal"])
 solve_killer_sudoku("niallsudoku_5500")
 SUITE["killer_sudoku"]["niall_5500"] = @benchmarkable solve_killer_sudoku("niallsudoku_5500") seconds=10
 SUITE["killer_sudoku"]["niall_5501"] = @benchmarkable solve_killer_sudoku("niallsudoku_5501") seconds=10
+
+include(joinpath(dir, "benchmark/graph_color/benchmark.jl"))
+
+SUITE["graph_coloring"] = BenchmarkGroup(["notequal", "equal", "svc"])
+# compiling run
+solve_us_graph_coloring()
+SUITE["graph_coloring"]["US_8+equal"] = @benchmarkable solve_us_graph_coloring(;num_colors=8, equality=true) seconds=5
+SUITE["graph_coloring"]["US_50colors+equal"] = @benchmarkable solve_us_graph_coloring(;num_colors=50, equality=true) seconds=5
+SUITE["graph_coloring"]["US_50colors"] = @benchmarkable solve_us_graph_coloring(;num_colors=50, equality=false) seconds=5
