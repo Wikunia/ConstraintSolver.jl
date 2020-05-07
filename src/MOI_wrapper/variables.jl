@@ -286,11 +286,11 @@ function set_variable_from_integers!(var::Variable, set_vals)
     min_val, max_val = extrema(set_vals)
     range = max_val-min_val+1
     vals = copy(set_vals)
-    append!(vals, zeros(Int, range-length(vals)))
 
     # fill the indices such that 1:length(set_vals) map to set_vals
     indices = zeros(Int, range)
     # .- needed for the offset
+    # values that don't exist get an index out of the range of the values array
     indices[set_vals .- (min_val-1)] = 1:length(set_vals)
     j = length(set_vals)+1
     for i=1:range
