@@ -92,6 +92,7 @@ function fix!(com::CS.CoM, v::CS.Variable, x::Int; changes = true, check_feasibi
         com.bt_infeasible[v.idx] += 1
         return false
     end
+    !has(v, x) && return false
     ind = v.indices[x+v.offset]
     pr_below = ind - v.first_ptr
     pr_above = v.last_ptr - ind

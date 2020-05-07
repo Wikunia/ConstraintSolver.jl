@@ -327,8 +327,7 @@ function set_init_fixes!(com::CS.CoM)
         var_idx = fixes[1]
         val = fixes[2]
         var = com.search_space[var_idx]
-        !has(var, val) && return false
-        set_variable_from_integers!(var, [val])
+        !fix!(com, var, val) && return false
     end
     return true
 end
