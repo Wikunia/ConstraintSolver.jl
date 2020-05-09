@@ -40,10 +40,10 @@
     # 4 should be removed from y
     @test sort(CS.values(com.search_space[y.value])) == [1,2]
     # y,4 has no support
-    @test constraint.supports[com, y.value, y.value, 4] == [UInt64(0)]
+    @test CS.get_view(constraint.supports, com, y.value, y.value, 4) == [UInt64(0)]
     # z,2 specific support test
     # 0x4d00000000000000 == 0x0100110100000000000000000000000000000000000000000000000000000000
-    @test constraint.supports[com, z.value, z.value, 2] == [0x4d00000000000000]
+    @test CS.get_view(constraint.supports, com, z.value, z.value, 2) == [0x4d00000000000000]
     @test constraint.residues[com, y.value, y.value, 4] == 0 # no support 
     @test constraint.residues[com, x.value, x.value, 1] == 1
 
