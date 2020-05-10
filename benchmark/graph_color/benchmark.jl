@@ -166,8 +166,8 @@ function solve_us_graph_coloring(;num_colors=8, equality=false)
 
     # test for EqualSet constraint
     if equality
-        @constraint(m, [california, new_york, florida] in CS.EqualSet(3))
-        @constraint(m, [maryland, alabama, wisconsin, south_carolina] in CS.EqualSet(4))
+        @constraint(m, [california, new_york, florida] in CS.EqualSet())
+        @constraint(m, [maryland, alabama, wisconsin, south_carolina] in CS.EqualSet())
     end
 
     @constraint(m, max_color .>= states)

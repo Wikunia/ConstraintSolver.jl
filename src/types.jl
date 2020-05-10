@@ -66,9 +66,12 @@ struct TableSet <: JuMP.AbstractVectorSet
 end
 JuMP.moi_set(ts::TableSet, dim) = TableSetInternal(dim, ts.table)
 
-struct EqualSet <: MOI.AbstractVectorSet
+struct EqualSetInternal <: MOI.AbstractVectorSet
     dimension::Int
 end
+
+struct EqualSet <: JuMP.AbstractVectorSet end
+JuMP.moi_set(::EqualSet, dim) = EqualSetInternal(dim)
 
 struct NotEqualTo{T} <: MOI.AbstractScalarSet
     value::T
