@@ -27,7 +27,7 @@ function invert_mask(bitset::RSparseBitSet)
     end
 end
 
-function add_to_mask(bitset::RSparseBitSet, add::Vector{UInt64})
+function add_to_mask(bitset::RSparseBitSet, add)
     mask = bitset.mask
     indices = bitset.indices
     @inbounds for i=1:bitset.last_ptr
@@ -36,7 +36,7 @@ function add_to_mask(bitset::RSparseBitSet, add::Vector{UInt64})
     end
 end
 
-function intersect_mask_with_mask(bitset::RSparseBitSet, intersect_mask::Vector{UInt64})
+function intersect_mask_with_mask(bitset::RSparseBitSet, intersect_mask)
     indices = bitset.indices
     mask = bitset.mask
     @inbounds for i=1:bitset.last_ptr
@@ -77,7 +77,7 @@ function intersect_with_mask(bitset::RSparseBitSet)
     end
 end
     
-function intersect_index(bitset::RSparseBitSet, mask::Vector{UInt64})
+function intersect_index(bitset::RSparseBitSet, mask)
     words = bitset.words
     indices = bitset.indices
     @inbounds for i=1:bitset.last_ptr

@@ -160,13 +160,15 @@ function update_table(com::CoM, constraint::TableConstraint)
         clear_mask(current)
         if num_removed(var) < nvalues(var) && !isfixed(var)
             for value in view_removed_values(var)
-                add_to_mask(current, supports[com, vidx, local_vidx, value])
+                support = get_view(supports, com, vidx, local_vidx, value)
+                add_to_mask(current, support)
             end
             invert_mask(current)
         else
             # reset based update
             for value in view_values(var)
-                add_to_mask(current, supports[com, vidx, local_vidx, value])
+                support = get_view(supports, com, vidx, local_vidx, value)
+                add_to_mask(current, support)
             end
         end
 
@@ -187,8 +189,9 @@ function filter_domains(com::CoM, constraint::TableConstraint)
         vidx = indices[local_vidx]
         for value in CS.values(variables[vidx])
             idx = residues[com, vidx, local_vidx, value]
-            if current.words[idx] & supports[com, vidx, local_vidx, value][idx] == UInt64(0)
-                idx = intersect_index(current, supports[com, vidx, local_vidx, value])
+            if current.words[idx] & supports[com, vidx, local_vidx, value, idx] == UInt64(0)
+                support = get_view(supports, com, vidx, local_vidx, value)
+                idx = intersect_index(current, support)
                 if idx != 0
                     residues[com, vidx, local_vidx, value] = idx
                 else
@@ -286,9 +289,11 @@ function still_feasible(
     full_mask(current)
     for i = 1:length(indices)
         if indices[i] == index
-            intersect_mask_with_mask(current, supports[com, index, i, value])
+            support = get_view(supports, com, index, i, value)
+            intersect_mask_with_mask(current, support)
         elseif isfixed(com.search_space[indices[i]])
-            intersect_mask_with_mask(current, supports[com, indices[i], i, CS.value(com.search_space[indices[i]])])
+            support = get_view(supports, com, indices[i], i, CS.value(com.search_space[indices[i]]))
+            intersect_mask_with_mask(current, support)
         end
     end
     feasible = intersect_with_mask_feasible(current)
@@ -387,7 +392,7 @@ end
 Reset residues for constraint.changed_vars
 """
 function reset_residues!(com, constraint::TableConstraint)
-    support = constraint.supports
+    supports = constraint.supports
     residues = constraint.residues
     current = constraint.current
     indices = constraint.std.indices
@@ -397,7 +402,8 @@ function reset_residues!(com, constraint::TableConstraint)
         var_idx = indices[local_var_idx]
         var = variables[var_idx]
         for val_idx in var.first_ptr:var.last_ptr
-            new_residue = intersect_index(current, support[com, var_idx, local_var_idx, var.values[val_idx]])
+            support = get_view(supports, com, var_idx, local_var_idx, var.values[val_idx])
+            new_residue = intersect_index(current, support)
             if new_residue != 0
                 residues[com, var_idx, local_var_idx, var.values[val_idx]] = new_residue
             end
