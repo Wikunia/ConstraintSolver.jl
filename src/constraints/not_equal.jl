@@ -15,21 +15,21 @@ end
 """
     Base.:!(bc::CS.BasicConstraint)
 
-Change the `BasicConstraint` to describe the opposite of it.
+Change the `EqualConstraint` to describe the opposite of it.
 Can be used i.e by `add_constraint!(com, x != z)`.
 """
-function Base.:!(bc::CS.BasicConstraint)
-    if !isa(bc.std.set, EqualSetInternal)
-        throw(ErrorException("!BasicConstraint is only implemented for !equal"))
+function Base.:!(ec::CS.EqualConstraint)
+    if !isa(ec.std.set, EqualSetInternal)
+        throw(ErrorException("!EqualConstraint is only implemented for !equal"))
     end
-    if length(bc.std.indices) != 2
-        throw(ErrorException("!BasicConstraint is only implemented for !equal with exactly 2 variables"))
+    if length(ec.std.indices) != 2
+        throw(ErrorException("!EqualConstraint is only implemented for !equal with exactly 2 variables"))
     end
     
-    func, T = linear_combination_to_saf(LinearCombination(bc.std.indices, [1, -1]))
+    func, T = linear_combination_to_saf(LinearCombination(ec.std.indices, [1, -1]))
     indices = [v.variable_index.value for v in func.terms]
     lc = LinearConstraint(func, CS.NotEqualTo(0), indices)
-    lc.std.idx = bc.std.idx
+    lc.std.idx = ec.std.idx
     return lc
 end
 
@@ -83,7 +83,7 @@ function prune_constraint!(
 end
 
 """
-still_feasible(com::CoM, constraint::Constraint, fct::MOI.ScalarAffineFunction{T}, set::NotEqualTo{T}, value::Int, index::Int) where T <: Real
+still_feasible(com::CoM, constraint::LinearConstraint, fct::MOI.ScalarAffineFunction{T}, set::NotEqualTo{T}, value::Int, index::Int) where T <: Real
 
 Return whether the `not_equal` constraint can be still fulfilled.
 """
