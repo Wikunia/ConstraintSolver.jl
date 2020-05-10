@@ -8,7 +8,7 @@ function equal(variables::Vector{Variable})
     internals = ConstraintInternals(
         0, # idx will be changed later
         var_vector_to_moi(variables),
-        EqualSet(length(variables)),
+        EqualSetInternal(length(variables)),
         Int[v.idx for v in variables]
     )
     constraint = BasicConstraint(
@@ -29,7 +29,7 @@ function Base.:(==)(x::Variable, y::Variable)
     internals = ConstraintInternals(
         0, # idx will be changed later
         var_vector_to_moi(variables),
-        EqualSet(2),
+        EqualSetInternal(2),
         Int[x.idx, y.idx]
     )
     bc = BasicConstraint(
@@ -40,7 +40,7 @@ function Base.:(==)(x::Variable, y::Variable)
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::EqualSet; logs = true)
+    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::MOI.VectorOfVariables, set::EqualSetInternal; logs = true)
 
 Reduce the number of possibilities given the equality constraint which sets all variables in `MOI.VectorOfVariables` to the same value.
 Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
@@ -49,7 +49,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::BasicConstraint,
     fct::MOI.VectorOfVariables,
-    set::EqualSet;
+    set::EqualSetInternal;
     logs = true,
 )
     indices = constraint.std.indices
@@ -108,7 +108,7 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::Constraint, fct::MOI.VectorOfVariables, set::EqualSet, value::Int, index::Int)
+    still_feasible(com::CoM, constraint::Constraint, fct::MOI.VectorOfVariables, set::EqualSetInternal, value::Int, index::Int)
 
 Return whether the constraint can be still fulfilled.
 """
@@ -116,7 +116,7 @@ function still_feasible(
     com::CoM,
     constraint::Constraint,
     fct::MOI.VectorOfVariables,
-    set::EqualSet,
+    set::EqualSetInternal,
     value::Int,
     index::Int,
 )
@@ -132,7 +132,7 @@ end
 function is_solved_constraint(com::CoM,
     constraint::Constraint,
     fct::MOI.VectorOfVariables,
-    set::EqualSet,
+    set::EqualSetInternal,
 ) 
     values = CS.value.(com.search_space[constraint.std.indices])
     return all(v->v == values[1], values)

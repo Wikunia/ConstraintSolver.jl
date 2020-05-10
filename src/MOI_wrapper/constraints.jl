@@ -26,7 +26,7 @@ MOI.supports_constraint(
     ::Type{MOI.LessThan{T}},
 ) where {T<:Real} = true
 
-MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{EqualSet}) = true
+MOI.supports_constraint(::Optimizer, ::Type{MOI.VectorOfVariables}, ::Type{EqualSetInternal}) = true
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
@@ -151,7 +151,7 @@ function MOI.add_constraint(
     return MOI.ConstraintIndex{SAF{T},MOI.LessThan{T}}(length(model.inner.constraints))
 end
 
-function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::EqualSet)
+function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::EqualSetInternal)
     com = model.inner
 
     internals = ConstraintInternals(
@@ -170,7 +170,7 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
     end
     com.info.n_constraint_types.equality += 1
 
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,EqualSet}(length(com.constraints))
+    return MOI.ConstraintIndex{MOI.VectorOfVariables,EqualSetInternal}(length(com.constraints))
 end
 
 function MOI.add_constraint(
