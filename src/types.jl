@@ -299,6 +299,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     lp_x::Vector{VariableRef}
     init_search_space::Vector{Variable}
     search_space::Vector{Variable}
+    init_fixes::Vector{Tuple{Int,Int}}
     subscription::Vector{Vector{Int}}
     constraints::Vector{Constraint}
     bt_infeasible::Vector{Int}

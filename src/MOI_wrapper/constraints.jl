@@ -54,12 +54,9 @@ function MOI.add_constraint(
     check_inbounds(model, func)
 
     if length(func.terms) == 1
-        fix!(
-            model.inner,
-            model.variable_info[func.terms[1].variable_index.value],
-            convert(Int, set.value / func.terms[1].coefficient);
-            check_feasibility = false
-        )
+        var_idx = func.terms[1].variable_index.value
+        val = convert(Int, set.value / func.terms[1].coefficient)
+        push!(model.inner.init_fixes, (var_idx, val))
         return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(0)
     end
 
@@ -296,9 +293,9 @@ function set_pvals!(model::CS.Optimizer)
     end
 end
 
-function set_constraint_hashes!(com::CS.CoM)
-    for ci = 1:length(com.constraints)
-        com.constraints[ci].std.hash = constraint_hash(com.constraints[ci])
+function set_constraint_hashes!(com::CS.CoM; constraints=com.constraints)
+    for constraint in constraints
+        constraint.std.hash = constraint_hash(constraint)
     end
 end
 

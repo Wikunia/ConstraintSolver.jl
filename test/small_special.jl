@@ -903,6 +903,25 @@
         @constraint(m, x[1]+x[2] == x[3])
         @constraint(m, x[1] <= x[2])
         optimize!(m)
+        com = JuMP.backend(m).optimizer.model.inner
+        @test is_solved(com)
         @test MOI.get(m, MOI.ResultCount()) == 20
+    end
+
+    @testset "Infeasible by fixing variable to outside domain" begin
+        m = Model(CSJuMPTestOptimizer())
+        @variable(m, x, CS.Integers([1,2,4]))
+        @constraint(m, x == 3)
+        optimize!(m)
+        @test JuMP.termination_status(m) == MOI.INFEASIBLE
+    end
+
+    @testset "Infeasible by fixing variable to two values" begin
+        m = Model(CSJuMPTestOptimizer())
+        @variable(m, x, CS.Integers([1,2,4]))
+        @constraint(m, x == 1)
+        @constraint(m, x == 2)
+        optimize!(m)
+        @test JuMP.termination_status(m) == MOI.INFEASIBLE
     end
 end
