@@ -1,6 +1,6 @@
 # ConstrainSolver.jl - Changelog
 
-## Unreleased
+## v0.1.6 (11th of May 2020)
   - Reduction of memory allocations in `TableConstraint`
   - Pruning in `EqualSet`
 
