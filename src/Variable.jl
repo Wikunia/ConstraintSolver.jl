@@ -111,6 +111,9 @@ end
 function remove_below!(com::CS.CoM, var::CS.Variable, val::Int; changes = true, check_feasibility=true)
     vals = values(var)
     still_possible = filter(v -> v >= val, vals)
+    if nvalues(var) == length(still_possible)
+        return true
+    end
     if check_feasibility
         if length(still_possible) == 0
             com.bt_infeasible[var.idx] += 1
@@ -141,6 +144,9 @@ end
 function remove_above!(com::CS.CoM, var::CS.Variable, val::Int; changes = true, check_feasibility=true)
     vals = values(var)
     still_possible = filter(v -> v <= val, vals)
+    if nvalues(var) == length(still_possible)
+        return true
+    end
     if check_feasibility
         if length(still_possible) == 0
             com.bt_infeasible[var.idx] += 1

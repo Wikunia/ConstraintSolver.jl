@@ -58,6 +58,29 @@ function MOI.add_constraint(
         val = convert(Int, set.value / func.terms[1].coefficient)
         push!(model.inner.init_fixes, (var_idx, val))
         return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(0)
+    elseif length(func.terms) == 2 && set.value == zero(T)
+        if func.terms[1].coefficient == -func.terms[2].coefficient
+            # we have the form a == b
+            vecOfvar = MOI.VectorOfVariables([func.terms[1].variable_index, func.terms[2].variable_index])
+            com = model.inner
+            internals = ConstraintInternals(
+                length(com.constraints) + 1,
+                vecOfvar,
+                CS.EqualSetInternal(2),
+                Int[v.value for v in vecOfvar.variables]
+            )
+            constraint = EqualConstraint(
+               internals,
+               ones(Int, 2)
+            )
+
+            push!(com.constraints, constraint)
+            for (i, ind) in enumerate(constraint.std.indices)
+                push!(com.subscription[ind], constraint.std.idx)
+            end
+            com.info.n_constraint_types.equality += 1
+            return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(length(model.inner.constraints))
+        end
     end
 
     indices = [v.variable_index.value for v in func.terms]
@@ -160,8 +183,9 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
         set,
         Int[v.value for v in vars.variables]
     )
-    constraint = BasicConstraint(
-       internals
+    constraint = EqualConstraint(
+       internals,
+       ones(Int, length(vars.variables))
     )
 
     push!(com.constraints, constraint)

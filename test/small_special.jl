@@ -924,4 +924,30 @@
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.INFEASIBLE
     end
+
+    @testset "5 variables all equal" begin
+        m = Model(optimizer_with_attributes(CS.Optimizer, "all_solutions" => true, "logging" => []))
+
+        @variable(m, 5 <= x <= 10, Int)
+        @variable(m, 2 <= y <= 15, Int)
+        @variable(m, 1 <= z <= 7, Int)
+        @variable(m, 2 <= a <= 9, Int)
+        @variable(m, 6 <= b <= 10, Int)
+        @constraint(m, x == y)
+        # should not result in linking to x -> y -> x ... 
+        @constraint(m, y == x)
+        @constraint(m, x == y)
+
+        @constraint(m, y == z)
+        @constraint(m, a == z)
+        @constraint(m, b == y)
+        optimize!(m)
+
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.value(x) == JuMP.value(y) == JuMP.value(z) == JuMP.value(a) == JuMP.value(b)
+        @test JuMP.value(x; result=2) == JuMP.value(y; result=2) == JuMP.value(z; result=2) == JuMP.value(a; result=2) == JuMP.value(b; result=2)
+        @test JuMP.value(x) == 6 || JuMP.value(x) == 7 
+        @test JuMP.value(x; result=2) == 6 || JuMP.value(x; result=2) == 7 
+        @test JuMP.value(x) != JuMP.value(x; result=2)
+    end
 end

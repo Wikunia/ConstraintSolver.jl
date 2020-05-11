@@ -1,5 +1,9 @@
 # ConstrainSolver.jl - Changelog
 
+## v0.1.6 (11th of May 2020)
+  - Reduction of memory allocations in `TableConstraint`
+  - Pruning in `EqualSet`
+
 ## v0.1.5 (6th of May 2020)
 - **Bugfixes:**
   - EqualSet feasibility: Check if other vars have value + no memory allocation
