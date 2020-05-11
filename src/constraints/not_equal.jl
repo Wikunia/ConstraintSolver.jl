@@ -6,7 +6,7 @@ Can be used i.e by `add_constraint!(com, x + y != z)`.
 """
 function Base.:!(lc::CS.LinearConstraint)
     if !isa(lc.std.set, MOI.EqualTo)
-        throw(ErrorException("!BasicConstraint is only implemented for !equal"))
+        throw(ErrorException("!LinearConstraint is only implemented for !equal"))
     end
     lc.std.set = NotEqualTo{typeof(lc.std.set.value)}(lc.std.set.value)
     return lc
@@ -19,9 +19,6 @@ Change the `EqualConstraint` to describe the opposite of it.
 Can be used i.e by `add_constraint!(com, x != z)`.
 """
 function Base.:!(ec::CS.EqualConstraint)
-    if !isa(ec.std.set, EqualSetInternal)
-        throw(ErrorException("!EqualConstraint is only implemented for !equal"))
-    end
     if length(ec.std.indices) != 2
         throw(ErrorException("!EqualConstraint is only implemented for !equal with exactly 2 variables"))
     end
