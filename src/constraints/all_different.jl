@@ -99,6 +99,7 @@ end
 """
     get_alldifferent_extrema(sorted_min, sorted_max, len)
 
+`sorted_max` should be desc and `sorted_min` asc
 Return the minimum and maximum sum using `len` values of sorted_min/sorted_max while satisfying the all different constraint
 """
 function get_alldifferent_extrema(sorted_min, sorted_max, len)
@@ -455,11 +456,11 @@ function still_feasible(
     return true
 end
 
-function is_solved_constraint(com::CoM,
+function is_solved_constraint(
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSetInternal
+    set::AllDifferentSetInternal,
+    values::Vector{Int}
 )
-    values = CS.value.(com.search_space[constraint.std.indices])
     return allunique(values)
 end

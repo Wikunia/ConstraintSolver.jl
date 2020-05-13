@@ -1117,6 +1117,8 @@ function solve!(com::CS.CoM, options::SolverOptions)
         !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
     end
 
+    options.no_prune && return :NotSolved
+
     # check if all feasible even if for example everything is fixed
     feasible = prune!(com; pre_backtrack = true, initial_check = true)
     # finished pruning will be called in second call a few lines down...

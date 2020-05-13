@@ -18,6 +18,7 @@ include("sudoku_fcts.jl")
 
 include("docs.jl")
 include("fcts.jl")
+include("unit/index.jl")
 include("options.jl")
 include("moi.jl")
 include("constraints/table.jl")

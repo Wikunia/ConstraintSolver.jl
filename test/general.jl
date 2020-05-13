@@ -117,7 +117,8 @@ function is_solved(com::CS.CoM)
         return false
     end
     for constraint in com.constraints
-        c_solved = CS.is_solved_constraint(com, constraint, constraint.std.fct, constraint.std.set)
+        values = CS.value.(com.search_space[constraint.std.indices])
+        c_solved = CS.is_solved_constraint(constraint, constraint.std.fct, constraint.std.set, values)
         if !c_solved
             @error "Constraint $(constraint.std.idx) is not solved"
             @error "Info about constraint: $(typeof(constraint)), $(typeof(constraint.std.fct)), $(typeof(constraint.std.set))"
