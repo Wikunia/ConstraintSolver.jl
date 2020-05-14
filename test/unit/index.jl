@@ -8,13 +8,13 @@ function UnitTestModel(constraint_types=["all"])
         @constraint(m, x in CS.AllDifferentSet())
     end
     if "all" in constraint_types || "equalto" in constraint_types
-        @constraint(m, sum(y)+1 == 5)
+        @constraint(m, sum(y[1:3])+1 == 5)
     end
     if "all" in constraint_types || "lessthan" in constraint_types
-        @constraint(m, sum(x)+1 <= 5)
+        @constraint(m, sum(x[1:3])+1 <= 5)
     end
     if "all" in constraint_types || "greaterthan" in constraint_types
-        @constraint(m, sum(x)+1 >= 2)
+        @constraint(m, sum(x[1:3])+1 >= 2)
     end
     if "all" in constraint_types || "table" in constraint_types
         table = [2 3 5; 1 2 4; 0 3 7];
@@ -43,4 +43,5 @@ end
 
 @testset "Unit Tests" begin
     include("constraints/alldifferent.jl")
+    include("constraints/eq_sum.jl")
 end

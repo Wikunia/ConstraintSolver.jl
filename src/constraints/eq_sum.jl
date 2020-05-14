@@ -84,52 +84,96 @@ function prune_constraint!(
         return false
     end
 
-    for (i, idx) in enumerate(indices)
-        if isfixed(search_space[idx])
-            continue
-        end
-        # minimum without current index
-        c_min = full_min - mins[i]
-
-        # maximum without current index
-        c_max = full_max - maxs[i]
-
-        p_max = -c_min
-        if p_max < maxs[i]
-            maxs[i] = p_max
-        end
-
-        p_min = -c_max
-        if p_min > mins[i]
-            mins[i] = p_min
-        end
-    end
-
-    # update all
-    for (i, idx) in enumerate(indices)
-        # if the maximum of coefficient * variable got reduced
-        # get a safe threshold because of floating point errors
-        if maxs[i] < pre_maxs[i]
-            threshold = get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
-            if fct.terms[i].coefficient > 0
-                still_feasible = remove_above!(com, search_space[idx], threshold)
-            else
-                still_feasible = remove_below!(com, search_space[idx], threshold)
+    changed = true
+    while changed
+        changed = false
+        for (i, idx) in enumerate(indices)
+            if isfixed(search_space[idx])
+                continue
             end
-            if !still_feasible
-                return false
+            # minimum without current index
+            c_min = full_min - mins[i]
+
+            # maximum without current index
+            c_max = full_max - maxs[i]
+
+            p_max = -c_min
+            if p_max < maxs[i]
+                maxs[i] = p_max
+            end
+
+            p_min = -c_max
+            if p_min > mins[i]
+                mins[i] = p_min
             end
         end
-        # same if a better minimum value could be achieved
-        if mins[i] > pre_mins[i]
-            threshold = get_safe_lower_threshold(com, mins[i], fct.terms[i].coefficient)
-            if fct.terms[i].coefficient > 0
-                still_feasible = remove_below!(com, search_space[idx], threshold)
-            else
-                still_feasible = remove_above!(com, search_space[idx], threshold)
+
+        # update all
+        for (i, idx) in enumerate(indices)
+            # if the maximum of coefficient * variable got reduced
+            # get a safe threshold because of floating point errors
+            if maxs[i] < pre_maxs[i]
+                threshold = get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
+                new_min = pre_mins[i]
+                new_max = pre_maxs[i]
+                if fct.terms[i].coefficient > 0
+                    still_feasible = remove_above!(com, search_space[idx], threshold)
+                    full_max -= (search_space[idx].max * fct.terms[i].coefficient - pre_maxs[i])
+                    full_min += (search_space[idx].min * fct.terms[i].coefficient - pre_mins[i])
+                    new_min = search_space[idx].min * fct.terms[i].coefficient
+                    new_max = search_space[idx].max * fct.terms[i].coefficient
+                else
+                    still_feasible = remove_below!(com, search_space[idx], threshold)
+                    full_max -= (search_space[idx].min * fct.terms[i].coefficient - pre_maxs[i])
+                    full_min += (search_space[idx].max * fct.terms[i].coefficient - pre_mins[i])
+                    new_min = search_space[idx].max * fct.terms[i].coefficient
+                    new_max = search_space[idx].min * fct.terms[i].coefficient
+                end
+                if new_min != pre_mins[i]
+                    changed = true
+                    pre_mins[i] = new_min
+                end
+                if new_max != pre_maxs[i]
+                    changed = true
+                    pre_maxs[i] = new_max
+                end
+                mins[i] = pre_mins[i]
+                maxs[i] = pre_maxs[i]
+                if !still_feasible
+                    return false
+                end
             end
-            if !still_feasible
-                return false
+            # same if a better minimum value could be achieved
+            if mins[i] > pre_mins[i]
+                threshold = get_safe_lower_threshold(com, mins[i], fct.terms[i].coefficient)
+                new_min = pre_mins[i]
+                new_max = pre_maxs[i]
+                if fct.terms[i].coefficient > 0
+                    still_feasible = remove_below!(com, search_space[idx], threshold)
+                    full_max -= (search_space[idx].max * fct.terms[i].coefficient - pre_maxs[i])
+                    full_min += (search_space[idx].min * fct.terms[i].coefficient - pre_mins[i])
+                    new_min = search_space[idx].min * fct.terms[i].coefficient
+                    new_max = search_space[idx].max * fct.terms[i].coefficient
+                else
+                    still_feasible = remove_above!(com, search_space[idx], threshold)
+                    full_max -= (search_space[idx].min * fct.terms[i].coefficient - pre_maxs[i])
+                    full_min += (search_space[idx].max * fct.terms[i].coefficient - pre_mins[i])
+                    new_min = search_space[idx].max * fct.terms[i].coefficient
+                    new_max = search_space[idx].min * fct.terms[i].coefficient
+                end
+                if new_min != pre_mins[i]
+                    changed = true
+                    pre_mins[i] = new_min
+                end
+                if new_max != pre_maxs[i]
+                    changed = true
+                    pre_maxs[i] = new_max
+                end
+                mins[i] = pre_mins[i]
+                maxs[i] = pre_maxs[i]
+                if !still_feasible
+                    return false
+                end
             end
         end
     end
@@ -260,6 +304,8 @@ function still_feasible(
     rhs = set.value - fct.constant
     csum = 0
     num_not_fixed = 0
+    not_fixed_idx = 0
+    not_fixed_i = 0
     max_extra = 0
     min_extra = 0
     for (i, idx) in enumerate(constraint.std.indices)
@@ -271,6 +317,8 @@ function still_feasible(
             csum += CS.value(search_space[idx]) * fct.terms[i].coefficient
         else
             num_not_fixed += 1
+            not_fixed_idx = idx
+            not_fixed_i = i
             if fct.terms[i].coefficient >= 0
                 max_extra += search_space[idx].max * fct.terms[i].coefficient
                 min_extra += search_space[idx].min * fct.terms[i].coefficient
@@ -283,6 +331,13 @@ function still_feasible(
     if num_not_fixed == 0 &&
        !isapprox(csum, rhs; atol = com.options.atol, rtol = com.options.rtol)
         return false
+    end
+    if num_not_fixed == 1 
+        if isapprox_divisible(com, rhs-csum, fct.terms[not_fixed_i].coefficient)
+            return has(search_space[not_fixed_idx], get_approx_discrete((rhs-csum)/fct.terms[not_fixed_i].coefficient))
+        else
+            return false
+        end
     end
 
     if csum + min_extra > rhs + com.options.atol
