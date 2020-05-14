@@ -22,8 +22,8 @@ include(joinpath(dir, "benchmark/eternity/benchmark.jl"))
 SUITE["eternity"] = BenchmarkGroup(["alldifferent", "table", "equal"])
 # compiling run 
 solve_eternity("eternity_6x5"; height=6, width=5)
-SUITE["eternity"]["6x5"] = @benchmarkable solve_eternity("eternity_6x5"; height=6, width=5) seconds=60
-SUITE["eternity"]["5x5_all"] = @benchmarkable solve_eternity("eternity_5x5"; all_solutions=true) seconds=60
+SUITE["eternity"]["6x5"] = @benchmarkable solve_eternity("eternity_6x5"; height=6, width=5) seconds=30
+SUITE["eternity"]["5x5_all"] = @benchmarkable solve_eternity("eternity_5x5"; all_solutions=true) seconds=30
 
 include(joinpath(dir, "benchmark/lp/benchmark.jl"))
 
@@ -37,8 +37,10 @@ include(joinpath(dir, "benchmark/killer_sudoku/benchmark.jl"))
 SUITE["killer_sudoku"] = BenchmarkGroup(["alldifferent", "equal"])
 # compiling run
 solve_killer_sudoku("niallsudoku_5500")
-SUITE["killer_sudoku"]["niall_5500"] = @benchmarkable solve_killer_sudoku("niallsudoku_5500") seconds=10
-SUITE["killer_sudoku"]["niall_5501"] = @benchmarkable solve_killer_sudoku("niallsudoku_5501") seconds=10
+SUITE["killer_sudoku"]["niall_5500"] = @benchmarkable solve_killer_sudoku("niallsudoku_5500") seconds=5
+SUITE["killer_sudoku"]["niall_5501"] = @benchmarkable solve_killer_sudoku("niallsudoku_5501") seconds=5
+SUITE["killer_sudoku"]["niall_5500_special"] = @benchmarkable solve_killer_sudoku("niallsudoku_5500"; special=true) seconds=15
+SUITE["killer_sudoku"]["niall_5501_special"] = @benchmarkable solve_killer_sudoku("niallsudoku_5501"; special=true) seconds=15
 
 include(joinpath(dir, "benchmark/graph_color/benchmark.jl"))
 

@@ -11,7 +11,7 @@ function parseKillerJSON(json_sums)
     return sums
 end
 
-function solve_killer_sudoku(filename)
+function solve_killer_sudoku(filename; special=false)
     json_file = joinpath(dir, "benchmark/killer_sudoku/data/$filename")
     sums = parseKillerJSON(JSON.parsefile(json_file))
 
@@ -29,7 +29,9 @@ function solve_killer_sudoku(filename)
             0.0,
         )
         MOI.add_constraint(m, saf, MOI.EqualTo(convert(Float64, s.result)))
-        MOI.add_constraint(m, [x[ind[1]][ind[2]][1] for ind in s.indices], CS.AllDifferentSetInternal(length(s.indices)))
+        if !special
+            MOI.add_constraint(m, [x[ind[1]][ind[2]][1] for ind in s.indices], CS.AllDifferentSetInternal(length(s.indices)))
+        end
     end
 
     # sudoku constraints
