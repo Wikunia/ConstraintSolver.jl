@@ -36,6 +36,33 @@ function Base.:(==)(x::LinearCombination, y::LinearCombination)
 end
 
 """
+    get_new_extrema_and_sum(search_space, idx, i, terms, full_min, full_max, pre_mins, pre_maxs)
+
+Get the updated full_min, full_max as well as updated pre_mins[i] and pre_maxs[i] after values got removed from search_space[idx]
+Return full_min, full_max, pre_mins[i], pre_maxs[i]
+"""
+function get_new_extrema_and_sum(search_space, idx, i, terms, full_min, full_max, pre_mins, pre_maxs)
+    new_min = pre_mins[i]
+    new_max = pre_maxs[i]
+    if terms[i].coefficient > 0
+        coeff_min = search_space[idx].min * terms[i].coefficient
+        coeff_max = search_space[idx].max * terms[i].coefficient
+        full_max -= (coeff_max - pre_maxs[i])
+        full_min += (coeff_min - pre_mins[i])
+        new_min = coeff_min
+        new_max = coeff_max
+    else
+        coeff_min = search_space[idx].max * terms[i].coefficient
+        coeff_max = search_space[idx].min * terms[i].coefficient
+        full_max -= (coeff_max - pre_maxs[i])
+        full_min += (coeff_min - pre_mins[i])
+        new_min = coeff_min
+        new_max = coeff_max
+    end
+    return full_min, full_max, new_min, new_max
+end
+
+"""
     prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}; logs = true) where T <: Real
 
 Reduce the number of possibilities given the equality `LinearConstraint` .
@@ -114,21 +141,12 @@ function prune_constraint!(
             # get a safe threshold because of floating point errors
             if maxs[i] < pre_maxs[i]
                 threshold = get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
-                new_min = pre_mins[i]
-                new_max = pre_maxs[i]
                 if fct.terms[i].coefficient > 0
                     still_feasible = remove_above!(com, search_space[idx], threshold)
-                    full_max -= (search_space[idx].max * fct.terms[i].coefficient - pre_maxs[i])
-                    full_min += (search_space[idx].min * fct.terms[i].coefficient - pre_mins[i])
-                    new_min = search_space[idx].min * fct.terms[i].coefficient
-                    new_max = search_space[idx].max * fct.terms[i].coefficient
                 else
                     still_feasible = remove_below!(com, search_space[idx], threshold)
-                    full_max -= (search_space[idx].min * fct.terms[i].coefficient - pre_maxs[i])
-                    full_min += (search_space[idx].max * fct.terms[i].coefficient - pre_mins[i])
-                    new_min = search_space[idx].max * fct.terms[i].coefficient
-                    new_max = search_space[idx].min * fct.terms[i].coefficient
                 end
+                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, idx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
                 if new_min != pre_mins[i]
                     changed = true
                     pre_mins[i] = new_min
@@ -150,17 +168,10 @@ function prune_constraint!(
                 new_max = pre_maxs[i]
                 if fct.terms[i].coefficient > 0
                     still_feasible = remove_below!(com, search_space[idx], threshold)
-                    full_max -= (search_space[idx].max * fct.terms[i].coefficient - pre_maxs[i])
-                    full_min += (search_space[idx].min * fct.terms[i].coefficient - pre_mins[i])
-                    new_min = search_space[idx].min * fct.terms[i].coefficient
-                    new_max = search_space[idx].max * fct.terms[i].coefficient
                 else
                     still_feasible = remove_above!(com, search_space[idx], threshold)
-                    full_max -= (search_space[idx].min * fct.terms[i].coefficient - pre_maxs[i])
-                    full_min += (search_space[idx].max * fct.terms[i].coefficient - pre_mins[i])
-                    new_min = search_space[idx].max * fct.terms[i].coefficient
-                    new_max = search_space[idx].min * fct.terms[i].coefficient
                 end
+                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, idx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
                 if new_min != pre_mins[i]
                     changed = true
                     pre_mins[i] = new_min
