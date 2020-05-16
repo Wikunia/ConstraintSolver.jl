@@ -1,6 +1,10 @@
 @testset "eq_sum" begin
-    com = UnitTestModel(["equalto"])
-    constraint = get_constraint_by_type(com, CS.LinearConstraint)[1]
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, y[1:3], CS.Integers([-3,1,2,3]))
+    @constraint(m, sum(y)+1 == 5)
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+    constraint = get_constraints_by_type(com, CS.LinearConstraint)[1]
 
     # doesn't check the length
     # 1+2+1 + constant (1) == 5

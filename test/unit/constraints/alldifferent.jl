@@ -1,6 +1,11 @@
 @testset "alldifferent" begin
-    com = UnitTestModel(["alldifferent"])
-    constraint = get_constraint_by_type(com, CS.AllDifferentConstraint)[1]
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, -5 <= x[1:10] <= 5, Int)
+    @constraint(m, x in CS.AllDifferentSet())
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+    
+    constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
 
     # doesn't check the length
     @test CS.is_solved_constraint(constraint, constraint.std.fct, constraint.std.set, [1,2,3])
