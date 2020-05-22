@@ -113,10 +113,11 @@ function prune_constraint!(
         # if the maximum of coefficient * variable got reduced
         # get a safe threshold because of floating point errors
         if maxs[i] < pre_maxs[i]
-            threshold = get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
             if fct.terms[i].coefficient > 0
+                threshold = get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
                 still_feasible = remove_above!(com, search_space[idx], threshold)
             else
+                threshold = get_safe_lower_threshold(com, maxs[i], fct.terms[i].coefficient)
                 still_feasible = remove_below!(com, search_space[idx], threshold)
             end
             if !still_feasible

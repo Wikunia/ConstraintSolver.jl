@@ -12,4 +12,5 @@ end
     include("constraints/alldifferent.jl")
     include("constraints/eq_sum.jl")
     include("constraints/equal.jl")
+    include("constraints/less_than.jl")
 end

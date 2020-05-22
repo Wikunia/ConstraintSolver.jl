@@ -1,8 +1,15 @@
 # ConstrainSolver.jl - Changelog
 
+## Unreleased
+- Better feasibility and pruning in `==`
+- **Bugfixes:**
+  - Correct set of change ptr in `EqualSet` for faster/correct pruning
+  - Call to `isapprox_discrete` in `eq_sum`
+  - Fixed threshold rounding
+
 ## v0.1.6 (11th of May 2020)
-  - Reduction of memory allocations in `TableConstraint`
-  - Pruning in `EqualSet`
+- Reduction of memory allocations in `TableConstraint`
+- Pruning in `EqualSet`
 
 ## v0.1.5 (6th of May 2020)
 - **Bugfixes:**

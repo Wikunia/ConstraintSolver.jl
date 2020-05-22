@@ -140,10 +140,11 @@ function prune_constraint!(
             # if the maximum of coefficient * variable got reduced
             # get a safe threshold because of floating point errors
             if maxs[i] < pre_maxs[i]
-                threshold = get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
                 if fct.terms[i].coefficient > 0
+                    threshold = get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
                     still_feasible = remove_above!(com, search_space[idx], threshold)
                 else
+                    threshold = get_safe_lower_threshold(com, maxs[i], fct.terms[i].coefficient)
                     still_feasible = remove_below!(com, search_space[idx], threshold)
                 end
                 full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, idx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
@@ -163,12 +164,13 @@ function prune_constraint!(
             end
             # same if a better minimum value could be achieved
             if mins[i] > pre_mins[i]
-                threshold = get_safe_lower_threshold(com, mins[i], fct.terms[i].coefficient)
                 new_min = pre_mins[i]
                 new_max = pre_maxs[i]
                 if fct.terms[i].coefficient > 0
+                    threshold = get_safe_lower_threshold(com, mins[i], fct.terms[i].coefficient)
                     still_feasible = remove_below!(com, search_space[idx], threshold)
                 else
+                    threshold = get_safe_upper_threshold(com, mins[i], fct.terms[i].coefficient)
                     still_feasible = remove_above!(com, search_space[idx], threshold)
                 end
                 full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, idx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
@@ -215,7 +217,7 @@ function prune_constraint!(
 
     # only a single one left
     if n_unfixed == 1
-        if !isapprox_discrete(com, unfixed_rhs % fct.terms[unfixed_local_ind_1].coefficient)
+        if !isapprox_discrete(com, unfixed_rhs / fct.terms[unfixed_local_ind_1].coefficient)
             com.bt_infeasible[unfixed_ind_1] += 1
             return false
         else

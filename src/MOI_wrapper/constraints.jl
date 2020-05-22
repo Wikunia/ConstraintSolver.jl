@@ -19,7 +19,7 @@ MOI.supports_constraint(
     ::Type{SAF{T}},
     ::Type{MOI.EqualTo{T}},
 ) where {T<:Real} = true
-# currently only a <= b is supported
+
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{SAF{T}},
