@@ -1,6 +1,6 @@
 # ConstrainSolver.jl - Changelog
 
-## Unreleased
+## v0.1.7 (22th of May 2020)
 - Better feasibility and pruning in `==`
 - **Bugfixes:**
   - Correct set of change ptr in `EqualSet` for faster/correct pruning
