@@ -32,6 +32,8 @@
     @constraint(m, x in CS.EqualSet())
     optimize!(m)
     com = JuMP.backend(m).optimizer.model.inner
+    constraint = com.constraints[1]
+    constr_indices = constraint.std.indices
 
     # feasible and no changes
     @test CS.prune_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
@@ -50,6 +52,9 @@
     @constraint(m, x in CS.EqualSet())
     optimize!(m)
     com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = com.constraints[1]
+    constr_indices = constraint.std.indices
 
     # Should be synced to the other variables
     @test CS.remove_below!(com, com.search_space[constr_indices[3]], 3)

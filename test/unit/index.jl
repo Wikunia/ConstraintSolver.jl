@@ -13,4 +13,7 @@ end
     include("constraints/eq_sum.jl")
     include("constraints/equal.jl")
     include("constraints/less_than.jl")
+    include("constraints/not_equal.jl")
+    include("constraints/svc.jl")
+    include("constraints/table.jl")
 end

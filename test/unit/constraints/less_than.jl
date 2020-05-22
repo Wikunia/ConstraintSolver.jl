@@ -35,6 +35,8 @@
     @constraint(m, 1.2x+π*y-2z <= 4.71)
     optimize!(m)
     com = JuMP.backend(m).optimizer.model.inner
+    constraint = com.constraints[1]
+    constr_indices = constraint.std.indices
 
     @test CS.prune_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
     @test sort(CS.values(com.search_space[1])) == -1:5
