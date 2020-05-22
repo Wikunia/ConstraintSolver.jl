@@ -17,7 +17,7 @@
                     break
                 end
             end
-            if !found
+            if !found && option != :no_prune
                 found_all = false
                 @error "Option $option is not documented"
             end

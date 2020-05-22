@@ -479,13 +479,13 @@ function restore_pruning_constraint!(
     empty!(constraint.changed_vars)
 end
 
-function is_solved_constraint(com::CoM,
+function is_solved_constraint(
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
     set::TableSetInternal,
+    values::Vector{Int}
 )
 
-    values = CS.value.(com.search_space[constraint.std.indices])
     table = set.table
     return findfirst(ri->table[ri,:] == values, 1:size(table)[1]) !== nothing
 end

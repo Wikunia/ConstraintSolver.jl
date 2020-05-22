@@ -122,14 +122,14 @@ function still_feasible(
     return true
 end
 
-function is_solved_constraint(com::CoM,
+function is_solved_constraint(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::NotEqualTo{T},
+    values::Vector{Int}
 ) where {T<:Real}
 
     indices = [t.variable_index.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
-    values = CS.value.(com.search_space[indices])
     return get_approx_discrete(sum(values .* coeffs)+fct.constant) != set.value
 end

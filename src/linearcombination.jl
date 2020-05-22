@@ -68,22 +68,21 @@ function simplify(x::LinearCombination)
     set_indices = Set(x.indices)
     # if unique
     if length(set_indices) == length(x.indices)
-        if 0 in set_indices
-            indices = Int[]
-            coeffs = Int[]
-            lhs = 0
-            for i = 1:length(x.indices)
-                if x.indices[i] == 0
-                    lhs = x.coeffs[i]
-                else
+        indices = Int[]
+        coeffs = Int[]
+        lhs = 0
+        for i = 1:length(x.indices)
+            if x.indices[i] == 0
+                lhs = x.coeffs[i]
+            else
+                # if a coefficient is 0 we just remove that term
+                if x.coeffs[i] != 0
                     push!(indices, x.indices[i])
                     push!(coeffs, x.coeffs[i])
                 end
             end
-            return indices, coeffs, lhs
-        else
-            return x.indices, x.coeffs, 0
         end
+        return indices, coeffs, lhs
     end
 
     perm = sortperm(x.indices)

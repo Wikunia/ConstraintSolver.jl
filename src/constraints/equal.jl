@@ -75,6 +75,7 @@ function apply_changes!(com::CS.CoM, v::Variable, changes::Vector{Tuple{Symbol, 
             !rm!(com, v, change[2]) && return false
         end
     end
+    return true
 end
 
 """
@@ -111,9 +112,9 @@ function prune_constraint!(
                 for j=1:length(indices)
                     i == j && continue
                     v2 = search_space[indices[j]] 
-                    apply_changes!(com, v2, v1_changes, constraint.first_ptrs[i])
-                    constraint.first_ptrs[i] = length(v1_changes)+1
+                    !apply_changes!(com, v2, v1_changes, constraint.first_ptrs[i]) && return false
                 end
+                constraint.first_ptrs[i] = length(v1_changes)+1
             end
             return true
         end
@@ -137,8 +138,8 @@ function prune_constraint!(
             if isempty(changes_v1) && isempty(changes_v2)
                 return true
             end
-            apply_changes!(com, v2, changes_v1, constraint.first_ptrs[1])
-            apply_changes!(com, v1, changes_v2, constraint.first_ptrs[2])
+            !apply_changes!(com, v2, changes_v1, constraint.first_ptrs[1]) && return false
+            !apply_changes!(com, v1, changes_v2, constraint.first_ptrs[2]) && return false
             constraint.first_ptrs[1] = length(changes_v1)+1
             constraint.first_ptrs[2] = length(changes_v2)+1
             return true
@@ -204,11 +205,11 @@ function still_feasible(
     return true
 end
 
-function is_solved_constraint(com::CoM,
+function is_solved_constraint(
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
     set::EqualSetInternal,
+    values::Vector{Int}
 ) 
-    values = CS.value.(com.search_space[constraint.std.indices])
     return all(v->v == values[1], values)
 end

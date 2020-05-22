@@ -55,12 +55,10 @@ function still_feasible(
 end
 
 function is_solved_constraint(
-    com::CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
     set::MOI.LessThan{T},
+    values::Vector{Int}
 ) where {T<:Real}
-
-    variables = com.search_space
-    return CS.value(variables[constraint.lhs]) <= CS.value(variables[constraint.rhs])
+    return values[1] <= values[2]
 end
