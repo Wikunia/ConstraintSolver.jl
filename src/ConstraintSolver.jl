@@ -52,8 +52,8 @@ include("constraints/less_than.jl")
 include("constraints/svc.jl")
 include("constraints/equal.jl")
 include("constraints/not_equal.jl")
-
 include("constraints/table.jl")
+include("constraints/indicator.jl")
 
 """
     add_var!(com::CS.CoM, from::Int, to::Int; fix=nothing)

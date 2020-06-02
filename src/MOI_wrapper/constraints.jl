@@ -39,6 +39,21 @@ MOI.supports_constraint(
     ::Type{TableSetInternal},
 ) = true
 
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{SAF{T}},
+    ::Type{NotEqualTo{T}},
+) where {T<:Real} = true
+
+function MOI.supports_constraint(
+    ::Optimizer,
+    func::Type{VAF{T}},
+    set::Type{IS},
+) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:MOI.IndicatorSet{A, ASS}}
+    @assert A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
+    true
+end
+
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
     for term in aff.terms
         check_inbounds(model, term.variable_index)
@@ -267,12 +282,6 @@ function MOI.add_constraint(
     return MOI.ConstraintIndex{MOI.VectorOfVariables,TableSetInternal}(length(com.constraints))
 end
 
-MOI.supports_constraint(
-    ::Optimizer,
-    ::Type{SAF{T}},
-    ::Type{NotEqualTo{T}},
-) where {T<:Real} = true
-
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},
@@ -308,6 +317,51 @@ function MOI.add_constraint(
     end
 
     return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(length(com.constraints))
+end
+
+function MOI.add_constraint(
+    model::Optimizer,
+    func::VAF{T},
+    set::IS,
+) where {A, T<:Real,ASS<:MOI.AbstractScalarSet, IS<:MOI.IndicatorSet{A, ASS}}
+    com = model.inner
+    com.info.n_constraint_types.indicator += 1
+
+    # TODO allow all other constraints / first of all linear constraints
+
+    indices = [v.scalar_term.variable_index.value for v in func.terms]
+
+    # for normal linear constraints
+    inner_indices = [v.scalar_term.variable_index.value for v in func.terms if v.output_index == 2]
+    inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
+    inner_constant = func.constants[2]
+    inner_set = set.set
+    if ASS isa Type{MOI.GreaterThan{T}}
+        inner_terms = [MOI.ScalarAffineTerm(-v.scalar_term.coefficient, v.scalar_term.variable_index) for v in func.terms if v.output_index == 2]
+        inner_constant = -inner_constant
+        inner_set = MOI.LessThan{T}(-set.set.lower)
+    end
+    inner_func = MOI.ScalarAffineFunction{T}(inner_terms, inner_constant)
+
+    internals = ConstraintInternals(
+        length(com.constraints) + 1,
+        func,
+        MOI.IndicatorSet{A}(inner_set),
+        indices
+    )
+
+    lc = LinearConstraint(inner_func, inner_set, inner_indices)
+    # should not be used...
+    lc.std.idx = 0
+
+    con = IndicatorConstraint(internals, A, lc)
+
+    push!(com.constraints, con)
+    for (i, ind) in enumerate(con.std.indices)
+        push!(com.subscription[ind], con.std.idx)
+    end
+    
+    return MOI.ConstraintIndex{VAF{T},MOI.IndicatorSet{A, ASS}}(length(com.constraints))
 end
 
 function set_pvals!(model::CS.Optimizer)

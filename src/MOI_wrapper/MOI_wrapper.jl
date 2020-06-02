@@ -1,5 +1,6 @@
 const SVF = MOI.SingleVariable
 const SAF = MOI.ScalarAffineFunction
+const VAF = MOI.VectorAffineFunction
 
 # indices
 const VI = MOI.VariableIndex

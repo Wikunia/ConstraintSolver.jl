@@ -29,6 +29,7 @@ mutable struct NumberConstraintTypes
     notequal::Int
     alldifferent::Int
     table::Int
+    indicator::Int
 end
 
 mutable struct CSInfo
@@ -224,6 +225,12 @@ mutable struct TableConstraint <: Constraint
     unfixed_vars::Vector{Int}
     sum_min::Vector{Int}
     sum_max::Vector{Int}
+end
+
+mutable struct IndicatorConstraint <: Constraint
+    std::ConstraintInternals
+    activate_on::MOI.ActivationCondition
+    inner_constraint::Constraint
 end
 
 #====================================================================================
