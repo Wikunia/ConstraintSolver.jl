@@ -43,12 +43,14 @@ It's a bit more but still not as fully featured as I would like it to be.
   - [X] `==`
   - [X] `<=`
   - [X] `>=`
+  - [X] `!=`
 - [X] All different
   - `@constraint(m, [x,y,z] in CS.AllDifferentSet())`
-- [X] Support for `!=`
-  - [X] Supports `a != b` with `a` and `b` being single variables
-  - [X] Support for linear unequal constraints [#66](https://github.com/Wikunia/ConstraintSolver.jl/issues/66)
 - [X] `TableSet` constraint [#130](https://github.com/Wikunia/ConstraintSolver.jl/pull/130)
+- [X] Indicator constraints [#167](https://github.com/Wikunia/ConstraintSolver.jl/pull/167)
+  - i.e `@constraint(m, b => {x + y >= 12})`
+  - [X] for affine inner constraints
+  - [ ] for all types of inner constraints
 - [ ] Scheduling constraints
 - [ ] Cycle constraints
 
