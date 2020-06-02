@@ -84,7 +84,7 @@ function is_solved_constraint(
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:MOI.IndicatorSet{A, ASS}}
     if values[1] == Int(constraint.activate_on)
         inner_constraint = constraint.inner_constraint
-        return is_solved_constraint(inner_constraint, inner_constraint.std.fct, inner_constraint.std.indices, values[2:end])
+        return is_solved_constraint(inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, values[2:end])
     end
     return true
 end

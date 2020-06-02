@@ -12,6 +12,21 @@
     @test JuMP.value(b) ≈ 1.0
     @test JuMP.value(x) ≈ 4
     @test JuMP.value(y) ≈ 3
+    com = JuMP.backend(m).optimizer.model.inner
+    @test is_solved(com)
+end
+
+@testset "Basic == infeasible" begin
+    m = Model(CSJuMPTestOptimizer())
+    @variable(m, x, CS.Integers([1,4]))
+    @variable(m, y, CS.Integers([3,4]))
+    @variable(m, b, Bin)
+    @constraint(m, b == 1)
+    @constraint(m, b => {x + y == 6})
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.INFEASIBLE
+    com = JuMP.backend(m).optimizer.model.inner
+    @test !is_solved(com)
 end
 
 @testset "Basic !=" begin
@@ -27,6 +42,8 @@ end
     @test JuMP.value(b) ≈ 0.0
     @test JuMP.value(x) ≈ 4
     @test JuMP.value(y) ≈ 4
+    com = JuMP.backend(m).optimizer.model.inner
+    @test is_solved(com)
 end
 
 @testset "Basic >=" begin
@@ -56,6 +73,8 @@ end
     @test JuMP.value(b) ≈ 1.0
     @test JuMP.value(x) ≈ 2
     @test JuMP.value(y) ≈ 4
+    com = JuMP.backend(m).optimizer.model.inner
+    @test is_solved(com)
 end
 
 @testset "Basic <=" begin
@@ -85,5 +104,7 @@ end
     @test JuMP.value(b) ≈ 1.0
     @test JuMP.value(x) ≈ 1
     @test JuMP.value(y) ≈ 3
+    com = JuMP.backend(m).optimizer.model.inner
+    @test is_solved(com)
 end
 end
