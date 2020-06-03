@@ -16,4 +16,5 @@ end
     include("constraints/not_equal.jl")
     include("constraints/svc.jl")
     include("constraints/table.jl")
+    include("constraints/indicator.jl")
 end
