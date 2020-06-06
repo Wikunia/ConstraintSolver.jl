@@ -26,7 +26,7 @@ function solve_all(filenames; benchmark = false, single_times = true)
     for (i, filename) in enumerate(filenames)
         sums = parseJSON(JSON.parsefile("data/$(filename)"))
 
-        plot_killer(zeros(Int, (9,9)), sums, filename; fill=false)
+        # plot_killer(zeros(Int, (9,9)), sums, filename; fill=false)
         # continue
 
         m = CS.Optimizer(logging=[], keep_logs=true, time_limit=20)
@@ -69,7 +69,7 @@ function solve_all(filenames; benchmark = false, single_times = true)
             for r = 1:9
                 var_x[r,:] = [x[r][c][1] for c = 1:9]
             end
-            CS.save_logs(m.inner, "/srv/http/ConstraintVisual/data/json/killer_$filename.json", :x => var_x)
+            # CS.save_logs(m.inner, "/srv/http/ConstraintVisual/data/json/killer_$filename.json", :x => var_x)
             if status == MOI.OPTIMAL
                 solution = zeros(Int, 9, 9)
                 for r = 1:9

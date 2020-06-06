@@ -55,6 +55,7 @@ def solve(pidx, filename):
 
 if __name__ == "__main__":
   i = 0
-  for filename in ["niallsudoku_5500", "niallsudoku_5501", "niallsudoku_5502", "niallsudoku_5503"]:
+  for filename in ["niallsudoku_5500", "niallsudoku_5501", "niallsudoku_5502", "niallsudoku_5503", "niallsudoku_6417",
+                  "niallsudoku_6249"]:
 	  solve(i, filename)
 	  i += 1
