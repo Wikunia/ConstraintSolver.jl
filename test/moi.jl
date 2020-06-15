@@ -58,6 +58,11 @@
             typeof(f),
             typeof(indicator_set)
         )
+        @test MOI.supports_constraint(
+            optimizer,
+            MOI.VectorOfVariables,
+            CS.IndicatorSet{MOI.ACTIVATE_ON_ONE}
+        )
 
 
         # TimeLimit
