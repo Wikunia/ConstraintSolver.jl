@@ -29,6 +29,7 @@ mutable struct NumberConstraintTypes
     notequal::Int
     alldifferent::Int
     table::Int
+    indicator::Int
 end
 
 mutable struct CSInfo
@@ -80,6 +81,8 @@ end
 #====================================================================================
 ====================== TYPES FOR CONSTRAINTS ========================================
 ====================================================================================#
+
+abstract type Constraint end
 
 """
     BoundRhsVariable 
@@ -144,6 +147,13 @@ mutable struct TableBacktrackInfo
     indices  :: Vector{Int}
 end
 
+struct IndicatorSet{A} <: MOI.AbstractVectorSet
+    ind_var :: JuMP.VariableRef
+    func    :: MOI.VectorOfVariables
+    set     :: MOI.AbstractVectorSet
+    dimension::Int
+end
+
 #====================================================================================
 ====================================================================================#
 
@@ -170,8 +180,6 @@ end
 #====================================================================================
 ====================== CONSTRAINTS ==================================================
 ====================================================================================#
-
-abstract type Constraint end
 
 mutable struct BasicConstraint <: Constraint
     std::ConstraintInternals
@@ -224,6 +232,12 @@ mutable struct TableConstraint <: Constraint
     unfixed_vars::Vector{Int}
     sum_min::Vector{Int}
     sum_max::Vector{Int}
+end
+
+mutable struct IndicatorConstraint <: Constraint
+    std::ConstraintInternals
+    activate_on::MOI.ActivationCondition
+    inner_constraint::Constraint
 end
 
 #====================================================================================

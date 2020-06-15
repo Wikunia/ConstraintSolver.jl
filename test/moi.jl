@@ -33,6 +33,38 @@
             CS.NotEqualTo{Float64},
         )
 
+        f = MOI.VectorAffineFunction(
+            [MOI.VectorAffineTerm(1, MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(1))),
+            MOI.VectorAffineTerm(2, MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(2))),
+            MOI.VectorAffineTerm(2, MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(3))),
+            ],
+            [0.0, 0.0],
+        )
+        indicator_set = MOI.IndicatorSet{MOI.ACTIVATE_ON_ONE}(MOI.LessThan(9.0))
+        @test MOI.supports_constraint(
+            optimizer,
+            typeof(f),
+            typeof(indicator_set)
+        )
+        indicator_set = MOI.IndicatorSet{MOI.ACTIVATE_ON_ONE}(MOI.GreaterThan(9.0))
+        @test MOI.supports_constraint(
+            optimizer,
+            typeof(f),
+            typeof(indicator_set)
+        )
+        indicator_set = MOI.IndicatorSet{MOI.ACTIVATE_ON_ONE}(MOI.EqualTo(9.0))
+        @test MOI.supports_constraint(
+            optimizer,
+            typeof(f),
+            typeof(indicator_set)
+        )
+        @test MOI.supports_constraint(
+            optimizer,
+            MOI.VectorOfVariables,
+            CS.IndicatorSet{MOI.ACTIVATE_ON_ONE}
+        )
+
+
         # TimeLimit
         @test MOI.supports(optimizer, MOI.TimeLimitSec())
 
