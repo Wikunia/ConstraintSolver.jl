@@ -122,4 +122,40 @@ end
     com = JuMP.backend(m).optimizer.model.inner
     @test is_solved(com)
 end
+
+@testset "Basic AllDifferent" begin
+    m = Model(CSJuMPTestOptimizer())
+    @variable(m, 0 <= x <= 1, Int)
+    @variable(m, 0 <= y <= 1, Int)
+    @variable(m, a, Bin)
+    @constraint(m, x +y <= 1)
+    @constraint(m, [a, x] in CS.AllDifferentSet())
+    @constraint(m, a => {[a,x,y] in CS.AllDifferentSet()})
+    @objective(m, Max, a)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.objective_value(m) ≈ 0.0
+    @test JuMP.value(a) ≈ 0.0
+    com = JuMP.backend(m).optimizer.model.inner
+    @test is_solved(com)
+end
+
+@testset "Basic AllDifferent achievable" begin
+    m = Model(CSJuMPTestOptimizer())
+    @variable(m, 0 <= x <= 1, Int)
+    @variable(m, 0 <= y <= 1, Int)
+    @variable(m, a, Bin)
+    @constraint(m, x +y <= 1)
+    @constraint(m, [a, x] in CS.AllDifferentSet())
+    @constraint(m, a => {[x,y] in CS.AllDifferentSet()})
+    @objective(m, Max, a)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.objective_value(m) ≈ 1.0
+    @test JuMP.value(a) ≈ 1.0
+    @test JuMP.value(y) ≈ 1.0
+    @test JuMP.value(x) ≈ 0.0
+    com = JuMP.backend(m).optimizer.model.inner
+    @test is_solved(com)
+end
 end

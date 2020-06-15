@@ -82,6 +82,8 @@ end
 ====================== TYPES FOR CONSTRAINTS ========================================
 ====================================================================================#
 
+abstract type Constraint end
+
 """
     BoundRhsVariable 
 idx - variable index in the lp Model
@@ -145,6 +147,13 @@ mutable struct TableBacktrackInfo
     indices  :: Vector{Int}
 end
 
+struct IndicatorSet{A} <: MOI.AbstractVectorSet
+    ind_var :: JuMP.VariableRef
+    func    :: MOI.VectorOfVariables
+    set     :: MOI.AbstractVectorSet
+    dimension::Int
+end
+
 #====================================================================================
 ====================================================================================#
 
@@ -171,8 +180,6 @@ end
 #====================================================================================
 ====================== CONSTRAINTS ==================================================
 ====================================================================================#
-
-abstract type Constraint end
 
 mutable struct BasicConstraint <: Constraint
     std::ConstraintInternals

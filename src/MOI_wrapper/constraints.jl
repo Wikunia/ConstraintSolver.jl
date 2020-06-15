@@ -3,6 +3,20 @@ JuMP constraints
 """
 sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
 
+"""
+    Support for indicator constraints with a set constraint as the right hand side
+"""
+function JuMP._build_indicator_constraint(
+    _error::Function, variable::JuMP.AbstractVariableRef,
+    constraint::JuMP.VectorConstraint, ::Type{MOI.IndicatorSet{A}}) where A
+
+    variable_indices = [v.index for v in constraint.func]
+    set = CS.IndicatorSet{A}(variable, MOI.VectorOfVariables(variable_indices), constraint.set, 0)
+    vov = VariableRef[variable]
+    append!(vov, constraint.func)
+    return JuMP.VectorConstraint(vov, set)
+end
+
 ### !=
 
 MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
@@ -50,9 +64,17 @@ function MOI.supports_constraint(
     func::Type{VAF{T}},
     set::Type{IS},
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:MOI.IndicatorSet{A, ASS}}
-    @assert A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
-    true
+    return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
+
+function MOI.supports_constraint(
+    ::Optimizer,
+    func::Type{MOI.VectorOfVariables},
+    set::Type{IS},
+) where {A, IS<:CS.IndicatorSet{A}}
+    return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
+end
+
 
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
     for term in aff.terms
@@ -327,8 +349,6 @@ function MOI.add_constraint(
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
-    # TODO allow all other constraints / first of all linear constraints
-
     indices = [v.scalar_term.variable_index.value for v in func.terms]
 
     # for normal linear constraints
@@ -362,6 +382,53 @@ function MOI.add_constraint(
     end
     
     return MOI.ConstraintIndex{VAF{T},MOI.IndicatorSet{A, ASS}}(length(com.constraints))
+end
+
+function MOI.add_constraint(
+    model::Optimizer,
+    vars::MOI.VectorOfVariables,
+    set::IS,
+) where {A, T<:Real,IS<:CS.IndicatorSet{A}}
+    com = model.inner
+    com.info.n_constraint_types.indicator += 1
+
+    internals = ConstraintInternals(
+        length(com.constraints) + 1,
+        vars,
+        set,
+        Int[v.value for v in vars.variables]
+    )
+
+    inner_constraint = nothing
+    if set.set isa CS.AllDifferentSetInternal
+        inner_internals = ConstraintInternals(
+            0,
+            MOI.VectorOfVariables(vars.variables[2:end]),
+            set.set,
+            Int[v.value for v in vars.variables[2:end]]
+        )
+    
+        inner_constraint = AllDifferentConstraint(
+            inner_internals,
+            Int[], # pval_mapping will be filled later
+            Int[], # vertex_mapping => later
+            Int[], # vertex_mapping_bw => later
+            Int[], # di_ei => later
+            Int[], # di_ej => later
+            MatchingInit(),
+            Int[]
+        )
+    end
+
+    
+    con = IndicatorConstraint(internals, A, inner_constraint)
+
+    push!(com.constraints, con)
+    for (i, ind) in enumerate(con.std.indices)
+        push!(com.subscription[ind], con.std.idx)
+    end
+    
+    return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.IndicatorSet{A}}(length(com.constraints))
 end
 
 function set_pvals!(model::CS.Optimizer)

@@ -50,7 +50,7 @@ It's a bit more but still not as fully featured as I would like it to be.
 - [X] Indicator constraints [#167](https://github.com/Wikunia/ConstraintSolver.jl/pull/167)
   - i.e `@constraint(m, b => {x + y >= 12})`
   - [X] for affine inner constraints
-  - [ ] for all types of inner constraints
+  - [X] for all types of inner constraints
 - [ ] Scheduling constraints
 - [ ] Cycle constraints
 
