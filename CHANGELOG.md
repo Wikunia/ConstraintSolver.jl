@@ -1,5 +1,9 @@
 # ConstrainSolver.jl - Changelog
 
+## v0.2.0 (17th of June 2020)
+- Bugfix for indicator constraints
+    - support for TableConstraint in Indicator
+
 ## v0.1.8 (15th of June 2020)
 - Support for indicator constraints
     - i.e. `@constraint(m, b => { x + y <= 10 })`

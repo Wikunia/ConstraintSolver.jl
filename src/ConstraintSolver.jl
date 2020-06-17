@@ -152,6 +152,10 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
         pvals = vcat(pvals, collect(interval.from:interval.to))
     end
     constraint.std.pvals = pvals
+    if constraint isa IndicatorConstraint
+        # TODO: This will always include 0/1 even if not in the inner constraint
+        constraint.inner_constraint.std.pvals = pvals
+    end
 end
 
 """

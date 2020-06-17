@@ -28,6 +28,19 @@ function all_different(variables::Vector{Variable})
     return constraint
 end
 
+function init_constraint_struct(::Type{AllDifferentSetInternal}, internals)
+    AllDifferentConstraint(
+        internals,
+        Int[], # pval_mapping will be filled later
+        Int[], # vertex_mapping => later
+        Int[], # vertex_mapping_bw => later
+        Int[], # di_ei => later
+        Int[], # di_ej => later
+        MatchingInit(),
+        Int[]
+    )
+end
+
 """
     init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal)
 
