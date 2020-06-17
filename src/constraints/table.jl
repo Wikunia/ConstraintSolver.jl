@@ -2,6 +2,21 @@ include("table/support.jl")
 include("table/residues.jl")
 include("table/RSparseBitSet.jl")
     
+function init_constraint_struct(::Type{TableSetInternal}, internals)
+    TableConstraint(
+        internals,
+        RSparseBitSet(),
+        TableSupport(), # will be filled in init_constraint!
+        Int[], # will be changes later as it needs the number of words
+        TableResidues(),
+        Vector{TableBacktrackInfo}(),
+        Int[], # changed_vars
+        Int[], # unfixed_vars
+        Int[], # sum_min
+        Int[]  # sum_max
+    )
+end
+
 """
     init_constraint!(com::CS.CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal)
 

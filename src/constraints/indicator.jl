@@ -1,4 +1,31 @@
 """
+    init_constraint!(
+        com::CS.CoM,
+        constraint::IndicatorConstraint,
+        fct::Union{MOI.VectorOfVariables, VAF{T}},
+        set::IS
+    ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
+
+Initialize the inner constraint if it needs to be initialized
+"""
+function init_constraint!(
+    com::CS.CoM,
+    constraint::IndicatorConstraint,
+    fct::Union{MOI.VectorOfVariables, VAF{T}},
+    set::IS
+) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
+    inner_constraint = constraint.inner_constraint
+    if hasmethod(	
+        init_constraint!,	
+        (CS.CoM, typeof(inner_constraint), typeof(inner_constraint.std.fct), typeof(inner_constraint.std.set)),	
+    )	
+        return init_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set)
+    end
+    # still feasible
+    return true
+end
+
+"""
     prune_constraint!(
         com::CS.CoM,
         constraint::IndicatorConstraint,

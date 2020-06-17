@@ -11,7 +11,7 @@ function JuMP._build_indicator_constraint(
     constraint::JuMP.VectorConstraint, ::Type{MOI.IndicatorSet{A}}) where A
 
     variable_indices = [v.index for v in constraint.func]
-    set = CS.IndicatorSet{A}(variable, MOI.VectorOfVariables(variable_indices), constraint.set, 0)
+    set = CS.IndicatorSet{A}(variable, MOI.VectorOfVariables(variable_indices), constraint.set, 1+length(variable_indices))
     vov = VariableRef[variable]
     append!(vov, constraint.func)
     return JuMP.VectorConstraint(vov, set)
@@ -248,16 +248,7 @@ function MOI.add_constraint(
         Int[v.value for v in vars.variables]
     )
 
-    constraint = AllDifferentConstraint(
-        internals,
-        Int[], # pval_mapping will be filled later
-        Int[], # vertex_mapping => later
-        Int[], # vertex_mapping_bw => later
-        Int[], # di_ei => later
-        Int[], # di_ej => later
-        MatchingInit(),
-        Int[]
-    )
+    constraint = init_constraint_struct(AllDifferentSetInternal, internals)
 
     push!(com.constraints, constraint)
     for (i, ind) in enumerate(constraint.std.indices)
@@ -282,18 +273,7 @@ function MOI.add_constraint(
         Int[v.value for v in vars.variables]
     )
 
-    constraint = TableConstraint(
-        internals,
-        RSparseBitSet(),
-        TableSupport(), # will be filled in init_constraint!
-        Int[], # will be changes later as it needs the number of words
-        TableResidues(),
-        Vector{TableBacktrackInfo}(),
-        Int[], # changed_vars
-        Int[], # unfixed_vars
-        Int[], # sum_min
-        Int[]  # sum_max
-    )
+    constraint = init_constraint_struct(TableSetInternal, internals)
 
     push!(com.constraints, constraint)
     for (i, ind) in enumerate(constraint.std.indices)
@@ -399,28 +379,14 @@ function MOI.add_constraint(
         Int[v.value for v in vars.variables]
     )
 
-    inner_constraint = nothing
-    if set.set isa CS.AllDifferentSetInternal
-        inner_internals = ConstraintInternals(
-            0,
-            MOI.VectorOfVariables(vars.variables[2:end]),
-            set.set,
-            Int[v.value for v in vars.variables[2:end]]
-        )
-    
-        inner_constraint = AllDifferentConstraint(
-            inner_internals,
-            Int[], # pval_mapping will be filled later
-            Int[], # vertex_mapping => later
-            Int[], # vertex_mapping_bw => later
-            Int[], # di_ei => later
-            Int[], # di_ej => later
-            MatchingInit(),
-            Int[]
-        )
-    end
-
-    
+    inner_internals = ConstraintInternals(
+        0,
+        MOI.VectorOfVariables(vars.variables[2:end]),
+        set.set,
+        Int[v.value for v in vars.variables[2:end]]
+    )
+    inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
+        
     con = IndicatorConstraint(internals, A, inner_constraint)
 
     push!(com.constraints, con)
