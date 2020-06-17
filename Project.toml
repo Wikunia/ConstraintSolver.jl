@@ -5,6 +5,7 @@ version = "0.1.8"
 
 [deps]
 Formatting = "59287772-0a20-5a39-b81b-1366585eb4c0"
+GMP_jll = "781609d7-10c4-51f6-84f2-b8444358ff6d"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
@@ -13,6 +14,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 Formatting = "^0.4.1"
+GMP_jll = "6.1.2"
 JSON = "~0.18, ~0.19, ~0.20, ~0.21"
 JuMP = "^0.21.0"
 MathOptInterface = "^0.9.1"
