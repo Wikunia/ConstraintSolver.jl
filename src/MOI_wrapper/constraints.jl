@@ -10,8 +10,7 @@ function JuMP._build_indicator_constraint(
     _error::Function, variable::JuMP.AbstractVariableRef,
     constraint::JuMP.VectorConstraint, ::Type{MOI.IndicatorSet{A}}) where A
 
-    variable_indices = [v.index for v in constraint.func]
-    set = CS.IndicatorSet{A}(variable, MOI.VectorOfVariables(variable_indices), constraint.set, 1+length(variable_indices))
+    set = CS.IndicatorSet{A}(variable, MOI.VectorOfVariables(constraint.func), constraint.set, 1+length(constraint.func))
     vov = VariableRef[variable]
     append!(vov, constraint.func)
     return JuMP.VectorConstraint(vov, set)
