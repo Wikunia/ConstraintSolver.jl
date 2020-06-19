@@ -95,6 +95,9 @@ This constraint solver works only with bounded discrete variables.
 - [v0.1.0](https://opensourc.es/blog/constraint-solver-v0.1.0)
 - [Table Constraint](https://opensourc.es/blog/constraint-solver-table-constraint)
 - [Solving Str8ts](https://opensourc.es/blog/constraint-solver-str8ts)
+- [Bugs & Benchmarks](https://opensourc.es/blog/constraint-solver-bugs-and-benchmarks/)
+- [Indicator constraint](https://opensourc.es/blog/constraint-solver-indicator/)
+- [Indicator constraint Part 2](https://opensourc.es/blog/constraint-solver-indicator-2/)
 
 ## Notice
 I'm a MSc student in computer science so I don't have much knowledge on how constraint programming works but I'm keen to find out ;)
