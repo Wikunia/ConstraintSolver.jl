@@ -64,6 +64,17 @@
             CS.IndicatorSet{MOI.ACTIVATE_ON_ONE}
         )
 
+        @test MOI.supports_constraint(
+            optimizer,
+            typeof(f),
+            CS.ReifiedSet{MOI.ACTIVATE_ON_ONE}
+        )
+
+        @test MOI.supports_constraint(
+            optimizer,
+            MOI.VectorOfVariables,
+            CS.ReifiedSet{MOI.ACTIVATE_ON_ZERO}
+        )
 
         # TimeLimit
         @test MOI.supports(optimizer, MOI.TimeLimitSec())
