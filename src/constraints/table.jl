@@ -364,8 +364,8 @@ end
         constraint::TableConstraint,
         fct::MOI.VectorOfVariables,
         set::TableSetInternal,
-        var_idx::Int,
-        changes::Vector{Tuple{Symbol,Int,Int,Int}}
+        var::Variable,
+        backtrack_idx::Int
     )
 
 It gets called after the variables returned to their state after backtracking.
@@ -378,8 +378,8 @@ function single_reverse_pruning_constraint!(
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
     set::TableSetInternal,
-    var_idx::Int,
-    changes::Vector{Tuple{Symbol,Int,Int,Int}}
+    var::Variable,
+    backtrack_idx::Int
 )
     current = constraint.current
     variables = com.search_space
@@ -387,6 +387,8 @@ function single_reverse_pruning_constraint!(
     residues = constraint.residues
     indices = constraint.std.indices
     local_var_idx = 1
+    var_idx = var.idx
+    changes = var.changes[backtrack_idx]
     while local_var_idx <= length(indices)
         if var_idx == indices[local_var_idx]
             break
@@ -443,7 +445,6 @@ function reverse_pruning_constraint!(
     set::TableSetInternal,
     backtrack_id::Int
 )
-    
     isempty(constraint.changed_vars) && return
     current = constraint.current
     if backtrack_id == 1
@@ -461,6 +462,7 @@ function reverse_pruning_constraint!(
     end
     reset_residues!(com, constraint)
     empty!(constraint.changed_vars)
+    # println("reversed inner")
 end
 
 """

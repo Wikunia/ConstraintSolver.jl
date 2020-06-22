@@ -15,6 +15,13 @@ function init_constraint!(
     set::IS
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
     inner_constraint = constraint.inner_constraint
+
+    # check which methods that inner constraint supports
+    # TODO: Have a general function for this
+    set_reverse_pruning!(inner_constraint)
+    set_finished_pruning!(inner_constraint)
+    set_restore_pruning!(inner_constraint)
+
     if hasmethod(	
         init_constraint!,	
         (CS.CoM, typeof(inner_constraint), typeof(inner_constraint.std.fct), typeof(inner_constraint.std.set)),	
@@ -114,4 +121,59 @@ function is_solved_constraint(
         return is_solved_constraint(inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, values[2:end])
     end
     return true
+end
+
+
+function single_reverse_pruning_constraint!(
+    com::CoM,
+    constraint::IndicatorConstraint,
+    fct::Union{MOI.VectorOfVariables, VAF{T}},
+    set::IS,
+    var::Variable,
+    backtrack_idx::Int
+) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
+    inner_constraint = constraint.inner_constraint
+    # the variable must be part of the inner constraint
+    # General assumption is that the indicator constraint is not part of the inner constraint
+    # TODO: Maybe disallow that indicator is part of inner constraint
+    if inner_constraint.std.impl.single_reverse_pruning && var.idx != constraint.std.indices[1]
+        single_reverse_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, var, backtrack_idx)
+    end
+end
+
+function reverse_pruning_constraint!(
+    com::CoM,
+    constraint::IndicatorConstraint,
+    fct::Union{MOI.VectorOfVariables, VAF{T}},
+    set::IS,
+    backtrack_id::Int
+) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
+    inner_constraint = constraint.inner_constraint
+    if inner_constraint.std.impl.reverse_pruning
+        reverse_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, backtrack_id)
+    end
+end
+  
+function restore_pruning_constraint!(
+    com::CoM,
+    constraint::IndicatorConstraint,
+    fct::Union{MOI.VectorOfVariables, VAF{T}},
+    set::IS,
+    prune_steps::Union{Int, Vector{Int}}
+) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
+    inner_constraint = constraint.inner_constraint
+    if inner_constraint.std.impl.restore_pruning
+        restore_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, prune_steps)
+    end
+end
+
+function finished_pruning_constraint!(com::CS.CoM,
+    constraint::IndicatorConstraint,
+    fct::Union{MOI.VectorOfVariables, VAF{T}},
+    set::IS
+) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
+    inner_constraint = constraint.inner_constraint
+    if inner_constraint.std.impl.finished_pruning
+        finished_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set)
+    end
 end

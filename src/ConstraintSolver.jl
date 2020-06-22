@@ -389,7 +389,7 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
             constraint = com.constraints[ci]
             if constraint.std.impl.single_reverse_pruning
                 single_reverse_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set,
-                                                    var.idx, var.changes[backtrack_idx])
+                                                    var, backtrack_idx)
             end
         end
     end
