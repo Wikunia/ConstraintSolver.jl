@@ -23,6 +23,7 @@ include("options.jl")
 include("moi.jl")
 include("constraints/table.jl")
 include("constraints/indicator.jl")
+include("constraints/reified.jl")
 
 include("lp_solver.jl")
 

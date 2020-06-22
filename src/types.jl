@@ -30,6 +30,7 @@ mutable struct NumberConstraintTypes
     alldifferent::Int
     table::Int
     indicator::Int
+    reified::Int
 end
 
 mutable struct CSInfo
@@ -148,9 +149,14 @@ mutable struct TableBacktrackInfo
 end
 
 struct IndicatorSet{A} <: MOI.AbstractVectorSet
-    ind_var :: JuMP.VariableRef
     func    :: MOI.VectorOfVariables
     set     :: MOI.AbstractVectorSet
+    dimension::Int
+end
+
+struct ReifiedSet{A} <: MOI.AbstractVectorSet
+    func    :: Union{JuMP.GenericAffExpr, MOI.VectorOfVariables}
+    set     :: Union{MOI.AbstractScalarSet, MOI.AbstractVectorSet}
     dimension::Int
 end
 
@@ -235,6 +241,12 @@ mutable struct TableConstraint <: Constraint
 end
 
 mutable struct IndicatorConstraint <: Constraint
+    std::ConstraintInternals
+    activate_on::MOI.ActivationCondition
+    inner_constraint::Constraint
+end
+
+mutable struct ReifiedConstraint <: Constraint
     std::ConstraintInternals
     activate_on::MOI.ActivationCondition
     inner_constraint::Constraint

@@ -21,6 +21,6 @@ function constraint_hash(constraint::SingleVariableConstraint)
     return hash([string(typeof(constraint.std.set)), constraint.std.indices])
 end
 
-function constraint_hash(constraint::IndicatorConstraint)
+function constraint_hash(constraint::Union{IndicatorConstraint, ReifiedConstraint})
     return hash([string(typeof(constraint.std.set)), constraint.std.indices, constraint.activate_on, constraint_hash(constraint.inner_constraint)])
 end

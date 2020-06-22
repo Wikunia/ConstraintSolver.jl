@@ -124,3 +124,10 @@ function arr2dict(arr)
     end
     return d
 end
+
+function is_solved_constraint(com::CS.CoM, constraint::Constraint, fct, set)
+    variables = com.search_space
+    !all(isfixed(variables[var]) for var in constraint.std.indices) && return false
+    values = CS.value.(variables[constraint.std.indices])
+    return is_solved_constraint(constraint, fct, set, values)
+end
