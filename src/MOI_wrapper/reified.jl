@@ -3,7 +3,6 @@ function _build_reified_constraint(
     constraint::JuMP.ScalarConstraint, ::Type{CS.ReifiedSet{A}}) where A
     
     set = ReifiedSet{A}(JuMP.jump_function(constraint), JuMP.moi_set(constraint), 2)
-    println("Set: $set")
     return JuMP.VectorConstraint([variable, JuMP.jump_function(constraint)], set)
 end
 
@@ -12,7 +11,6 @@ function _build_reified_constraint(
     constraint::JuMP.VectorConstraint, ::Type{CS.ReifiedSet{A}}) where A
     
     set = CS.ReifiedSet{A}(MOI.VectorOfVariables(constraint.func), constraint.set, 1+length(constraint.func))
-    println("Set: $set")
     vov = VariableRef[variable]
     append!(vov, constraint.func)
     return JuMP.VectorConstraint(vov, set)
