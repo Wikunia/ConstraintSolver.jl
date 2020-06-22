@@ -11,6 +11,11 @@ const MOIU = MOI.Utilities
 CSTestOptimizer() = CS.Optimizer(logging = [])
 CSJuMPTestOptimizer() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging" => [])
 
+macro test_macro_throws(errortype, m)
+    # See https://discourse.julialang.org/t/test-throws-with-macros-after-pr-23533/5878
+    :(@test_throws $(esc(errortype)) try @eval $m catch err; throw(err.error) end)
+end
+
 test_stime = time()
 
 include("general.jl")

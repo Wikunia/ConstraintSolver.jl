@@ -34,14 +34,14 @@ function JuMP.parse_constraint_head(_error::Function, ::Val{:(:=)}, lhs, rhs)
 
     variable, S = _reified_variable_set(_error, lhs)
     if !JuMP.isexpr(rhs, :braces) || length(rhs.args) != 1
-        JuMP._error("Invalid right-hand side `$(rhs)` of reified constraint. Expected constraint surrounded by `{` and `}`.")
+        _error("Invalid right-hand side `$(rhs)` of reified constraint. Expected constraint surrounded by `{` and `}`.")
     end
     rhs_con = rhs.args[1]
     rhs_vectorized, rhs_parsecode, rhs_buildcall = JuMP.parse_constraint_expr(_error, rhs_con)
     # TODO implement vectorized version
     vectorized = false
     if rhs_vectorized
-        JuMP._error("`$(rhs)` should be non vectorized. Three is currently no vectorized support for reified constraints. Please open an issue at ConstraintSolver.jl")
+        _error("`$(rhs)` should be non vectorized. Three is currently no vectorized support for reified constraints. Please open an issue at ConstraintSolver.jl")
     end
 
     buildcall = :($(esc(:(CS._build_reified_constraint)))($_error, $(esc(variable)), $rhs_buildcall, $S))
