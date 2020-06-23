@@ -106,13 +106,11 @@ function fulfills_constraints(com::CS.CoM, index, value)
     feasible = true
     for ci in com.subscription[index]
         constraint = com.constraints[ci]
-        # only call if the function got initialized already
-        if constraint.std.impl.init
+       # only call if the function got initialized already
+        if constraint.std.is_initialized
             feasible =
                 still_feasible(com, constraint, constraint.std.fct, constraint.std.set, value, index)
-            if !feasible
-                break
-            end
+            !feasible && break
         end
     end
     return feasible
@@ -1095,6 +1093,8 @@ function solve!(com::CS.CoM, options::SolverOptions)
     com.traverse_strategy = get_traverse_strategy(;options = options)
     com.branch_split = get_branch_split(;options = options)
 
+    set_impl_functions!(com)
+
     if :Info in com.options.logging
         print_info(com)
     end
@@ -1118,6 +1118,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     if length(added_con_idxs) > 0
         set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
         set_constraint_hashes!(com; constraints=com.constraints[added_con_idxs])
+        set_impl_functions!(com; constraints=com.constraints[added_con_idxs])
         !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
     end
 

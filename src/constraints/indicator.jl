@@ -17,15 +17,9 @@ function init_constraint!(
     inner_constraint = constraint.inner_constraint
 
     # check which methods that inner constraint supports
-    # TODO: Have a general function for this
-    set_reverse_pruning!(inner_constraint)
-    set_finished_pruning!(inner_constraint)
-    set_restore_pruning!(inner_constraint)
+    set_impl_functions!(com, inner_constraint)
 
-    if hasmethod(	
-        init_constraint!,	
-        (CS.CoM, typeof(inner_constraint), typeof(inner_constraint.std.fct), typeof(inner_constraint.std.set)),	
-    )	
+    if inner_constraint.std.impl.init
         return init_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set)
     end
     # still feasible
