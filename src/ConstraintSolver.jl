@@ -106,7 +106,7 @@ function fulfills_constraints(com::CS.CoM, index, value)
     feasible = true
     for ci in com.subscription[index]
         constraint = com.constraints[ci]
-       # only call if the function got initialized already
+        # only call if the function got initialized already
         if constraint.std.is_initialized
             feasible =
                 still_feasible(com, constraint, constraint.std.fct, constraint.std.set, value, index)
@@ -797,7 +797,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
         # there is no better node => return best solution
         if length(com.bt_solution_ids) > 0 &&
-           obj_factor * com.best_bound >= obj_factor * com.best_sol && !find_more_solutions
+            obj_factor * com.best_bound >= obj_factor * com.best_sol && !find_more_solutions
             break
         end
 
@@ -832,6 +832,9 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         if com.sense != MOI.FEASIBILITY_SENSE
             feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
             if !feasible
+                # need to call as some function might have pruned something.
+                # Just need to be sure that we save the latest states
+                call_finished_pruning!(com)
                 com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
                 com.info.backtrack_reverses += 1
                 continue
@@ -847,6 +850,8 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
                 com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
                 continue
             end
+        else
+            call_finished_pruning!(com)
         end
 
         if log_table

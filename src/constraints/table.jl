@@ -283,6 +283,9 @@ function finished_pruning_constraint!(com::CS.CoM,
     backtrack[com.c_backtrack_idx].words = copy(constraint.current.words)
     backtrack[com.c_backtrack_idx].last_ptr = constraint.current.last_ptr
     backtrack[com.c_backtrack_idx].indices = copy(constraint.current.indices)
+    for (i,ind) in enumerate(constraint.std.indices)
+        constraint.last_sizes[i] = CS.nvalues(com.search_space[ind])
+    end
 end
 
 """
@@ -462,7 +465,6 @@ function reverse_pruning_constraint!(
     end
     reset_residues!(com, constraint)
     empty!(constraint.changed_vars)
-    # println("reversed inner")
 end
 
 """
@@ -492,6 +494,9 @@ function restore_pruning_constraint!(
     current.last_ptr = constraint.backtrack[backtrack_id].last_ptr
     current.words = copy(constraint.backtrack[backtrack_id].words)
     current.indices = copy(constraint.backtrack[backtrack_id].indices)
+    for (i,ind) in enumerate(constraint.std.indices)
+        constraint.last_sizes[i] = CS.nvalues(com.search_space[ind])
+    end
     reset_residues!(com, constraint)
     empty!(constraint.changed_vars)
 end

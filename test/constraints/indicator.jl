@@ -180,21 +180,25 @@ end
 
 @testset "Basic Table" begin
     m = Model(CSJuMPTestOptimizer())
-    @variable(m, 0 <= x <= 1, Int)
-    @variable(m, 0 <= y <= 1, Int)
+    @variable(m, 0 <= x <= 3, Int)
+    @variable(m, 0 <= y <= 3, Int)
     @variable(m, a, Bin)
-    @constraint(m, x +y <= 1)
+    @constraint(m, x + y >= 2)
     @constraint(m, a => {[x,y] in CS.TableSet([
         0 1;
-        1 1
+        1 1;
+        4 4;
+        3 2;
+        2 2;
+        2 3;
     ])})
-    @objective(m, Max, a)
+    @objective(m, Max, a+1.1x+0.5y)
     optimize!(m)
     @test JuMP.termination_status(m) == MOI.OPTIMAL
-    @test JuMP.objective_value(m) ≈ 1.0
+    @test JuMP.objective_value(m) ≈ 1.0+3.3+1.0
     @test JuMP.value(a) ≈ 1.0
-    @test JuMP.value(y) ≈ 1.0
-    @test JuMP.value(x) ≈ 0.0
+    @test JuMP.value(x) ≈ 3.0
+    @test JuMP.value(y) ≈ 2.0
     com = JuMP.backend(m).optimizer.model.inner
     @test is_solved(com)
 end

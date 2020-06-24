@@ -111,7 +111,6 @@ end
     for i=1:height, j=1:width
         @constraint(m, indicator => { [p[i,j], pu[i,j], pr[i,j], pd[i,j], pl[i,j]] in CS.TableSet(rotations) })
     end
-    @constraint(m, indicator == 1)
 
     # borders
     # up and down
@@ -146,8 +145,12 @@ end
         @constraint(m, p[1,1] == start_piece)
     end
 
+    @objective(m, Max, indicator)
+
     optimize!(m)
     com = JuMP.backend(m).optimizer.model.inner
+    # check that indicator is set to 1
+    @test JuMP.objective_value(m) ≈ 1.0
     @test is_solved(com)
 
     status = JuMP.termination_status(m)
