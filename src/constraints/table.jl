@@ -18,14 +18,16 @@ function init_constraint_struct(::Type{TableSetInternal}, internals)
 end
 
 """
-    init_constraint!(com::CS.CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal)
+    init_constraint!(com::CS.CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal;
+                    active = true)
 
 """
 function init_constraint!(
     com::CS.CoM,
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
-    set::TableSetInternal,
+    set::TableSetInternal;
+    active = true
 )
     table = set.table
     num_pos_rows = size(table, 1)
@@ -55,6 +57,12 @@ function init_constraint!(
         # initial bounds for sum(variables[indices])
         table_min = row_sums[1]
         table_max = row_sums[end]
+        # if not active (inside an indicator constraint)
+        # don't have any bounds
+        if !active
+            table_min = typemin(Int)
+            table_max = typemax(Int)
+        end
         pos_rows_idx = pos_rows_idx[local_sort_perm]
         
         lp_backend = backend(com.lp_model)
@@ -127,21 +135,23 @@ function init_constraint!(
     # check if a support column is completely zero
     # that means that the variable corresponding to that column can't have the value corresponding to the column 
     feasible = true
-    for c = 1:num_supports
-        if all(i->i==UInt64(0), support.values[:,c])
-            # getting the correct index in indices
-            var_i = 1
-            while support.var_start[var_i] <= c
-                var_i += 1
-            end
-            var_i -= 1
-            val_i = c-support.var_start[var_i]+1
-            var = indices[var_i]
-            val = search_space[var].init_vals[val_i]
-            if has(search_space[var], val)
-                feasible = rm!(com, search_space[var], val)
-                if !feasible  
-                    break
+    if active
+        for c = 1:num_supports
+            if all(i->i==UInt64(0), support.values[:,c])
+                # getting the correct index in indices
+                var_i = 1
+                while support.var_start[var_i] <= c
+                    var_i += 1
+                end
+                var_i -= 1
+                val_i = c-support.var_start[var_i]+1
+                var = indices[var_i]
+                val = search_space[var].init_vals[val_i]
+                if has(search_space[var], val)
+                    feasible = rm!(com, search_space[var], val)
+                    if !feasible
+                        break
+                    end
                 end
             end
         end
@@ -204,7 +214,17 @@ function filter_domains(com::CoM, constraint::TableConstraint)
         vidx = indices[local_vidx]
         for value in CS.values(variables[vidx])
             idx = residues[com, vidx, local_vidx, value]
-            if current.words[idx] & supports[com, vidx, local_vidx, value, idx] == UInt64(0)
+            # residues is 0 when the constraint was inactive at the beginning
+            if idx == 0
+                if has(variables[vidx], value)
+                    changed = true
+                    if !rm!(com, variables[vidx], value)
+                        feasible = false
+                        break
+                    end
+                    @assert !has(variables[vidx], value) 
+                end
+            elseif current.words[idx] & supports[com, vidx, local_vidx, value, idx] == UInt64(0)
                 support = get_view(supports, com, vidx, local_vidx, value)
                 idx = intersect_index(current, support)
                 if idx != 0

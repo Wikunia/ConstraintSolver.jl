@@ -202,4 +202,26 @@ end
     com = JuMP.backend(m).optimizer.model.inner
     @test is_solved(com)
 end
+
+@testset "Basic Table optimization" begin
+    m = Model(CSCbcJuMPTestOptimizer())
+    @variable(m, 0 <= x <= 9, Int)
+    @variable(m, 0 <= y <= 9, Int)
+    @variable(m, a, Bin)
+    @constraint(m, a => {[x,y] in CS.TableSet([
+        1 1; 1 2; 1 3; 1 4; 1 5; 1 6; 1 7; 1 8; 1 9;
+        2 1; 2 2; 2 3; 2 4; 2 5; 2 6; 2 7; 2 8; 2 9;
+        3 1; 3 2; 3 3; 3 4; 3 5; 3 6; 3 7; 3 8; 3 9;
+        4 1; 4 2; 4 3; 4 4; 4 5; 4 6; 4 7; 4 8; 4 9;
+    ])})
+    @objective(m, Max, a+1.1x+0.5y)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.objective_value(m) ≈ 9.9+4.5
+    @test JuMP.value(a) ≈ 0.0
+    @test JuMP.value(x) ≈ 9.0
+    @test JuMP.value(y) ≈ 9.0
+    com = JuMP.backend(m).optimizer.model.inner
+    @test is_solved(com)
+end
 end

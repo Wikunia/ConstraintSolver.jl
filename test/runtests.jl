@@ -10,6 +10,8 @@ const MOIU = MOI.Utilities
 
 CSTestOptimizer() = CS.Optimizer(logging = [])
 CSJuMPTestOptimizer() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging" => [])
+cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+CSCbcJuMPTestOptimizer() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging" => [], "lp_optimizer" => cbc_optimizer)
 
 test_stime = time()
 
