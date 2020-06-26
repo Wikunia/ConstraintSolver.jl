@@ -27,7 +27,7 @@ function get_rotations(puzzle)
     return rotations
 end
 
-function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_solutions=false)
+function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_solutions=false, optimize=false, indicator=false)
     puzzle = read_puzzle(fname)
     rotations = get_rotations(puzzle)
     npieces = size(puzzle)[1]
@@ -36,15 +36,27 @@ function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_s
     ncolors = maximum(puzzle[:,2:end])
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_solutions"=>all_solutions))
+    if optimize
+        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_solutions"=>all_solutions, "lp_optimizer" => cbc_optimizer))
+    end
+
     @variable(m, 1 <= p[1:height, 1:width] <= npieces, Int)
     @variable(m, 0 <= pu[1:height, 1:width] <= ncolors, Int)
     @variable(m, 0 <= pr[1:height, 1:width] <= ncolors, Int)
     @variable(m, 0 <= pd[1:height, 1:width] <= ncolors, Int)
     @variable(m, 0 <= pl[1:height, 1:width] <= ncolors, Int)
+    if indicator 
+        @variable(m, b, Bin)
+    end
 
     @constraint(m, p[:] in CS.AllDifferentSet())
     for i=1:height, j=1:width
-        @constraint(m, [p[i,j], pu[i,j], pr[i,j], pd[i,j], pl[i,j]] in CS.TableSet(rotations))
+        if indicator
+            @constraint(m, b => {[p[i,j], pu[i,j], pr[i,j], pd[i,j], pl[i,j]] in CS.TableSet(rotations)})
+        else
+            @constraint(m, [p[i,j], pu[i,j], pr[i,j], pd[i,j], pl[i,j]] in CS.TableSet(rotations))
+        end
     end
 
     # borders
@@ -75,9 +87,19 @@ function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_s
         @constraint(m, pr[i,j] == pl[i, j+1])
     end
 
-    if width == height
+    if !optimize && indicator
+        @constraint(m, b == 1)
+    end
+
+    if !optimize && width == height
         start_piece = findfirst(i->count(c->c == 0, puzzle[i,:]) == 2,1:npieces)
         @constraint(m, p[1,1] == start_piece)
+    elseif optimize
+        if indicator
+            @objective(m, Min, 1000*b + p[1,1] + p[1,2])
+        else
+            @objective(m, Min, p[1,1] + p[1,2])
+        end
     end
 
     optimize!(m)
