@@ -1,6 +1,6 @@
 using BenchmarkTools
 using ConstraintSolver, JuMP, MathOptInterface
-using GLPK, JSON
+using GLPK, JSON, Cbc
 
 const CS = ConstraintSolver
 const MOI = MathOptInterface
