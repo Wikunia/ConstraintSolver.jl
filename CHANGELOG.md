@@ -1,6 +1,6 @@
 # ConstrainSolver.jl - Changelog
 
-## Unreleased 
+## v0.2.1 
 - Bugfixes in indicator constraint [#170](https://github.com/Wikunia/ConstraintSolver.jl/issues/170)
   - Calling finished constraints and other functions for i.e `TableConstraint` as an inner constraint
   - Use correct best bound when inactive vs active
