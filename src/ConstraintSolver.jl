@@ -107,12 +107,10 @@ function fulfills_constraints(com::CS.CoM, index, value)
     for ci in com.subscription[index]
         constraint = com.constraints[ci]
         # only call if the function got initialized already
-        if constraint.std.impl.init
+        if constraint.std.is_initialized
             feasible =
                 still_feasible(com, constraint, constraint.std.fct, constraint.std.set, value, index)
-            if !feasible
-                break
-            end
+            !feasible && break
         end
     end
     return feasible
@@ -389,7 +387,7 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
             constraint = com.constraints[ci]
             if constraint.std.impl.single_reverse_pruning
                 single_reverse_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set,
-                                                    var.idx, var.changes[backtrack_idx])
+                                                    var, backtrack_idx)
             end
         end
     end
@@ -799,7 +797,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
         # there is no better node => return best solution
         if length(com.bt_solution_ids) > 0 &&
-           obj_factor * com.best_bound >= obj_factor * com.best_sol && !find_more_solutions
+            obj_factor * com.best_bound >= obj_factor * com.best_sol && !find_more_solutions
             break
         end
 
@@ -834,6 +832,9 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         if com.sense != MOI.FEASIBILITY_SENSE
             feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
             if !feasible
+                # need to call as some function might have pruned something.
+                # Just need to be sure that we save the latest states
+                call_finished_pruning!(com)
                 com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
                 com.info.backtrack_reverses += 1
                 continue
@@ -849,6 +850,8 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
                 com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
                 continue
             end
+        else
+            call_finished_pruning!(com)
         end
 
         if log_table
@@ -1095,6 +1098,8 @@ function solve!(com::CS.CoM, options::SolverOptions)
     com.traverse_strategy = get_traverse_strategy(;options = options)
     com.branch_split = get_branch_split(;options = options)
 
+    set_impl_functions!(com)
+
     if :Info in com.options.logging
         print_info(com)
     end
@@ -1118,6 +1123,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     if length(added_con_idxs) > 0
         set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
         set_constraint_hashes!(com; constraints=com.constraints[added_con_idxs])
+        set_impl_functions!(com; constraints=com.constraints[added_con_idxs])
         !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
     end
 

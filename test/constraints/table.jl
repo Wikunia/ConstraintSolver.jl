@@ -276,8 +276,8 @@ end
         constraint,
         constraint.std.fct,
         constraint.std.set,
-        x.value,
-        [(:rm, 1, 0, 1)]
+        com.search_space[x.value],
+        1
     )
 
     CS.reverse_pruning_constraint!(

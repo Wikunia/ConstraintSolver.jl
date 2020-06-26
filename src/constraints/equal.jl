@@ -45,11 +45,13 @@ function init_constraint!(
     com::CS.CoM,
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
-    set::CS.EqualSetInternal,
+    set::CS.EqualSetInternal; 
+    active = true
 )
     indices = constraint.std.indices
     search_space = com.search_space
     intersect_vals = Set(intersect(CS.values.(search_space[indices])...))
+    !active && return true
     if isempty(intersect_vals)
         return false
     end

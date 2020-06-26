@@ -173,6 +173,7 @@ mutable struct ConstraintInternals
     indices::Vector{Int}
     pvals::Vector{Int}
     impl :: ImplementedConstraintFunctions
+    is_initialized :: Bool
     bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `update_best_bound` is true
     hash::UInt64
 end
