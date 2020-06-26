@@ -116,4 +116,54 @@ end
     com = JuMP.backend(m).optimizer.model.inner
     @test is_solved(com)
 end
+
+@testset "TableConstraint where active" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true, "logging"=>[]))
+    @variable(m, x, CS.Integers([1,2,4]))
+    @variable(m, y, CS.Integers([2,4]))
+    @variable(m, 1 <= z <= 10, Int)
+    @variable(m, b, Bin)
+    @constraint(m, b := {[x,y,z] in CS.TableSet([
+        1 2 3;
+        1 4 3;
+        2 4 3;
+        3 4 3;
+        1 2 4;
+        1 4 4;
+        2 4 4;
+        3 4 4;
+    ])})
+    @objective(m, Max, 5b+x+y)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.objective_value(m) ≈ 5+2+4
+    @test JuMP.value(b) ≈ 1.0
+    @test JuMP.value(x) ≈ 2
+    @test JuMP.value(y) ≈ 4
+    com = JuMP.backend(m).optimizer.model.inner
+    @test is_solved(com)
+end
+
+@testset "TableConstraint where inactive" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true, "logging"=>[]))
+    @variable(m, x, CS.Integers([1,2,4]))
+    @variable(m, y, CS.Integers([2,4]))
+    @variable(m, b, Bin)
+    @constraint(m, !b := {[x,y] in CS.TableSet([
+        1 2;
+        2 4;
+        3 4;
+        4 4;
+    ])})
+    @objective(m, Max, 5b+x+y)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.objective_value(m) ≈ 5+4+2
+    @test JuMP.value(b) ≈ 1.0
+    @test JuMP.value(x) ≈ 4
+    @test JuMP.value(y) ≈ 2
+    com = JuMP.backend(m).optimizer.model.inner
+    @test is_solved(com)
+    @test general_tree_test(com)
+end
 end
