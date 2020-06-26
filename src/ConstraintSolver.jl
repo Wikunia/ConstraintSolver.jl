@@ -90,6 +90,7 @@ function add_var!(com::CS.CoM, from::Int, to::Int; fix = nothing)
     push!(com.search_space, var)
     push!(com.subscription, Int[])
     push!(com.bt_infeasible, 0)
+    push!(com.var_in_obj, false)
     return var
 end
 
