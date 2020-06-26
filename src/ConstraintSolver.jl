@@ -1168,6 +1168,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     end
     if backtrack
         com.info.backtracked = true
+        time() - com.start_time > com.options.time_limit && return :Time
         status = backtrack!(com, max_bt_steps; sorting = backtrack_sorting)
         sort_solutions!(com)
         com.solve_time = time() - com.start_time

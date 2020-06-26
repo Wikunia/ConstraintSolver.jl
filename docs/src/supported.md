@@ -51,6 +51,10 @@ It's a bit more but still not as fully featured as I would like it to be.
   - i.e `@constraint(m, b => {x + y >= 12})`
   - [X] for affine inner constraints
   - [X] for all types of inner constraints
+- [X] Reified constraints [#171](https://github.com/Wikunia/ConstraintSolver.jl/pull/171)
+  - i.e `@constraint(m, b := {x + y >= 12})`
+  - [X] for affine inner constraints
+  - [X] for all types of inner constraints
 - [ ] Scheduling constraints
 - [ ] Cycle constraints
 

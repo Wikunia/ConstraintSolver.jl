@@ -5,11 +5,15 @@ function init_constraint!(
     set::RS
 ) where {A, T<:Real, RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
-    if hasmethod(	
-        init_constraint!,	
-        (CS.CoM, typeof(inner_constraint), typeof(inner_constraint.std.fct), typeof(inner_constraint.std.set)),	
-    )	
-        return init_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set)
+
+    # check which methods that inner constraint supports
+    set_impl_functions!(com, inner_constraint)
+
+    if inner_constraint.std.impl.init
+        feasible = init_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set; active=false)
+        # map the bounds to the indicator constraint
+        constraint.std.bound_rhs = inner_constraint.std.bound_rhs
+        return feasible
     end
     # still feasible
     return true
