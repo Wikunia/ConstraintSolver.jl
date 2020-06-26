@@ -96,9 +96,9 @@ function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_s
         @constraint(m, p[1,1] == start_piece)
     elseif optimize
         if indicator
-            @objective(m, Min, 1000*b + p[1,1] + p[1,2])
+            @objective(m, Max, 1000*b + p[1,1] + p[1,2])
         else
-            @objective(m, Min, p[1,1] + p[1,2])
+            @objective(m, Max, p[1,1] + p[1,2])
         end
     end
 

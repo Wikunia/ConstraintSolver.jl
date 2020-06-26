@@ -88,7 +88,8 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         1, # c_backtrack_idx
         Vector{BacktrackObj{T}}(), # backtrack_vec
         MOI.FEASIBILITY_SENSE, #
-        NoObjective(), #
+        NoObjective(), # 
+        Vector{Bool}(), # var_in_obj
         get_traverse_strategy(), 
         get_branch_split(),
         zero(T), # best_sol,

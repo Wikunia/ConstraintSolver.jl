@@ -75,6 +75,7 @@ function MOI.add_variable(model::Optimizer)
     model.variable_info[index].changes = changes
     push!(model.inner.subscription, Int[])
     push!(model.inner.bt_infeasible, 0)
+    push!(model.inner.var_in_obj, false)
     addupd_var_in_inner_model(model, index)
     return MOI.VariableIndex(index)
 end
