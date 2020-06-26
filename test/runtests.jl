@@ -10,6 +10,8 @@ const MOIU = MOI.Utilities
 
 CSTestOptimizer() = CS.Optimizer(logging = [])
 CSJuMPTestOptimizer() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging" => [])
+cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+CSCbcJuMPTestOptimizer() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging" => [], "lp_optimizer" => cbc_optimizer)
 
 macro test_macro_throws(errortype, m)
     # See https://discourse.julialang.org/t/test-throws-with-macros-after-pr-23533/5878

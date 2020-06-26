@@ -22,7 +22,7 @@ MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[
 
 function ConstraintInternals(idx::Int, fct, set, indices::Vector{Int})
     return ConstraintInternals(
-        idx, fct, set, indices, Int[], ImplementedConstraintFunctions(), nothing, zero(UInt64)
+        idx, fct, set, indices, Int[], ImplementedConstraintFunctions(), false, nothing, zero(UInt64)
     )
 end
 

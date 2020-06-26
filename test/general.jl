@@ -26,7 +26,8 @@ function general_tree_test(com::CS.CoM)
         status = :Open
         next_idx = 0
         while status == :Open
-            next_idx = rand(1:n_backtracks)
+            # don't allow root node as that might cause chaos :D
+            next_idx = rand(2:n_backtracks)
             status = com.logs[next_idx].status
         end
         
@@ -58,15 +59,23 @@ function general_tree_test(com::CS.CoM)
         # if it has children
         if length(com.logs[c_backtrack_idx].children) > 0 && n_children_tests < 5
             com.c_backtrack_idx = c_backtrack_idx
+            var_idx = com.logs[c_backtrack_idx].var_idx
             n_children_tests += 1
             # test that pruning produces the same output as before
-            var_idx = com.logs[c_backtrack_idx].var_idx
+            
             for var in com.search_space
                 var.changes[c_backtrack_idx] = Vector{Tuple{Symbol,Int,Int,Int}}()
             end
             @assert CS.remove_above!(com, com.search_space[var_idx], com.logs[c_backtrack_idx].ub)
             @assert CS.remove_below!(com, com.search_space[var_idx], com.logs[c_backtrack_idx].lb)
 
+            if com.sense != MOI.FEASIBILITY_SENSE
+                constraints = com.constraints[com.subscription[var_idx]]
+                feasible, further_pruning = CS.update_best_bound!(com.backtrack_vec[c_backtrack_idx], com, constraints)
+                @assert feasible
+                @assert further_pruning
+            end
+            
             @assert CS.prune!(com)
             CS.call_finished_pruning!(com)
             push!(path_type, :prune)
