@@ -33,10 +33,10 @@ Everybody knows sudokus and for some it might be fun to solve them by hand. Toda
 this constraint solver to let the computer do the hard work.
 
 Rules of sudoku:
-    - We have 9x9 grid each cell contains a digit or is empty initially
-    - We have nine 3x3 blocks 
-    - In the end we want to fill the grid such that
-      - Each row, column and block should have the digits 1-9 exactly once
+  - We have 9x9 grid each cell contains a digit or is empty initially
+  - We have nine 3x3 blocks 
+  - In the end we want to fill the grid such that
+    - Each row, column and block should have the digits 1-9 exactly once
   
 We now have to translate this into code:
 
