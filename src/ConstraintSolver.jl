@@ -90,6 +90,7 @@ function add_var!(com::CS.CoM, from::Int, to::Int; fix = nothing)
     push!(com.search_space, var)
     push!(com.subscription, Int[])
     push!(com.bt_infeasible, 0)
+    push!(com.var_in_obj, false)
     return var
 end
 
@@ -488,13 +489,7 @@ function update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraint
     further_pruning = true
     feasible = true
     for constraint in constraints
-        relevant = false
-        for obj_index in com.objective.indices
-            if obj_index in constraint.std.indices
-                relevant = true
-                break
-            end
-        end
+        relevant = any(com.var_in_obj[i] for i in constraint.std.indices)
         if relevant
             feasible = prune_constraint!(
                 com,

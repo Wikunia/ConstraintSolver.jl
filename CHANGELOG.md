@@ -1,6 +1,10 @@
 # ConstrainSolver.jl - Changelog
 
-## v0.2.1 
+## v0.2.2 (26th of June 2020)
+- Actually use best bound [#175](https://github.com/Wikunia/ConstraintSolver.jl/pull/175)
+- Select next var based on objective (still hacky solution) [#176](https://github.com/Wikunia/ConstraintSolver.jl/issues/176)
+
+## v0.2.1 (26th of June 2020)
 - Bugfixes in indicator constraint [#170](https://github.com/Wikunia/ConstraintSolver.jl/issues/170)
   - Calling finished constraints and other functions for i.e `TableConstraint` as an inner constraint
   - Use correct best bound when inactive vs active

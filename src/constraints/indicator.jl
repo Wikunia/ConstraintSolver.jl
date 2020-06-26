@@ -136,7 +136,6 @@ the possible values the table constraint allows. `var_idx`, `lb` and `ub` don't 
 Additionally only a rough estimated bound is used which can be computed relatively fast. 
 This method calls the inner_constraint method if it exists and the indicator is activated.
 """
-#=
 function update_best_bound_constraint!(com::CS.CoM,
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables, VAF{T}},
@@ -162,7 +161,6 @@ function update_best_bound_constraint!(com::CS.CoM,
     end
     return true
 end
-=#
 
 function single_reverse_pruning_constraint!(
     com::CoM,
