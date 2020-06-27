@@ -6,7 +6,7 @@ Before we tackle some problems we first have to install the constraint solver.
 
 ```
 $ julia
-] add ConstraintSolver.jl
+] add ConstraintSolver
 ```
 
 Then we have to use the package with:
