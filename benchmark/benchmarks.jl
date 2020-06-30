@@ -25,6 +25,7 @@ solve_eternity("eternity_6x5"; height=6, width=5)
 SUITE["eternity"]["6x5"] = @benchmarkable solve_eternity("eternity_6x5"; height=6, width=5) seconds=30
 SUITE["eternity"]["5x5_opt"] = @benchmarkable solve_eternity("eternity_5x5"; height=5, width=5, optimize=true) seconds=120
 SUITE["eternity"]["5x5_opt_ind"] = @benchmarkable solve_eternity("eternity_5x5"; height=5, width=5, optimize=true, indicator=true) seconds=120
+SUITE["eternity"]["5x5_opt_rei"] = @benchmarkable solve_eternity("eternity_5x5"; height=5, width=5, optimize=true, reified=true) seconds=120
 SUITE["eternity"]["5x5_all"] = @benchmarkable solve_eternity("eternity_5x5"; all_solutions=true) seconds=30
 
 include(joinpath(dir, "benchmark/lp/benchmark.jl"))
