@@ -166,4 +166,32 @@ end
     @test is_solved(com)
     @test general_tree_test(com)
 end
+
+@testset "TableConstraint with optimization" begin
+    cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging"=>[], "lp_optimizer"=>cbc_optimizer))
+    @variable(m, 1 <= a <= 100, Int)
+    @variable(m, 1 <= b <= 100, Int)
+    @variable(m, 1 <= c <= 100, Int)
+    @variable(m, reified, Bin)
+    table = zeros(Int, (52, 3))
+    r = 1
+    for i=1:100, j=i:100, k=j:100
+        if i^2+j^2 == k^2
+            table[r,:] .= [i,j,k]
+            r += 1
+        end
+    end
+    @constraint(m, reified := {[a,b,c] in CS.TableSet(table)})
+    @objective(m, Max, 5*reified+b+c)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.objective_value(m) ≈ 5+96+100
+    @test JuMP.value(a) ≈ 28
+    @test JuMP.value(b) ≈ 96
+    @test JuMP.value(c) ≈ 100
+    @test JuMP.value(reified) ≈ 1
+    com = JuMP.backend(m).optimizer.model.inner
+    @test is_solved(com)
+end
 end
