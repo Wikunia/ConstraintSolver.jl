@@ -73,3 +73,83 @@ function is_solved_constraint(
     inner_constraint = constraint.inner_constraint
     return is_solved_constraint(inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, values[2:end]) == (values[1] == activate_on)
 end
+
+function update_best_bound_constraint!(com::CS.CoM,
+    constraint::ReifiedConstraint,
+    fct::Union{MOI.VectorOfVariables, VAF{T}},
+    set::RS,
+    var_idx::Int,
+    lb::Int,
+    ub::Int
+) where {A, T<:Real, RS<:ReifiedSet{A}}
+    inner_constraint = constraint.inner_constraint
+    reified_var_idx = constraint.std.indices[1]
+    search_space = com.search_space
+    reified_var = search_space[reified_var_idx]
+    if inner_constraint.std.impl.update_best_bound
+        if CS.issetto(reified_var, Int(constraint.activate_on)) 
+            return update_best_bound_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, var_idx, lb, ub)
+        else
+            # if not activated (for example in a different subtree) we reset the bounds
+            for rhs in constraint.std.bound_rhs
+                rhs.lb = typemin(Int64)
+                rhs.ub = typemax(Int64)
+            end
+        end
+    end
+    return true
+end
+
+function single_reverse_pruning_constraint!(
+    com::CoM,
+    constraint::ReifiedConstraint,
+    fct::Union{MOI.VectorOfVariables, VAF{T}},
+    set::RS,
+    var::Variable,
+    backtrack_idx::Int
+) where {A, T<:Real, RS<:ReifiedSet{A}}
+    inner_constraint = constraint.inner_constraint
+    # the variable must be part of the inner constraint
+    # General assumption is that the reified variable is not part of the inner constraint
+    # TODO: Maybe disallow that reified is part of inner constraint
+    if inner_constraint.std.impl.single_reverse_pruning && var.idx != constraint.std.indices[1]
+        single_reverse_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, var, backtrack_idx)
+    end
+end
+
+function reverse_pruning_constraint!(
+    com::CoM,
+    constraint::ReifiedConstraint,
+    fct::Union{MOI.VectorOfVariables, VAF{T}},
+    set::RS,
+    backtrack_id::Int
+) where {A, T<:Real, RS<:ReifiedSet{A}}
+    inner_constraint = constraint.inner_constraint
+    if inner_constraint.std.impl.reverse_pruning
+        reverse_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, backtrack_id)
+    end
+end
+
+function restore_pruning_constraint!(
+    com::CoM,
+    constraint::ReifiedConstraint,
+    fct::Union{MOI.VectorOfVariables, VAF{T}},
+    set::RS,
+    prune_steps::Union{Int, Vector{Int}}
+) where {A, T<:Real, RS<:ReifiedSet{A}}
+    inner_constraint = constraint.inner_constraint
+    if inner_constraint.std.impl.restore_pruning
+        restore_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, prune_steps)
+    end
+end
+
+function finished_pruning_constraint!(com::CS.CoM,
+    constraint::ReifiedConstraint,
+    fct::Union{MOI.VectorOfVariables, VAF{T}},
+    set::RS,
+) where {A, T<:Real, RS<:ReifiedSet{A}}
+    inner_constraint = constraint.inner_constraint
+    if inner_constraint.std.impl.finished_pruning
+        finished_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set)
+    end
+end
