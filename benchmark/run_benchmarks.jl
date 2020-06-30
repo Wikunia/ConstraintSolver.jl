@@ -33,7 +33,7 @@ end
 if isinteractive() == false
     args = parse_commandline()
     using PkgBenchmark
-    using ConstraintSolver
+    using ConstraintSolver, Cbc
     using GitHub, JSON, Statistics
 
     github_auth = GitHub.authenticate(ENV["GITHUB_AUTH"])

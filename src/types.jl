@@ -342,6 +342,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     backtrack_vec::Vector{BacktrackObj{T}}
     sense::MOI.OptimizationSense
     objective::ObjectiveFunction
+    var_in_obj::Vector{Bool} # saves whether a variable is part of the objective function
     traverse_strategy::Val
     branch_split::Val
     best_sol::T # Objective of the best solution

@@ -20,7 +20,7 @@ You can install this julia package using
 
 ## Example
 
-You can easily use this package using the same modelling package as you might be used to for solving (non)linear problems in Julia: [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl).
+You can easily use this package with the same modelling package as you might be used to for solving (non)linear problems in Julia: [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl).
 
 ### Sudoku
 ```
@@ -37,6 +37,7 @@ grid = [6 0 2 0 5 0 0 0 0;
         0 0 0 6 0 0 0 0 0]
 
 using ConstraintSolver
+# define a shorter name ;)
 const CS = ConstraintSolver
 
 # creating a constraint solver model and setting ConstraintSolver as the optimizer.
