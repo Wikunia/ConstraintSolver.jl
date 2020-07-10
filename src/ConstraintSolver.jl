@@ -153,8 +153,7 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
     end
     constraint.std.pvals = pvals
     if constraint isa IndicatorConstraint || constraint isa ReifiedConstraint
-        # TODO: This will always include 0/1 even if not in the inner constraint
-        constraint.inner_constraint.std.pvals = pvals
+        set_pvals!(com, constraint.inner_constraint)
     end
 end
 
