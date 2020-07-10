@@ -78,17 +78,9 @@ end
 
 function MOI.supports_constraint(
     ::Optimizer,
-    func::Type{VAF{T}},
+    func::Union{Type{VAF{T}}, Type{MOI.VectorOfVariables}},
     set::Type{RS},
 ) where {A, T<:Real, RS<:CS.ReifiedSet{A}}
-    return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
-end
-
-function MOI.supports_constraint(
-    ::Optimizer,
-    func::Type{MOI.VectorOfVariables},
-    set::Type{RS},
-) where {A, RS<:CS.ReifiedSet{A}}
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
 
