@@ -63,6 +63,7 @@ end
     @test JuMP.value(x) ≈ 5
     @test JuMP.value(y) ≈ 4
     com = JuMP.backend(m).optimizer.model.inner
+    @test !com.constraints[1].reified_in_inner
     @test is_solved(com)
 end
 

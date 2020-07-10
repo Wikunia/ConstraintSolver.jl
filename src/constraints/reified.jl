@@ -110,9 +110,7 @@ function single_reverse_pruning_constraint!(
 ) where {A, T<:Real, RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
     # the variable must be part of the inner constraint
-    # General assumption is that the reified variable is not part of the inner constraint
-    # TODO: Maybe disallow that reified is part of inner constraint
-    if inner_constraint.std.impl.single_reverse_pruning && var.idx != constraint.std.indices[1]
+    if inner_constraint.std.impl.single_reverse_pruning && (var.idx != constraint.std.indices[1] || constraint.reified_in_inner)
         single_reverse_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, var, backtrack_idx)
     end
 end

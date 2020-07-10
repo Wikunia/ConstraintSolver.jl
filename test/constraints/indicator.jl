@@ -13,6 +13,7 @@
     @test JuMP.value(x) ≈ 4
     @test JuMP.value(y) ≈ 3
     com = JuMP.backend(m).optimizer.model.inner
+    @test !com.constraints[1].indicator_in_inner
     @test is_solved(com)
 end
 
@@ -137,6 +138,14 @@ end
     @test JuMP.objective_value(m) ≈ 0.0
     @test JuMP.value(a) ≈ 0.0
     com = JuMP.backend(m).optimizer.model.inner
+    num_indicator = 0
+    for i=1:length(com.constraints)
+        if com.constraints[i] isa CS.IndicatorConstraint
+            @test com.constraints[i].indicator_in_inner
+            num_indicator += 1
+        end
+    end
+    @test num_indicator == 1
     @test is_solved(com)
 end
 

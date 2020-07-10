@@ -370,7 +370,7 @@ function MOI.add_constraint(
     # should not be used...
     lc.std.idx = 0
 
-    con = IndicatorConstraint(internals, A, lc)
+    con = IndicatorConstraint(internals, A, lc, indices[1] in indices[2:end])
 
     push!(com.constraints, con)
     for (i, ind) in enumerate(con.std.indices)
@@ -388,11 +388,12 @@ function MOI.add_constraint(
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
+    indices = Int[v.value for v in vars.variables]
     internals = ConstraintInternals(
         length(com.constraints) + 1,
         vars,
         set,
-        Int[v.value for v in vars.variables]
+        indices
     )
 
     inner_internals = ConstraintInternals(
@@ -403,7 +404,7 @@ function MOI.add_constraint(
     )
     inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
         
-    con = IndicatorConstraint(internals, A, inner_constraint)
+    con = IndicatorConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
 
     push!(com.constraints, con)
     for (i, ind) in enumerate(con.std.indices)
@@ -447,7 +448,7 @@ function MOI.add_constraint(
     # should not be used...
     lc.std.idx = 0
 
-    con = ReifiedConstraint(internals, A, lc)
+    con = ReifiedConstraint(internals, A, lc, indices[1] in indices[2:end])
 
     push!(com.constraints, con)
     for (i, ind) in enumerate(con.std.indices)
@@ -465,11 +466,12 @@ function MOI.add_constraint(
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
+    indices = Int[v.value for v in vars.variables]
     internals = ConstraintInternals(
         length(com.constraints) + 1,
         vars,
         set,
-        Int[v.value for v in vars.variables]
+        indices
     )
 
     inner_internals = ConstraintInternals(
@@ -480,7 +482,7 @@ function MOI.add_constraint(
     )
     inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
         
-    con = ReifiedConstraint(internals, A, inner_constraint)
+    con = ReifiedConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
 
     push!(com.constraints, con)
     for (i, ind) in enumerate(con.std.indices)

@@ -245,12 +245,14 @@ mutable struct IndicatorConstraint <: Constraint
     std::ConstraintInternals
     activate_on::MOI.ActivationCondition
     inner_constraint::Constraint
+    indicator_in_inner::Bool # is the indicator variable also in the inner constraint
 end
 
 mutable struct ReifiedConstraint <: Constraint
     std::ConstraintInternals
     activate_on::MOI.ActivationCondition
     inner_constraint::Constraint
+    reified_in_inner::Bool # is the reified variable also in the inner constraint
 end
 
 #====================================================================================
