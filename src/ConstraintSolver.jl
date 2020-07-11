@@ -54,6 +54,7 @@ include("constraints/equal.jl")
 include("constraints/not_equal.jl")
 include("constraints/table.jl")
 include("constraints/indicator.jl")
+include("constraints/reified.jl")
 
 """
     add_var!(com::CS.CoM, from::Int, to::Int; fix=nothing)
@@ -151,9 +152,8 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
         pvals = vcat(pvals, collect(interval.from:interval.to))
     end
     constraint.std.pvals = pvals
-    if constraint isa IndicatorConstraint
-        # TODO: This will always include 0/1 even if not in the inner constraint
-        constraint.inner_constraint.std.pvals = pvals
+    if constraint isa IndicatorConstraint || constraint isa ReifiedConstraint
+        set_pvals!(com, constraint.inner_constraint)
     end
 end
 
@@ -1162,6 +1162,10 @@ function solve!(com::CS.CoM, options::SolverOptions)
     end
     if backtrack
         com.info.backtracked = true
+        if time() - com.start_time > com.options.time_limit 
+            com.solve_time = time() - com.start_time
+            return :Time
+        end
         status = backtrack!(com, max_bt_steps; sorting = backtrack_sorting)
         sort_solutions!(com)
         com.solve_time = time() - com.start_time

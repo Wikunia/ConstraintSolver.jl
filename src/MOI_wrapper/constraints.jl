@@ -10,11 +10,13 @@ function JuMP._build_indicator_constraint(
     _error::Function, variable::JuMP.AbstractVariableRef,
     constraint::JuMP.VectorConstraint, ::Type{MOI.IndicatorSet{A}}) where A
 
-    set = CS.IndicatorSet{A}(variable, MOI.VectorOfVariables(constraint.func), constraint.set, 1+length(constraint.func))
+    set = CS.IndicatorSet{A}(MOI.VectorOfVariables(constraint.func), constraint.set, 1+length(constraint.func))
     vov = VariableRef[variable]
     append!(vov, constraint.func)
     return JuMP.VectorConstraint(vov, set)
 end
+
+include("reified.jl")
 
 ### !=
 
@@ -74,6 +76,13 @@ function MOI.supports_constraint(
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
 
+function MOI.supports_constraint(
+    ::Optimizer,
+    func::Union{Type{VAF{T}}, Type{MOI.VectorOfVariables}},
+    set::Type{RS},
+) where {A, T<:Real, RS<:CS.ReifiedSet{A}}
+    return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
+end
 
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
     for term in aff.terms
@@ -353,7 +362,7 @@ function MOI.add_constraint(
     # should not be used...
     lc.std.idx = 0
 
-    con = IndicatorConstraint(internals, A, lc)
+    con = IndicatorConstraint(internals, A, lc, indices[1] in indices[2:end])
 
     push!(com.constraints, con)
     for (i, ind) in enumerate(con.std.indices)
@@ -367,15 +376,16 @@ function MOI.add_constraint(
     model::Optimizer,
     vars::MOI.VectorOfVariables,
     set::IS,
-) where {A, T<:Real,IS<:CS.IndicatorSet{A}}
+) where {A, IS<:CS.IndicatorSet{A}}
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
+    indices = Int[v.value for v in vars.variables]
     internals = ConstraintInternals(
         length(com.constraints) + 1,
         vars,
         set,
-        Int[v.value for v in vars.variables]
+        indices
     )
 
     inner_internals = ConstraintInternals(
@@ -386,7 +396,7 @@ function MOI.add_constraint(
     )
     inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
         
-    con = IndicatorConstraint(internals, A, inner_constraint)
+    con = IndicatorConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
 
     push!(com.constraints, con)
     for (i, ind) in enumerate(con.std.indices)
@@ -394,6 +404,84 @@ function MOI.add_constraint(
     end
     
     return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.IndicatorSet{A}}(length(com.constraints))
+end
+
+function MOI.add_constraint(
+    model::Optimizer,
+    func::VAF{T},
+    set::RS,
+) where {A, T<:Real, RS<:ReifiedSet{A}}
+    com = model.inner
+    com.info.n_constraint_types.reified += 1
+
+    indices = [v.scalar_term.variable_index.value for v in func.terms]
+
+    # for normal linear constraints
+    inner_indices = [v.scalar_term.variable_index.value for v in func.terms if v.output_index == 2]
+    inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
+    inner_constant = func.constants[2]
+    inner_set = set.set
+
+    if typeof(set.set) isa Type{MOI.GreaterThan{T}}
+        inner_terms = [MOI.ScalarAffineTerm(-v.scalar_term.coefficient, v.scalar_term.variable_index) for v in func.terms if v.output_index == 2]
+        inner_constant = -inner_constant
+        inner_set = MOI.LessThan{T}(-set.set.lower)
+    end
+    inner_func = MOI.ScalarAffineFunction{T}(inner_terms, inner_constant)
+
+    internals = ConstraintInternals(
+        length(com.constraints) + 1,
+        func,
+        ReifiedSet{A}(set.func, inner_set, set.dimension),
+        indices
+    )
+
+    lc = LinearConstraint(inner_func, inner_set, inner_indices)
+    # should not be used...
+    lc.std.idx = 0
+
+    con = ReifiedConstraint(internals, A, lc, indices[1] in indices[2:end])
+
+    push!(com.constraints, con)
+    for (i, ind) in enumerate(con.std.indices)
+        push!(com.subscription[ind], con.std.idx)
+    end
+    
+    return MOI.ConstraintIndex{VAF{T},CS.ReifiedSet{A}}(length(com.constraints))
+end
+
+function MOI.add_constraint(
+    model::Optimizer,
+    vars::MOI.VectorOfVariables,
+    set::IS,
+) where {A, IS<:CS.ReifiedSet{A}}
+    com = model.inner
+    com.info.n_constraint_types.indicator += 1
+
+    indices = Int[v.value for v in vars.variables]
+    internals = ConstraintInternals(
+        length(com.constraints) + 1,
+        vars,
+        set,
+        indices
+    )
+
+    inner_internals = ConstraintInternals(
+        0,
+        MOI.VectorOfVariables(vars.variables[2:end]),
+        set.set,
+        Int[v.value for v in vars.variables[2:end]]
+    )
+    inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
+        
+    con = ReifiedConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
+
+    push!(com.constraints, con)
+    for (i, ind) in enumerate(con.std.indices)
+        push!(com.subscription[ind], con.std.idx)
+    end
+    
+    return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.ReifiedSet{A}}(length(com.constraints))
 end
 
 function set_pvals!(model::CS.Optimizer)

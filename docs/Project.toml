@@ -7,6 +7,6 @@ MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 MatrixNetworks = "4f449596-a032-5618-b826-5a251cb6dc11"
 
 [compat]
-JuMP = "^0.21.0"
-MathOptInterface = "^0.9.1"
+JuMP = "^0.21.3"
+MathOptInterface = "^0.9.11"
 julia = "1"

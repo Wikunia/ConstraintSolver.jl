@@ -27,7 +27,7 @@ function get_rotations(puzzle)
     return rotations
 end
 
-function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_solutions=false, optimize=false, indicator=false)
+function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_solutions=false, optimize=false, indicator=false, reified=false)
     puzzle = read_puzzle(fname)
     rotations = get_rotations(puzzle)
     npieces = size(puzzle)[1]
@@ -48,12 +48,16 @@ function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_s
     @variable(m, 0 <= pl[1:height, 1:width] <= ncolors, Int)
     if indicator 
         @variable(m, b, Bin)
+    elseif reified 
+        @variable(m, b[1:height, 1:width], Bin)
     end
 
     @constraint(m, p[:] in CS.AllDifferentSet())
     for i=1:height, j=1:width
         if indicator
             @constraint(m, b => {[p[i,j], pu[i,j], pr[i,j], pd[i,j], pl[i,j]] in CS.TableSet(rotations)})
+        elseif reified
+            @constraint(m, b[i,j] := {[p[i,j], pu[i,j], pr[i,j], pd[i,j], pl[i,j]] in CS.TableSet(rotations)})
         else
             @constraint(m, [p[i,j], pu[i,j], pr[i,j], pd[i,j], pl[i,j]] in CS.TableSet(rotations))
         end
@@ -97,6 +101,8 @@ function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_s
     elseif optimize
         if indicator
             @objective(m, Max, 1000*b + p[1,1] + p[1,2])
+        elseif reified
+            @objective(m, Max, sum(b))
         else
             @objective(m, Max, p[1,1] + p[1,2])
         end

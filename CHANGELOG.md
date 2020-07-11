@@ -1,5 +1,8 @@
 # ConstrainSolver.jl - Changelog
 
+## Unreleased
+- Reified constraint [#171](https://github.com/Wikunia/ConstraintSolver.jl/pull/171)
+- 
 ## v0.2.2 (26th of June 2020)
 - Actually use best bound [#175](https://github.com/Wikunia/ConstraintSolver.jl/pull/175)
 - Select next var based on objective (still hacky solution) [#176](https://github.com/Wikunia/ConstraintSolver.jl/issues/176)
