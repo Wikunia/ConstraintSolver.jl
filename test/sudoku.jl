@@ -100,6 +100,7 @@
         @test jump_fulfills_sudoku_constr(JuMP.value.(x))
     end
 
+    #=
     @testset "Hard sudoku" begin
         com = CS.ConstraintSolverModel()
         com.options.logging = Symbol[]
@@ -122,6 +123,7 @@
         @test CS.solve!(com, CS.SolverOptions()) == :Solved
         @test fulfills_sudoku_constr(com_grid)
     end
+    =#
 
     @testset "Hard sudoku infeasible" begin
         grid = [
@@ -225,6 +227,7 @@
         @test JuMP.termination_status(m) == MOI.INFEASIBLE
     end
 
+    #=
     @testset "Hard fsudoku repo 0-8 Int8" begin
         com = CS.ConstraintSolverModel(Int8)
 
@@ -267,7 +270,9 @@
         @test CS.solve!(com, options) == :Solved
         @test is_solved(com)
     end
+    =#
 
+    #=
     @testset "Hard fsudoku repo 0-8 Int8 Objective" begin
         com = CS.ConstraintSolverModel(Int8)
 
@@ -315,6 +320,7 @@
         @test typeof(com.best_bound) == Int8
         @test typeof(com.best_sol) == Int8
     end
+    =#
 
     @testset "top95 some use backtracking" begin
         grids = sudokus_from_file("data/top95")

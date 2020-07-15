@@ -1,41 +1,4 @@
 """
-    Base.:(==)(x::LinearCombination, y::Real)
-
-Create a linear constraint with `LinearCombination` and an integer rhs `y`. \n
-Can be used i.e by `add_constraint!(com, x+y = 2)`.
-"""
-function Base.:(==)(x::LinearCombination, y::Real)
-    indices, coeffs, constant_lhs = simplify(x)
-
-    rhs = y - constant_lhs
-    func, T = linear_combination_to_saf(LinearCombination(indices, coeffs))
-    lc = LinearConstraint(func, MOI.EqualTo{T}(rhs), indices)
-
-    lc.std.hash = constraint_hash(lc)
-    return lc
-end
-
-"""
-    Base.:(==)(x::LinearCombination, y::Variable)
-
-Create a linear constraint with `LinearCombination` and a variable rhs `y`. \n
-Can be used i.e by `add_constraint!(com, x+y = z)`.
-"""
-function Base.:(==)(x::LinearCombination, y::Variable)
-    return x == LinearCombination([y.idx], [1])
-end
-
-"""
-    Base.:(==)(x::LinearCombination, y::LinearCombination)
-
-Create a linear constraint with `LinearCombination` on the left and right hand side. \n
-Can be used i.e by `add_constraint!(com, x+y = a+b)`.
-"""
-function Base.:(==)(x::LinearCombination, y::LinearCombination)
-    return x - y == 0
-end
-
-"""
     get_new_extrema_and_sum(search_space, idx, i, terms, full_min, full_max, pre_mins, pre_maxs)
 
 Get the updated full_min, full_max as well as updated pre_mins[i] and pre_maxs[i] after values got removed from search_space[idx]

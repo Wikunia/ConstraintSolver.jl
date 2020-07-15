@@ -1,36 +1,4 @@
 """
-    Base.:!(bc::CS.LinearConstraint)
-
-Change the `LinearConstraint` to describe the opposite of it.
-Can be used i.e by `add_constraint!(com, x + y != z)`.
-"""
-function Base.:!(lc::CS.LinearConstraint)
-    if !isa(lc.std.set, MOI.EqualTo)
-        throw(ErrorException("!LinearConstraint is only implemented for !equal"))
-    end
-    lc.std.set = NotEqualTo{typeof(lc.std.set.value)}(lc.std.set.value)
-    return lc
-end
-
-"""
-    Base.:!(bc::CS.BasicConstraint)
-
-Change the `EqualConstraint` to describe the opposite of it.
-Can be used i.e by `add_constraint!(com, x != z)`.
-"""
-function Base.:!(ec::CS.EqualConstraint)
-    if length(ec.std.indices) != 2
-        throw(ErrorException("!EqualConstraint is only implemented for !equal with exactly 2 variables"))
-    end
-    
-    func, T = linear_combination_to_saf(LinearCombination(ec.std.indices, [1, -1]))
-    indices = [v.variable_index.value for v in func.terms]
-    lc = LinearConstraint(func, CS.NotEqualTo(0), indices)
-    lc.std.idx = ec.std.idx
-    return lc
-end
-
-"""
     prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualTo{T}; logs = true) where T <: Real
 
 Reduce the number of possibilities given the not equal constraint.

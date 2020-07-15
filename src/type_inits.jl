@@ -30,6 +30,17 @@ function ImplementedConstraintFunctions()
    return ImplementedConstraintFunctions([false for f in fieldnames(ImplementedConstraintFunctions)]...)
 end
 
+function LinearConstraint(indices::Vector, coeffs::Vector{T}, constant, set::MOI.AbstractScalarSet) where T
+    @assert length(indices) == length(coeffs)
+    len = length(coeffs)
+    scalar_terms = Vector{MOI.ScalarAffineTerm{T}}(undef, len)
+    for (i, idx, coeff) in zip(1:len, indices, coeffs)
+        scalar_terms[i] = MOI.ScalarAffineTerm{T}(coeff, MOI.VariableIndex(idx))
+    end
+    saf = MOI.ScalarAffineFunction(scalar_terms, constant)
+    return LinearConstraint(saf, set, indices)
+end
+
 function LinearConstraint(
     fct::MOI.ScalarAffineFunction,
     set::MOI.AbstractScalarSet,

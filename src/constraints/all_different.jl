@@ -1,33 +1,5 @@
 include("all_different/bipartite.jl")
 
-"""
-    all_different(variables::Vector{Variable})
-
-Create a AllDifferentConstraint which will later be used by `all_different(com, constraint)`. \n
-Can be used i.e by `add_constraint!(com, CS.all_different(variables))`.
-"""
-function all_different(variables::Vector{Variable})
-    internals = ConstraintInternals(
-        0, # idx will be changed later
-        var_vector_to_moi(variables),
-        AllDifferentSetInternal(length(variables)),
-        Int[v.idx for v in variables]
-    )
-
-    constraint = AllDifferentConstraint(
-        internals,
-        Int[],
-        Int[],
-        Int[],
-        Int[],
-        Int[],
-        MatchingInit(),
-        Int[]        
-    )
-    constraint.std.hash = constraint_hash(constraint)
-    return constraint
-end
-
 function init_constraint_struct(::Type{AllDifferentSetInternal}, internals)
     AllDifferentConstraint(
         internals,

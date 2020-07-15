@@ -57,45 +57,6 @@ include("constraints/indicator.jl")
 include("constraints/reified.jl")
 
 """
-    add_var!(com::CS.CoM, from::Int, to::Int; fix=nothing)
-
-Adding a variable to the constraint model `com`. The variable is discrete and has the possible values from,..., to.
-If the variable should be fixed to something one can use the `fix` keyword i.e `add_var!(com, 1, 9; fix=5)`
-"""
-function add_var!(com::CS.CoM, from::Int, to::Int; fix = nothing)
-    ind = length(com.search_space) + 1
-    changes = Vector{Vector{Tuple{Symbol,Int,Int,Int}}}()
-    push!(changes, Vector{Tuple{Symbol,Int,Int,Int}}())
-    var = Variable(
-        ind, # idx
-        from, # lower_bound
-        to, # upper_bound
-        1, # first_ptr
-        to - from + 1, # last_ptr
-        from:to, # values
-        1:to-from+1, # indices
-        from:to, # init_vals
-        1:to-from+1, # init_val_to_index
-        1 - from, # offset
-        from, # min
-        to, # max
-        changes,
-        true, # has_upper_bound
-        true, # has_lower_bound
-        fix !== nothing, # is_fixed
-        true, # is_integer
-    )
-    if fix !== nothing
-        fix!(com, var, fix; check_feasibility=false)
-    end
-    push!(com.search_space, var)
-    push!(com.subscription, Int[])
-    push!(com.bt_infeasible, 0)
-    push!(com.var_in_obj, false)
-    return var
-end
-
-"""
     fulfills_constraints(com::CS.CoM, index, value)
 
 Return whether the model is still feasible after setting the variable at position `index` to `value`.
@@ -965,10 +926,11 @@ function simplify!(com)
                         end
                     end
                     if found_possible_constraint && length(outside_indices) <= 4
+                        # TODO: check for a better way of accessing the parameteric type of ConstraintSolverModel (also see below)
                         add_constraint!(
                             com,
-                            sum(com.search_space[outside_indices]) ==
-                            all_diff_sum - in_sum,
+                            LinearConstraint(outside_indices, ones(typeof(com.best_sol), length(outside_indices)),
+                                            zero(typeof(com.best_sol)), MOI.EqualTo(all_diff_sum - in_sum))
                         )
                         push!(added_constraint_idxs, length(com.constraints))
                     end
@@ -1015,8 +977,8 @@ function simplify!(com)
                     if add_sum_constraint && length(outside_indices) <= 4
                         add_constraint!(
                             com,
-                            sum(com.search_space[outside_indices]) ==
-                            total_sum - all_diff_sum,
+                            LinearConstraint(outside_indices, ones(typeof(com.best_sol), length(outside_indices)),
+                                            zero(typeof(com.best_sol)), MOI.EqualTo(total_sum - all_diff_sum))
                         )
                         push!(added_constraint_idxs, length(com.constraints))
                     end

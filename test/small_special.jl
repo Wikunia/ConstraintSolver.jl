@@ -1,4 +1,5 @@
 @testset "Small special tests" begin
+    #=
     @testset "Sum" begin
         com = CS.ConstraintSolverModel()
 
@@ -567,6 +568,7 @@
 
         @test_throws ErrorException CS.add_constraint!(com, !CS.equal([v1, v2, v3]))
     end
+    =#
 
     @testset "Fix variable" begin
         m = Model(CSJuMPTestOptimizer())
@@ -630,6 +632,7 @@
         @test JuMP.objective_value(m) ≈ 1.5
     end
 
+    #=
     @testset "LessThan constraints CS" begin
         com = CS.ConstraintSolverModel()
 
@@ -654,6 +657,7 @@
         @test x_vals[1] - x_vals[2] <= x_vals[3]
         @test x_vals[1] + x_vals[2] >= x_vals[4] + x_vals[5]
     end
+    =#
 
     @testset "Knapsack problems" begin
         m = Model(CSJuMPTestOptimizer())

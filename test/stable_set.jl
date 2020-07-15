@@ -172,7 +172,6 @@ using LinearAlgebra: dot
                     0.0,
                 )
                 MOI.add_constraint(model, f, MOI.EqualTo(1.0))
-                # ConstraintSolver.add_constraint!(model, x[i] + x[j] <= 1)
             end
         end
         # sum(w[i] * x[i] for i in V) - stable_set == 0
