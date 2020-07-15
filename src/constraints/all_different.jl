@@ -1,4 +1,4 @@
-include("bipartite.jl")
+include("all_different/bipartite.jl")
 
 """
     all_different(variables::Vector{Variable})
