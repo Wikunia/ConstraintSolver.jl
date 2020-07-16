@@ -72,7 +72,7 @@ function init_constraint!(
         push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_var_idx)))
         saf = MOI.ScalarAffineFunction(sats, 0.0)
         MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
-        constraint.bound_rhs = [BoundRhsVariable(lp_var_idx, table_min, table_max)]
+        set_internal_field(constraint, :bound_rhs, [BoundRhsVariable(lp_var_idx, table_min, table_max)])
     end
     
 

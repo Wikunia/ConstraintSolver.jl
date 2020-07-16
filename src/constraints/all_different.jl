@@ -66,7 +66,7 @@ function init_constraint!(
     saf = MOI.ScalarAffineFunction(sats, 0.0)
     MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
     
-    constraint.bound_rhs = [BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int))]
+    set_internal_field(constraint, :bound_rhs, [BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int))])
 
     # if constraints are part of the all different constraint
     # the all different constraint can be split more parts to get better bounds

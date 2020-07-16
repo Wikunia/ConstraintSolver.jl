@@ -130,8 +130,8 @@ function MOI.add_constraint(
 
     indices = [v.variable_index.value for v in func.terms]
 
-    lc = LinearConstraint(func, set, indices)
-    lc.idx = length(model.inner.constraints) + 1
+    lc_idx = length(model.inner.constraints) + 1
+    lc = LinearConstraint(lc_idx, func, set, indices)
 
     push!(model.inner.constraints, lc)
 
@@ -205,9 +205,9 @@ function MOI.add_constraint(
 
     # for normal <= constraints 
     indices = [v.variable_index.value for v in func.terms]
-
-    lc = LinearConstraint(func, set, indices)
-    lc.idx = length(model.inner.constraints) + 1
+    
+    lc_idx = length(model.inner.constraints) + 1
+    lc = LinearConstraint(lc_idx, func, set, indices)
 
     push!(model.inner.constraints, lc)
 
@@ -318,8 +318,8 @@ function MOI.add_constraint(
 
     indices = [v.variable_index.value for v in func.terms]
 
-    lc = LinearConstraint(func, set, indices)
-    lc.idx = length(model.inner.constraints) + 1
+    lc_idx = length(model.inner.constraints) + 1
+    lc = LinearConstraint(lc_idx, func, set, indices)
 
     push!(com.constraints, lc)
     for (i, ind) in enumerate(lc.indices)
@@ -358,9 +358,7 @@ function MOI.add_constraint(
         indices
     )
 
-    lc = LinearConstraint(inner_func, inner_set, inner_indices)
-    # should not be used...
-    lc.idx = 0
+    lc = LinearConstraint(0, inner_func, inner_set, inner_indices)
 
     con = IndicatorConstraint(internals, A, lc, indices[1] in indices[2:end])
 
@@ -436,9 +434,7 @@ function MOI.add_constraint(
         indices
     )
 
-    lc = LinearConstraint(inner_func, inner_set, inner_indices)
-    # should not be used...
-    lc.idx = 0
+    lc = LinearConstraint(0, inner_func, inner_set, inner_indices)
 
     con = ReifiedConstraint(internals, A, lc, indices[1] in indices[2:end])
 
@@ -493,7 +489,8 @@ end
 
 function set_constraint_hashes!(com::CS.CoM; constraints=com.constraints)
     for constraint in constraints
-        constraint.hash = constraint_hash(constraint)
+        csi = constraint.std
+        set_internal_field(constraint, :hash, constraint_hash(constraint))
     end
 end
 
@@ -504,7 +501,7 @@ function init_constraints!(com::CS.CoM; constraints=com.constraints)
             feasible = init_constraint!(com, constraint, constraint.fct, constraint.set)
             !feasible && break
         end
-        constraint.is_initialized = true
+        set_internal_field(constraint, :is_initialized, true)
     end
     return feasible
 end

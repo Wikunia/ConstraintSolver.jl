@@ -111,7 +111,8 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
     for interval in pvals_intervals[2:end]
         pvals = vcat(pvals, collect(interval.from:interval.to))
     end
-    constraint.pvals = pvals
+    resize!(constraint.std.pvals, length(pvals))
+    constraint.std.pvals .= pvals
     if constraint isa IndicatorConstraint || constraint isa ReifiedConstraint
         set_pvals!(com, constraint.inner_constraint)
     end
@@ -123,7 +124,7 @@ end
 Add a constraint to the model i.e `add_constraint!(com, a != b)`
 """
 function add_constraint!(com::CS.CoM, constraint::Constraint)
-    constraint.idx = length(com.constraints) + 1
+    @assert constraint.idx != 0
     push!(com.constraints, constraint)
     set_pvals!(com, constraint)
     for (i, ind) in enumerate(constraint.indices)
@@ -926,12 +927,13 @@ function simplify!(com)
                     end
                     if found_possible_constraint && length(outside_indices) <= 4
                         # TODO: check for a better way of accessing the parameteric type of ConstraintSolverModel (also see below)
+                        constraint_idx = length(com.constraints)+1
                         add_constraint!(
                             com,
-                            LinearConstraint(outside_indices, ones(typeof(com.best_sol), length(outside_indices)),
+                            LinearConstraint(constraint_idx, outside_indices, ones(typeof(com.best_sol), length(outside_indices)),
                                             zero(typeof(com.best_sol)), MOI.EqualTo(all_diff_sum - in_sum))
                         )
-                        push!(added_constraint_idxs, length(com.constraints))
+                        push!(added_constraint_idxs, constraint_idx)
                     end
 
                     total_sum = 0
@@ -974,12 +976,13 @@ function simplify!(com)
 
                     # make sure that there are not too many outside indices
                     if add_sum_constraint && length(outside_indices) <= 4
+                        constraint_idx = length(com.constraints)+1
                         add_constraint!(
                             com,
-                            LinearConstraint(outside_indices, ones(typeof(com.best_sol), length(outside_indices)),
+                            LinearConstraint(constraint_idx, outside_indices, ones(typeof(com.best_sol), length(outside_indices)),
                                             zero(typeof(com.best_sol)), MOI.EqualTo(total_sum - all_diff_sum))
                         )
-                        push!(added_constraint_idxs, length(com.constraints))
+                        push!(added_constraint_idxs, constraint_idx)
                     end
                 end
             end

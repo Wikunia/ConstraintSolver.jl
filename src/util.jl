@@ -135,14 +135,47 @@ end
 #=
     Access standard ConstraintInternals without using .std syntax
 =#
-
-for field in fieldnames(CS.ConstraintInternals)
-    @eval _getproperty(c::CS.Constraint, ::Val{$(QuoteNode(field))}) = getproperty(c.std, $(QuoteNode(field)))
-    @eval _setproperty!(c::CS.Constraint, ::Val{$(QuoteNode(field))}, val) = setproperty!(c.std, $(QuoteNode(field)), val)
+function Base.getproperty(c::Constraint, s::Symbol) 
+    if s === :idx
+        getfield(c.std, :idx)
+    elseif s === :indices
+        getfield(c.std, :indices)
+    elseif s === :fct
+        getfield(c.std, :fct)
+    elseif s === :set
+        getfield(c.std, :set)
+    elseif s === :pvals
+        getfield(c.std, :pvals)
+    elseif s === :impl
+        getfield(c.std, :impl)
+    elseif s === :is_initialized
+        getfield(c.std, :is_initialized)
+    elseif s === :bound_rhs
+        getfield(c.std, :bound_rhs)
+    elseif s === :hash
+        getfield(c.std, :hash)
+    else
+        getfield(c, s)
+    end
 end
 
-_getproperty(c::CS.Constraint, ::Val{s}) where {s} = getfield(c, s)
-Base.getproperty(c::CS.Constraint, s::Symbol) = _getproperty(c, Val{s}())
+"""
+    set_internal_field(c::Constraint, fieldname::Symbol, value)
 
-_setproperty!(c::CS.Constraint, ::Val{s}, val) where {s} = setfield!(c, s, val)
-Base.setproperty!(c::CS.Constraint, s::Symbol, val) = _setproperty!(c, Val{s}(), val)
+Creates a new ConstraintInternal based on the current c.std and set fieldname to value
+"""
+function set_internal_field(c::Constraint, fieldname::Symbol, value)
+    csi = c.std
+    internal = ConstraintInternals(
+        fieldname == :idx ? value : csi.idx, 
+        fieldname == :fct ? value : csi.fct, 
+        fieldname == :set ? value : csi.set, 
+        fieldname == :indices ? value : csi.indices, 
+        fieldname == :pvals ? value : csi.pvals, 
+        fieldname == :impl ? value : csi.impl, 
+        fieldname == :is_initialized ? value : csi.is_initialized, 
+        fieldname == :bound_rhs ? value : csi.bound_rhs, 
+        fieldname == :hash ? value : csi.hash, 
+    )
+    c.std = internal
+end

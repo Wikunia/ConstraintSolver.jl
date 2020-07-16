@@ -30,7 +30,7 @@ function ImplementedConstraintFunctions()
    return ImplementedConstraintFunctions([false for f in fieldnames(ImplementedConstraintFunctions)]...)
 end
 
-function LinearConstraint(indices::Vector, coeffs::Vector{T}, constant, set::MOI.AbstractScalarSet) where T
+function LinearConstraint(cidx, indices::Vector, coeffs::Vector{T}, constant, set::MOI.AbstractScalarSet) where T
     @assert length(indices) == length(coeffs)
     len = length(coeffs)
     scalar_terms = Vector{MOI.ScalarAffineTerm{T}}(undef, len)
@@ -38,10 +38,11 @@ function LinearConstraint(indices::Vector, coeffs::Vector{T}, constant, set::MOI
         scalar_terms[i] = MOI.ScalarAffineTerm{T}(coeff, MOI.VariableIndex(idx))
     end
     saf = MOI.ScalarAffineFunction(scalar_terms, constant)
-    return LinearConstraint(saf, set, indices)
+    return LinearConstraint(cidx, saf, set, indices)
 end
 
 function LinearConstraint(
+    idx::Int,
     fct::MOI.ScalarAffineFunction,
     set::MOI.AbstractScalarSet,
     indices::Vector{Int},
@@ -69,7 +70,7 @@ function LinearConstraint(
     # this can be changed later in `set_in_all_different!` but needs to be initialized with false
     in_all_different = false
 
-    internals = ConstraintInternals(0, fct, set, indices)
+    internals = ConstraintInternals(idx, fct, set, indices)
     lc = LinearConstraint(
         internals,
         in_all_different,
