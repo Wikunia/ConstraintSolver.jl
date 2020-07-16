@@ -505,7 +505,7 @@ function restore_pruning_constraint!(
     prune_steps::Union{Int, Vector{Int}}
 )
     # revert to the last of prune steps
-    constraint.changed_vars = 1:length(constraint.indices)
+    constraint.changed_vars = collect(1:length(constraint.indices))
     current = constraint.current
     backtrack_id = last(prune_steps)
     while backtrack_id > length(constraint.backtrack) || isempty(constraint.backtrack[backtrack_id].words)
