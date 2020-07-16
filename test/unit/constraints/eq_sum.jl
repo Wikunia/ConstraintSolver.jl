@@ -1,4 +1,4 @@
-@testset "eq_sum" begin
+@testset "equal_to" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, y[1:3], CS.Integers([-3,1,2,3]))
     @constraint(m, sum(y)+1 == 5)
