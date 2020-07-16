@@ -127,7 +127,22 @@ end
 
 function is_solved_constraint(com::CS.CoM, constraint::Constraint, fct, set)
     variables = com.search_space
-    !all(isfixed(variables[var]) for var in constraint.std.indices) && return false
-    values = CS.value.(variables[constraint.std.indices])
+    !all(isfixed(variables[var]) for var in constraint.indices) && return false
+    values = CS.value.(variables[constraint.indices])
     return is_solved_constraint(constraint, fct, set, values)
 end
+
+#=
+    Access standard ConstraintInternals without using .std syntax
+=#
+
+for field in fieldnames(CS.ConstraintInternals)
+    @eval _getproperty(c::CS.Constraint, ::Val{$(QuoteNode(field))}) = getproperty(c.std, $(QuoteNode(field)))
+    @eval _setproperty!(c::CS.Constraint, ::Val{$(QuoteNode(field))}, val) = setproperty!(c.std, $(QuoteNode(field)), val)
+end
+
+_getproperty(c::CS.Constraint, ::Val{s}) where {s} = getfield(c, s)
+Base.getproperty(c::CS.Constraint, s::Symbol) = _getproperty(c, Val{s}())
+
+_setproperty!(c::CS.Constraint, ::Val{s}, val) where {s} = setfield!(c, s, val)
+Base.setproperty!(c::CS.Constraint, s::Symbol, val) = _setproperty!(c, Val{s}(), val)

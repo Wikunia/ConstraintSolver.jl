@@ -80,10 +80,10 @@
         z = CS.add_var!(com, 0, 9)
 
         c1 = 2x + 3x == 5
-        @test length(c1.std.indices) == 1
-        @test c1.std.indices[1] == 1
-        @test c1.std.fct.terms[1].coefficient == 5
-        @test c1.std.set.value == 5
+        @test length(c1.indices) == 1
+        @test c1.indices[1] == 1
+        @test c1.fct.terms[1].coefficient == 5
+        @test c1.set.value == 5
 
         CS.add_constraint!(com, 2x + 3x == 5)
         CS.add_constraint!(com, 2x - 3y + 6 + x == z)

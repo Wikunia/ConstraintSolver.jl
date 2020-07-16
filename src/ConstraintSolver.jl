@@ -69,9 +69,9 @@ function fulfills_constraints(com::CS.CoM, index, value)
     for ci in com.subscription[index]
         constraint = com.constraints[ci]
         # only call if the function got initialized already
-        if constraint.std.is_initialized
+        if constraint.is_initialized
             feasible =
-                still_feasible(com, constraint, constraint.std.fct, constraint.std.set, value, index)
+                still_feasible(com, constraint, constraint.fct, constraint.set, value, index)
             !feasible && break
         end
     end
@@ -81,10 +81,10 @@ end
 """
     set_pvals!(com::CS.CoM, constraint::Constraint)
 
-Compute the possible values inside this constraint and set it as constraint.std.pvals
+Compute the possible values inside this constraint and set it as constraint.pvals
 """
 function set_pvals!(com::CS.CoM, constraint::Constraint)
-    indices = constraint.std.indices
+    indices = constraint.indices
     variables = Variable[v for v in com.search_space[indices]]
     pvals_intervals = Vector{NamedTuple}()
     push!(pvals_intervals, (from = variables[1].lower_bound, to = variables[1].upper_bound))
@@ -111,7 +111,7 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
     for interval in pvals_intervals[2:end]
         pvals = vcat(pvals, collect(interval.from:interval.to))
     end
-    constraint.std.pvals = pvals
+    constraint.pvals = pvals
     if constraint isa IndicatorConstraint || constraint isa ReifiedConstraint
         set_pvals!(com, constraint.inner_constraint)
     end
@@ -123,11 +123,11 @@ end
 Add a constraint to the model i.e `add_constraint!(com, a != b)`
 """
 function add_constraint!(com::CS.CoM, constraint::Constraint)
-    constraint.std.idx = length(com.constraints) + 1
+    constraint.idx = length(com.constraints) + 1
     push!(com.constraints, constraint)
     set_pvals!(com, constraint)
-    for (i, ind) in enumerate(constraint.std.indices)
-        push!(com.subscription[ind], constraint.std.idx)
+    for (i, ind) in enumerate(constraint.indices)
+        push!(com.subscription[ind], constraint.idx)
     end
 end
 
@@ -190,10 +190,10 @@ function get_next_prune_constraint(com::CS.CoM, constraint_idxs_vec)
     best_hash = typemax(UInt64)
     for ci = 1:length(constraint_idxs_vec)
         if constraint_idxs_vec[ci] <= best_open
-            if constraint_idxs_vec[ci] < best_open || com.constraints[ci].std.hash < best_hash
+            if constraint_idxs_vec[ci] < best_open || com.constraints[ci].hash < best_hash
                 best_ci = ci
                 best_open = constraint_idxs_vec[ci]
-                best_hash = com.constraints[ci].std.hash
+                best_hash = com.constraints[ci].hash
             end
         end
     end
@@ -232,8 +232,8 @@ function prune!(
             prev_var_length[var.idx] = new_var_length
             for ci in com.subscription[var.idx]
                 inner_constraint = com.constraints[ci]
-                constraint_idxs_vec[inner_constraint.std.idx] =
-                    open_possibilities(search_space, inner_constraint.std.indices)
+                constraint_idxs_vec[inner_constraint.idx] =
+                    open_possibilities(search_space, inner_constraint.indices)
             end
         end
     end
@@ -256,7 +256,7 @@ function prune!(
         constraint = com.constraints[ci]
 
         feasible =
-            prune_constraint!(com, constraint, constraint.std.fct, constraint.std.set; logs = false)
+            prune_constraint!(com, constraint, constraint.fct, constraint.set; logs = false)
         if !pre_backtrack
             com.info.in_backtrack_calls += 1
         else
@@ -267,7 +267,7 @@ function prune!(
         end
 
         # if we changed another variable increase the level of the constraints to call them later
-        for var_idx in constraint.std.indices
+        for var_idx in constraint.indices
             var = search_space[var_idx]
             new_var_length = length(var.changes[current_backtrack_id])
             if new_var_length > prev_var_length[var.idx]
@@ -275,15 +275,15 @@ function prune!(
                 for ci in com.subscription[var.idx]
                     # don't call the same constraint again. 
                     # Each constraint should prune as much as possible 
-                    if ci != constraint.std.idx
+                    if ci != constraint.idx
                         inner_constraint = com.constraints[ci]
                         # if initial check or don't add constraints => update only those which already have open possibilities
                         if (only_once || initial_check) &&
-                           constraint_idxs_vec[inner_constraint.std.idx] == N
+                           constraint_idxs_vec[inner_constraint.idx] == N
                             continue
                         end
-                        constraint_idxs_vec[inner_constraint.std.idx] =
-                            open_possibilities(search_space, inner_constraint.std.indices)
+                        constraint_idxs_vec[inner_constraint.idx] =
+                            open_possibilities(search_space, inner_constraint.indices)
                     end
                 end
             end
@@ -346,15 +346,15 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
         var.idx > length(com.subscription) && continue
         for ci in com.subscription[var.idx]
             constraint = com.constraints[ci]
-            if constraint.std.impl.single_reverse_pruning
-                single_reverse_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set,
+            if constraint.impl.single_reverse_pruning
+                single_reverse_pruning_constraint!(com, constraint, constraint.fct, constraint.set,
                                                     var, backtrack_idx)
             end
         end
     end
     for constraint in com.constraints
-        if constraint.std.impl.reverse_pruning
-            reverse_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set, backtrack_idx)
+        if constraint.impl.reverse_pruning
+            reverse_pruning_constraint!(com, constraint, constraint.fct, constraint.set, backtrack_idx)
         end
     end
     com.c_backtrack_idx = com.backtrack_vec[backtrack_idx].parent_idx
@@ -449,13 +449,13 @@ function update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraint
     further_pruning = true
     feasible = true
     for constraint in constraints
-        relevant = any(com.var_in_obj[i] for i in constraint.std.indices)
+        relevant = any(com.var_in_obj[i] for i in constraint.indices)
         if relevant
             feasible = prune_constraint!(
                 com,
                 constraint,
-                constraint.std.fct,
-                constraint.std.set;
+                constraint.fct,
+                constraint.set;
                 logs = false,
             )
             if !feasible
@@ -884,12 +884,12 @@ function simplify!(com)
     b_all_different_sum = false
     b_eq_sum = false
     for constraint in com.constraints
-        if isa(constraint.std.set, AllDifferentSetInternal)
+        if isa(constraint.set, AllDifferentSetInternal)
             b_all_different = true
-            if length(constraint.std.indices) == length(constraint.std.pvals)
+            if length(constraint.indices) == length(constraint.pvals)
                 b_all_different_sum = true
             end
-        elseif isa(constraint.std.fct, SAF) && isa(constraint.std.set, MOI.EqualTo)
+        elseif isa(constraint.fct, SAF) && isa(constraint.set, MOI.EqualTo)
             b_eq_sum = true
         end
     end
@@ -903,24 +903,24 @@ function simplify!(com)
         for constraint_idx = 1:length(com.constraints)
             constraint = com.constraints[constraint_idx]
 
-            if isa(constraint.std.set, AllDifferentSetInternal)
+            if isa(constraint.set, AllDifferentSetInternal)
                 add_sum_constraint = true
-                if length(constraint.std.indices) == length(constraint.std.pvals)
-                    all_diff_sum = sum(constraint.std.pvals)
+                if length(constraint.indices) == length(constraint.pvals)
+                    all_diff_sum = sum(constraint.pvals)
                     # check if some sum constraints are completely inside this alldifferent constraint
                     in_sum = 0
                     found_possible_constraint = false
-                    outside_indices = constraint.std.indices
+                    outside_indices = constraint.indices
                     for sc_idx in constraint.sub_constraint_idxs
                         sub_constraint = com.constraints[sc_idx]
-                        if isa(sub_constraint.std.fct, SAF) &&
-                            isa(sub_constraint.std.set, MOI.EqualTo)
+                        if isa(sub_constraint.fct, SAF) &&
+                            isa(sub_constraint.set, MOI.EqualTo)
                             # the coefficients must be all 1
-                            if all(t.coefficient == 1 for t in sub_constraint.std.fct.terms)
+                            if all(t.coefficient == 1 for t in sub_constraint.fct.terms)
                                 found_possible_constraint = true
-                                in_sum += sub_constraint.std.set.value -
-                                    sub_constraint.std.fct.constant
-                                outside_indices = setdiff(outside_indices, sub_constraint.std.indices)
+                                in_sum += sub_constraint.set.value -
+                                    sub_constraint.fct.constant
+                                outside_indices = setdiff(outside_indices, sub_constraint.indices)
                             end
                         end
                     end
@@ -936,7 +936,7 @@ function simplify!(com)
 
                     total_sum = 0
                     outside_indices = Int[]
-                    cons_indices_dict = arr2dict(constraint.std.indices)
+                    cons_indices_dict = arr2dict(constraint.indices)
                     for variable_idx in keys(cons_indices_dict)
                         found_sum_constraint = false
                         for sub_constraint_idx in com.subscription[variable_idx]
@@ -946,15 +946,15 @@ function simplify!(com)
                             end
                             sub_constraint = com.constraints[sub_constraint_idx]
                             # it must be an equal constraint and all coefficients must be 1 otherwise we can't add a constraint
-                            if isa(sub_constraint.std.fct, SAF) &&
-                               isa(sub_constraint.std.set, MOI.EqualTo)
-                                if all(t.coefficient == 1 for t in sub_constraint.std.fct.terms)
+                            if isa(sub_constraint.fct, SAF) &&
+                               isa(sub_constraint.set, MOI.EqualTo)
+                                if all(t.coefficient == 1 for t in sub_constraint.fct.terms)
                                     found_sum_constraint = true
                                     total_sum +=
-                                        sub_constraint.std.set.value -
-                                        sub_constraint.std.fct.constant
+                                        sub_constraint.set.value -
+                                        sub_constraint.fct.constant
                                     all_inside = true
-                                    for sub_variable_idx in sub_constraint.std.indices
+                                    for sub_variable_idx in sub_constraint.indices
                                         if !haskey(cons_indices_dict, sub_variable_idx)
                                             all_inside = false
                                             push!(outside_indices, sub_variable_idx)
@@ -998,13 +998,13 @@ function set_in_all_different!(com::CS.CoM; constraints=com.constraints)
         if :in_all_different in fieldnames(typeof(constraint))
             if !constraint.in_all_different
                 subscriptions_idxs =
-                    [[i for i in com.subscription[v]] for v in constraint.std.indices]
+                    [[i for i in com.subscription[v]] for v in constraint.indices]
                 intersects = intersect(subscriptions_idxs...)
 
                 for i in intersects
-                    if isa(com.constraints[i].std.set, AllDifferentSetInternal)
+                    if isa(com.constraints[i].set, AllDifferentSetInternal)
                         constraint.in_all_different = true
-                        push!(com.constraints[i].sub_constraint_idxs, constraint.std.idx)
+                        push!(com.constraints[i].sub_constraint_idxs, constraint.idx)
                     end
                 end
             end

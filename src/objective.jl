@@ -112,9 +112,9 @@ function get_best_bound(
     # update bounds by constraints
     # check each constraint which has `update_best_bound = true` for a better bound
     for constraint in com.constraints
-        if constraint.std.impl.update_best_bound
-            update_best_bound_constraint!(com, constraint, constraint.std.fct, constraint.std.set, var_idx, lb, ub)
-            for bound in constraint.std.bound_rhs
+        if constraint.impl.update_best_bound
+            update_best_bound_constraint!(com, constraint, constraint.fct, constraint.set, var_idx, lb, ub)
+            for bound in constraint.bound_rhs
                 set_lower_bound(com.lp_x[bound.idx], bound.lb)
                 set_upper_bound(com.lp_x[bound.idx], bound.ub)
             end

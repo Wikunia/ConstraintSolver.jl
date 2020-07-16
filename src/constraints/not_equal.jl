@@ -11,11 +11,11 @@ function prune_constraint!(
     set::NotEqualTo{T};
     logs = true,
 ) where {T<:Real}
-    indices = constraint.std.indices
+    indices = constraint.indices
 
     # check if only one variable is variable
-    nfixed = count(v -> isfixed(v), com.search_space[constraint.std.indices])
-    if nfixed >= length(constraint.std.indices)-1
+    nfixed = count(v -> isfixed(v), com.search_space[constraint.indices])
+    if nfixed >= length(constraint.indices)-1
         search_space = com.search_space
         sum = -set.value+fct.constant
         unfixed_i = 0
@@ -60,7 +60,7 @@ function still_feasible(
     value::Int,
     index::Int,
 ) where {T<:Real}
-    indices = constraint.std.indices
+    indices = constraint.indices
     # check if only one variable is variable
     nfixed = count(v -> isfixed(v), com.search_space[indices])
     if nfixed >= length(indices)-1
