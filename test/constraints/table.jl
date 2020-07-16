@@ -274,8 +274,8 @@ end
     CS.single_reverse_pruning_constraint!(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
+        constraint.std.fct,
+        constraint.std.set,
         com.search_space[x.value],
         1
     )
@@ -283,8 +283,8 @@ end
     CS.reverse_pruning_constraint!(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
+        constraint.std.fct,
+        constraint.std.set,
         1
     )
 

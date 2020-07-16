@@ -10,8 +10,8 @@ function get_split_pvals(com, ::Val{:Auto}, var::Variable)
     @assert var.min != var.max
     if isa(com.objective, LinearCombinationObjective)
         lc = com.objective.lc 
-        for i in 1:length(lc.indices)
-            if lc.indices[i] == var.idx
+        for i in 1:length(lc.std.indices)
+            if lc.std.indices[i] == var.idx
                 coeff = lc.coeffs[i]
                 factor = com.sense == MOI.MIN_SENSE ? -1 : 1
                 if coeff*factor > 0

@@ -5,7 +5,7 @@ function init_constraint!(
     set::CS.EqualSetInternal; 
     active = true
 )
-    indices = constraint.indices
+    indices = constraint.std.indices
     search_space = com.search_space
     intersect_vals = Set(intersect(CS.values.(search_space[indices])...))
     !active && return true
@@ -50,7 +50,7 @@ function prune_constraint!(
     set::EqualSetInternal;
     logs = true,
 )
-    indices = constraint.indices
+    indices = constraint.std.indices
 
     search_space = com.search_space
     # is only needed if we want to set more
@@ -156,7 +156,7 @@ function still_feasible(
     index::Int,
 )
    variables = com.search_space
-   for ind in constraint.indices
+   for ind in constraint.std.indices
         ind == index && continue
         v = variables[ind]
         !has(v, value) && return false

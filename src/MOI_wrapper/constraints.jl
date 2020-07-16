@@ -10,7 +10,7 @@ function JuMP._build_indicator_constraint(
     _error::Function, variable::JuMP.AbstractVariableRef,
     constraint::JuMP.VectorConstraint, ::Type{MOI.IndicatorSet{A}}) where A
 
-    set = CS.IndicatorSet{A}(MOI.VectorOfVariables(constraint.func), constraint.set, 1+length(constraint.func))
+    set = CS.IndicatorSet{A}(MOI.VectorOfVariables(constraint.func), constraint.std.set, 1+length(constraint.func))
     vov = VariableRef[variable]
     append!(vov, constraint.func)
     return JuMP.VectorConstraint(vov, set)
@@ -120,8 +120,8 @@ function MOI.add_constraint(
             )
 
             push!(com.constraints, constraint)
-            for (i, ind) in enumerate(constraint.indices)
-                push!(com.subscription[ind], constraint.idx)
+            for (i, ind) in enumerate(constraint.std.indices)
+                push!(com.subscription[ind], constraint.std.idx)
             end
             com.info.n_constraint_types.equality += 1
             return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(length(model.inner.constraints))
@@ -135,8 +135,8 @@ function MOI.add_constraint(
 
     push!(model.inner.constraints, lc)
 
-    for (i, ind) in enumerate(lc.indices)
-        push!(model.inner.subscription[ind], lc.idx)
+    for (i, ind) in enumerate(lc.std.indices)
+        push!(model.inner.subscription[ind], lc.std.idx)
     end
     model.inner.info.n_constraint_types.equality += 1
 
@@ -211,8 +211,8 @@ function MOI.add_constraint(
 
     push!(model.inner.constraints, lc)
 
-    for (i, ind) in enumerate(lc.indices)
-        push!(model.inner.subscription[ind], lc.idx)
+    for (i, ind) in enumerate(lc.std.indices)
+        push!(model.inner.subscription[ind], lc.std.idx)
     end
     model.inner.info.n_constraint_types.inequality += 1
 
@@ -234,8 +234,8 @@ function MOI.add_constraint(model::Optimizer, vars::MOI.VectorOfVariables, set::
     )
 
     push!(com.constraints, constraint)
-    for (i, ind) in enumerate(constraint.indices)
-        push!(com.subscription[ind], constraint.idx)
+    for (i, ind) in enumerate(constraint.std.indices)
+        push!(com.subscription[ind], constraint.std.idx)
     end
     com.info.n_constraint_types.equality += 1
 
@@ -259,8 +259,8 @@ function MOI.add_constraint(
     constraint = init_constraint_struct(AllDifferentSetInternal, internals)
 
     push!(com.constraints, constraint)
-    for (i, ind) in enumerate(constraint.indices)
-        push!(com.subscription[ind], constraint.idx)
+    for (i, ind) in enumerate(constraint.std.indices)
+        push!(com.subscription[ind], constraint.std.idx)
     end
     com.info.n_constraint_types.alldifferent += 1
 
@@ -284,8 +284,8 @@ function MOI.add_constraint(
     constraint = init_constraint_struct(TableSetInternal, internals)
 
     push!(com.constraints, constraint)
-    for (i, ind) in enumerate(constraint.indices)
-        push!(com.subscription[ind], constraint.idx)
+    for (i, ind) in enumerate(constraint.std.indices)
+        push!(com.subscription[ind], constraint.std.idx)
     end
     com.info.n_constraint_types.table += 1
 
@@ -322,8 +322,8 @@ function MOI.add_constraint(
     lc = LinearConstraint(lc_idx, func, set, indices)
 
     push!(com.constraints, lc)
-    for (i, ind) in enumerate(lc.indices)
-        push!(com.subscription[ind], lc.idx)
+    for (i, ind) in enumerate(lc.std.indices)
+        push!(com.subscription[ind], lc.std.idx)
     end
 
     return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(length(com.constraints))
@@ -497,8 +497,8 @@ end
 function init_constraints!(com::CS.CoM; constraints=com.constraints)
     feasible = true
     for constraint in constraints
-        if constraint.impl.init
-            feasible = init_constraint!(com, constraint, constraint.fct, constraint.set)
+        if constraint.std.impl.init
+            feasible = init_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
             !feasible && break
         end
         set_internal_field(constraint, :is_initialized, true)
@@ -538,10 +538,10 @@ Sets `std.impl.init` if the constraint type has a `init_constraint!` method
 """	
 function set_impl_init!(constraint::Constraint)
     c_type = typeof(constraint)
-    c_fct_type = typeof(constraint.fct)
-    c_set_type = typeof(constraint.set)
+    c_fct_type = typeof(constraint.std.fct)
+    c_set_type = typeof(constraint.std.set)
     if hasmethod(init_constraint!, (CS.CoM, c_type, c_fct_type, c_set_type))
-        constraint.impl.init = true
+        constraint.std.impl.init = true
     end
 end
 
@@ -552,15 +552,15 @@ Sets `update_best_bound` if the constraint type has a `update_best_bound_constra
 """	
 function set_impl_update_best_bound!(constraint::Constraint)	
     c_type = typeof(constraint)	
-    c_fct_type = typeof(constraint.fct)	
-    c_set_type = typeof(constraint.set)	
+    c_fct_type = typeof(constraint.std.fct)	
+    c_set_type = typeof(constraint.std.set)	
     if hasmethod(	
         update_best_bound_constraint!,	
         (CS.CoM, c_type, c_fct_type, c_set_type, Int, Int, Int),	
     )	
-        constraint.impl.update_best_bound = true	
+        constraint.std.impl.update_best_bound = true	
     else # just to be sure => set it to false otherwise	
-        constraint.impl.update_best_bound = false	
+        constraint.std.impl.update_best_bound = false	
     end	
 end
 
@@ -571,24 +571,24 @@ if `single_reverse_pruning_constraint!`, `reverse_pruning_constraint!` are imple
 """	
 function set_impl_reverse_pruning!(constraint::Constraint)
     c_type = typeof(constraint)	
-    c_fct_type = typeof(constraint.fct)	
-    c_set_type = typeof(constraint.set)	
+    c_fct_type = typeof(constraint.std.fct)	
+    c_set_type = typeof(constraint.std.set)	
     if hasmethod(	
         single_reverse_pruning_constraint!,	
         (CS.CoM, c_type, c_fct_type, c_set_type, CS.Variable, Int),	
     )	
-        constraint.impl.single_reverse_pruning = true	
+        constraint.std.impl.single_reverse_pruning = true	
     else # just to be sure => set it to false otherwise	
-        constraint.impl.single_reverse_pruning = false	
+        constraint.std.impl.single_reverse_pruning = false	
     end	
 
     if hasmethod(	
         reverse_pruning_constraint!,	
         (CS.CoM, c_type, c_fct_type, c_set_type, Int),	
     )	
-        constraint.impl.reverse_pruning = true	
+        constraint.std.impl.reverse_pruning = true	
     else # just to be sure => set it to false otherwise	
-        constraint.impl.reverse_pruning = false	
+        constraint.std.impl.reverse_pruning = false	
     end	
 end
 
@@ -598,15 +598,15 @@ Sets `std.impl.finished_pruning` if `finished_pruning_constraint!`  is implement
 """	
 function set_impl_finished_pruning!(constraint::Constraint)
     c_type = typeof(constraint)	
-    c_fct_type = typeof(constraint.fct)	
-    c_set_type = typeof(constraint.set)	
+    c_fct_type = typeof(constraint.std.fct)	
+    c_set_type = typeof(constraint.std.set)	
     if hasmethod(	
         finished_pruning_constraint!,	
         (CS.CoM, c_type, c_fct_type, c_set_type)
     )	
-        constraint.impl.finished_pruning = true	
+        constraint.std.impl.finished_pruning = true	
     else # just to be sure => set it to false otherwise	
-        constraint.impl.finished_pruning = false	
+        constraint.std.impl.finished_pruning = false	
     end
 end
 
@@ -616,27 +616,27 @@ Sets `std.impl.restore_pruning` if `restore_pruning_constraint!`  is implemented
 """	
 function set_impl_restore_pruning!(constraint::Constraint)
     c_type = typeof(constraint)	
-    c_fct_type = typeof(constraint.fct)	
-    c_set_type = typeof(constraint.set)	
+    c_fct_type = typeof(constraint.std.fct)	
+    c_set_type = typeof(constraint.std.set)	
     if hasmethod(	
         restore_pruning_constraint!,	
         (CS.CoM, c_type, c_fct_type, c_set_type, Union{Int, Vector{Int}})
     )	
-        constraint.impl.restore_pruning = true	
+        constraint.std.impl.restore_pruning = true	
     else # just to be sure => set it to false otherwise	
-        constraint.impl.restore_pruning = false	
+        constraint.std.impl.restore_pruning = false	
     end
 end
 
 """
     call_finished_pruning!(com)
 
-Call `finished_pruning_constraint!` for every constraint which implements that function as saved in `constraint.impl.finished_pruning`
+Call `finished_pruning_constraint!` for every constraint which implements that function as saved in `constraint.std.impl.finished_pruning`
 """
 function call_finished_pruning!(com)
     for constraint in com.constraints
-        if constraint.impl.finished_pruning
-            finished_pruning_constraint!(com, constraint, constraint.fct, constraint.set)
+        if constraint.std.impl.finished_pruning
+            finished_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
         end
     end
 end
@@ -644,12 +644,12 @@ end
 """
     call_restore_pruning!(com, prune_steps)
 
-Call `call_restore_pruning!` for every constraint which implements that function as saved in `constraint.impl.restore_pruning`
+Call `call_restore_pruning!` for every constraint which implements that function as saved in `constraint.std.impl.restore_pruning`
 """
 function call_restore_pruning!(com, prune_steps)
     for constraint in com.constraints
-        if constraint.impl.restore_pruning
-            restore_pruning_constraint!(com, constraint, constraint.fct, constraint.set, prune_steps)
+        if constraint.std.impl.restore_pruning
+            restore_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set, prune_steps)
         end
     end
 end

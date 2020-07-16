@@ -10,7 +10,7 @@ function _build_reified_constraint(
     _error::Function, variable::JuMP.AbstractVariableRef,
     constraint::JuMP.VectorConstraint, ::Type{CS.ReifiedSet{A}}) where A
     
-    set = CS.ReifiedSet{A}(MOI.VectorOfVariables(constraint.func), constraint.set, 1+length(constraint.func))
+    set = CS.ReifiedSet{A}(MOI.VectorOfVariables(constraint.func), constraint.std.set, 1+length(constraint.func))
     vov = VariableRef[variable]
     append!(vov, constraint.func)
     return JuMP.VectorConstraint(vov, set)

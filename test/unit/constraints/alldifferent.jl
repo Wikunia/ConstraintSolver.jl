@@ -8,8 +8,8 @@
     constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
 
     # doesn't check the length
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1,2,3])
-    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [2,2,3])
+    @test CS.is_solved_constraint(constraint, constraint.std.fct, constraint.std.set, [1,2,3])
+    @test !CS.is_solved_constraint(constraint, constraint.std.fct, constraint.std.set, [2,2,3])
 
     sorted_min = [1,1,2,2,3]
     sorted_max = [5,5,4,4,2]
@@ -20,10 +20,10 @@
     @test CS.get_alldifferent_extrema(sorted_min, sorted_max, 3) == (1+3+4, 9+7+6)
     @test CS.get_alldifferent_extrema(sorted_min, sorted_max, 5) == (1+3+4+5+6, 9+7+6+5+4)
 
-    constr_indices = constraint.indices
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, 5, constr_indices[2])
+    constr_indices = constraint.std.indices
+    @test CS.still_feasible(com, constraint, constraint.std.fct, constraint.std.set, 5, constr_indices[2])
     @test CS.fix!(com, com.search_space[constr_indices[2]], 5)
-    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, 5, constr_indices[3])
+    @test !CS.still_feasible(com, constraint, constraint.std.fct, constraint.std.set, 5, constr_indices[3])
 
     # need to create a backtrack_vec to reverse pruning
     dummy_backtrack_obj = CS.BacktrackObj(com)
@@ -31,18 +31,18 @@
     # reverse previous fix
     CS.reverse_pruning!(com, 1)
     # now setting it to 5 should be feasible
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, 5, constr_indices[3])
+    @test CS.still_feasible(com, constraint, constraint.std.fct, constraint.std.set, 5, constr_indices[3])
 
     com.c_backtrack_idx = 1
 
     # feasible and no changes
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
     for ind in constr_indices
         @test sort(CS.values(com.search_space[ind])) == -5:5
     end
     @test CS.fix!(com, com.search_space[constr_indices[2]], 5)
     @test CS.rm!(com, com.search_space[constr_indices[1]], 1)
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
     for ind in constr_indices[3:end]
         @test sort(CS.values(com.search_space[ind])) == -5:4
     end
@@ -52,7 +52,7 @@
     # 3 and 4 are taken by indices 3 and 4 so not available at other positions
     @test CS.remove_below!(com, com.search_space[constr_indices[3]], 3)
     @test CS.remove_below!(com, com.search_space[constr_indices[4]], 3)
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
     for ind in constr_indices[3:4]
         @test sort(CS.values(com.search_space[ind])) == 3:4
     end
@@ -67,12 +67,12 @@
     for ind in constr_indices[5:end]
         @test CS.remove_below!(com, com.search_space[constr_indices[ind]], -4)
     end
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
     
     # but we need -4 to have enough values available
     @test CS.remove_below!(com, com.search_space[constr_indices[1]], -3)
     for ind in constr_indices[5:end]
         @test CS.remove_below!(com, com.search_space[constr_indices[ind]], -3)
     end
-    @test !CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test !CS.prune_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
 end
