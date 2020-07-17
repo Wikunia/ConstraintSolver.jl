@@ -12,10 +12,10 @@ function init_constraint!(
     if isempty(intersect_vals)
         return false
     end
-    for ind in indices
-        for val in CS.values(search_space[ind])
+    for vidx in indices
+        for val in CS.values(search_space[vidx])
             if !(val in intersect_vals)
-                !rm!(com, search_space[ind], val) && return false
+                !rm!(com, search_space[vidx], val) && return false
             end
         end
     end
@@ -143,7 +143,7 @@ function finished_pruning_constraint!(com::CS.CoM,
 end
 
 """
-    still_feasible(com::CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::EqualSetInternal, index::Int, value::Int)
+    still_feasible(com::CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::EqualSetInternal, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled.
 """
@@ -152,13 +152,13 @@ function still_feasible(
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
     set::EqualSetInternal,
-    index::Int,
+    vidx::Int,
     value::Int,
 )
    variables = com.search_space
-   for ind in constraint.indices
-        ind == index && continue
-        v = variables[ind]
+   for cvidx in constraint.indices
+        cvidx == vidx && continue
+        v = variables[cvidx]
         !has(v, value) && return false
     end
     return true

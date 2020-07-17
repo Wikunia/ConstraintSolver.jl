@@ -64,9 +64,9 @@ function fixed_vs_unfixed(search_space, indices)
     # get all values which are fixed
     fixed_vals = Int[]
     unfixed_indices = Int[]
-    for (i, ind) in enumerate(indices)
-        if isfixed(search_space[ind])
-            push!(fixed_vals, CS.value(search_space[ind]))
+    for (i, vidx) in enumerate(indices)
+        if isfixed(search_space[vidx])
+            push!(fixed_vals, CS.value(search_space[vidx]))
         else
             push!(unfixed_indices, i)
         end

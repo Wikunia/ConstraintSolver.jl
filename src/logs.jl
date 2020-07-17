@@ -2,7 +2,7 @@ function log_one_node(com, nvars, back_idx, step_nr)
     parent_idx = 0
     if length(com.backtrack_vec) > 0
         status = com.backtrack_vec[back_idx].status
-        var_idx = com.backtrack_vec[back_idx].variable_idx
+        vidx = com.backtrack_vec[back_idx].variable_idx
         lb = com.backtrack_vec[back_idx].lb
         ub = com.backtrack_vec[back_idx].ub
         best_bound = com.backtrack_vec[back_idx].best_bound
@@ -10,7 +10,7 @@ function log_one_node(com, nvars, back_idx, step_nr)
         parent_idx = com.backtrack_vec[back_idx].parent_idx
     else # for initial solve
         status = :Closed
-        var_idx = 0
+        vidx = 0
         lb = 0
         ub = 0
         best_bound = com.best_bound
@@ -22,7 +22,7 @@ function log_one_node(com, nvars, back_idx, step_nr)
         true, # feasible
         best_bound,
         step_nr,
-        var_idx,
+        vidx,
         lb,
         ub,
         Dict{Int,Vector{Int}}(), # var_states

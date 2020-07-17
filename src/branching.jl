@@ -90,34 +90,34 @@ Return whether there is an unfixed variable and a best index
 function get_next_branch_variable(com::CS.CoM)
     lowest_num_pvals = typemax(Int)
     biggest_inf = -1
-    best_ind = -1
+    best_vidx = -1
     biggest_dependent = typemax(Int)
     is_in_objective = false
     found = false
 
-    for ind = 1:length(com.search_space)
-        if !isfixed(com.search_space[ind])
-            num_pvals = nvalues(com.search_space[ind])
-            inf = com.bt_infeasible[ind]
-            if !is_in_objective && com.var_in_obj[ind]
+    for vidx = 1:length(com.search_space)
+        if !isfixed(com.search_space[vidx])
+            num_pvals = nvalues(com.search_space[vidx])
+            inf = com.bt_infeasible[vidx]
+            if !is_in_objective && com.var_in_obj[vidx]
                 is_in_objective = true
                 lowest_num_pvals = num_pvals
                 biggest_inf = inf
-                best_ind = ind
+                best_vidx = vidx
                 found = true
                 continue
             end
-            if !is_in_objective || com.var_in_obj[ind]
+            if !is_in_objective || com.var_in_obj[vidx]
                 if inf >= biggest_inf
                     if inf > biggest_inf || num_pvals < lowest_num_pvals
                         lowest_num_pvals = num_pvals
                         biggest_inf = inf
-                        best_ind = ind
+                        best_vidx = vidx
                         found = true
                     end
                 end
             end
         end
     end
-    return found, best_ind
+    return found, best_vidx
 end

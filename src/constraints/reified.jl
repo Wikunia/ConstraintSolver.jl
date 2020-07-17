@@ -31,15 +31,15 @@ function prune_constraint!(
     # 3. if the reified constraint is fixed to inactive one would need to "anti" prune which is currently not possible
     
     variables = com.search_space
-    rei_ind = constraint.indices[1]
+    rei_vidx = constraint.indices[1]
     inner_constraint = constraint.inner_constraint
     activate_on = Int(constraint.activate_on)
 
     # 1
     if is_solved_constraint(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
-        !fix!(com, variables[rei_ind], activate_on) && return false
+        !fix!(com, variables[rei_vidx], activate_on) && return false
     #2
-    elseif issetto(variables[rei_ind], activate_on)
+    elseif issetto(variables[rei_vidx], activate_on)
         return prune_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
     end
     return true
@@ -50,15 +50,15 @@ function still_feasible(
     constraint::ReifiedConstraint,
     fct::Union{MOI.VectorOfVariables, VAF{T}},
     set::RS,
-    index::Int,
+    vidx::Int,
     val::Int
 ) where {A, T<:Real, RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
     variables = com.search_space
     activate_on = Int(constraint.activate_on)
-    rei_ind = constraint.indices[1]
-    if (index == rei_ind && val == activate_on) || issetto(variables[rei_ind], activate_on)
-        return still_feasible(com, inner_constraint, inner_constraint.fct, inner_constraint.set, index, val)
+    rei_vidx = constraint.indices[1]
+    if (vidx == rei_vidx && val == activate_on) || issetto(variables[rei_vidx], activate_on)
+        return still_feasible(com, inner_constraint, inner_constraint.fct, inner_constraint.set, vidx, val)
     end
     return true
 end
@@ -78,17 +78,17 @@ function update_best_bound_constraint!(com::CS.CoM,
     constraint::ReifiedConstraint,
     fct::Union{MOI.VectorOfVariables, VAF{T}},
     set::RS,
-    var_idx::Int,
+    vidx::Int,
     lb::Int,
     ub::Int
 ) where {A, T<:Real, RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
-    reified_var_idx = constraint.indices[1]
+    reified_vidx = constraint.indices[1]
     search_space = com.search_space
-    reified_var = search_space[reified_var_idx]
+    reified_var = search_space[reified_vidx]
     if inner_constraint.impl.update_best_bound
         if CS.issetto(reified_var, Int(constraint.activate_on)) 
-            return update_best_bound_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set, var_idx, lb, ub)
+            return update_best_bound_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set, vidx, lb, ub)
         else
             # if not activated (for example in a different subtree) we reset the bounds
             for rhs in constraint.bound_rhs

@@ -56,22 +56,22 @@ include("constraints/indicator.jl")
 include("constraints/reified.jl")
 
 """
-    fulfills_constraints(com::CS.CoM, index, value)
+    fulfills_constraints(com::CS.CoM, vidx, value)
 
-Return whether the model is still feasible after setting the variable at position `index` to `value`.
+Return whether the model is still feasible after setting the variable at position `vidx` to `value`.
 """
-function fulfills_constraints(com::CS.CoM, index, value)
+function fulfills_constraints(com::CS.CoM, vidx, value)
     # variable doesn't have any constraint
-    if index > length(com.subscription)
+    if vidx > length(com.subscription)
         return true
     end
     feasible = true
-    for ci in com.subscription[index]
+    for ci in com.subscription[vidx]
         constraint = com.constraints[ci]
         # only call if the function got initialized already
         if constraint.is_initialized
             feasible =
-                still_feasible(com, constraint, constraint.fct, constraint.set, index, value)
+                still_feasible(com, constraint, constraint.fct, constraint.set, vidx, value)
             !feasible && break
         end
     end
@@ -88,7 +88,7 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
     variables = Variable[v for v in com.search_space[indices]]
     pvals_intervals = Vector{NamedTuple}()
     push!(pvals_intervals, (from = variables[1].lower_bound, to = variables[1].upper_bound))
-    for (i, ind) in enumerate(indices)
+    for i in 1:length(indices)
         extra_from = variables[i].min
         extra_to = variables[i].max
         comp_inside = false
@@ -126,8 +126,8 @@ function add_constraint!(com::CS.CoM, constraint::Constraint)
     @assert constraint.idx != 0
     push!(com.constraints, constraint)
     set_pvals!(com, constraint)
-    for (i, ind) in enumerate(constraint.indices)
-        push!(com.subscription[ind], constraint.idx)
+    for vidx in constraint.indices
+        push!(com.subscription[vidx], constraint.idx)
     end
 end
 
@@ -267,8 +267,8 @@ function prune!(
         end
 
         # if we changed another variable increase the level of the constraints to call them later
-        for var_idx in constraint.indices
-            var = search_space[var_idx]
+        for vidx in constraint.indices
+            var = search_space[vidx]
             new_var_length = length(var.changes[current_backtrack_id])
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
@@ -293,13 +293,13 @@ function prune!(
 end
 
 """
-    single_reverse_pruning!(search_space, index::Int, prune_int::Int, prune_fix::Int)
+    single_reverse_pruning!(search_space, vidx::Int, prune_int::Int, prune_fix::Int)
 
 Reverse a single variable using `prune_int` (number of value removals) and `prune_fix` (new last_ptr if not 0).
 """
-function single_reverse_pruning!(search_space, index::Int, prune_int::Int, prune_fix::Int)
+function single_reverse_pruning!(search_space, vidx::Int, prune_int::Int, prune_fix::Int)
     if prune_int > 0
-        var = search_space[index]
+        var = search_space[vidx]
         l_ptr = max(1, var.last_ptr)
 
         new_l_ptr = var.last_ptr + prune_int
@@ -313,7 +313,7 @@ function single_reverse_pruning!(search_space, index::Int, prune_int::Int, prune
         var.last_ptr = new_l_ptr
     end
     if prune_fix > 0
-        var = search_space[index]
+        var = search_space[vidx]
         var.last_ptr = prune_fix
 
         min_val, max_val = extrema(var.values[1:prune_fix])
@@ -361,17 +361,17 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
 end
 
 """
-    get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; var_idx=0, lb=0, ub=0)
+    get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; vidx=0, lb=0, ub=0)
 
-Return the best bound if setting the variable with idx: `var_idx` to 
-    lb <= var[var_idx] <= ub if var_idx != 0
+Return the best bound if setting the variable with idx: `vidx` to 
+    lb <= var[vidx] <= ub if vidx != 0
 Without an objective function return 0.
 """
-function get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; var_idx = 0, lb = 0, ub = 0)
+function get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; vidx = 0, lb = 0, ub = 0)
     if com.sense == MOI.FEASIBILITY_SENSE
         return zero(com.best_bound)
     end
-    return get_best_bound(com, backtrack_obj, com.objective, var_idx, lb, ub)
+    return get_best_bound(com, backtrack_obj, com.objective, vidx, lb, ub)
 end
 
 """
@@ -545,7 +545,7 @@ function addBacktrackObj2Backtrack_vec!(
 end
 
 """
-    backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{T},num_backtrack_objs, parent_idx, depth, step_nr, ind; check_bound=false)
+    backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{T},num_backtrack_objs, parent_idx, depth, step_nr, vidx; check_bound=false)
 
 Create two branches with two additional BacktrackObj and add them to backtrack_vec 
 """
@@ -556,11 +556,11 @@ function add2backtrack_vec!(
     parent_idx,
     depth,
     step_nr,
-    ind;
+    vidx;
     check_bound = false,
 ) where {T<:Real}
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
-    left_lb, left_ub, right_lb, right_ub = get_split_pvals(com, com.branch_split, com.search_space[ind])
+    left_lb, left_ub, right_lb, right_ub = get_split_pvals(com, com.branch_split, com.search_space[vidx])
 
     #=
         Check whether the new node is needed which depends on
@@ -579,14 +579,14 @@ function add2backtrack_vec!(
         parent_idx,
         depth,
         :Open,
-        ind,
+        vidx,
         left_lb,
         left_ub,
         backtrack_vec[parent_idx].best_bound, # initialize with parent best bound
         backtrack_vec[parent_idx].solution,
         zeros(length(com.search_space))
     )
-    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, lb = left_lb, ub = left_ub)
+    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; vidx = vidx, lb = left_lb, ub = left_ub)
     # only include nodes which have a better objective than the current best solution if one was found already
     if com.options.all_solutions || !check_bound || length(com.bt_solution_ids) == 0 ||
         backtrack_obj.best_bound * obj_factor < com.best_sol * obj_factor ||
@@ -609,14 +609,14 @@ function add2backtrack_vec!(
         parent_idx,
         depth,
         :Open,
-        ind,
+        vidx,
         right_lb,
         right_ub,
         backtrack_vec[parent_idx].best_bound,
         backtrack_vec[parent_idx].solution,
         zeros(length(com.search_space))
     )
-    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; var_idx = ind, lb = right_lb, ub = right_ub)
+    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; vidx = vidx, lb = right_lb, ub = right_ub)
     if com.options.all_solutions || !check_bound || length(com.bt_solution_ids) == 0 ||
         backtrack_obj.best_bound * obj_factor < com.best_sol ||
         com.options.all_optimal_solutions && backtrack_obj.best_bound * obj_factor <= com.best_sol * obj_factor
@@ -642,9 +642,9 @@ Set lower/upper bounds for the current variable index `backtrack_obj.variable_id
 Return if simple removable is still feasible
 """
 function set_bounds!(com, backtrack_obj)
-    ind = backtrack_obj.variable_idx
-    !remove_above!(com, com.search_space[ind], backtrack_obj.ub) && return false
-    !remove_below!(com, com.search_space[ind], backtrack_obj.lb) && return false
+    vidx = backtrack_obj.variable_idx
+    !remove_above!(com, com.search_space[vidx], backtrack_obj.ub) && return false
+    !remove_below!(com, com.search_space[vidx], backtrack_obj.lb) && return false
     return true
 end
 
@@ -699,7 +699,7 @@ If `sorting` is set to `false` the same ordering is used as when used without ob
 Return :Solved or :Infeasible if proven or `:NotSolved` if interrupted by `max_bt_steps`.
 """
 function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
-    found, ind = get_next_branch_variable(com)
+    found, vidx = get_next_branch_variable(com)
     com.info.backtrack_fixes = 1
     find_more_solutions = com.options.all_solutions || com.options.all_optimal_solutions
 
@@ -725,7 +725,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         1,
         1,
         step_nr,
-        ind
+        vidx
     )
     last_backtrack_id = 0
 
@@ -756,7 +756,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             break
         end
 
-        ind = backtrack_obj.variable_idx
+        vidx = backtrack_obj.variable_idx
 
         com.c_backtrack_idx = backtrack_obj.idx
 
@@ -779,7 +779,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             continue
         end
 
-        constraints = com.constraints[com.subscription[ind]]
+        constraints = com.constraints[com.subscription[vidx]]
         com.info.backtrack_fixes += 1
 
         further_pruning = true
@@ -813,7 +813,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             last_table_row = update_table_log(com, backtrack_vec)
         end
 
-        found, ind = get_next_branch_variable(com)
+        found, vidx = get_next_branch_variable(com)
         # no index found => solution found
         if !found
             finished = add_new_solution!(com, backtrack_vec, backtrack_obj, log_table)
@@ -847,7 +847,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             last_backtrack_obj.idx,
             last_backtrack_obj.depth + 1,
             step_nr,
-            ind;
+            vidx;
             check_bound = true,
         )
     end

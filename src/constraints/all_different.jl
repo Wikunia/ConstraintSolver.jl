@@ -59,26 +59,26 @@ function init_constraint!(
     com.lp_model === nothing && return true # return feasibility
 
     lp_backend = backend(com.lp_model)
-    lp_var_idx = create_lp_variable!(com.lp_model, com.lp_x)
+    lp_vidx = create_lp_variable!(com.lp_model, com.lp_x)
     # create == constraint with sum of all variables equal the newly created variable
-    sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(var_idx)) for var_idx in constraint.indices]
-    push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_var_idx)))
+    sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(vidx)) for vidx in constraint.indices]
+    push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_vidx)))
     saf = MOI.ScalarAffineFunction(sats, 0.0)
     MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
     
-    constraint.bound_rhs = [BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int))]
+    constraint.bound_rhs = [BoundRhsVariable(lp_vidx, typemin(Int), typemax(Int))]
 
     # if constraints are part of the all different constraint
     # the all different constraint can be split more parts to get better bounds
     # i.e https://github.com/Wikunia/ConstraintSolver.jl/issues/114
     for sc_idx in constraint.sub_constraint_idxs
-        lp_var_idx = create_lp_variable!(com.lp_model, com.lp_x)
+        lp_vidx = create_lp_variable!(com.lp_model, com.lp_x)
         # create == constraint with sum of all variables equal the newly created variable
-        sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(var_idx)) for var_idx in com.constraints[sc_idx].indices]
-        push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_var_idx)))
+        sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(vidx)) for vidx in com.constraints[sc_idx].indices]
+        push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_vidx)))
         saf = MOI.ScalarAffineFunction(sats, 0.0)
         MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
-        push!(constraint.bound_rhs, BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int)))
+        push!(constraint.bound_rhs, BoundRhsVariable(lp_vidx, typemin(Int), typemax(Int)))
     end
     return true # still feasible
 end
@@ -120,7 +120,7 @@ end
         constraint::AllDifferentConstraint,
         fct::MOI.VectorOfVariables,
         set::AllDifferentSetInternal,
-        var_idx::Int,
+        vidx::Int,
         lb::Int,
         ub::Int
     )
@@ -128,13 +128,13 @@ end
 Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to 
 the possible values the all different constraint allows. 
 i.e if we have 4 variables all between 1 and 10 the maximum sum is 10+9+8+7 and the minimum sum is 1+2+3+4
-Additionally one of the variables can be bounded using `var_idx`, `lb` and `ub`
+Additionally one of the variables can be bounded using `vidx`, `lb` and `ub`
 """
 function update_best_bound_constraint!(com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal,
-    var_idx::Int,
+    vidx::Int,
     lb::Int,
     ub::Int
 )
@@ -147,7 +147,7 @@ function update_best_bound_constraint!(com::CS.CoM,
     min_vals = zeros(Int, length(constraint.indices))
     for i=1:length(constraint.indices)
         v_idx = constraint.indices[i]
-        if v_idx == var_idx
+        if v_idx == vidx
             max_vals[i] = ub
             min_vals[i] = lb
         else
@@ -211,8 +211,8 @@ function prune_constraint!(
         bfixed = false
         for i = 1:length(unfixed_indices)
             pi = unfixed_indices[i]
-            ind = indices[pi]
-            @views c_search_space = search_space[ind]
+            vidx = indices[pi]
+            @views c_search_space = search_space[vidx]
             if !CS.isfixed(c_search_space)
                 for pv in current_fixed_vals
                     if has(c_search_space, pv)
@@ -419,21 +419,21 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal, index::Int, value::Int)
+    still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal, vidx::Int, value::Int)
 
-Return whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
+Return whether the constraint can be still fulfilled when setting a variable with index `vidx` to `value`.
 """
 function still_feasible(
     com::CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal,
-    index::Int,
+    vidx::Int,
     value::Int,
 )
     indices = constraint.indices
     for i = 1:length(indices)
-        if indices[i] == index
+        if indices[i] == vidx
             continue
         end
         if issetto(com.search_space[indices[i]], value)

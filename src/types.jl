@@ -263,7 +263,7 @@ abstract type ObjectiveFunction end
 
 mutable struct SingleVariableObjective <: ObjectiveFunction
     fct::MOI.SingleVariable
-    index::Int # index of the variable
+    vidx::Int # index of the variable
     indices::Vector{Int}
 end
 

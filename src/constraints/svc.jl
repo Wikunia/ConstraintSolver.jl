@@ -24,26 +24,26 @@ function prune_constraint!(
 end
 
 """
-    less_than(com::CoM, constraint::CS.SingleVariableConstraint, index::Int, val::Int)
+    less_than(com::CoM, constraint::CS.SingleVariableConstraint, vidx::Int, val::Int)
 
-Checks whether setting an `index` to `val` fulfills `constraint`
+Checks whether setting an `vidx` to `val` fulfills `constraint`
 """
 function still_feasible(
     com::CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
     set::MOI.LessThan{T},
-    index::Int,
+    vidx::Int,
     val::Int,
 ) where {T<:Real}
-    if constraint.lhs == index
+    if constraint.lhs == vidx
         # if a > maximum possible value of rhs => Infeasible
         if val > com.search_space[constraint.rhs].max
             return false
         else
             return true
         end
-    elseif constraint.rhs == index
+    elseif constraint.rhs == vidx
         if val < com.search_space[constraint.lhs].min
             return false
         else
