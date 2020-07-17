@@ -160,24 +160,3 @@ function Base.getproperty(c::Constraint, s::Symbol)
     end
 end
 =#
-
-"""
-    set_internal_field(c::Constraint, fieldname::Symbol, value)
-
-Creates a new ConstraintInternal based on the current c.std and set fieldname to value
-"""
-function set_internal_field(c::Constraint, fieldname::Symbol, value)
-    csi = c.std
-    internal = ConstraintInternals(
-        fieldname == :idx ? value : csi.idx, 
-        fieldname == :fct ? value : csi.fct, 
-        fieldname == :set ? value : csi.set, 
-        fieldname == :indices ? value : csi.indices, 
-        fieldname == :pvals ? value : csi.pvals, 
-        fieldname == :impl ? value : csi.impl, 
-        fieldname == :is_initialized ? value : csi.is_initialized, 
-        fieldname == :bound_rhs ? value : csi.bound_rhs, 
-        fieldname == :hash ? value : csi.hash, 
-    )
-    c.std = internal
-end

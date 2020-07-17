@@ -172,7 +172,7 @@ mutable struct ImplementedConstraintFunctions
     update_best_bound :: Bool
 end
 
-struct ConstraintInternals
+mutable struct ConstraintInternals
     idx::Int
     fct::Union{MOI.AbstractScalarFunction, MOI.AbstractVectorFunction}
     set::Union{MOI.AbstractScalarSet, MOI.AbstractVectorSet}

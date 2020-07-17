@@ -490,7 +490,7 @@ end
 function set_constraint_hashes!(com::CS.CoM; constraints=com.constraints)
     for constraint in constraints
         csi = constraint.std
-        set_internal_field(constraint, :hash, constraint_hash(constraint))
+        constraint.std.hash = constraint_hash(constraint)
     end
 end
 
@@ -501,7 +501,7 @@ function init_constraints!(com::CS.CoM; constraints=com.constraints)
             feasible = init_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
             !feasible && break
         end
-        set_internal_field(constraint, :is_initialized, true)
+        constraint.std.is_initialized = true
     end
     return feasible
 end
