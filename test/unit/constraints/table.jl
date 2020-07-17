@@ -27,9 +27,9 @@
     @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1,2,4])
     @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1,2,3])
 
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, 4, constr_indices[1])
+    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[1], 4)
     @test CS.fix!(com, com.search_space[constr_indices[2]], 2)
-    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, 4, constr_indices[1])
+    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[1], 4)
 
     # need to create a backtrack_vec to reverse pruning
     dummy_backtrack_obj = CS.BacktrackObj(com)
@@ -38,7 +38,7 @@
     CS.reverse_pruning!(com, 1)
     com.c_backtrack_idx = 1
 
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, 4, constr_indices[1])
+    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[1], 4)
 
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))

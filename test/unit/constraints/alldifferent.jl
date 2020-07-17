@@ -21,9 +21,9 @@
     @test CS.get_alldifferent_extrema(sorted_min, sorted_max, 5) == (1+3+4+5+6, 9+7+6+5+4)
 
     constr_indices = constraint.indices
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, 5, constr_indices[2])
+    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[2], 5)
     @test CS.fix!(com, com.search_space[constr_indices[2]], 5)
-    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, 5, constr_indices[3])
+    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], 5)
 
     # need to create a backtrack_vec to reverse pruning
     dummy_backtrack_obj = CS.BacktrackObj(com)
@@ -31,7 +31,7 @@
     # reverse previous fix
     CS.reverse_pruning!(com, 1)
     # now setting it to 5 should be feasible
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, 5, constr_indices[3])
+    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], 5)
 
     com.c_backtrack_idx = 1
 

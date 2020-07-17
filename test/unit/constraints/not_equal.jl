@@ -12,11 +12,11 @@
     @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1,2,2])
 
     constr_indices = constraint.indices
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, -3, constr_indices[1])
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, 1, constr_indices[1])
+    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[1], -3)
+    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[1], 1)
     CS.fix!(com, com.search_space[constr_indices[1]], 2)
     CS.fix!(com, com.search_space[constr_indices[2]], 1)
-    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, 1, constr_indices[3])
+    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], 1)
 
     # need to create a backtrack_vec to reverse pruning
     dummy_backtrack_obj = CS.BacktrackObj(com)
@@ -25,7 +25,7 @@
     CS.reverse_pruning!(com, 1)
     com.c_backtrack_idx = 1
     # now setting it to 1 should be feasible
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, 1, constr_indices[3])
+    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], 1)
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, y[1:3], CS.Integers([-3,1,2,3]))

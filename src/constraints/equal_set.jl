@@ -143,7 +143,7 @@ function finished_pruning_constraint!(com::CS.CoM,
 end
 
 """
-    still_feasible(com::CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::EqualSetInternal, value::Int, index::Int)
+    still_feasible(com::CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::EqualSetInternal, index::Int, value::Int)
 
 Return whether the constraint can be still fulfilled.
 """
@@ -152,8 +152,8 @@ function still_feasible(
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
     set::EqualSetInternal,
-    value::Int,
     index::Int,
+    value::Int,
 )
    variables = com.search_space
    for ind in constraint.indices

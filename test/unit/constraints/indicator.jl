@@ -13,12 +13,12 @@
     @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [0,2,3])
 
     constr_indices = constraint.indices
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, -3, constr_indices[2])
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, 1, constr_indices[3])
+    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[2], -3)
+    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], 1)
     # not actually feasible but will not be tested fully here
     CS.fix!(com, com.search_space[constr_indices[1]], 1)
     # will be tested when setting the next
-    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, -3, constr_indices[3])
+    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], -3)
 
     # need to create a backtrack_vec to reverse pruning
     dummy_backtrack_obj = CS.BacktrackObj(com)
@@ -27,7 +27,7 @@
     CS.reverse_pruning!(com, 1)
     com.c_backtrack_idx = 1
     # now setting it to 1 should be feasible
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, -3, constr_indices[3])
+    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], -3)
 
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
     for ind in constr_indices[2:3]

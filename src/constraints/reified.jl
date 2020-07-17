@@ -50,15 +50,15 @@ function still_feasible(
     constraint::ReifiedConstraint,
     fct::Union{MOI.VectorOfVariables, VAF{T}},
     set::RS,
-    val::Int,
-    index::Int
+    index::Int,
+    val::Int
 ) where {A, T<:Real, RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
     variables = com.search_space
     activate_on = Int(constraint.activate_on)
     rei_ind = constraint.indices[1]
     if (index == rei_ind && val == activate_on) || issetto(variables[rei_ind], activate_on)
-        return still_feasible(com, inner_constraint, inner_constraint.fct, inner_constraint.set, val, index)
+        return still_feasible(com, inner_constraint, inner_constraint.fct, inner_constraint.set, index, val)
     end
     return true
 end

@@ -419,7 +419,7 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal, value::Int, index::Int)
+    still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal, index::Int, value::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
 """
@@ -428,8 +428,8 @@ function still_feasible(
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal,
-    value::Int,
     index::Int,
+    value::Int,
 )
     indices = constraint.indices
     for i = 1:length(indices)

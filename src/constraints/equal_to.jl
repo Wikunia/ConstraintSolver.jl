@@ -264,7 +264,7 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}, val::Int, index::Int) where T <: Real
+    still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}, index::Int, val::Int) where T <: Real
 
 Return whether setting `search_space[index]` to `val` is still feasible given `constraint`.
 """
@@ -273,8 +273,8 @@ function still_feasible(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::MOI.EqualTo{T},
-    val::Int,
     index::Int,
+    val::Int,
 ) where {T<:Real}
     search_space = com.search_space
     rhs = set.value - fct.constant

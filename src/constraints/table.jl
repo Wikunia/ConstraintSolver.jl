@@ -309,7 +309,7 @@ function finished_pruning_constraint!(com::CS.CoM,
 end
 
 """
-    still_feasible(com::CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal, value::Int, index::Int)
+    still_feasible(com::CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal, index::Int, value::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
 """
@@ -318,8 +318,8 @@ function still_feasible(
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
     set::TableSetInternal,
-    value::Int,
     index::Int,
+    value::Int,
 )
     current = constraint.current
     supports = constraint.supports

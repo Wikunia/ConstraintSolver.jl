@@ -24,7 +24,7 @@ function prune_constraint!(
 end
 
 """
-    less_than(com::CoM, constraint::CS.SingleVariableConstraint, val::Int, index::Int)
+    less_than(com::CoM, constraint::CS.SingleVariableConstraint, index::Int, val::Int)
 
 Checks whether setting an `index` to `val` fulfills `constraint`
 """
@@ -33,8 +33,8 @@ function still_feasible(
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
     set::MOI.LessThan{T},
-    val::Int,
     index::Int,
+    val::Int,
 ) where {T<:Real}
     if constraint.lhs == index
         # if a > maximum possible value of rhs => Infeasible

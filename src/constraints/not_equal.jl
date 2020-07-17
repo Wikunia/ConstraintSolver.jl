@@ -48,7 +48,7 @@ function prune_constraint!(
 end
 
 """
-still_feasible(com::CoM, constraint::LinearConstraint, fct::MOI.ScalarAffineFunction{T}, set::NotEqualTo{T}, value::Int, index::Int) where T <: Real
+still_feasible(com::CoM, constraint::LinearConstraint, fct::MOI.ScalarAffineFunction{T}, set::NotEqualTo{T}, index::Int, value::Int) where T <: Real
 
 Return whether the `not_equal` constraint can be still fulfilled.
 """
@@ -57,8 +57,8 @@ function still_feasible(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::NotEqualTo{T},
-    value::Int,
     index::Int,
+    value::Int,
 ) where {T<:Real}
     indices = constraint.indices
     # check if only one variable is variable

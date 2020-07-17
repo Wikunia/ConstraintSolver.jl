@@ -67,8 +67,8 @@ end
         constraint::IndicatorConstraint,
         fct::Union{MOI.VectorOfVariables, VAF{T}},
         set::IS,
-        val::Int,
         index::Int,
+        val::Int,
     ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
 
 Return whether the search space is still feasible when setting `search_space[index]` to value.
@@ -78,8 +78,8 @@ function still_feasible(
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables, VAF{T}},
     set::IS,
-    val::Int,
     index::Int,
+    val::Int,
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
     indicator_var_idx = constraint.indices[1]
     search_space = com.search_space
@@ -94,7 +94,7 @@ function still_feasible(
     end
     # if activating or activated check the inner constraint
     inner_constraint = constraint.inner_constraint
-    return still_feasible(com, inner_constraint, inner_constraint.fct, inner_constraint.set, val, index)
+    return still_feasible(com, inner_constraint, inner_constraint.fct, inner_constraint.set, index, val)
 end
 
 """
