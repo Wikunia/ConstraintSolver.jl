@@ -56,20 +56,6 @@ function var_vector_to_moi(vars::Vector{Variable})
 end
 
 """
-    linear_combination_to_saf(lc::LinearCombination)
-
-Convert a LinearCombination to a ScalarAffineFunction and return the SAF + the used type
-"""
-function linear_combination_to_saf(lc::LinearCombination)
-    T = eltype(lc.std.coeffs)
-    sat = [
-        MOI.ScalarAffineTerm{T}(lc.std.coeffs[i], MOI.VariableIndex(lc.std.indices[i]))
-        for i = 1:length(lc.std.indices)
-    ]
-    return SAF{T}(sat, zero(T)), T
-end
-
-"""
     fixed_vs_unfixed(search_space, indices)
 
 Return the fixed_vals as well as the unfixed_indices
