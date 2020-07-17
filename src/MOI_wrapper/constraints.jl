@@ -489,7 +489,7 @@ end
 
 function set_constraint_hashes!(com::CS.CoM; constraints=com.constraints)
     for constraint in constraints
-        constraint.std.hash = constraint_hash(constraint)
+        constraint.hash = constraint_hash(constraint)
     end
 end
 
@@ -500,7 +500,7 @@ function init_constraints!(com::CS.CoM; constraints=com.constraints)
             feasible = init_constraint!(com, constraint, constraint.fct, constraint.set)
             !feasible && break
         end
-        constraint.std.is_initialized = true
+        constraint.is_initialized = true
     end
     return feasible
 end

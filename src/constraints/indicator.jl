@@ -22,7 +22,7 @@ function init_constraint!(
     if inner_constraint.impl.init
         feasible = init_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set; active=false)
         # map the bounds to the indicator constraint
-        constraint.std.bound_rhs = inner_constraint.bound_rhs
+        constraint.bound_rhs = inner_constraint.bound_rhs
         return feasible
     end
     # still feasible

@@ -111,7 +111,7 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
     for interval in pvals_intervals[2:end]
         pvals = vcat(pvals, collect(interval.from:interval.to))
     end
-    constraint.std.pvals = pvals
+    constraint.pvals = pvals
     if constraint isa IndicatorConstraint || constraint isa ReifiedConstraint
         set_pvals!(com, constraint.inner_constraint)
     end

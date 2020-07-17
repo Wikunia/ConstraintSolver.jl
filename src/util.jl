@@ -122,25 +122,17 @@ end
     Access standard ConstraintInternals without using .std syntax
 =#
 @inline function Base.getproperty(c::Constraint, s::Symbol) 
-    if s === :idx
-        Core.getproperty(c, :std).idx
-    elseif s === :indices
-        Core.getproperty(c, :std).indices
-    elseif s === :fct
-        Core.getproperty(c, :std).fct
-    elseif s === :set
-        Core.getproperty(c, :std).set
-    elseif s === :pvals
-        Core.getproperty(c, :std).pvals
-    elseif s === :impl
-        Core.getproperty(c, :std).impl
-    elseif s === :is_initialized
-        Core.getproperty(c, :std).is_initialized
-    elseif s === :bound_rhs
-        Core.getproperty(c, :std).bound_rhs
-    elseif s === :hash
-        Core.getproperty(c, :std).hash
+    if s in (:idx, :indices, :fct, :set, :pvals, :impl, :is_initialized, :bound_rhs, :hash)
+        Core.getproperty(Core.getproperty(c, :std), s)
     else
         getfield(c, s)
+    end
+end
+
+@inline function Base.setproperty!(c::Constraint, s::Symbol, v) 
+    if s in (:idx, :indices, :fct, :set, :pvals, :impl, :is_initialized, :bound_rhs, :hash)
+        Core.setproperty!(c.std, s, v)
+    else
+        Core.setproperty!(c, s, v)
     end
 end

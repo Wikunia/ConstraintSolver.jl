@@ -204,7 +204,7 @@ function prune_constraint!(
             intersect_cons =
                 intersect(com.subscription[unfixed_ind_1], com.subscription[unfixed_ind_2])
             for constraint_idx in intersect_cons
-                if isa(com.constraints[constraint_idx].std.set, AllDifferentSetInternal)
+                if isa(com.constraints[constraint_idx].set, AllDifferentSetInternal)
                     is_all_different = true
                     break
                 end
