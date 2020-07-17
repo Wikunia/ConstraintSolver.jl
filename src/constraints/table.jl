@@ -362,12 +362,12 @@ function update_best_bound_constraint!(com::CS.CoM,
     lb::Int,
     ub::Int
 )
-    constraint.bound_rhs === nothing && return
+    constraint.std.bound_rhs === nothing && return
     sum_min = constraint.sum_min
     sum_max = constraint.sum_max
     bitset = constraint.current
     
-    bound_rhs = constraint.bound_rhs[1]
+    bound_rhs = constraint.std.bound_rhs[1]
 
     lb = typemax(Int)
     ub = typemin(Int)

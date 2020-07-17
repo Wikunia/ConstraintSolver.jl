@@ -927,10 +927,12 @@ function simplify!(com)
                     if found_possible_constraint && length(outside_indices) <= 4
                         # TODO: check for a better way of accessing the parameteric type of ConstraintSolverModel (also see below)
                         constraint_idx = length(com.constraints)+1
+                        T = isapprox_discrete(com, all_diff_sum - in_sum) ? Int : Float64
+                        lc =  LinearConstraint(constraint_idx, outside_indices, ones(Int, length(outside_indices)),
+                        0, MOI.EqualTo{T}(all_diff_sum - in_sum))
                         add_constraint!(
                             com,
-                            LinearConstraint(constraint_idx, outside_indices, ones(typeof(com.best_sol), length(outside_indices)),
-                                            zero(typeof(com.best_sol)), MOI.EqualTo(all_diff_sum - in_sum))
+                            lc
                         )
                         push!(added_constraint_idxs, constraint_idx)
                     end
@@ -976,10 +978,12 @@ function simplify!(com)
                     # make sure that there are not too many outside indices
                     if add_sum_constraint && length(outside_indices) <= 4
                         constraint_idx = length(com.constraints)+1
+                        T = isapprox_discrete(com, total_sum - all_diff_sum) ? Int : Float64
+                        lc =  LinearConstraint(constraint_idx, outside_indices, ones(Int, length(outside_indices)),
+                        0, MOI.EqualTo{T}(total_sum - all_diff_sum))
                         add_constraint!(
                             com,
-                            LinearConstraint(constraint_idx, outside_indices, ones(typeof(com.best_sol), length(outside_indices)),
-                                            zero(typeof(com.best_sol)), MOI.EqualTo(total_sum - all_diff_sum))
+                            lc
                         )
                         push!(added_constraint_idxs, constraint_idx)
                     end

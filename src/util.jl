@@ -61,9 +61,9 @@ end
 Convert a LinearCombination to a ScalarAffineFunction and return the SAF + the used type
 """
 function linear_combination_to_saf(lc::LinearCombination)
-    T = eltype(lc.coeffs)
+    T = eltype(lc.std.coeffs)
     sat = [
-        MOI.ScalarAffineTerm{T}(lc.coeffs[i], MOI.VariableIndex(lc.std.indices[i]))
+        MOI.ScalarAffineTerm{T}(lc.std.coeffs[i], MOI.VariableIndex(lc.std.indices[i]))
         for i = 1:length(lc.std.indices)
     ]
     return SAF{T}(sat, zero(T)), T

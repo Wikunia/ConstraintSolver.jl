@@ -44,7 +44,7 @@ function get_best_bound(
     lb::Int,
     ub::Int,
 )
-    indices = obj_fct.lc.std.indices
+    indices = obj_fct.lc.indices
     coeffs = obj_fct.lc.coeffs
     objval = obj_fct.constant
     if com.sense == MOI.MIN_SENSE
@@ -114,7 +114,7 @@ function get_best_bound(
     for constraint in com.constraints
         if constraint.std.impl.update_best_bound
             update_best_bound_constraint!(com, constraint, constraint.std.fct, constraint.std.set, var_idx, lb, ub)
-            for bound in constraint.bound_rhs
+            for bound in constraint.std.bound_rhs
                 set_lower_bound(com.lp_x[bound.idx], bound.lb)
                 set_upper_bound(com.lp_x[bound.idx], bound.ub)
             end

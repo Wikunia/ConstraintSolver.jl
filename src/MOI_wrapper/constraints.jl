@@ -8,11 +8,11 @@ sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
 """
 function JuMP._build_indicator_constraint(
     _error::Function, variable::JuMP.AbstractVariableRef,
-    constraint::JuMP.VectorConstraint, ::Type{MOI.IndicatorSet{A}}) where A
+    jump_constraint::JuMP.VectorConstraint, ::Type{MOI.IndicatorSet{A}}) where A
 
-    set = CS.IndicatorSet{A}(MOI.VectorOfVariables(constraint.func), constraint.std.set, 1+length(constraint.func))
+    set = CS.IndicatorSet{A}(MOI.VectorOfVariables(jump_constraint.func), jump_constraint.set, 1+length(jump_constraint.func))
     vov = VariableRef[variable]
-    append!(vov, constraint.func)
+    append!(vov, jump_constraint.func)
     return JuMP.VectorConstraint(vov, set)
 end
 
@@ -180,8 +180,8 @@ function add_variable_less_than_variable_constraint(
 
     push!(model.inner.constraints, svc)
 
-    push!(model.inner.subscription[svc.lhs], svc.idx)
-    push!(model.inner.subscription[svc.rhs], svc.idx)
+    push!(model.inner.subscription[svc.lhs], svc.std.idx)
+    push!(model.inner.subscription[svc.rhs], svc.std.idx)
     com.info.n_constraint_types.inequality += 1
 
     return MOI.ConstraintIndex{SAF{T},MOI.LessThan{T}}(length(model.inner.constraints))
@@ -363,8 +363,8 @@ function MOI.add_constraint(
     con = IndicatorConstraint(internals, A, lc, indices[1] in indices[2:end])
 
     push!(com.constraints, con)
-    for (i, ind) in enumerate(con.indices)
-        push!(com.subscription[ind], con.idx)
+    for (i, ind) in enumerate(con.std.indices)
+        push!(com.subscription[ind], con.std.idx)
     end
     
     return MOI.ConstraintIndex{VAF{T},MOI.IndicatorSet{A, ASS}}(length(com.constraints))
@@ -397,8 +397,8 @@ function MOI.add_constraint(
     con = IndicatorConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
 
     push!(com.constraints, con)
-    for (i, ind) in enumerate(con.indices)
-        push!(com.subscription[ind], con.idx)
+    for (i, ind) in enumerate(con.std.indices)
+        push!(com.subscription[ind], con.std.idx)
     end
     
     return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.IndicatorSet{A}}(length(com.constraints))
@@ -439,8 +439,8 @@ function MOI.add_constraint(
     con = ReifiedConstraint(internals, A, lc, indices[1] in indices[2:end])
 
     push!(com.constraints, con)
-    for (i, ind) in enumerate(con.indices)
-        push!(com.subscription[ind], con.idx)
+    for (i, ind) in enumerate(con.std.indices)
+        push!(com.subscription[ind], con.std.idx)
     end
     
     return MOI.ConstraintIndex{VAF{T},CS.ReifiedSet{A}}(length(com.constraints))
@@ -473,8 +473,8 @@ function MOI.add_constraint(
     con = ReifiedConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
 
     push!(com.constraints, con)
-    for (i, ind) in enumerate(con.indices)
-        push!(com.subscription[ind], con.idx)
+    for (i, ind) in enumerate(con.std.indices)
+        push!(com.subscription[ind], con.std.idx)
     end
     
     return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.ReifiedSet{A}}(length(com.constraints))

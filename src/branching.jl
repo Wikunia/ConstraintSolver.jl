@@ -9,10 +9,10 @@ Return lb, leq, geq, ub => the bounds for the lower part and the bounds for the 
 function get_split_pvals(com, ::Val{:Auto}, var::Variable)
     @assert var.min != var.max
     if isa(com.objective, LinearCombinationObjective)
-        lc = com.objective.lc 
-        for i in 1:length(lc.std.indices)
-            if lc.std.indices[i] == var.idx
-                coeff = lc.coeffs[i]
+        linear_comb = com.objective.lc 
+        for i in 1:length(linear_comb.indices)
+            if linear_comb.indices[i] == var.idx
+                coeff = linear_comb.coeffs[i]
                 factor = com.sense == MOI.MIN_SENSE ? -1 : 1
                 if coeff*factor > 0
                     return get_split_pvals(com, Val(:Biggest), var)
