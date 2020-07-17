@@ -12,8 +12,8 @@ function create_lp_model!(model)
     lp_backend = backend(lp_model)
     # iterate through all constraints and add all supported constraints
     for constraint in com.constraints
-        if MOI.supports_constraint(model.options.lp_optimizer.optimizer_constructor(), typeof(constraint.std.fct), typeof(constraint.std.set))
-            MOI.add_constraint(lp_backend, constraint.std.fct, constraint.std.set)
+        if MOI.supports_constraint(model.options.lp_optimizer.optimizer_constructor(), typeof(constraint.fct), typeof(constraint.set))
+            MOI.add_constraint(lp_backend, constraint.fct, constraint.set)
         end
     end
     # add objective

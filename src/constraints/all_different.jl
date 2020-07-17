@@ -26,7 +26,7 @@ function init_constraint!(
     set::AllDifferentSetInternal;
     active = true
 )
-    pvals = constraint.std.pvals
+    pvals = constraint.pvals
     nindices = length(constraint.indices)
 
     min_pvals, max_pvals = extrema(pvals)
@@ -78,7 +78,7 @@ function init_constraint!(
         push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_var_idx)))
         saf = MOI.ScalarAffineFunction(sats, 0.0)
         MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
-        push!(constraint.std.bound_rhs, BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int)))
+        push!(constraint.bound_rhs, BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int)))
     end
     return true # still feasible
 end
@@ -138,7 +138,7 @@ function update_best_bound_constraint!(com::CS.CoM,
     lb::Int,
     ub::Int
 )
-    constraint.std.bound_rhs === nothing && return
+    constraint.bound_rhs === nothing && return
     search_space = com.search_space
 
     # compute bounds
@@ -163,16 +163,16 @@ function update_best_bound_constraint!(com::CS.CoM,
   
     min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(constraint.indices))
 
-    constraint.std.bound_rhs[1].lb = min_sum
-    constraint.std.bound_rhs[1].ub = max_sum
+    constraint.bound_rhs[1].lb = min_sum
+    constraint.bound_rhs[1].ub = max_sum
 
     i = 1
     for sc_idx in constraint.sub_constraint_idxs
         i += 1
         sub_constraint = com.constraints[sc_idx]
         min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(sub_constraint.indices))
-        constraint.std.bound_rhs[i].lb = min_sum
-        constraint.std.bound_rhs[i].ub = max_sum
+        constraint.bound_rhs[i].lb = min_sum
+        constraint.bound_rhs[i].ub = max_sum
     end
 end
 
@@ -190,7 +190,7 @@ function prune_constraint!(
     logs = true,
 )
     indices = constraint.indices
-    pvals = constraint.std.pvals
+    pvals = constraint.pvals
     nindices = length(indices)
 
     search_space = com.search_space

@@ -489,7 +489,6 @@ end
 
 function set_constraint_hashes!(com::CS.CoM; constraints=com.constraints)
     for constraint in constraints
-        csi = constraint.std
         constraint.std.hash = constraint_hash(constraint)
     end
 end
@@ -497,8 +496,8 @@ end
 function init_constraints!(com::CS.CoM; constraints=com.constraints)
     feasible = true
     for constraint in constraints
-        if constraint.std.impl.init
-            feasible = init_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
+        if constraint.impl.init
+            feasible = init_constraint!(com, constraint, constraint.fct, constraint.set)
             !feasible && break
         end
         constraint.std.is_initialized = true
@@ -538,10 +537,10 @@ Sets `std.impl.init` if the constraint type has a `init_constraint!` method
 """	
 function set_impl_init!(constraint::Constraint)
     c_type = typeof(constraint)
-    c_fct_type = typeof(constraint.std.fct)
-    c_set_type = typeof(constraint.std.set)
+    c_fct_type = typeof(constraint.fct)
+    c_set_type = typeof(constraint.set)
     if hasmethod(init_constraint!, (CS.CoM, c_type, c_fct_type, c_set_type))
-        constraint.std.impl.init = true
+        constraint.impl.init = true
     end
 end
 
@@ -552,15 +551,15 @@ Sets `update_best_bound` if the constraint type has a `update_best_bound_constra
 """	
 function set_impl_update_best_bound!(constraint::Constraint)	
     c_type = typeof(constraint)	
-    c_fct_type = typeof(constraint.std.fct)	
-    c_set_type = typeof(constraint.std.set)	
+    c_fct_type = typeof(constraint.fct)	
+    c_set_type = typeof(constraint.set)	
     if hasmethod(	
         update_best_bound_constraint!,	
         (CS.CoM, c_type, c_fct_type, c_set_type, Int, Int, Int),	
     )	
-        constraint.std.impl.update_best_bound = true	
+        constraint.impl.update_best_bound = true	
     else # just to be sure => set it to false otherwise	
-        constraint.std.impl.update_best_bound = false	
+        constraint.impl.update_best_bound = false	
     end	
 end
 
@@ -571,24 +570,24 @@ if `single_reverse_pruning_constraint!`, `reverse_pruning_constraint!` are imple
 """	
 function set_impl_reverse_pruning!(constraint::Constraint)
     c_type = typeof(constraint)	
-    c_fct_type = typeof(constraint.std.fct)	
-    c_set_type = typeof(constraint.std.set)	
+    c_fct_type = typeof(constraint.fct)	
+    c_set_type = typeof(constraint.set)	
     if hasmethod(	
         single_reverse_pruning_constraint!,	
         (CS.CoM, c_type, c_fct_type, c_set_type, CS.Variable, Int),	
     )	
-        constraint.std.impl.single_reverse_pruning = true	
+        constraint.impl.single_reverse_pruning = true	
     else # just to be sure => set it to false otherwise	
-        constraint.std.impl.single_reverse_pruning = false	
+        constraint.impl.single_reverse_pruning = false	
     end	
 
     if hasmethod(	
         reverse_pruning_constraint!,	
         (CS.CoM, c_type, c_fct_type, c_set_type, Int),	
     )	
-        constraint.std.impl.reverse_pruning = true	
+        constraint.impl.reverse_pruning = true	
     else # just to be sure => set it to false otherwise	
-        constraint.std.impl.reverse_pruning = false	
+        constraint.impl.reverse_pruning = false	
     end	
 end
 
@@ -598,15 +597,15 @@ Sets `std.impl.finished_pruning` if `finished_pruning_constraint!`  is implement
 """	
 function set_impl_finished_pruning!(constraint::Constraint)
     c_type = typeof(constraint)	
-    c_fct_type = typeof(constraint.std.fct)	
-    c_set_type = typeof(constraint.std.set)	
+    c_fct_type = typeof(constraint.fct)	
+    c_set_type = typeof(constraint.set)	
     if hasmethod(	
         finished_pruning_constraint!,	
         (CS.CoM, c_type, c_fct_type, c_set_type)
     )	
-        constraint.std.impl.finished_pruning = true	
+        constraint.impl.finished_pruning = true	
     else # just to be sure => set it to false otherwise	
-        constraint.std.impl.finished_pruning = false	
+        constraint.impl.finished_pruning = false	
     end
 end
 
@@ -616,27 +615,27 @@ Sets `std.impl.restore_pruning` if `restore_pruning_constraint!`  is implemented
 """	
 function set_impl_restore_pruning!(constraint::Constraint)
     c_type = typeof(constraint)	
-    c_fct_type = typeof(constraint.std.fct)	
-    c_set_type = typeof(constraint.std.set)	
+    c_fct_type = typeof(constraint.fct)	
+    c_set_type = typeof(constraint.set)	
     if hasmethod(	
         restore_pruning_constraint!,	
         (CS.CoM, c_type, c_fct_type, c_set_type, Union{Int, Vector{Int}})
     )	
-        constraint.std.impl.restore_pruning = true	
+        constraint.impl.restore_pruning = true	
     else # just to be sure => set it to false otherwise	
-        constraint.std.impl.restore_pruning = false	
+        constraint.impl.restore_pruning = false	
     end
 end
 
 """
     call_finished_pruning!(com)
 
-Call `finished_pruning_constraint!` for every constraint which implements that function as saved in `constraint.std.impl.finished_pruning`
+Call `finished_pruning_constraint!` for every constraint which implements that function as saved in `constraint.impl.finished_pruning`
 """
 function call_finished_pruning!(com)
     for constraint in com.constraints
-        if constraint.std.impl.finished_pruning
-            finished_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
+        if constraint.impl.finished_pruning
+            finished_pruning_constraint!(com, constraint, constraint.fct, constraint.set)
         end
     end
 end
@@ -644,12 +643,12 @@ end
 """
     call_restore_pruning!(com, prune_steps)
 
-Call `call_restore_pruning!` for every constraint which implements that function as saved in `constraint.std.impl.restore_pruning`
+Call `call_restore_pruning!` for every constraint which implements that function as saved in `constraint.impl.restore_pruning`
 """
 function call_restore_pruning!(com, prune_steps)
     for constraint in com.constraints
-        if constraint.std.impl.restore_pruning
-            restore_pruning_constraint!(com, constraint, constraint.std.fct, constraint.std.set, prune_steps)
+        if constraint.impl.restore_pruning
+            restore_pruning_constraint!(com, constraint, constraint.fct, constraint.set, prune_steps)
         end
     end
 end
