@@ -11,7 +11,7 @@
     @test CS.is_solved_constraint(constraint, constraint.std.fct, constraint.std.set, [1,2,1])
     @test !CS.is_solved_constraint(constraint, constraint.std.fct, constraint.std.set, [1,2,2])
 
-    constr_indices = constraint.std.indices
+    constr_indices = constraint.indices
     @test !CS.still_feasible(com, constraint, constraint.std.fct, constraint.std.set, -3, constr_indices[1])
     @test CS.still_feasible(com, constraint, constraint.std.fct, constraint.std.set, 1, constr_indices[1])
     # not actually feasible but will not be tested fully here

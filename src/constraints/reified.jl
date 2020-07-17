@@ -31,7 +31,7 @@ function prune_constraint!(
     # 3. if the reified constraint is fixed to inactive one would need to "anti" prune which is currently not possible
     
     variables = com.search_space
-    rei_ind = constraint.std.indices[1]
+    rei_ind = constraint.indices[1]
     inner_constraint = constraint.inner_constraint
     activate_on = Int(constraint.activate_on)
 
@@ -56,7 +56,7 @@ function still_feasible(
     inner_constraint = constraint.inner_constraint
     variables = com.search_space
     activate_on = Int(constraint.activate_on)
-    rei_ind = constraint.std.indices[1]
+    rei_ind = constraint.indices[1]
     if (index == rei_ind && val == activate_on) || issetto(variables[rei_ind], activate_on)
         return still_feasible(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, val, index)
     end
@@ -83,7 +83,7 @@ function update_best_bound_constraint!(com::CS.CoM,
     ub::Int
 ) where {A, T<:Real, RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
-    reified_var_idx = constraint.std.indices[1]
+    reified_var_idx = constraint.indices[1]
     search_space = com.search_space
     reified_var = search_space[reified_var_idx]
     if inner_constraint.std.impl.update_best_bound
@@ -110,7 +110,7 @@ function single_reverse_pruning_constraint!(
 ) where {A, T<:Real, RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
     # the variable must be part of the inner constraint
-    if inner_constraint.std.impl.single_reverse_pruning && (var.idx != constraint.std.indices[1] || constraint.reified_in_inner)
+    if inner_constraint.std.impl.single_reverse_pruning && (var.idx != constraint.indices[1] || constraint.reified_in_inner)
         single_reverse_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, var, backtrack_idx)
     end
 end

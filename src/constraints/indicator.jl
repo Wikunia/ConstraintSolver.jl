@@ -50,7 +50,7 @@ function prune_constraint!(
     set::IS;
     logs = true,
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
-    indicator_var_idx = constraint.std.indices[1]
+    indicator_var_idx = constraint.indices[1]
     search_space = com.search_space
     indicator_var = search_space[indicator_var_idx]
     # still feasible but nothing to prune
@@ -81,7 +81,7 @@ function still_feasible(
     val::Int,
     index::Int,
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
-    indicator_var_idx = constraint.std.indices[1]
+    indicator_var_idx = constraint.indices[1]
     search_space = com.search_space
     indicator_var = search_space[indicator_var_idx]
     # still feasible but nothing to prune
@@ -145,7 +145,7 @@ function update_best_bound_constraint!(com::CS.CoM,
     ub::Int
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
     inner_constraint = constraint.inner_constraint
-    indicator_var_idx = constraint.std.indices[1]
+    indicator_var_idx = constraint.indices[1]
     search_space = com.search_space
     indicator_var = search_space[indicator_var_idx]
     if inner_constraint.std.impl.update_best_bound
@@ -172,7 +172,7 @@ function single_reverse_pruning_constraint!(
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
     inner_constraint = constraint.inner_constraint
     # the variable must be part of the inner constraint
-    if inner_constraint.std.impl.single_reverse_pruning && (var.idx != constraint.std.indices[1] || constraint.indicator_in_inner)
+    if inner_constraint.std.impl.single_reverse_pruning && (var.idx != constraint.indices[1] || constraint.indicator_in_inner)
         single_reverse_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, var, backtrack_idx)
     end
 end

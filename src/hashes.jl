@@ -1,9 +1,9 @@
 function constraint_hash(constraint::Union{AllDifferentConstraint, BasicConstraint, EqualConstraint})
-    return hash([string(typeof(constraint.std.set)), constraint.std.indices])
+    return hash([string(typeof(constraint.std.set)), constraint.indices])
 end
 
 function constraint_hash(constraint::TableConstraint)
-    return hash([string(typeof(constraint.std.set)), constraint.std.indices, constraint.std.set.table])
+    return hash([string(typeof(constraint.std.set)), constraint.indices, constraint.std.set.table])
 end
 
 function constraint_hash(constraint::LinearConstraint)
@@ -14,13 +14,13 @@ function constraint_hash(constraint::LinearConstraint)
     if isa(constraint.std.set, MOI.LessThan)
         rhs = constraint.std.set.upper - constraint.std.fct.constant
     end
-    return hash([string(typeof(constraint.std.set)), constraint.std.indices, coeffs, rhs])
+    return hash([string(typeof(constraint.std.set)), constraint.indices, coeffs, rhs])
 end
 
 function constraint_hash(constraint::SingleVariableConstraint)
-    return hash([string(typeof(constraint.std.set)), constraint.std.indices])
+    return hash([string(typeof(constraint.std.set)), constraint.indices])
 end
 
 function constraint_hash(constraint::Union{IndicatorConstraint, ReifiedConstraint})
-    return hash([string(typeof(constraint.std.set)), constraint.std.indices, constraint.activate_on, constraint_hash(constraint.inner_constraint)])
+    return hash([string(typeof(constraint.std.set)), constraint.indices, constraint.activate_on, constraint_hash(constraint.inner_constraint)])
 end

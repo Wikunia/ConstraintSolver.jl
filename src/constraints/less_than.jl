@@ -11,7 +11,7 @@ function prune_constraint!(
     set::MOI.LessThan{T};
     logs = true,
 ) where {T<:Real}
-    indices = constraint.std.indices
+    indices = constraint.indices
     search_space = com.search_space
     rhs = set.upper - fct.constant
 
@@ -95,7 +95,7 @@ function still_feasible(
     rhs = set.upper - fct.constant
     min_sum = zero(T)
 
-    for (i, idx) in enumerate(constraint.std.indices)
+    for (i, idx) in enumerate(constraint.indices)
         if idx == index
             min_sum += val * fct.terms[i].coefficient
             continue

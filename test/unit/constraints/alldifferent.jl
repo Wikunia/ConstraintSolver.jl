@@ -20,7 +20,7 @@
     @test CS.get_alldifferent_extrema(sorted_min, sorted_max, 3) == (1+3+4, 9+7+6)
     @test CS.get_alldifferent_extrema(sorted_min, sorted_max, 5) == (1+3+4+5+6, 9+7+6+5+4)
 
-    constr_indices = constraint.std.indices
+    constr_indices = constraint.indices
     @test CS.still_feasible(com, constraint, constraint.std.fct, constraint.std.set, 5, constr_indices[2])
     @test CS.fix!(com, com.search_space[constr_indices[2]], 5)
     @test !CS.still_feasible(com, constraint, constraint.std.fct, constraint.std.set, 5, constr_indices[3])

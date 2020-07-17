@@ -11,7 +11,7 @@
     @test !CS.is_solved_constraint(constraint, constraint.std.fct, constraint.std.set, [1,2,3])
     @test CS.is_solved_constraint(constraint, constraint.std.fct, constraint.std.set, [2,2,2])
 
-    constr_indices = constraint.std.indices
+    constr_indices = constraint.indices
     @test CS.still_feasible(com, constraint, constraint.std.fct, constraint.std.set, 5, constr_indices[2])
     @test CS.fix!(com, com.search_space[constr_indices[2]], 5)
     @test !CS.still_feasible(com, constraint, constraint.std.fct, constraint.std.set, 4, constr_indices[3])
@@ -33,7 +33,7 @@
     optimize!(m)
     com = JuMP.backend(m).optimizer.model.inner
     constraint = com.constraints[1]
-    constr_indices = constraint.std.indices
+    constr_indices = constraint.indices
 
     # feasible and no changes
     @test CS.prune_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
@@ -54,7 +54,7 @@
     com = JuMP.backend(m).optimizer.model.inner
 
     constraint = com.constraints[1]
-    constr_indices = constraint.std.indices
+    constr_indices = constraint.indices
 
     # Should be synced to the other variables
     @test CS.remove_below!(com, com.search_space[constr_indices[3]], 3)

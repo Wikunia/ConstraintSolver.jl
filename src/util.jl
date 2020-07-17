@@ -113,15 +113,14 @@ end
 
 function is_solved_constraint(com::CS.CoM, constraint::Constraint, fct, set)
     variables = com.search_space
-    !all(isfixed(variables[var]) for var in constraint.std.indices) && return false
-    values = CS.value.(variables[constraint.std.indices])
+    !all(isfixed(variables[var]) for var in constraint.indices) && return false
+    values = CS.value.(variables[constraint.indices])
     return is_solved_constraint(constraint, fct, set, values)
 end
 
 #=
     Access standard ConstraintInternals without using .std syntax
 =#
-#=
 function Base.getproperty(c::Constraint, s::Symbol) 
     if s === :idx
         getfield(c.std, :idx)
@@ -145,4 +144,3 @@ function Base.getproperty(c::Constraint, s::Symbol)
         getfield(c, s)
     end
 end
-=#

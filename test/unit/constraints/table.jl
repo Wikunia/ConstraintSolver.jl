@@ -19,7 +19,7 @@
     constraint = com.constraints[1]
 
     # check if impossible values got removed
-    constr_indices = constraint.std.indices
+    constr_indices = constraint.indices
     for ind in constr_indices
         @test sort(CS.values(com.search_space[ind])) == 1:4
     end
@@ -59,7 +59,7 @@
     com = JuMP.backend(m).optimizer.model.inner
 
     constraint = com.constraints[1]
-    constr_indices = constraint.std.indices
+    constr_indices = constraint.indices
 
     @test CS.fix!(com, com.search_space[constr_indices[2]], 2)
     @test CS.prune_constraint!(com, constraint, constraint.std.fct, constraint.std.set)
@@ -85,7 +85,7 @@
     com = JuMP.backend(m).optimizer.model.inner
 
     constraint = com.constraints[1]
-    constr_indices = constraint.std.indices
+    constr_indices = constraint.indices
     
     @test CS.fix!(com, com.search_space[constr_indices[2]], 4)
     @test CS.prune_constraint!(com, constraint, constraint.std.fct, constraint.std.set)

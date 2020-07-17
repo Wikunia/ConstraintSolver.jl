@@ -35,7 +35,7 @@ function init_constraint!(
     possible_rows = trues(num_pos_rows)
     search_space = com.search_space
 
-    indices = constraint.std.indices
+    indices = constraint.indices
     for row_id in 1:size(table)[1]
         for (i, vidx) in enumerate(indices)
             if !has(search_space[vidx], table[row_id, i])
@@ -176,7 +176,7 @@ end
 function update_table(com::CoM, constraint::TableConstraint)
     current = constraint.current
     supports = constraint.supports
-    indices = constraint.std.indices
+    indices = constraint.indices
     variables = com.search_space
     backtrack_idx = com.c_backtrack_idx
     for local_vidx in constraint.changed_vars
@@ -206,7 +206,7 @@ function filter_domains(com::CoM, constraint::TableConstraint)
     current = constraint.current
     supports = constraint.supports
     residues = constraint.residues
-    indices = constraint.std.indices
+    indices = constraint.indices
     variables = com.search_space
     feasible = true
     changed = false
@@ -261,7 +261,7 @@ function prune_constraint!(
     logs = true,
 )
     current = constraint.current
-    indices = constraint.std.indices
+    indices = constraint.indices
     variables = com.search_space
 
     changed = true
@@ -303,7 +303,7 @@ function finished_pruning_constraint!(com::CS.CoM,
     backtrack[com.c_backtrack_idx].words = copy(constraint.current.words)
     backtrack[com.c_backtrack_idx].last_ptr = constraint.current.last_ptr
     backtrack[com.c_backtrack_idx].indices = copy(constraint.current.indices)
-    for (i,ind) in enumerate(constraint.std.indices)
+    for (i,ind) in enumerate(constraint.indices)
         constraint.last_sizes[i] = CS.nvalues(com.search_space[ind])
     end
 end
@@ -323,7 +323,7 @@ function still_feasible(
 )
     current = constraint.current
     supports = constraint.supports
-    indices = constraint.std.indices
+    indices = constraint.indices
     full_mask(current)
     for i = 1:length(indices)
         if indices[i] == index
@@ -408,7 +408,7 @@ function single_reverse_pruning_constraint!(
     variables = com.search_space
     supports = constraint.supports
     residues = constraint.residues
-    indices = constraint.std.indices
+    indices = constraint.indices
     local_var_idx = 1
     var_idx = var.idx
     changes = var.changes[backtrack_idx]
@@ -435,7 +435,7 @@ function reset_residues!(com, constraint::TableConstraint)
     supports = constraint.supports
     residues = constraint.residues
     current = constraint.current
-    indices = constraint.std.indices
+    indices = constraint.indices
     variables = com.search_space
     num_residues = length(residues.values)
     for local_var_idx in constraint.changed_vars
@@ -505,7 +505,7 @@ function restore_pruning_constraint!(
     prune_steps::Union{Int, Vector{Int}}
 )
     # revert to the last of prune steps
-    constraint.changed_vars = collect(1:length(constraint.std.indices))
+    constraint.changed_vars = collect(1:length(constraint.indices))
     current = constraint.current
     backtrack_id = last(prune_steps)
     while backtrack_id > length(constraint.backtrack) || isempty(constraint.backtrack[backtrack_id].words)
@@ -514,7 +514,7 @@ function restore_pruning_constraint!(
     current.last_ptr = constraint.backtrack[backtrack_id].last_ptr
     current.words = copy(constraint.backtrack[backtrack_id].words)
     current.indices = copy(constraint.backtrack[backtrack_id].indices)
-    for (i,ind) in enumerate(constraint.std.indices)
+    for (i,ind) in enumerate(constraint.indices)
         constraint.last_sizes[i] = CS.nvalues(com.search_space[ind])
     end
     reset_residues!(com, constraint)
