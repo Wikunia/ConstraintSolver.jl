@@ -221,6 +221,7 @@ end
             -s.result != sum([JuMP.value(com_grid[i...]) for i in s.indices])
         end
         com = JuMP.backend(m).optimizer.model.inner
+        @test_reference "references/killer_5503" sort!([c.hash for c in com.constraints])
         @test general_tree_test(com)
        
         return com

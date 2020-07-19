@@ -27,7 +27,8 @@ GLPK = "60bf3e95-4087-53dc-ae20-288a0d20c6a6"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+ReferenceTests = "324d217c-45ce-50fc-942e-d289b448e8cf"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["ForwardDiff", "LinearAlgebra", "Test", "JSON", "Cbc", "GLPK", "Combinatorics", "Random"]
+test = ["ForwardDiff", "LinearAlgebra", "Test", "JSON", "Cbc", "GLPK", "Combinatorics", "Random", "ReferenceTests"]

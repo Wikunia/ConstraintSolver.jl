@@ -32,8 +32,12 @@
 
         @objective(model, Max, sum(days[h, a] * 5 for h = 1:3, a = 1:3))
         optimize!(model)
-        @test JuMP.termination_status(model) == MOI.TIME_LIMIT
+        @test JuMP.termination_status(model) == MOI.TIME_LIMIT || JuMP.termination_status(model) == MOI.OPTIMAL
+        if JuMP.termination_status(model) == MOI.OPTIMAL
+            @test JuMP.solve_time(model) <= 0.1
+        end
     end
+
 
     @testset "Issue 83 max_bt_steps" begin
         glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.OFF)
@@ -105,6 +109,9 @@
         @objective(model, Max, sum(days[h, a] * 5 for h = 1:3, a = 1:3))
         optimize!(model)
         @test JuMP.objective_value(model) ≈ 75
+
+        com = JuMP.backend(model).optimizer.model.inner
+        @test_reference "references/lp_issue83" sort!([c.hash for c in com.constraints])
     end
 
     @testset "Combine lp with table constraint" begin
