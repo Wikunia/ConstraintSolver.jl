@@ -26,7 +26,7 @@ using Formatting
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
-include("TableLogger.jl")
+include("tablelogger.jl")
 include("options.jl")
 
 const CS = ConstraintSolver
