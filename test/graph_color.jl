@@ -201,9 +201,12 @@
         info_1 = com1.info
         info_2 = com2.info
         @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
-        @test info_1.in_backtrack_calls < info_2.in_backtrack_calls
+        if JuMP.termination_status(m1) == MOI.TIME_LIMIT
+            @test info_1.in_backtrack_calls < info_2.in_backtrack_calls
+        else
+            @test JuMP.termination_status(m1) == MOI.OPTIMAL
+        end
         @test 0 <= MOI.get(m1, MOI.SolveTime()) < 0.5
-        @test JuMP.termination_status(m1) == MOI.TIME_LIMIT
     end
 
 
