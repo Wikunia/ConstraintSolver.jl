@@ -196,17 +196,13 @@
     end
 
     @testset "49 US states + DC time limit" begin
-        com1, m1 = normal_49_states(; time_limit = 0.01, tests=false)
+        com1, m1 = normal_49_states(; time_limit = 0.001, tests=false)
         com2, m2 = normal_49_states()
         info_1 = com1.info
         info_2 = com2.info
         @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
-        if JuMP.termination_status(m1) == MOI.TIME_LIMIT
-            @test info_1.in_backtrack_calls < info_2.in_backtrack_calls
-        else
-            @test JuMP.termination_status(m1) == MOI.OPTIMAL
-        end
-        @test 0 <= MOI.get(m1, MOI.SolveTime()) < 0.5
+        @test JuMP.termination_status(m1) == MOI.TIME_LIMIT
+        @test 0 <= MOI.get(m1, MOI.SolveTime()) < 0.05
     end
 
 
