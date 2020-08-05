@@ -8,19 +8,17 @@
     get_next_prune_constraint(com::CS.CoM, constraint_idxs_vec)
 
 Check which function will be called for pruning next. This is based on `constraint_idxs_vec`. The constraint with the lowest
-value is chosen and if two have the same value the constraint hash is checked.
+value is chosen and if two have the same lowest value the first one is chosen.
 Return the best value and the constraint index. Return a constraint index of 0 if there is no constraint with a less than maximal value
 """
 function get_next_prune_constraint(com::CS.CoM, constraint_idxs_vec)
     best_ci = 0
     best_open = typemax(Int)
-    best_hash = typemax(UInt64)
     for ci = 1:length(constraint_idxs_vec)
         if constraint_idxs_vec[ci] <= best_open
-            if constraint_idxs_vec[ci] < best_open || com.constraints[ci].hash < best_hash
+            if constraint_idxs_vec[ci] < best_open
                 best_ci = ci
                 best_open = constraint_idxs_vec[ci]
-                best_hash = com.constraints[ci].hash
             end
         end
     end

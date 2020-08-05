@@ -111,7 +111,6 @@
         @test JuMP.objective_value(model) ≈ 75
 
         com = JuMP.backend(model).optimizer.model.inner
-        @test_reference "references/lp_issue83" sort!([c.hash for c in com.constraints])
     end
 
     @testset "Combine lp with table constraint" begin

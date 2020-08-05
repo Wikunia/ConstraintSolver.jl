@@ -115,7 +115,6 @@ end
 
     status, m, x = solve_str8ts(grid, white; all_solutions=true, logging=[])
     com = JuMP.backend(m).optimizer.model.inner
-    @test_reference "references/str8ts_no_backtrack" sort!([c.hash for c in com.constraints])
     @test JuMP.termination_status(m) == MOI.OPTIMAL
     @test MOI.get(m, MOI.ResultCount()) == 1
     @test convert.(Int, JuMP.value.(x[1,:])) == [7,9,6,8,0,0,2,3,0]

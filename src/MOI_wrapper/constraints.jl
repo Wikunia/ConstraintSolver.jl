@@ -487,12 +487,6 @@ function set_pvals!(model::CS.Optimizer)
     end
 end
 
-function set_constraint_hashes!(com::CS.CoM; constraints=com.constraints)
-    for constraint in constraints
-        constraint.hash = constraint_hash(constraint)
-    end
-end
-
 function init_constraints!(com::CS.CoM; constraints=com.constraints)
     feasible = true
     for constraint in constraints

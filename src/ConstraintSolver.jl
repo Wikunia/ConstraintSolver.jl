@@ -42,7 +42,6 @@ include("lp_model.jl")
 include("MOI_wrapper/MOI_wrapper.jl")
 include("printing.jl")
 include("logs.jl")
-include("hashes.jl")
 include("Variable.jl")
 include("objective.jl")
 
@@ -778,7 +777,6 @@ function solve!(com::CS.CoM, options::SolverOptions)
     com.start_time = time()
 
     !set_init_fixes!(com) && return :Infeasible
-    set_constraint_hashes!(com)
     set_in_all_different!(com)
 
     # initialize constraints if `init_constraint!` exists for the constraint
@@ -794,7 +792,6 @@ function solve!(com::CS.CoM, options::SolverOptions)
     added_con_idxs = simplify!(com)
     if length(added_con_idxs) > 0
         set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
-        set_constraint_hashes!(com; constraints=com.constraints[added_con_idxs])
         set_impl_functions!(com; constraints=com.constraints[added_con_idxs])
         !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
     end
