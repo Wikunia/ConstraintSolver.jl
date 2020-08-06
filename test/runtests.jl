@@ -19,6 +19,22 @@ macro test_macro_throws(errortype, m)
     :(@test_throws $(esc(errortype)) try @eval $m catch err; throw(err.error) end)
 end
 
+"""
+    test_string(arr::AbstractArray)
+
+In Julia 1.0 string(arr) starts with Array{Int, 1} or something. In 1.5 it doesn't. 
+This function removes Array{...} and starts with `[`. Additionally all white spaces are removed.
+"""
+function test_string(arr::AbstractArray)
+    s = string(arr)
+    if startswith(s, "Array")
+        p = first(findfirst("[", s))
+        s = s[p:end]
+    end
+    s = replace(s, " " => "")
+    return s
+end
+
 test_stime = time()
 
 include("general.jl")
