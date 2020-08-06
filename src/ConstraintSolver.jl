@@ -401,6 +401,49 @@ function add_new_solution!(
 end
 
 """
+    checkout_new_node!(com::CS.CoM, last_id, new_id)
+
+If last id is not 0 then changes from last_id to new_id and sets `com.c_backtrack_idx`
+"""
+function checkout_new_node!(com::CS.CoM, last_id, new_id)
+    if last_id != 0
+        com.c_backtrack_idx = 0
+        checkout_from_to!(com, last_id, new_id)
+        com.c_backtrack_idx = new_id
+    end
+end
+
+"""
+    found_best_node(com::CS.CoM)
+
+Return whether a optimal solution was found
+"""
+function found_best_node(com::CS.CoM)
+    obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
+    return length(com.bt_solution_ids) > 0 && obj_factor * com.best_bound >= obj_factor * com.best_sol
+end
+
+"""
+    handle_infeasible!(com::CS.CoM; finish_pruning=false)
+
+Handle infeasibility:
+- finish pruning if `finish_pruning` is true
+- log if desired
+- increase `backtrack_reverses`
+
+Return true to make calls like `!feasible && handle_infeasible!(com) && continue` possible
+"""
+function handle_infeasible!(com::CS.CoM; finish_pruning=false)
+    # need to call as some function might have pruned something.
+    # Just need to be sure that we save the latest states
+    finish_pruning && call_finished_pruning!(com)
+    last_backtrack_id = com.c_backtrack_idx
+    com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], com.backtrack_vec[last_backtrack_id], com.search_space; feasible=false)
+    com.info.backtrack_reverses += 1
+    return true
+end
+
+"""
     backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
 Start backtracking and stop after `max_bt_steps`.
@@ -460,20 +503,13 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         !found && break
 
         # there is no better node => return best solution
-        if length(com.bt_solution_ids) > 0 &&
-            obj_factor * com.best_bound >= obj_factor * com.best_sol && !find_more_solutions
-            break
-        end
+        !find_more_solutions && found_best_node(com) && break
 
         vidx = backtrack_obj.variable_idx
 
         com.c_backtrack_idx = backtrack_obj.idx
 
-        if !started
-            com.c_backtrack_idx = 0
-            checkout_from_to!(com, last_backtrack_id, backtrack_obj.idx)
-            com.c_backtrack_idx = backtrack_obj.idx
-        end
+        checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
 
         if com.input[:logs]
             com.logs[backtrack_obj.idx].step_nr = step_nr
@@ -495,28 +531,15 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         # first update the best bound (only constraints which have an index in the objective function)
         if com.sense != MOI.FEASIBILITY_SENSE
             feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
-            if !feasible
-                # need to call as some function might have pruned something.
-                # Just need to be sure that we save the latest states
-                call_finished_pruning!(com)
-                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
-                com.info.backtrack_reverses += 1
-                continue
-            end
+            !feasible && handle_infeasible!(com; finish_pruning=true) && continue
         end
 
         if further_pruning
             # prune completely start with all that changed by the fix or by updating best bound
             feasible = prune!(com)
-            call_finished_pruning!(com)
-            if !feasible
-                com.info.backtrack_reverses += 1
-                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
-                continue
-            end
-        else
-            call_finished_pruning!(com)
+            !feasible && handle_infeasible!(com; finish_pruning=true) && continue
         end
+        call_finished_pruning!(com)
 
         if log_table
             last_table_row = update_table_log(com, backtrack_vec)
@@ -560,6 +583,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             check_bound = true,
         )
     end
+
     backtrack_vec[last_backtrack_id].status = :Closed
     com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
     if length(com.bt_solution_ids) > 0
@@ -571,6 +595,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             return :Solved
         end
     end
+
     if time() - com.start_time > com.options.time_limit
         return :Time
     else
