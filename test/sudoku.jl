@@ -185,6 +185,8 @@
         optimize!(m)
 
         @test JuMP.termination_status(m) == MOI.OPTIMAL
+        com = JuMP.backend(m).optimizer.model.inner
+        @test_reference "refs/hard_fsudoku" com.constraints
 
         # check that it actually solves the given sudoku
         for r = 1:9, c = 1:9
