@@ -26,13 +26,14 @@ using Formatting
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
+const CS = ConstraintSolver
+include("types.jl")
+const CoM = ConstraintSolverModel
+
 include("tablelogger.jl")
 include("options.jl")
 
-const CS = ConstraintSolver
-include("types.jl")
 
-const CoM = ConstraintSolverModel
 include("type_inits.jl")
 
 include("util.jl")
@@ -773,10 +774,6 @@ function print_info(com::CS.CoM)
     println()
 end
 
-function get_auto_traverse_strategy(com::CS.CoM)
-    return com.sense == MOI.FEASIBILITY_SENSE ? :DFS : :BFS
-end
-
 """
     solve!(com::CS.CoM, options::SolverOptions)
 
@@ -791,7 +788,11 @@ function solve!(com::CS.CoM, options::SolverOptions)
     if options.traverse_strategy == :Auto
         options.traverse_strategy = get_auto_traverse_strategy(com)
     end
+    if options.branch_strategy == :Auto
+        options.branch_strategy = get_auto_branch_strategy(com)
+    end
     com.traverse_strategy = get_traverse_strategy(;options = options)
+    com.branch_strategy = get_branch_strategy(;options = options)
     com.branch_split = get_branch_split(;options = options)
 
     set_impl_functions!(com)

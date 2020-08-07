@@ -1,6 +1,55 @@
+# TableLogger
+
+mutable struct TableCol
+    id::Symbol
+    name::String
+    type::DataType
+    width::Int
+    alignment::Symbol # :left, :center, :right
+    b_format::Bool
+end
+
+mutable struct TableEntry{T}
+    col_id::Symbol
+    value::T
+end
+
+mutable struct TableSetup
+    cols::Vector{TableCol}
+    col_idx::Dict{Symbol,Int}
+    new_row_criteria::Bool
+    diff_criteria::Dict{Symbol,Any}
+    last_row::Vector{TableEntry}
+end
+
+# SolverOptions
+
+mutable struct SolverOptions
+    logging::Vector{Symbol}
+    table::TableSetup
+    time_limit::Float64 # time limit in backtracking in seconds
+    traverse_strategy::Symbol
+    branch_strategy::Symbol
+    branch_split::Symbol # defines splitting in the middle, or takes smallest, biggest value
+    backtrack::Bool
+    max_bt_steps::Int
+    backtrack_sorting::Bool
+    keep_logs::Bool
+    rtol::Float64
+    atol::Float64
+    solution_type::Type
+    all_solutions::Bool
+    all_optimal_solutions::Bool
+    lp_optimizer::Any
+    no_prune::Bool
+    activity_decay::Float64
+end
+
+# General
+
 mutable struct Variable
     idx::Int
-    lower_bound::Int # inital lower and
+    lower_bound::Int # initial lower and
     upper_bound::Int # upper bound of the variable see min, max otherwise
     first_ptr::Int
     last_ptr::Int
@@ -21,6 +70,8 @@ mutable struct Variable
     has_lower_bound::Bool # must be true to work
     is_fixed::Bool
     is_integer::Bool # must be true to work
+    # branching strategies
+    activity::Float64 #  + 1 if variable was used in node, * activity_decay if it wasn't
 end
 
 mutable struct NumberConstraintTypes
@@ -348,6 +399,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     objective::ObjectiveFunction
     var_in_obj::Vector{Bool} # saves whether a variable is part of the objective function
     traverse_strategy::Val
+    branch_strategy::Val
     branch_split::Val
     best_sol::T # Objective of the best solution
     best_bound::T # Overall best bound

@@ -1,24 +1,18 @@
-mutable struct SolverOptions
-    logging::Vector{Symbol}
-    table::TableSetup
-    time_limit::Float64 # time limit in backtracking in seconds
-    traverse_strategy::Symbol
-    branch_split::Symbol # defines splitting in the middle, or takes smallest, biggest value
-    backtrack::Bool
-    max_bt_steps::Int
-    backtrack_sorting::Bool
-    keep_logs::Bool
-    rtol::Float64
-    atol::Float64
-    solution_type::Type
-    all_solutions::Bool
-    all_optimal_solutions::Bool
-    lp_optimizer::Any
-    no_prune::Bool
+function get_auto_traverse_strategy(com::CS.CoM)
+    return com.sense == MOI.FEASIBILITY_SENSE ? :DFS : :BFS
 end
 
 function get_traverse_strategy(;options=SolverOptions())
     return Val(options.traverse_strategy)
+end
+
+function get_auto_branch_strategy(com::CS.CoM)
+    return :ABS # Activity based strategy
+end
+
+function get_branch_strategy(;options=SolverOptions())
+    strategy = options.branch_strategy
+    return Val(strategy)
 end
 
 function get_branch_split(;options=SolverOptions())
@@ -28,6 +22,7 @@ end
 
 const POSSIBLE_OPTIONS = Dict(
     :traverse_strategy => [:Auto, :BFS, :DFS, :DBFS],
+    :branch_strategy => [:Auto, :ABS],
     :branch_split => [:Auto, :Smallest, :Biggest, :InHalf]
 )
 
@@ -44,6 +39,7 @@ function SolverOptions()
         Dict(:min_diff_duration => 5.0),
     )
     traverse_strategy = :Auto
+    branch_strategy = :Auto
     branch_split = :Auto
     backtrack = true
     max_bt_steps = typemax(Int)
@@ -57,12 +53,14 @@ function SolverOptions()
     lp_optimizer = nothing
     time_limit = Inf
     no_prune = false
+    activity_decay = 0.999
 
     return SolverOptions(
         logging,
         table,
         time_limit,
         traverse_strategy,
+        branch_strategy,
         branch_split,
         backtrack,
         max_bt_steps,
@@ -74,7 +72,8 @@ function SolverOptions()
         all_solutions,
         all_optimal_solutions,
         lp_optimizer,
-        no_prune
+        no_prune,
+        activity_decay
     )
 end
 

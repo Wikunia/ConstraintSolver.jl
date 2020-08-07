@@ -165,12 +165,11 @@ end
     @test JuMP.value(y) ≈ 2
     com = JuMP.backend(m).optimizer.model.inner
     @test is_solved(com)
-    @test general_tree_test(com)
 end
 
 @testset "TableConstraint with optimization" begin
     cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
-    m = Model(optimizer_with_attributes(CS.Optimizer, "logging"=>[], "lp_optimizer"=>cbc_optimizer))
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging"=>[], "lp_optimizer"=>cbc_optimizer, "keep_logs"=>true))
     @variable(m, 1 <= a <= 100, Int)
     @variable(m, 1 <= b <= 100, Int)
     @variable(m, 1 <= c <= 100, Int)
@@ -194,5 +193,6 @@ end
     @test JuMP.value(reified) ≈ 1
     com = JuMP.backend(m).optimizer.model.inner
     @test is_solved(com)
+    @test general_tree_test(com)
 end
 end

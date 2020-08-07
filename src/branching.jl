@@ -80,7 +80,6 @@ function get_split_pvals(com, ::Val{:Biggest}, var::Variable)
     return var.min, left_ub, var.max, var.max
 end
 
-
 """
     get_next_branch_variable(com::CS.CoM)
 
@@ -88,6 +87,10 @@ Get the next weak index for backtracking. This will be the next branching variab
 Return whether there is an unfixed variable and a best index
 """
 function get_next_branch_variable(com::CS.CoM)
+    return get_next_branch_variable(com, com.branch_strategy)
+end
+
+function get_next_branch_variable(com::CS.CoM, ::Val{:OLD})
     lowest_num_pvals = typemax(Int)
     biggest_inf = -1
     best_vidx = -1
@@ -115,6 +118,46 @@ function get_next_branch_variable(com::CS.CoM)
                         best_vidx = vidx
                         found = true
                     end
+                end
+            end
+        end
+    end
+    return found, best_vidx
+end
+
+function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
+    # update activity 
+    c_backtrack_idx = com.c_backtrack_idx
+    γ = com.options.activity_decay
+    for variable in com.search_space
+        if length(variable.changes[c_backtrack_idx]) > 0
+            variable.activity += 1
+        elseif nvalues(variable) > 1
+            variable.activity *= γ
+        end
+    end
+
+    is_in_objective = false
+    highest_activity = -1.0
+    best_vidx = -1
+    found = false
+
+    for variable in com.search_space
+        if !isfixed(variable)
+            vidx = variable.idx
+            num_pvals = nvalues(variable)
+            activity_ratio = variable.activity / num_pvals
+            if !is_in_objective && com.var_in_obj[vidx]
+                is_in_objective = true
+                found = true
+                best_vidx = vidx
+                continue
+            end
+            if !is_in_objective || com.var_in_obj[vidx]
+                if activity_ratio >= highest_activity
+                    highest_activity = activity_ratio
+                    best_vidx = vidx
+                    found = true
                 end
             end
         end

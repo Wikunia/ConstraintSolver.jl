@@ -16,6 +16,7 @@ Variable(vidx) = Variable(
     false,
     false,
     false,
+    0.0
 )
 
 MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[], Bool[])
@@ -103,6 +104,7 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         NoObjective(), # 
         Vector{Bool}(), # var_in_obj
         get_traverse_strategy(), 
+        get_branch_strategy(), 
         get_branch_split(),
         zero(T), # best_sol,
         zero(T), # best_bound

@@ -65,11 +65,33 @@ It is advised to use a linear problem solver like [Cbc.jl](https://github.com/Ju
 
 ## `traverse_strategy` (`:Auto`)
 
-You can chose a traversal strategy for you model with this strategy. The default is choosing depending on the model. In feasibility problems depth first search is chosen and in optimization problems best first search.
+You can chose a traversal strategy for you model with this option. The default is choosing depending on the model. In feasibility problems depth first search is chosen and in optimization problems best first search.
 Other options:
 - `:BFS` => Best First Search
 - `:DFS` => Depth First Search
 - `:DBFS` => Depth First Search until solution was found then Best First Search
+
+## `branch_strategy` (`:Auto`)
+
+You can chose a branch strategy for you model with this option. Currently the only one is [Activity Based Search](https://arxiv.org/pdf/1105.6314.pdf)
+It is based on that paper but currently does not fully implement all the details. For further options see `activity_decay`
+
+Other options:
+- `:ABS` => Activity based search
+
+## `activity_decay` (0.999)
+
+The activity of variables decays when they are not used in the current node. In the following it is written as $\gamma$.
+
+$X$ are the variables and $X^{\prime}$ denotes variables that have been changed. $D(x)$ is the domain of the variable $x$ and 
+$A(x)$ is the activity.
+
+$$
+\begin{aligned}
+\forall x \in X & \text { s.t. } |D(x)| > 1: A(x) = A(x) \cdot \gamma \\
+\forall x \in X^{\prime} &: A(x)=A(x)+1
+\end{aligned}
+$$
 
 ## `branch_split` (`:Auto`)
 
