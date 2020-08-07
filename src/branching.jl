@@ -1,12 +1,12 @@
 """
-    get_split_pvals(com, ::Val{:Auto}, var::Variable)
+    get_split_pvals(com, ::SplitAuto, var::Variable)
 
 Splits the possible values into two by using either :smallest or :biggest value and the rest.
 It depends on whether it's a satisfiability or optimization problem and whether the variable has a positive 
 or negative coefficient + minimization or maximization 
 Return lb, leq, geq, ub => the bounds for the lower part and the bounds for the upper part
 """
-function get_split_pvals(com, ::Val{:Auto}, var::Variable)
+function get_split_pvals(com, ::SplitAuto, var::Variable)
     @assert var.min != var.max
     if isa(com.objective, LinearCombinationObjective)
         linear_comb = com.objective.lc 
@@ -15,24 +15,24 @@ function get_split_pvals(com, ::Val{:Auto}, var::Variable)
                 coeff = linear_comb.coeffs[i]
                 factor = com.sense == MOI.MIN_SENSE ? -1 : 1
                 if coeff*factor > 0
-                    return get_split_pvals(com, Val(:Biggest), var)
+                    return get_split_pvals(com, SplitBiggest(), var)
                 else
-                    return get_split_pvals(com, Val(:Smallest), var)
+                    return get_split_pvals(com, SplitSmallest(), var)
                 end
             end
         end
     end
     # fallback for satisfiability or not in objective
-    return get_split_pvals(com, Val(:Smallest), var)
+    return get_split_pvals(com, SplitSmallest(), var)
 end
 
 """
-    get_split_pvals(com, ::Val{:InHalf}, var::Variable)
+    get_split_pvals(com, ::SplitInHalf, var::Variable)
 
 Splits the possible values into two by obtaining the mean value.
 Return lb, leq, geq, ub => the bounds for the lower part and the bounds for the upper part
 """
-function get_split_pvals(com, ::Val{:InHalf}, var::Variable)
+function get_split_pvals(com, ::SplitInHalf, var::Variable)
     pvals = values(var)
     @assert length(pvals) >= 2
     mean_val = mean(pvals)
@@ -57,24 +57,24 @@ function get_split_pvals(com, ::Val{:InHalf}, var::Variable)
 end
 
 """
-    get_split_pvals(com, ::Val{:Smallest}, var::Variable)
+    get_split_pvals(com, ::SplitSmallest, var::Variable)
 
 Splits the possible values into two by using the smallest value and the rest.
 Return lb, leq, geq, ub => the bounds for the lower part and the bounds for the upper part
 """
-function get_split_pvals(com, ::Val{:Smallest}, var::Variable)
+function get_split_pvals(com, ::SplitSmallest, var::Variable)
     @assert var.min != var.max
     right_lb = partialsort(values(var), 2)
     return var.min, var.min, right_lb, var.max
 end
 
 """
-    get_split_pvals(com, ::Val{:Biggest}, var::Variable)
+    get_split_pvals(com, ::SplitBiggest, var::Variable)
 
 Splits the possible values into two by using the biggest value and the rest.
 Return lb, leq, geq, ub => the bounds for the lower part and the bounds for the upper part
 """
-function get_split_pvals(com, ::Val{:Biggest}, var::Variable)
+function get_split_pvals(com, ::SplitBiggest, var::Variable)
     @assert var.min != var.max
     left_ub = partialsort(values(var), 2; rev=true)
     return var.min, left_ub, var.max, var.max

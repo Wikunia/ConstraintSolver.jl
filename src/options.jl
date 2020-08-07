@@ -18,12 +18,29 @@ mutable struct SolverOptions
 end
 
 function get_traverse_strategy(;options=SolverOptions())
-    return Val(options.traverse_strategy)
+    ts = options.traverse_strategy
+    if ts == :BFS
+        return BFS()
+    elseif ts == :DFS
+        return DFS()
+    elseif ts == :DBFS
+        return DBFS()
+    end
+    # default (might get overridden later)
+    return BFS()
 end
 
 function get_branch_split(;options=SolverOptions())
     strategy = options.branch_split
-    return Val(strategy)
+    if strategy == :Smallest
+        return SplitSmallest()
+    elseif strategy == :Biggest
+        return SplitBiggest()
+    elseif strategy == :InHalf
+        return SplitInHalf()
+    end
+    # default (might get overridden later)
+    return SplitAuto()
 end
 
 const POSSIBLE_OPTIONS = Dict(
