@@ -1,17 +1,3 @@
-abstract type TraverseStrategy end
-
-struct TraverseAuto <: TraverseStrategy end
-struct BFS <: TraverseStrategy end
-struct DFS <: TraverseStrategy end
-struct DBFS <: TraverseStrategy end
-
-abstract type SplitStrategy end
-
-struct SplitAuto <: SplitStrategy end
-struct SplitSmallest <: SplitStrategy end
-struct SplitBiggest <: SplitStrategy end
-struct SplitInHalf <: SplitStrategy end
-
 mutable struct Variable
     idx::Int
     lower_bound::Int # inital lower and
@@ -361,8 +347,8 @@ mutable struct ConstraintSolverModel{T<:Real}
     sense::MOI.OptimizationSense
     objective::ObjectiveFunction
     var_in_obj::Vector{Bool} # saves whether a variable is part of the objective function
-    traverse_strategy::TraverseStrategy
-    branch_split::SplitStrategy
+    traverse_strategy::Val
+    branch_split::Val
     best_sol::T # Objective of the best solution
     best_bound::T # Overall best bound
     solutions::Vector{Solution}
