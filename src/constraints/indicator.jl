@@ -19,10 +19,10 @@ function init_constraint!(
     # check which methods that inner constraint supports
     set_impl_functions!(com, inner_constraint)
 
-    if inner_constraint.std.impl.init
-        feasible = init_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set; active=false)
+    if inner_constraint.impl.init
+        feasible = init_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set; active=false)
         # map the bounds to the indicator constraint
-        constraint.std.bound_rhs = inner_constraint.std.bound_rhs
+        constraint.bound_rhs = inner_constraint.bound_rhs
         return feasible
     end
     # still feasible
@@ -50,15 +50,15 @@ function prune_constraint!(
     set::IS;
     logs = true,
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
-    indicator_var_idx = constraint.std.indices[1]
+    indicator_vidx = constraint.indices[1]
     search_space = com.search_space
-    indicator_var = search_space[indicator_var_idx]
+    indicator_var = search_space[indicator_vidx]
     # still feasible but nothing to prune
     !isfixed(indicator_var) && return true
     # if active
     CS.value(indicator_var) != Int(constraint.activate_on) && return true
     inner_constraint = constraint.inner_constraint
-    return prune_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set; logs=logs)
+    return prune_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set; logs=logs)
 end
 
 """
@@ -67,34 +67,34 @@ end
         constraint::IndicatorConstraint,
         fct::Union{MOI.VectorOfVariables, VAF{T}},
         set::IS,
+        vidx::Int,
         val::Int,
-        index::Int,
     ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
 
-Return whether the search space is still feasible when setting `search_space[index]` to value.
+Return whether the search space is still feasible when setting `search_space[vidx]` to value.
 """
 function still_feasible(
     com::CoM,
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables, VAF{T}},
     set::IS,
+    vidx::Int,
     val::Int,
-    index::Int,
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
-    indicator_var_idx = constraint.std.indices[1]
+    indicator_vidx = constraint.indices[1]
     search_space = com.search_space
-    indicator_var = search_space[indicator_var_idx]
+    indicator_var = search_space[indicator_vidx]
     # still feasible but nothing to prune
-    !isfixed(indicator_var) && index != indicator_var_idx && return true
+    !isfixed(indicator_var) && vidx != indicator_vidx && return true
     # if deactivating or is deactivated
-    if index != indicator_var_idx
+    if vidx != indicator_vidx
         CS.value(indicator_var) != Int(constraint.activate_on) && return true
     else
         val != Int(constraint.activate_on) && return true
     end
     # if activating or activated check the inner constraint
     inner_constraint = constraint.inner_constraint
-    return still_feasible(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, val, index)
+    return still_feasible(com, inner_constraint, inner_constraint.fct, inner_constraint.set, vidx, val)
 end
 
 """
@@ -115,7 +115,7 @@ function is_solved_constraint(
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
     if values[1] == Int(constraint.activate_on)
         inner_constraint = constraint.inner_constraint
-        return is_solved_constraint(inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, values[2:end])
+        return is_solved_constraint(inner_constraint, inner_constraint.fct, inner_constraint.set, values[2:end])
     end
     return true
 end
@@ -126,13 +126,13 @@ end
         constraint::IndicatorConstraint,
         fct::Union{MOI.VectorOfVariables, VAF{T}},
         set::IS,
-        var_idx::Int,
+        vidx::Int,
         lb::Int,
         ub::Int
     ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
 
 Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to 
-the possible values the table constraint allows. `var_idx`, `lb` and `ub` don't are not considered atm.
+the possible values the table constraint allows. `vidx`, `lb` and `ub` don't are not considered atm.
 Additionally only a rough estimated bound is used which can be computed relatively fast. 
 This method calls the inner_constraint method if it exists and the indicator is activated.
 """
@@ -140,20 +140,20 @@ function update_best_bound_constraint!(com::CS.CoM,
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables, VAF{T}},
     set::IS,
-    var_idx::Int,
+    vidx::Int,
     lb::Int,
     ub::Int
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
     inner_constraint = constraint.inner_constraint
-    indicator_var_idx = constraint.std.indices[1]
+    indicator_vidx = constraint.indices[1]
     search_space = com.search_space
-    indicator_var = search_space[indicator_var_idx]
-    if inner_constraint.std.impl.update_best_bound
+    indicator_var = search_space[indicator_vidx]
+    if inner_constraint.impl.update_best_bound
         if CS.issetto(indicator_var, Int(constraint.activate_on)) 
-            return update_best_bound_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, var_idx, lb, ub)
+            return update_best_bound_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set, vidx, lb, ub)
         else
             # if not activated (for example in a different subtree) we reset the bounds
-            for rhs in constraint.std.bound_rhs
+            for rhs in constraint.bound_rhs
                 rhs.lb = typemin(Int64)
                 rhs.ub = typemax(Int64)
             end
@@ -172,8 +172,8 @@ function single_reverse_pruning_constraint!(
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
     inner_constraint = constraint.inner_constraint
     # the variable must be part of the inner constraint
-    if inner_constraint.std.impl.single_reverse_pruning && (var.idx != constraint.std.indices[1] || constraint.indicator_in_inner)
-        single_reverse_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, var, backtrack_idx)
+    if inner_constraint.impl.single_reverse_pruning && (var.idx != constraint.indices[1] || constraint.indicator_in_inner)
+        single_reverse_pruning_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set, var, backtrack_idx)
     end
 end
 
@@ -185,8 +185,8 @@ function reverse_pruning_constraint!(
     backtrack_id::Int
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
     inner_constraint = constraint.inner_constraint
-    if inner_constraint.std.impl.reverse_pruning
-        reverse_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, backtrack_id)
+    if inner_constraint.impl.reverse_pruning
+        reverse_pruning_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set, backtrack_id)
     end
 end
   
@@ -198,8 +198,8 @@ function restore_pruning_constraint!(
     prune_steps::Union{Int, Vector{Int}}
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
     inner_constraint = constraint.inner_constraint
-    if inner_constraint.std.impl.restore_pruning
-        restore_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set, prune_steps)
+    if inner_constraint.impl.restore_pruning
+        restore_pruning_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set, prune_steps)
     end
 end
 
@@ -209,7 +209,7 @@ function finished_pruning_constraint!(com::CS.CoM,
     set::IS
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
     inner_constraint = constraint.inner_constraint
-    if inner_constraint.std.impl.finished_pruning
-        finished_pruning_constraint!(com, inner_constraint, inner_constraint.std.fct, inner_constraint.std.set)
+    if inner_constraint.impl.finished_pruning
+        finished_pruning_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
     end
 end

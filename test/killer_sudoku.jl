@@ -95,102 +95,6 @@ end
         end
     end
 
-    @testset "Killer Sudoku niallsudoku_5500 with coefficients" begin
-        com = CS.ConstraintSolverModel()
-
-        grid = zeros(Int, (9, 9))
-
-        com_grid = Array{CS.Variable,2}(undef, 9, 9)
-        for (ind, val) in enumerate(grid)
-            com_grid[ind] = CS.add_var!(com, 1, 9)
-        end
-
-        sums = parseKillerJSON(JSON.parsefile("data/killer_niallsudoku_5500"))
-
-        # the upper left sum constraint is x+y+z = 10 and the solution is 2+1+7
-        # here I change it to 5*x+7*y+z = 24
-        CS.add_constraint!(
-            com,
-            5 * com_grid[CartesianIndex(1, 1)] +
-            7 * com_grid[CartesianIndex(2, 1)] +
-            com_grid[CartesianIndex(2, 2)] == 24,
-        )
-
-        for s in sums[2:end]
-            CS.add_constraint!(
-                com,
-                sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result,
-            )
-        end
-
-        add_sudoku_constr!(com, com_grid)
-
-        options = Dict{Symbol,Any}()
-        options[:keep_logs] = true
-        options[:traverse_strategy] = :DFS
-
-        options = CS.combine_options(options)
-
-        @test CS.solve!(com, options) == :Solved
-        logs_1 = CS.get_logs(com)
-        info_1 = com.info
-        @test fulfills_sudoku_constr(com_grid)
-        @test 5 * CS.value(com_grid[CartesianIndex(1, 1)]) +
-        7 * CS.value(com_grid[CartesianIndex(2, 1)]) +
-        CS.value(com_grid[CartesianIndex(2, 2)]) == 24
-        for s in sums[2:end]
-            @test s.result ==
-                  sum([CS.value(com_grid[CartesianIndex(i)]) for i in s.indices])
-        end
-        @test com.solve_time >= 0
-
-        # test if deterministic by running it again
-        com = CS.ConstraintSolverModel()
-
-        grid = zeros(Int, (9, 9))
-
-        com_grid = Array{CS.Variable,2}(undef, 9, 9)
-        for (ind, val) in enumerate(grid)
-            com_grid[ind] = CS.add_var!(com, 1, 9)
-        end
-
-        sums = parseKillerJSON(JSON.parsefile("data/killer_niallsudoku_5500"))
-
-        # the upper left sum constraint is x+y+z = 10 and the solution is 2+1+7
-        # here I change it to 5*x+7*y+z = 24
-        CS.add_constraint!(
-            com,
-            5 * com_grid[CartesianIndex(1, 1)] +
-            7 * com_grid[CartesianIndex(2, 1)] +
-            com_grid[CartesianIndex(2, 2)] == 24,
-        )
-
-        for s in sums[2:end]
-            CS.add_constraint!(
-                com,
-                sum([com_grid[CartesianIndex(ind)] for ind in s.indices]) == s.result,
-            )
-        end
-
-        add_sudoku_constr!(com, com_grid)
-
-
-        options = Dict{Symbol,Any}()
-        options[:keep_logs] = true
-        options[:logging] = []
-
-        options = CS.combine_options(options)
-        status = CS.solve!(com, options)
-
-        logs_2 = CS.get_logs(com)
-        info_2 = com.info
-        @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
-        @test info_1.backtrack_fixes == info_2.backtrack_fixes
-        @test info_1.in_backtrack_calls == info_2.in_backtrack_calls
-        @test info_1.backtrack_reverses == info_2.backtrack_reverses
-        @test CS.same_logs(logs_1[:tree], logs_2[:tree])
-    end
-
     function killer_negative(;reverse_order=false)
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
@@ -214,8 +118,9 @@ end
 
         @test JuMP.termination_status(m) == MOI.OPTIMAL
         @test jump_fulfills_sudoku_constr(com_grid)
+        all_correct = true
         for s in sums
-            @test -s.result == sum([JuMP.value(com_grid[i...]) for i in s.indices])
+            -s.result != sum([JuMP.value(com_grid[i...]) for i in s.indices])
         end
         com = JuMP.backend(m).optimizer.model.inner
         @test general_tree_test(com)
@@ -225,8 +130,12 @@ end
 
     @testset "Killer Sudoku niallsudoku_5503 with negative coefficients and -9 to -1" begin
         com1 = killer_negative()
-        # the constraint order should not effect anything
-        com2 = killer_negative(;reverse_order=true)
+        @test_reference "refs/niallsudoku_5503_negative" test_string([constraint.indices for constraint in com1.constraints])
+        # the constraint order now affects this but calling the same twice should have the same ordering
+        # this tests that the order of constraints the user specified is actually moved correctly to ConstraintSolver instead of being random
+        # see https://github.com/Wikunia/ConstraintSolver.jl/issues/180
+        com2 = killer_negative()
+        @test_reference "refs/niallsudoku_5503_negative" test_string([constraint.indices for constraint in com2.constraints])
         info_1 = com1.info
         info_2 = com2.info
         @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls

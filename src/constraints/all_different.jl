@@ -1,32 +1,4 @@
-include("bipartite.jl")
-
-"""
-    all_different(variables::Vector{Variable})
-
-Create a AllDifferentConstraint which will later be used by `all_different(com, constraint)`. \n
-Can be used i.e by `add_constraint!(com, CS.all_different(variables))`.
-"""
-function all_different(variables::Vector{Variable})
-    internals = ConstraintInternals(
-        0, # idx will be changed later
-        var_vector_to_moi(variables),
-        AllDifferentSetInternal(length(variables)),
-        Int[v.idx for v in variables]
-    )
-
-    constraint = AllDifferentConstraint(
-        internals,
-        Int[],
-        Int[],
-        Int[],
-        Int[],
-        Int[],
-        MatchingInit(),
-        Int[]        
-    )
-    constraint.std.hash = constraint_hash(constraint)
-    return constraint
-end
+include("all_different/bipartite.jl")
 
 function init_constraint_struct(::Type{AllDifferentSetInternal}, internals)
     AllDifferentConstraint(
@@ -54,8 +26,8 @@ function init_constraint!(
     set::AllDifferentSetInternal;
     active = true
 )
-    pvals = constraint.std.pvals
-    nindices = length(constraint.std.indices)
+    pvals = constraint.pvals
+    nindices = length(constraint.indices)
 
     min_pvals, max_pvals = extrema(pvals)
     len_range = max_pvals - min_pvals + 1
@@ -87,26 +59,26 @@ function init_constraint!(
     com.lp_model === nothing && return true # return feasibility
 
     lp_backend = backend(com.lp_model)
-    lp_var_idx = create_lp_variable!(com.lp_model, com.lp_x)
+    lp_vidx = create_lp_variable!(com.lp_model, com.lp_x)
     # create == constraint with sum of all variables equal the newly created variable
-    sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(var_idx)) for var_idx in constraint.std.indices]
-    push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_var_idx)))
+    sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(vidx)) for vidx in constraint.indices]
+    push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_vidx)))
     saf = MOI.ScalarAffineFunction(sats, 0.0)
     MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
     
-    constraint.std.bound_rhs = [BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int))]
+    constraint.bound_rhs = [BoundRhsVariable(lp_vidx, typemin(Int), typemax(Int))]
 
     # if constraints are part of the all different constraint
     # the all different constraint can be split more parts to get better bounds
     # i.e https://github.com/Wikunia/ConstraintSolver.jl/issues/114
     for sc_idx in constraint.sub_constraint_idxs
-        lp_var_idx = create_lp_variable!(com.lp_model, com.lp_x)
+        lp_vidx = create_lp_variable!(com.lp_model, com.lp_x)
         # create == constraint with sum of all variables equal the newly created variable
-        sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(var_idx)) for var_idx in com.constraints[sc_idx].std.indices]
-        push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_var_idx)))
+        sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(vidx)) for vidx in com.constraints[sc_idx].indices]
+        push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_vidx)))
         saf = MOI.ScalarAffineFunction(sats, 0.0)
         MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
-        push!(constraint.std.bound_rhs, BoundRhsVariable(lp_var_idx, typemin(Int), typemax(Int)))
+        push!(constraint.bound_rhs, BoundRhsVariable(lp_vidx, typemin(Int), typemax(Int)))
     end
     return true # still feasible
 end
@@ -148,7 +120,7 @@ end
         constraint::AllDifferentConstraint,
         fct::MOI.VectorOfVariables,
         set::AllDifferentSetInternal,
-        var_idx::Int,
+        vidx::Int,
         lb::Int,
         ub::Int
     )
@@ -156,26 +128,26 @@ end
 Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to 
 the possible values the all different constraint allows. 
 i.e if we have 4 variables all between 1 and 10 the maximum sum is 10+9+8+7 and the minimum sum is 1+2+3+4
-Additionally one of the variables can be bounded using `var_idx`, `lb` and `ub`
+Additionally one of the variables can be bounded using `vidx`, `lb` and `ub`
 """
 function update_best_bound_constraint!(com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal,
-    var_idx::Int,
+    vidx::Int,
     lb::Int,
     ub::Int
 )
-    constraint.std.bound_rhs === nothing && return
+    constraint.bound_rhs === nothing && return
     search_space = com.search_space
 
     # compute bounds
     # get the maximum/minimum value for each variable
-    max_vals = zeros(Int, length(constraint.std.indices))
-    min_vals = zeros(Int, length(constraint.std.indices))
-    for i=1:length(constraint.std.indices)
-        v_idx = constraint.std.indices[i]
-        if v_idx == var_idx
+    max_vals = zeros(Int, length(constraint.indices))
+    min_vals = zeros(Int, length(constraint.indices))
+    for i=1:length(constraint.indices)
+        v_idx = constraint.indices[i]
+        if v_idx == vidx
             max_vals[i] = ub
             min_vals[i] = lb
         else
@@ -189,18 +161,18 @@ function update_best_bound_constraint!(com::CS.CoM,
     # sort the min_vals asc and obtain bound by enforcing all different
     sort!(min_vals)
   
-    min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(constraint.std.indices))
+    min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(constraint.indices))
 
-    constraint.std.bound_rhs[1].lb = min_sum
-    constraint.std.bound_rhs[1].ub = max_sum
+    constraint.bound_rhs[1].lb = min_sum
+    constraint.bound_rhs[1].ub = max_sum
 
     i = 1
     for sc_idx in constraint.sub_constraint_idxs
         i += 1
         sub_constraint = com.constraints[sc_idx]
-        min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(sub_constraint.std.indices))
-        constraint.std.bound_rhs[i].lb = min_sum
-        constraint.std.bound_rhs[i].ub = max_sum
+        min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(sub_constraint.indices))
+        constraint.bound_rhs[i].lb = min_sum
+        constraint.bound_rhs[i].ub = max_sum
     end
 end
 
@@ -217,8 +189,8 @@ function prune_constraint!(
     set::AllDifferentSetInternal;
     logs = true,
 )
-    indices = constraint.std.indices
-    pvals = constraint.std.pvals
+    indices = constraint.indices
+    pvals = constraint.pvals
     nindices = length(indices)
 
     search_space = com.search_space
@@ -239,8 +211,8 @@ function prune_constraint!(
         bfixed = false
         for i = 1:length(unfixed_indices)
             pi = unfixed_indices[i]
-            ind = indices[pi]
-            @views c_search_space = search_space[ind]
+            vidx = indices[pi]
+            @views c_search_space = search_space[vidx]
             if !CS.isfixed(c_search_space)
                 for pv in current_fixed_vals
                     if has(c_search_space, pv)
@@ -447,21 +419,21 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal, value::Int, index::Int)
+    still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal, vidx::Int, value::Int)
 
-Return whether the constraint can be still fulfilled when setting a variable with index `index` to `value`.
+Return whether the constraint can be still fulfilled when setting a variable with index `vidx` to `value`.
 """
 function still_feasible(
     com::CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal,
+    vidx::Int,
     value::Int,
-    index::Int,
 )
-    indices = constraint.std.indices
+    indices = constraint.indices
     for i = 1:length(indices)
-        if indices[i] == index
+        if indices[i] == vidx
             continue
         end
         if issetto(com.search_space[indices[i]], value)

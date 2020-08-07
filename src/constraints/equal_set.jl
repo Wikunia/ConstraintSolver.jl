@@ -1,46 +1,3 @@
-"""
-    equal(variables::Vector{Variable})
-
-Create an EqualConstraint which will later be used by `equal(com, constraint)` \n
-Can be used i.e by `add_constraint!(com, CS.equal([x,y,z])`.
-"""
-function equal(variables::Vector{Variable})
-    internals = ConstraintInternals(
-        0, # idx will be changed later
-        var_vector_to_moi(variables),
-        EqualSetInternal(length(variables)),
-        Int[v.idx for v in variables]
-    )
-    constraint = EqualConstraint(
-      internals,
-      ones(Int, length(variables))
-    )
-    constraint.std.hash = constraint_hash(constraint)
-    return constraint
-end
-
-"""
-    Base.:(==)(x::Variable, y::Variable)
-
-Create an EqualConstraint which will later be used by `equal(com, constraint)` \n
-Can be used i.e by `add_constraint!(com, x == y)`.
-"""
-function Base.:(==)(x::Variable, y::Variable)
-    variables = [x, y]
-    internals = ConstraintInternals(
-        0, # idx will be changed later
-        var_vector_to_moi(variables),
-        EqualSetInternal(2),
-        Int[x.idx, y.idx]
-    )
-    bc = EqualConstraint(
-       internals,
-       ones(Int, 2)
-    )
-    bc.std.hash = constraint_hash(bc)
-    return bc
-end
-
 function init_constraint!(
     com::CS.CoM,
     constraint::EqualConstraint,
@@ -48,17 +5,17 @@ function init_constraint!(
     set::CS.EqualSetInternal; 
     active = true
 )
-    indices = constraint.std.indices
+    indices = constraint.indices
     search_space = com.search_space
     intersect_vals = Set(intersect(CS.values.(search_space[indices])...))
     !active && return true
     if isempty(intersect_vals)
         return false
     end
-    for ind in indices
-        for val in CS.values(search_space[ind])
+    for vidx in indices
+        for val in CS.values(search_space[vidx])
             if !(val in intersect_vals)
-                !rm!(com, search_space[ind], val) && return false
+                !rm!(com, search_space[vidx], val) && return false
             end
         end
     end
@@ -93,7 +50,7 @@ function prune_constraint!(
     set::EqualSetInternal;
     logs = true,
 )
-    indices = constraint.std.indices
+    indices = constraint.indices
 
     search_space = com.search_space
     # is only needed if we want to set more
@@ -123,8 +80,8 @@ function prune_constraint!(
 
         # otherwise prune => set all variables to fixed value
         for i in unfixed_indices
-            idx = indices[i]
-            feasible = fix!(com, search_space[idx], fixed_vals[1])
+            vidx = indices[i]
+            feasible = fix!(com, search_space[vidx], fixed_vals[1])
             if !feasible
                 return false
             end
@@ -186,7 +143,7 @@ function finished_pruning_constraint!(com::CS.CoM,
 end
 
 """
-    still_feasible(com::CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::EqualSetInternal, value::Int, index::Int)
+    still_feasible(com::CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::EqualSetInternal, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled.
 """
@@ -195,13 +152,13 @@ function still_feasible(
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
     set::EqualSetInternal,
+    vidx::Int,
     value::Int,
-    index::Int,
 )
    variables = com.search_space
-   for ind in constraint.std.indices
-        ind == index && continue
-        v = variables[ind]
+   for cvidx in constraint.indices
+        cvidx == vidx && continue
+        v = variables[cvidx]
         !has(v, value) && return false
     end
     return true

@@ -56,20 +56,6 @@ function var_vector_to_moi(vars::Vector{Variable})
 end
 
 """
-    linear_combination_to_saf(lc::LinearCombination)
-
-Convert a LinearCombination to a ScalarAffineFunction and return the SAF + the used type
-"""
-function linear_combination_to_saf(lc::LinearCombination)
-    T = eltype(lc.coeffs)
-    sat = [
-        MOI.ScalarAffineTerm{T}(lc.coeffs[i], MOI.VariableIndex(lc.indices[i]))
-        for i = 1:length(lc.indices)
-    ]
-    return SAF{T}(sat, zero(T)), T
-end
-
-"""
     fixed_vs_unfixed(search_space, indices)
 
 Return the fixed_vals as well as the unfixed_indices
@@ -78,9 +64,9 @@ function fixed_vs_unfixed(search_space, indices)
     # get all values which are fixed
     fixed_vals = Int[]
     unfixed_indices = Int[]
-    for (i, ind) in enumerate(indices)
-        if isfixed(search_space[ind])
-            push!(fixed_vals, CS.value(search_space[ind]))
+    for (i, vidx) in enumerate(indices)
+        if isfixed(search_space[vidx])
+            push!(fixed_vals, CS.value(search_space[vidx]))
         else
             push!(unfixed_indices, i)
         end
@@ -127,7 +113,26 @@ end
 
 function is_solved_constraint(com::CS.CoM, constraint::Constraint, fct, set)
     variables = com.search_space
-    !all(isfixed(variables[var]) for var in constraint.std.indices) && return false
-    values = CS.value.(variables[constraint.std.indices])
+    !all(isfixed(variables[var]) for var in constraint.indices) && return false
+    values = CS.value.(variables[constraint.indices])
     return is_solved_constraint(constraint, fct, set, values)
+end
+
+#=
+    Access standard ConstraintInternals without using .std syntax
+=#
+@inline function Base.getproperty(c::Constraint, s::Symbol) 
+    if s in (:idx, :indices, :fct, :set, :pvals, :impl, :is_initialized, :bound_rhs)
+        Core.getproperty(Core.getproperty(c, :std), s)
+    else
+        getfield(c, s)
+    end
+end
+
+@inline function Base.setproperty!(c::Constraint, s::Symbol, v) 
+    if s in (:idx, :indices, :fct, :set, :pvals, :impl, :is_initialized, :bound_rhs)
+        Core.setproperty!(c.std, s, v)
+    else
+        Core.setproperty!(c, s, v)
+    end
 end

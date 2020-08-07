@@ -3,6 +3,7 @@ using ConstraintSolver
 using JSON
 using Random
 using MathOptInterface, JuMP, Cbc, GLPK, Combinatorics
+using ReferenceTests
 
 const MOI = MathOptInterface
 const CS = ConstraintSolver
@@ -16,6 +17,22 @@ CSCbcJuMPTestOptimizer() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging
 macro test_macro_throws(errortype, m)
     # See https://discourse.julialang.org/t/test-throws-with-macros-after-pr-23533/5878
     :(@test_throws $(esc(errortype)) try @eval $m catch err; throw(err.error) end)
+end
+
+"""
+    test_string(arr::AbstractArray)
+
+In Julia 1.0 string(arr) starts with Array{Int, 1} or something. In 1.5 it doesn't. 
+This function removes Array{...} and starts with `[`. Additionally all white spaces are removed.
+"""
+function test_string(arr::AbstractArray)
+    s = string(arr)
+    if startswith(s, "Array")
+        p = first(findfirst("[", s))
+        s = s[p:end]
+    end
+    s = replace(s, " " => "")
+    return s
 end
 
 test_stime = time()

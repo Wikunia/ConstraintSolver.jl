@@ -1,59 +1,22 @@
 """
-    Base.:(==)(x::LinearCombination, y::Real)
+    get_new_extrema_and_sum(search_space, vidx, i, terms, full_min, full_max, pre_mins, pre_maxs)
 
-Create a linear constraint with `LinearCombination` and an integer rhs `y`. \n
-Can be used i.e by `add_constraint!(com, x+y = 2)`.
-"""
-function Base.:(==)(x::LinearCombination, y::Real)
-    indices, coeffs, constant_lhs = simplify(x)
-
-    rhs = y - constant_lhs
-    func, T = linear_combination_to_saf(LinearCombination(indices, coeffs))
-    lc = LinearConstraint(func, MOI.EqualTo{T}(rhs), indices)
-
-    lc.std.hash = constraint_hash(lc)
-    return lc
-end
-
-"""
-    Base.:(==)(x::LinearCombination, y::Variable)
-
-Create a linear constraint with `LinearCombination` and a variable rhs `y`. \n
-Can be used i.e by `add_constraint!(com, x+y = z)`.
-"""
-function Base.:(==)(x::LinearCombination, y::Variable)
-    return x == LinearCombination([y.idx], [1])
-end
-
-"""
-    Base.:(==)(x::LinearCombination, y::LinearCombination)
-
-Create a linear constraint with `LinearCombination` on the left and right hand side. \n
-Can be used i.e by `add_constraint!(com, x+y = a+b)`.
-"""
-function Base.:(==)(x::LinearCombination, y::LinearCombination)
-    return x - y == 0
-end
-
-"""
-    get_new_extrema_and_sum(search_space, idx, i, terms, full_min, full_max, pre_mins, pre_maxs)
-
-Get the updated full_min, full_max as well as updated pre_mins[i] and pre_maxs[i] after values got removed from search_space[idx]
+Get the updated full_min, full_max as well as updated pre_mins[i] and pre_maxs[i] after values got removed from search_space[vidx]
 Return full_min, full_max, pre_mins[i], pre_maxs[i]
 """
-function get_new_extrema_and_sum(search_space, idx, i, terms, full_min, full_max, pre_mins, pre_maxs)
+function get_new_extrema_and_sum(search_space, vidx, i, terms, full_min, full_max, pre_mins, pre_maxs)
     new_min = pre_mins[i]
     new_max = pre_maxs[i]
     if terms[i].coefficient > 0
-        coeff_min = search_space[idx].min * terms[i].coefficient
-        coeff_max = search_space[idx].max * terms[i].coefficient
+        coeff_min = search_space[vidx].min * terms[i].coefficient
+        coeff_max = search_space[vidx].max * terms[i].coefficient
         full_max -= (coeff_max - pre_maxs[i])
         full_min += (coeff_min - pre_mins[i])
         new_min = coeff_min
         new_max = coeff_max
     else
-        coeff_min = search_space[idx].max * terms[i].coefficient
-        coeff_max = search_space[idx].min * terms[i].coefficient
+        coeff_min = search_space[vidx].max * terms[i].coefficient
+        coeff_max = search_space[vidx].min * terms[i].coefficient
         full_max -= (coeff_max - pre_maxs[i])
         full_min += (coeff_min - pre_mins[i])
         new_min = coeff_min
@@ -75,7 +38,7 @@ function prune_constraint!(
     set::MOI.EqualTo{T};
     logs = true,
 ) where {T<:Real}
-    indices = constraint.std.indices
+    indices = constraint.indices
     search_space = com.search_space
     rhs = set.value - fct.constant
 
@@ -84,13 +47,13 @@ function prune_constraint!(
     mins = constraint.mins
     pre_maxs = constraint.pre_maxs
     pre_mins = constraint.pre_mins
-    for (i, idx) in enumerate(indices)
+    for (i, vidx) in enumerate(indices)
         if fct.terms[i].coefficient >= 0
-            max_val = search_space[idx].max * fct.terms[i].coefficient
-            min_val = search_space[idx].min * fct.terms[i].coefficient
+            max_val = search_space[vidx].max * fct.terms[i].coefficient
+            min_val = search_space[vidx].min * fct.terms[i].coefficient
         else
-            min_val = search_space[idx].max * fct.terms[i].coefficient
-            max_val = search_space[idx].min * fct.terms[i].coefficient
+            min_val = search_space[vidx].max * fct.terms[i].coefficient
+            max_val = search_space[vidx].min * fct.terms[i].coefficient
         end
         maxs[i] = max_val
         mins[i] = min_val
@@ -114,8 +77,8 @@ function prune_constraint!(
     changed = true
     while changed
         changed = false
-        for (i, idx) in enumerate(indices)
-            if isfixed(search_space[idx])
+        for (i, vidx) in enumerate(indices)
+            if isfixed(search_space[vidx])
                 continue
             end
             # minimum without current index
@@ -136,18 +99,18 @@ function prune_constraint!(
         end
 
         # update all
-        for (i, idx) in enumerate(indices)
+        for (i, vidx) in enumerate(indices)
             # if the maximum of coefficient * variable got reduced
             # get a safe threshold because of floating point errors
             if maxs[i] < pre_maxs[i]
                 if fct.terms[i].coefficient > 0
                     threshold = get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
-                    still_feasible = remove_above!(com, search_space[idx], threshold)
+                    still_feasible = remove_above!(com, search_space[vidx], threshold)
                 else
                     threshold = get_safe_lower_threshold(com, maxs[i], fct.terms[i].coefficient)
-                    still_feasible = remove_below!(com, search_space[idx], threshold)
+                    still_feasible = remove_below!(com, search_space[vidx], threshold)
                 end
-                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, idx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
+                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, vidx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
                 if new_min != pre_mins[i]
                     changed = true
                     pre_mins[i] = new_min
@@ -168,12 +131,12 @@ function prune_constraint!(
                 new_max = pre_maxs[i]
                 if fct.terms[i].coefficient > 0
                     threshold = get_safe_lower_threshold(com, mins[i], fct.terms[i].coefficient)
-                    still_feasible = remove_below!(com, search_space[idx], threshold)
+                    still_feasible = remove_below!(com, search_space[vidx], threshold)
                 else
                     threshold = get_safe_upper_threshold(com, mins[i], fct.terms[i].coefficient)
-                    still_feasible = remove_above!(com, search_space[idx], threshold)
+                    still_feasible = remove_above!(com, search_space[vidx], threshold)
                 end
-                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, idx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
+                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, vidx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
                 if new_min != pre_mins[i]
                     changed = true
                     pre_mins[i] = new_min
@@ -193,8 +156,8 @@ function prune_constraint!(
 
     # if there are at most two unfixed variables left check all options
     n_unfixed = 0
-    unfixed_ind_1, unfixed_ind_2 = 0, 0
-    unfixed_local_ind_1, unfixed_local_ind_2 = 0, 0
+    unfixed_vidx_1, unfixed_vidx_2 = 0, 0
+    unfixed_local_vidx_1, unfixed_local_vidx_2 = 0, 0
     unfixed_rhs = rhs
     li = 0
     for i in indices
@@ -203,11 +166,11 @@ function prune_constraint!(
             n_unfixed += 1
             if n_unfixed <= 2
                 if n_unfixed == 1
-                    unfixed_ind_1 = i
-                    unfixed_local_ind_1 = li
+                    unfixed_vidx_1 = i
+                    unfixed_local_vidx_1 = li
                 else
-                    unfixed_ind_2 = i
-                    unfixed_local_ind_2 = li
+                    unfixed_vidx_2 = i
+                    unfixed_local_vidx_2 = li
                 end
             end
         else
@@ -217,20 +180,20 @@ function prune_constraint!(
 
     # only a single one left
     if n_unfixed == 1
-        if !isapprox_discrete(com, unfixed_rhs / fct.terms[unfixed_local_ind_1].coefficient)
-            com.bt_infeasible[unfixed_ind_1] += 1
+        if !isapprox_discrete(com, unfixed_rhs / fct.terms[unfixed_local_vidx_1].coefficient)
+            com.bt_infeasible[unfixed_vidx_1] += 1
             return false
         else
             # divide rhs such that it is comparable with the variable directly without coefficient
             unfixed_rhs = get_approx_discrete(
-                unfixed_rhs / fct.terms[unfixed_local_ind_1].coefficient,
+                unfixed_rhs / fct.terms[unfixed_local_vidx_1].coefficient,
             )
         end
-        if !has(search_space[unfixed_ind_1], unfixed_rhs)
-            com.bt_infeasible[unfixed_ind_1] += 1
+        if !has(search_space[unfixed_vidx_1], unfixed_rhs)
+            com.bt_infeasible[unfixed_vidx_1] += 1
             return false
         else
-            still_feasible = fix!(com, search_space[unfixed_ind_1], unfixed_rhs)
+            still_feasible = fix!(com, search_space[unfixed_vidx_1], unfixed_rhs)
             if !still_feasible
                 return false
             end
@@ -239,9 +202,9 @@ function prune_constraint!(
         is_all_different = constraint.in_all_different
         if !is_all_different
             intersect_cons =
-                intersect(com.subscription[unfixed_ind_1], com.subscription[unfixed_ind_2])
+                intersect(com.subscription[unfixed_vidx_1], com.subscription[unfixed_vidx_2])
             for constraint_idx in intersect_cons
-                if isa(com.constraints[constraint_idx].std.set, AllDifferentSetInternal)
+                if isa(com.constraints[constraint_idx].set, AllDifferentSetInternal)
                     is_all_different = true
                     break
                 end
@@ -250,11 +213,11 @@ function prune_constraint!(
 
         for v = 1:2
             if v == 1
-                this, local_this = unfixed_ind_1, unfixed_local_ind_1
-                other, local_other = unfixed_ind_2, unfixed_local_ind_2
+                this, local_this = unfixed_vidx_1, unfixed_local_vidx_1
+                other, local_other = unfixed_vidx_2, unfixed_local_vidx_2
             else
-                other, local_other = unfixed_ind_1, unfixed_local_ind_1
-                this, local_this = unfixed_ind_2, unfixed_local_ind_2
+                other, local_other = unfixed_vidx_1, unfixed_local_vidx_1
+                this, local_this = unfixed_vidx_2, unfixed_local_vidx_2
             end
 
             for val in values(search_space[this])
@@ -301,17 +264,17 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}, val::Int, index::Int) where T <: Real
+    still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}, vidx::Int, val::Int) where T <: Real
 
-Return whether setting `search_space[index]` to `val` is still feasible given `constraint`.
+Return whether setting `search_space[vidx]` to `val` is still feasible given `constraint`.
 """
 function still_feasible(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
     set::MOI.EqualTo{T},
+    vidx::Int,
     val::Int,
-    index::Int,
 ) where {T<:Real}
     search_space = com.search_space
     rhs = set.value - fct.constant
@@ -321,23 +284,23 @@ function still_feasible(
     not_fixed_i = 0
     max_extra = 0
     min_extra = 0
-    for (i, idx) in enumerate(constraint.std.indices)
-        if idx == index
+    for (i, cvidx) in enumerate(constraint.indices)
+        if cvidx == vidx
             csum += val * fct.terms[i].coefficient
             continue
         end
-        if isfixed(search_space[idx])
-            csum += CS.value(search_space[idx]) * fct.terms[i].coefficient
+        if isfixed(search_space[cvidx])
+            csum += CS.value(search_space[cvidx]) * fct.terms[i].coefficient
         else
             num_not_fixed += 1
-            not_fixed_idx = idx
+            not_fixed_idx = cvidx
             not_fixed_i = i
             if fct.terms[i].coefficient >= 0
-                max_extra += search_space[idx].max * fct.terms[i].coefficient
-                min_extra += search_space[idx].min * fct.terms[i].coefficient
+                max_extra += search_space[cvidx].max * fct.terms[i].coefficient
+                min_extra += search_space[cvidx].min * fct.terms[i].coefficient
             else
-                min_extra += search_space[idx].max * fct.terms[i].coefficient
-                max_extra += search_space[idx].min * fct.terms[i].coefficient
+                min_extra += search_space[cvidx].max * fct.terms[i].coefficient
+                max_extra += search_space[cvidx].min * fct.terms[i].coefficient
             end
         end
     end

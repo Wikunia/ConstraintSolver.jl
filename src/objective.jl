@@ -1,24 +1,87 @@
+"""
+    update_best_bound!(com::CS.CoM)
+
+Iterate over all backtrack objects to set the new best bound for the whole search tree
+"""
+function update_best_bound!(com::CS.CoM)
+    if any(bo -> bo.status == :Open, com.backtrack_vec)
+        if com.sense == MOI.MIN_SENSE
+            max_val = typemax(com.best_bound)
+            com.best_bound = minimum([
+                bo.status == :Open ? bo.best_bound : max_val for bo in com.backtrack_vec
+            ])
+        elseif com.sense == MOI.MAX_SENSE
+            min_val = typemin(com.best_bound)
+            com.best_bound = maximum([
+                bo.status == :Open ? bo.best_bound : min_val for bo in com.backtrack_vec
+            ])
+        end # otherwise no update is needed
+    end
+end
 
 """
-    get_best_bound(com::CS.CoM, backtrack_obj::CS.BacktrackObj, obj_fct::SingleVariableObjective, var_idx::Int, lb::Int, ub::Int)
+    update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraints)
 
-Compute the best bound if we have a `SingleVariableObjective` and limit `var_idx` using 
-    `lb <= var[var_idx] <= ub` if `var_idx != 0`.
-Return a best bound given the constraints on `var_idx`
+Check all constraints which change the objective and update the best bound of the backtrack_obj accordingly.
+Pruning should not be continued if the new best bound has changed.
+Return feasible and if pruning should be continued.
+"""
+function update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraints)
+    further_pruning = true
+    feasible = true
+    for constraint in constraints
+        relevant = any(com.var_in_obj[i] for i in constraint.indices)
+        if relevant
+            feasible = prune_constraint!(
+                com,
+                constraint,
+                constraint.fct,
+                constraint.set;
+                logs = false,
+            )
+            if !feasible
+                return false, false
+            end
+        end
+    end
+
+    # check best_bound again
+    # if best bound unchanged => continue pruning
+    # otherwise try another path but don't close the current
+    # -> means open new paths from here even if not pruned til the end
+    new_bb = get_best_bound(com, backtrack_obj)
+    if backtrack_obj.best_bound != new_bb
+        further_pruning = false
+    end
+    if backtrack_obj.best_bound == com.best_bound
+        backtrack_obj.best_bound = new_bb
+        update_best_bound!(com)
+    else
+        backtrack_obj.best_bound = new_bb
+    end
+    return true, further_pruning
+end
+
+"""
+    get_best_bound(com::CS.CoM, backtrack_obj::CS.BacktrackObj, obj_fct::SingleVariableObjective, vidx::Int, lb::Int, ub::Int)
+
+Compute the best bound if we have a `SingleVariableObjective` and limit `vidx` using 
+    `lb <= var[vidx] <= ub` if `vidx != 0`.
+Return a best bound given the constraints on `vidx`
 """
 function get_best_bound(
     com::CS.CoM,
     backtrack_obj::CS.BacktrackObj,
     obj_fct::SingleVariableObjective,
-    var_idx::Int,
+    vidx::Int,
     lb::Int,
     ub::Int,
 )
-    if obj_fct.index != var_idx
+    if obj_fct.vidx != vidx
         if com.sense == MOI.MIN_SENSE
-            return com.search_space[obj_fct.index].min
+            return com.search_space[obj_fct.vidx].min
         else # MAX
-            return com.search_space[obj_fct.index].max
+            return com.search_space[obj_fct.vidx].max
         end
     else
         if com.sense == MOI.MIN_SENSE
@@ -30,17 +93,17 @@ function get_best_bound(
 end
 
 """
-    get_best_bound(com::CS.CoM, backtrack_obj::CS.BacktrackObj, obj_fct::LinearCombinationObjective, var_idx::Int, lb::Int, ub::Int)
+    get_best_bound(com::CS.CoM, backtrack_obj::CS.BacktrackObj, obj_fct::LinearCombinationObjective, vidx::Int, lb::Int, ub::Int)
 
-Compute the best bound if we have a `LinearCombinationObjective` and limit `var_idx` using 
-    `lb <= var[var_idx] <= ub` if `var_idx != 0`.
-Return a best bound given the constraints on `var_idx`
+Compute the best bound if we have a `LinearCombinationObjective` and limit `vidx` using 
+    `lb <= var[vidx] <= ub` if `vidx != 0`.
+Return a best bound given the constraints on `vidx`
 """
 function get_best_bound(
     com::CS.CoM,
     backtrack_obj::CS.BacktrackObj,
     obj_fct::LinearCombinationObjective,
-    var_idx::Int,
+    vidx::Int,
     lb::Int,
     ub::Int,
 )
@@ -49,7 +112,7 @@ function get_best_bound(
     objval = obj_fct.constant
     if com.sense == MOI.MIN_SENSE
         for i = 1:length(indices)
-            if indices[i] == var_idx
+            if indices[i] == vidx
                 objval += min(coeffs[i]*lb, coeffs[i]*ub)
                 continue
             end
@@ -57,7 +120,7 @@ function get_best_bound(
         end
     else # MAX Sense
         for i = 1:length(indices)
-            if indices[i] == var_idx
+            if indices[i] == vidx
                 objval += max(coeffs[i]*lb, coeffs[i]*ub)
                 continue
             end
@@ -74,7 +137,7 @@ function get_best_bound(
     
     # check if last best_bound is affected
     # check that we have a parent node to maybe use the bound of the parent
-    if backtrack_obj.parent_idx != 0 && var_idx == 0
+    if backtrack_obj.parent_idx != 0 && vidx == 0
         use_last = true
         for variable in com.search_space
             lb = com.search_space[variable.idx].min
@@ -93,9 +156,9 @@ function get_best_bound(
     # compute bound using the lp optimizer
     # setting all bounds
     for variable in com.search_space
-        if variable.idx == var_idx 
-            set_lower_bound(com.lp_x[var_idx], lb)
-            set_upper_bound(com.lp_x[var_idx], ub)
+        if variable.idx == vidx 
+            set_lower_bound(com.lp_x[vidx], lb)
+            set_upper_bound(com.lp_x[vidx], ub)
         else
             set_lower_bound(com.lp_x[variable.idx], com.search_space[variable.idx].min)
             set_upper_bound(com.lp_x[variable.idx], com.search_space[variable.idx].max)
@@ -112,9 +175,9 @@ function get_best_bound(
     # update bounds by constraints
     # check each constraint which has `update_best_bound = true` for a better bound
     for constraint in com.constraints
-        if constraint.std.impl.update_best_bound
-            update_best_bound_constraint!(com, constraint, constraint.std.fct, constraint.std.set, var_idx, lb, ub)
-            for bound in constraint.std.bound_rhs
+        if constraint.impl.update_best_bound
+            update_best_bound_constraint!(com, constraint, constraint.fct, constraint.set, vidx, lb, ub)
+            for bound in constraint.bound_rhs
                 set_lower_bound(com.lp_x[bound.idx], bound.lb)
                 set_upper_bound(com.lp_x[bound.idx], bound.ub)
             end

@@ -8,17 +8,18 @@ end
 
 function _build_reified_constraint(
     _error::Function, variable::JuMP.AbstractVariableRef,
-    constraint::JuMP.VectorConstraint, ::Type{CS.ReifiedSet{A}}) where A
+    jump_constraint::JuMP.VectorConstraint, ::Type{CS.ReifiedSet{A}}) where A
     
-    set = CS.ReifiedSet{A}(MOI.VectorOfVariables(constraint.func), constraint.set, 1+length(constraint.func))
+    set = CS.ReifiedSet{A}(MOI.VectorOfVariables(jump_constraint.func), jump_constraint.set, 1+length(jump_constraint.func))
     vov = VariableRef[variable]
-    append!(vov, constraint.func)
+    append!(vov, jump_constraint.func)
     return JuMP.VectorConstraint(vov, set)
 end
 
 function _reified_variable_set(::Function, variable::Symbol)
     return variable, ReifiedSet{MOI.ACTIVATE_ON_ONE}
 end
+
 function _reified_variable_set(_error::Function, expr::Expr)
     if expr.args[1] == :¬ || expr.args[1] == :!
         if length(expr.args) != 2
@@ -31,7 +32,6 @@ function _reified_variable_set(_error::Function, expr::Expr)
 end
 
 function JuMP.parse_constraint_head(_error::Function, ::Val{:(:=)}, lhs, rhs)
-
     variable, S = _reified_variable_set(_error, lhs)
     if !JuMP.isexpr(rhs, :braces) || length(rhs.args) != 1
         _error("Invalid right-hand side `$(rhs)` of reified constraint. Expected constraint surrounded by `{` and `}`.")

@@ -22,20 +22,20 @@ function plot_search_space(grid, com_grid, fname)
         plot!([0, 9], [j, j], color = :black, linewidth = 4)
     end
 
-    for ind in keys(com_grid)
-        if CS.isfixed(com_grid[ind])
-            x = ind[2] - 0.5
-            y = 10 - ind[1] - 0.5
-            if grid[ind] != 0
-                annotate!([x, y, text(string(CS.value(com_grid[ind])), 20, :black)])
+    for vidx in keys(com_grid)
+        if CS.isfixed(com_grid[vidx])
+            x = vidx[2] - 0.5
+            y = 10 - vidx[1] - 0.5
+            if grid[vidx] != 0
+                annotate!([x, y, text(string(CS.value(com_grid[vidx])), 20, :black)])
             else
-                annotate!([x, y, text(string(CS.value(com_grid[ind])), 20, :blue)])
+                annotate!([x, y, text(string(CS.value(com_grid[vidx])), 20, :blue)])
             end
         else
-            vals = CS.values(com_grid[ind])
+            vals = CS.values(com_grid[vidx])
             sort!(vals)
-            x = ind[2] - 0.5
-            y = 10 - ind[1] - 0.2
+            x = vidx[2] - 0.5
+            y = 10 - vidx[1] - 0.2
             max_idx = min(3, length(vals))
             text_vals = join(vals[1:max_idx], ",")
             annotate!([x, y, text(text_vals, 7)])
@@ -68,25 +68,25 @@ function plot_killer(grid, sums, fname; fill = true, mark = nothing)
         aspect_ratio = :equal,
     )
     for s in sums
-        ind = s.indices[1]
-        x = ind[2] - 0.75
-        y = 10 - ind[1] - 0.17
+        vidx = s.indices[1]
+        x = vidx[2] - 0.75
+        y = 10 - vidx[1] - 0.17
         annotate!(x, y, text(s.result, 15, :black))
         if mark === nothing
-            for ind in s.indices
-                plot!(rectangle(1, 1, ind[2] - 1, 9 - ind[1]), color = s.color, alpha = 0.4)
+            for vidx in s.indices
+                plot!(rectangle(1, 1, vidx[2] - 1, 9 - vidx[1]), color = s.color, alpha = 0.4)
             end
         else
-            for ind in s.indices
-                if ind in mark
+            for vidx in s.indices
+                if vidx in mark
                     plot!(
-                        rectangle(1, 1, ind[2] - 1, 9 - ind[1]),
+                        rectangle(1, 1, vidx[2] - 1, 9 - vidx[1]),
                         color = "red",
                         alpha = 0.4,
                     )
                 else
                     plot!(
-                        rectangle(1, 1, ind[2] - 1, 9 - ind[1]),
+                        rectangle(1, 1, vidx[2] - 1, 9 - vidx[1]),
                         color = s.color,
                         alpha = 0.4,
                     )
@@ -104,16 +104,16 @@ function plot_killer(grid, sums, fname; fill = true, mark = nothing)
 
 
     if fill
-        for ind in keys(grid)
-            if CS.isfixed(grid[ind])
-                x = ind[2] - 0.5
-                y = 10 - ind[1] - 0.5
-                annotate!(x, y, text(value(grid[ind]), 20, :black))
+        for vidx in keys(grid)
+            if CS.isfixed(grid[vidx])
+                x = vidx[2] - 0.5
+                y = 10 - vidx[1] - 0.5
+                annotate!(x, y, text(value(grid[vidx]), 20, :black))
             else
-                vals = values(grid[ind])
+                vals = values(grid[vidx])
                 sort!(vals)
-                x = ind[2] - 0.3
-                y = 10 - ind[1] - 0.2
+                x = vidx[2] - 0.3
+                y = 10 - vidx[1] - 0.2
                 max_idx = min(3, length(vals))
                 text_vals = join(vals[1:max_idx], ",")
                 annotate!(x, y, text(text_vals, 11))

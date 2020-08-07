@@ -46,8 +46,8 @@ function has(v::CS.Variable, x::Int)
     if x > v.max || x < v.min
         return false
     end
-    ind = v.indices[x+v.offset]
-    return v.first_ptr <= ind <= v.last_ptr
+    vidx = v.indices[x+v.offset]
+    return v.first_ptr <= vidx <= v.last_ptr
 end
 
 function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several = false, changes = true, check_feasibility=true)
@@ -67,10 +67,10 @@ function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several = false, cha
         end
     end
 
-    ind = v.indices[x+v.offset]
+    vidx = v.indices[x+v.offset]
     v.indices[x+v.offset], v.indices[v.values[v.last_ptr]+v.offset] =
         v.indices[v.values[v.last_ptr]+v.offset], v.indices[x+v.offset]
-    v.values[ind], v.values[v.last_ptr] = v.values[v.last_ptr], v.values[ind]
+    v.values[vidx], v.values[v.last_ptr] = v.values[v.last_ptr], v.values[vidx]
     v.last_ptr -= 1
     if !in_remove_several
         vals = values(v)
@@ -93,12 +93,12 @@ function fix!(com::CS.CoM, v::CS.Variable, x::Int; changes = true, check_feasibi
         return false
     end
     !has(v, x) && return false
-    ind = v.indices[x+v.offset]
-    pr_below = ind - v.first_ptr
-    pr_above = v.last_ptr - ind
+    vidx = v.indices[x+v.offset]
+    pr_below = vidx - v.first_ptr
+    pr_above = v.last_ptr - vidx
     changes && push!(v.changes[com.c_backtrack_idx], (:fix, x, v.last_ptr, 0))
-    v.last_ptr = ind
-    v.first_ptr = ind
+    v.last_ptr = vidx
+    v.first_ptr = vidx
     v.min = x
     v.max = x
     return true

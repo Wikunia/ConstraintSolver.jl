@@ -1,36 +1,4 @@
 """
-    Base.:!(bc::CS.LinearConstraint)
-
-Change the `LinearConstraint` to describe the opposite of it.
-Can be used i.e by `add_constraint!(com, x + y != z)`.
-"""
-function Base.:!(lc::CS.LinearConstraint)
-    if !isa(lc.std.set, MOI.EqualTo)
-        throw(ErrorException("!LinearConstraint is only implemented for !equal"))
-    end
-    lc.std.set = NotEqualTo{typeof(lc.std.set.value)}(lc.std.set.value)
-    return lc
-end
-
-"""
-    Base.:!(bc::CS.BasicConstraint)
-
-Change the `EqualConstraint` to describe the opposite of it.
-Can be used i.e by `add_constraint!(com, x != z)`.
-"""
-function Base.:!(ec::CS.EqualConstraint)
-    if length(ec.std.indices) != 2
-        throw(ErrorException("!EqualConstraint is only implemented for !equal with exactly 2 variables"))
-    end
-    
-    func, T = linear_combination_to_saf(LinearCombination(ec.std.indices, [1, -1]))
-    indices = [v.variable_index.value for v in func.terms]
-    lc = LinearConstraint(func, CS.NotEqualTo(0), indices)
-    lc.std.idx = ec.std.idx
-    return lc
-end
-
-"""
     prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualTo{T}; logs = true) where T <: Real
 
 Reduce the number of possibilities given the not equal constraint.
@@ -43,17 +11,17 @@ function prune_constraint!(
     set::NotEqualTo{T};
     logs = true,
 ) where {T<:Real}
-    indices = constraint.std.indices
+    indices = constraint.indices
 
     # check if only one variable is variable
-    nfixed = count(v -> isfixed(v), com.search_space[constraint.std.indices])
-    if nfixed >= length(constraint.std.indices)-1
+    nfixed = count(v -> isfixed(v), com.search_space[constraint.indices])
+    if nfixed >= length(constraint.indices)-1
         search_space = com.search_space
         sum = -set.value+fct.constant
         unfixed_i = 0
-        for (i, idx) in enumerate(indices)
-            if isfixed(search_space[idx])
-                sum += CS.value(search_space[idx]) * fct.terms[i].coefficient
+        for (i, vidx) in enumerate(indices)
+            if isfixed(search_space[vidx])
+                sum += CS.value(search_space[vidx]) * fct.terms[i].coefficient
             else 
                 unfixed_i = i
             end
@@ -80,7 +48,7 @@ function prune_constraint!(
 end
 
 """
-still_feasible(com::CoM, constraint::LinearConstraint, fct::MOI.ScalarAffineFunction{T}, set::NotEqualTo{T}, value::Int, index::Int) where T <: Real
+still_feasible(com::CoM, constraint::LinearConstraint, fct::MOI.ScalarAffineFunction{T}, set::NotEqualTo{T}, vidx::Int, value::Int) where T <: Real
 
 Return whether the `not_equal` constraint can be still fulfilled.
 """
@@ -89,20 +57,20 @@ function still_feasible(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::NotEqualTo{T},
+    vidx::Int,
     value::Int,
-    index::Int,
 ) where {T<:Real}
-    indices = constraint.std.indices
+    indices = constraint.indices
     # check if only one variable is variable
     nfixed = count(v -> isfixed(v), com.search_space[indices])
     if nfixed >= length(indices)-1
         search_space = com.search_space
         sum = -set.value+fct.constant
         unfixed_i = 0
-        for (i, idx) in enumerate(indices)
-            if isfixed(search_space[idx])
-                sum += CS.value(search_space[idx]) * fct.terms[i].coefficient
-            elseif index == idx
+        for (i, cvidx) in enumerate(indices)
+            if isfixed(search_space[cvidx])
+                sum += CS.value(search_space[cvidx]) * fct.terms[i].coefficient
+            elseif vidx == cvidx
                 sum += value * fct.terms[i].coefficient
             else
                 unfixed_i = i

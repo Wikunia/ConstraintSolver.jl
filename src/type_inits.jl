@@ -1,5 +1,5 @@
-Variable(idx) = Variable(
-    idx,
+Variable(vidx) = Variable(
+    vidx,
     0,
     0,
     0,
@@ -20,9 +20,9 @@ Variable(idx) = Variable(
 
 MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[], Bool[])
 
-function ConstraintInternals(idx::Int, fct, set, indices::Vector{Int})
+function ConstraintInternals(cidx::Int, fct, set, indices::Vector{Int})
     return ConstraintInternals(
-        idx, fct, set, indices, Int[], ImplementedConstraintFunctions(), false, nothing, zero(UInt64)
+        cidx, fct, set, indices, Int[], ImplementedConstraintFunctions(), false, nothing
     )
 end
 
@@ -30,7 +30,19 @@ function ImplementedConstraintFunctions()
    return ImplementedConstraintFunctions([false for f in fieldnames(ImplementedConstraintFunctions)]...)
 end
 
+function LinearConstraint(cidx, indices::Vector, coeffs::Vector{T}, constant, set::MOI.AbstractScalarSet) where T
+    @assert length(indices) == length(coeffs)
+    len = length(coeffs)
+    scalar_terms = Vector{MOI.ScalarAffineTerm{T}}(undef, len)
+    for (i, idx, coeff) in zip(1:len, indices, coeffs)
+        scalar_terms[i] = MOI.ScalarAffineTerm{T}(coeff, MOI.VariableIndex(idx))
+    end
+    saf = MOI.ScalarAffineFunction(scalar_terms, constant)
+    return LinearConstraint(cidx, saf, set, indices)
+end
+
 function LinearConstraint(
+    cidx::Int,
     fct::MOI.ScalarAffineFunction,
     set::MOI.AbstractScalarSet,
     indices::Vector{Int},
@@ -58,7 +70,7 @@ function LinearConstraint(
     # this can be changed later in `set_in_all_different!` but needs to be initialized with false
     in_all_different = false
 
-    internals = ConstraintInternals(0, fct, set, indices)
+    internals = ConstraintInternals(cidx, fct, set, indices)
     lc = LinearConstraint(
         internals,
         in_all_different,

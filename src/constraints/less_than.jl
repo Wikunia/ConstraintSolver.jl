@@ -1,55 +1,4 @@
 """
-    Base.:(<=)(x::LinearCombination, y::Real)
-
-Create a linear constraint with `LinearCombination` and an integer rhs `y`. \n
-Can be used i.e by `add_constraint!(com, x+y <= 2)`.
-"""
-function Base.:(<=)(x::LinearCombination, y::Real)
-    indices, coeffs, constant_lhs = simplify(x)
-
-    rhs = y - constant_lhs
-    func, T = linear_combination_to_saf(LinearCombination(indices, coeffs))
-    lc = LinearConstraint(func, MOI.LessThan{T}(rhs), indices)
-
-    lc.std.hash = constraint_hash(lc)
-    return lc
-end
-
-function Base.:(<=)(x::Real, y::LinearCombination)
-    return -y <= -x
-end
-
-"""
-    Base.:(<=)(x::LinearCombination, y::Variable)
-
-Create a linear constraint with `LinearCombination` and a variable rhs `y`. \n
-Can be used i.e by `add_constraint!(com, x+y <= z)`.
-"""
-function Base.:(<=)(x::LinearCombination, y::Variable)
-    return x - LinearCombination([y.idx], [1]) <= 0
-end
-
-"""
-    Base.:(<=)(x::Variable, y::LinearCombination)
-
-Create a linear constraint with a variable `x` and a `LinearCombination` rhs `y`. \n
-Can be used i.e by `add_constraint!(com, x <= y+z)`.
-"""
-function Base.:(<=)(x::Variable, y::LinearCombination)
-    return LinearCombination([x.idx], [1]) - y <= 0
-end
-
-"""
-    Base.:(<=)(x::LinearCombination, y::LinearCombination)
-
-Create a linear constraint with `LinearCombination` on the left and right hand side. \n
-Can be used i.e by `add_constraint!(com, x+y <= a+b)`.
-"""
-function Base.:(<=)(x::LinearCombination, y::LinearCombination)
-    return x - y <= 0
-end
-
-"""
     prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.LessThan{T}; logs = true) where T <: Real
 
 Reduce the number of possibilities given the less than `LinearConstraint`.
@@ -62,7 +11,7 @@ function prune_constraint!(
     set::MOI.LessThan{T};
     logs = true,
 ) where {T<:Real}
-    indices = constraint.std.indices
+    indices = constraint.indices
     search_space = com.search_space
     rhs = set.upper - fct.constant
 
@@ -71,13 +20,13 @@ function prune_constraint!(
     mins = constraint.mins
     pre_maxs = constraint.pre_maxs
     pre_mins = constraint.pre_mins
-    for (i, idx) in enumerate(indices)
+    for (i, vidx) in enumerate(indices)
         if fct.terms[i].coefficient >= 0
-            max_val = search_space[idx].max * fct.terms[i].coefficient
-            min_val = search_space[idx].min * fct.terms[i].coefficient
+            max_val = search_space[vidx].max * fct.terms[i].coefficient
+            min_val = search_space[vidx].min * fct.terms[i].coefficient
         else
-            min_val = search_space[idx].max * fct.terms[i].coefficient
-            max_val = search_space[idx].min * fct.terms[i].coefficient
+            min_val = search_space[vidx].max * fct.terms[i].coefficient
+            max_val = search_space[vidx].min * fct.terms[i].coefficient
         end
         maxs[i] = max_val
         mins[i] = min_val
@@ -96,8 +45,8 @@ function prune_constraint!(
         return false
     end
 
-    for (i, idx) in enumerate(indices)
-        if isfixed(search_space[idx])
+    for (i, vidx) in enumerate(indices)
+        if isfixed(search_space[vidx])
             continue
         end
         # minimum without current index
@@ -109,16 +58,16 @@ function prune_constraint!(
     end
 
     # update all
-    for (i, idx) in enumerate(indices)
+    for (i, vidx) in enumerate(indices)
         # if the maximum of coefficient * variable got reduced
         # get a safe threshold because of floating point errors
         if maxs[i] < pre_maxs[i]
             if fct.terms[i].coefficient > 0
                 threshold = get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
-                still_feasible = remove_above!(com, search_space[idx], threshold)
+                still_feasible = remove_above!(com, search_space[vidx], threshold)
             else
                 threshold = get_safe_lower_threshold(com, maxs[i], fct.terms[i].coefficient)
-                still_feasible = remove_below!(com, search_space[idx], threshold)
+                still_feasible = remove_below!(com, search_space[vidx], threshold)
             end
             if !still_feasible
                 return false
@@ -130,7 +79,7 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.LessThan{T}, val::Int, index::Int) where T <: Real
+    still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.LessThan{T}, index::Int, val::Int) where T <: Real
 
 Return whether setting `search_space[index]` to `val` is still feasible given `constraint`.
 """
@@ -139,33 +88,29 @@ function still_feasible(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::MOI.LessThan{T},
-    val::Int,
     index::Int,
+    val::Int,
 ) where {T<:Real}
     search_space = com.search_space
     rhs = set.upper - fct.constant
     min_sum = zero(T)
 
-    for (i, idx) in enumerate(constraint.std.indices)
-        if idx == index
+    for (i, vidx) in enumerate(constraint.indices)
+        if vidx == index
             min_sum += val * fct.terms[i].coefficient
             continue
         end
-        if isfixed(search_space[idx])
-            min_sum += CS.value(search_space[idx]) * fct.terms[i].coefficient
+        if isfixed(search_space[vidx])
+            min_sum += CS.value(search_space[vidx]) * fct.terms[i].coefficient
         else
             if fct.terms[i].coefficient >= 0
-                min_sum += search_space[idx].min * fct.terms[i].coefficient
+                min_sum += search_space[vidx].min * fct.terms[i].coefficient
             else
-                min_sum += search_space[idx].max * fct.terms[i].coefficient
+                min_sum += search_space[vidx].max * fct.terms[i].coefficient
             end
         end
     end
-    if min_sum > rhs + com.options.atol
-        return false
-    end
-
-    return true
+    return min_sum <= rhs + com.options.atol
 end
 
 function is_solved_constraint(
