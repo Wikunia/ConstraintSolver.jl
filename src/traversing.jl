@@ -58,7 +58,7 @@ function get_next_node(
 end
 
 """
-    get_next_node(com::CS.CoM, ::Val{:DBFS}, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
+    get_next_node(com::CS.CoM, ::DBFS, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
 
 Get the next node we want to prune on if there is any. 
 This uses depth first search if no solution was found so far and BFS otherwise.
@@ -67,17 +67,17 @@ Return whether a node was found and the corresponding backtrack_obj
 """
 function get_next_node(
     com::CS.CoM,
-    ::Val{:DBFS},
+    ::DBFS,
     backtrack_vec::Vector{BacktrackObj{T}},
     sorting
 ) where {T<:Real}
     found_sol = length(com.bt_solution_ids) > 0
-    strategy = found_sol ? Val(:BFS) : Val(:DFS)
+    strategy = found_sol ? BFS() : DFS()
     return get_next_node(com, strategy, backtrack_vec, sorting)
 end
 
 """
-    get_next_node(com::CS.CoM, ::Val{:BFS}, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
+    get_next_node(com::CS.CoM, ::BFS, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
 
 Get the next node we want to prune on if there is any. This uses best first search and if two 
 nodes have the same `best_bound` the deeper one is chosen. 
@@ -86,7 +86,7 @@ Return whether a node was found and the corresponding backtrack_obj
 """
 function get_next_node(
     com::CS.CoM,
-    ::Val{:BFS},
+    ::BFS,
     backtrack_vec::Vector{BacktrackObj{T}},
     sorting
 ) where {T<:Real}
@@ -126,7 +126,7 @@ function get_next_node(
 end
 
 """
-    get_next_node(com::CS.CoM, :Val{:DFS}, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
+    get_next_node(com::CS.CoM, :DFS, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
 
 Get the next node we want to prune on if there is any. This uses depth first search and if two 
 nodes have the same depth the one with the better `best_bound` is chosen. 
@@ -135,7 +135,7 @@ Return whether a node was found and the corresponding backtrack_obj
 """
 function get_next_node(
     com::CS.CoM,
-    ::Val{:DFS},
+    ::DFS,
     backtrack_vec::Vector{BacktrackObj{T}},
     sorting
 ) where {T<:Real}
