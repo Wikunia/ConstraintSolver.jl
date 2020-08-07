@@ -172,10 +172,13 @@ mutable struct ImplementedConstraintFunctions
     update_best_bound :: Bool
 end
 
-mutable struct ConstraintInternals
+mutable struct ConstraintInternals{
+        FCT <: Union{MOI.AbstractScalarFunction, MOI.AbstractVectorFunction},
+        SET <: Union{MOI.AbstractScalarSet, MOI.AbstractVectorSet}
+    }
     idx::Int
-    fct::Union{MOI.AbstractScalarFunction, MOI.AbstractVectorFunction}
-    set::Union{MOI.AbstractScalarSet, MOI.AbstractVectorSet}
+    fct::FCT
+    set::SET
     indices::Vector{Int}
     pvals::Vector{Int}
     impl :: ImplementedConstraintFunctions
@@ -240,17 +243,17 @@ mutable struct TableConstraint <: Constraint
     sum_max::Vector{Int}
 end
 
-mutable struct IndicatorConstraint <: Constraint
+mutable struct IndicatorConstraint{C<:Constraint} <: Constraint
     std::ConstraintInternals
     activate_on::MOI.ActivationCondition
-    inner_constraint::Constraint
+    inner_constraint::C
     indicator_in_inner::Bool # is the indicator variable also in the inner constraint
 end
 
-mutable struct ReifiedConstraint <: Constraint
+mutable struct ReifiedConstraint{C<:Constraint} <: Constraint
     std::ConstraintInternals
     activate_on::MOI.ActivationCondition
-    inner_constraint::Constraint
+    inner_constraint::C
     reified_in_inner::Bool # is the reified variable also in the inner constraint
 end
 
