@@ -1,22 +1,22 @@
 """
-    get_new_extrema_and_sum(search_space, idx, i, terms, full_min, full_max, pre_mins, pre_maxs)
+    get_new_extrema_and_sum(search_space, vidx, i, terms, full_min, full_max, pre_mins, pre_maxs)
 
-Get the updated full_min, full_max as well as updated pre_mins[i] and pre_maxs[i] after values got removed from search_space[idx]
+Get the updated full_min, full_max as well as updated pre_mins[i] and pre_maxs[i] after values got removed from search_space[vidx]
 Return full_min, full_max, pre_mins[i], pre_maxs[i]
 """
-function get_new_extrema_and_sum(search_space, idx, i, terms, full_min, full_max, pre_mins, pre_maxs)
+function get_new_extrema_and_sum(search_space, vidx, i, terms, full_min, full_max, pre_mins, pre_maxs)
     new_min = pre_mins[i]
     new_max = pre_maxs[i]
     if terms[i].coefficient > 0
-        coeff_min = search_space[idx].min * terms[i].coefficient
-        coeff_max = search_space[idx].max * terms[i].coefficient
+        coeff_min = search_space[vidx].min * terms[i].coefficient
+        coeff_max = search_space[vidx].max * terms[i].coefficient
         full_max -= (coeff_max - pre_maxs[i])
         full_min += (coeff_min - pre_mins[i])
         new_min = coeff_min
         new_max = coeff_max
     else
-        coeff_min = search_space[idx].max * terms[i].coefficient
-        coeff_max = search_space[idx].min * terms[i].coefficient
+        coeff_min = search_space[vidx].max * terms[i].coefficient
+        coeff_max = search_space[vidx].min * terms[i].coefficient
         full_max -= (coeff_max - pre_maxs[i])
         full_min += (coeff_min - pre_mins[i])
         new_min = coeff_min
@@ -47,13 +47,13 @@ function prune_constraint!(
     mins = constraint.mins
     pre_maxs = constraint.pre_maxs
     pre_mins = constraint.pre_mins
-    for (i, idx) in enumerate(indices)
+    for (i, vidx) in enumerate(indices)
         if fct.terms[i].coefficient >= 0
-            max_val = search_space[idx].max * fct.terms[i].coefficient
-            min_val = search_space[idx].min * fct.terms[i].coefficient
+            max_val = search_space[vidx].max * fct.terms[i].coefficient
+            min_val = search_space[vidx].min * fct.terms[i].coefficient
         else
-            min_val = search_space[idx].max * fct.terms[i].coefficient
-            max_val = search_space[idx].min * fct.terms[i].coefficient
+            min_val = search_space[vidx].max * fct.terms[i].coefficient
+            max_val = search_space[vidx].min * fct.terms[i].coefficient
         end
         maxs[i] = max_val
         mins[i] = min_val
@@ -77,8 +77,8 @@ function prune_constraint!(
     changed = true
     while changed
         changed = false
-        for (i, idx) in enumerate(indices)
-            if isfixed(search_space[idx])
+        for (i, vidx) in enumerate(indices)
+            if isfixed(search_space[vidx])
                 continue
             end
             # minimum without current index
@@ -99,18 +99,18 @@ function prune_constraint!(
         end
 
         # update all
-        for (i, idx) in enumerate(indices)
+        for (i, vidx) in enumerate(indices)
             # if the maximum of coefficient * variable got reduced
             # get a safe threshold because of floating point errors
             if maxs[i] < pre_maxs[i]
                 if fct.terms[i].coefficient > 0
                     threshold = get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
-                    still_feasible = remove_above!(com, search_space[idx], threshold)
+                    still_feasible = remove_above!(com, search_space[vidx], threshold)
                 else
                     threshold = get_safe_lower_threshold(com, maxs[i], fct.terms[i].coefficient)
-                    still_feasible = remove_below!(com, search_space[idx], threshold)
+                    still_feasible = remove_below!(com, search_space[vidx], threshold)
                 end
-                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, idx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
+                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, vidx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
                 if new_min != pre_mins[i]
                     changed = true
                     pre_mins[i] = new_min
@@ -131,12 +131,12 @@ function prune_constraint!(
                 new_max = pre_maxs[i]
                 if fct.terms[i].coefficient > 0
                     threshold = get_safe_lower_threshold(com, mins[i], fct.terms[i].coefficient)
-                    still_feasible = remove_below!(com, search_space[idx], threshold)
+                    still_feasible = remove_below!(com, search_space[vidx], threshold)
                 else
                     threshold = get_safe_upper_threshold(com, mins[i], fct.terms[i].coefficient)
-                    still_feasible = remove_above!(com, search_space[idx], threshold)
+                    still_feasible = remove_above!(com, search_space[vidx], threshold)
                 end
-                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, idx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
+                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, vidx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
                 if new_min != pre_mins[i]
                     changed = true
                     pre_mins[i] = new_min

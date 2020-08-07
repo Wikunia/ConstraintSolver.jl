@@ -80,8 +80,8 @@ function prune_constraint!(
 
         # otherwise prune => set all variables to fixed value
         for i in unfixed_indices
-            idx = indices[i]
-            feasible = fix!(com, search_space[idx], fixed_vals[1])
+            vidx = indices[i]
+            feasible = fix!(com, search_space[vidx], fixed_vals[1])
             if !feasible
                 return false
             end

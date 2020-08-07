@@ -1,5 +1,5 @@
-Variable(idx) = Variable(
-    idx,
+Variable(vidx) = Variable(
+    vidx,
     0,
     0,
     0,
@@ -20,9 +20,9 @@ Variable(idx) = Variable(
 
 MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[], Bool[])
 
-function ConstraintInternals(idx::Int, fct, set, indices::Vector{Int})
+function ConstraintInternals(cidx::Int, fct, set, indices::Vector{Int})
     return ConstraintInternals(
-        idx, fct, set, indices, Int[], ImplementedConstraintFunctions(), false, nothing
+        cidx, fct, set, indices, Int[], ImplementedConstraintFunctions(), false, nothing
     )
 end
 
@@ -42,7 +42,7 @@ function LinearConstraint(cidx, indices::Vector, coeffs::Vector{T}, constant, se
 end
 
 function LinearConstraint(
-    idx::Int,
+    cidx::Int,
     fct::MOI.ScalarAffineFunction,
     set::MOI.AbstractScalarSet,
     indices::Vector{Int},
@@ -70,7 +70,7 @@ function LinearConstraint(
     # this can be changed later in `set_in_all_different!` but needs to be initialized with false
     in_all_different = false
 
-    internals = ConstraintInternals(idx, fct, set, indices)
+    internals = ConstraintInternals(cidx, fct, set, indices)
     lc = LinearConstraint(
         internals,
         in_all_different,

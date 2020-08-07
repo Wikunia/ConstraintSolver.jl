@@ -167,7 +167,7 @@ function add_variable_less_than_variable_constraint(
     end
 
     internals = ConstraintInternals(
-        length(model.inner.constraints) + 1, # idx
+        length(model.inner.constraints) + 1, # constraint idx
         func,
         set,
         [lhs, rhs]

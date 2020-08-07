@@ -20,13 +20,13 @@ function prune_constraint!(
     mins = constraint.mins
     pre_maxs = constraint.pre_maxs
     pre_mins = constraint.pre_mins
-    for (i, idx) in enumerate(indices)
+    for (i, vidx) in enumerate(indices)
         if fct.terms[i].coefficient >= 0
-            max_val = search_space[idx].max * fct.terms[i].coefficient
-            min_val = search_space[idx].min * fct.terms[i].coefficient
+            max_val = search_space[vidx].max * fct.terms[i].coefficient
+            min_val = search_space[vidx].min * fct.terms[i].coefficient
         else
-            min_val = search_space[idx].max * fct.terms[i].coefficient
-            max_val = search_space[idx].min * fct.terms[i].coefficient
+            min_val = search_space[vidx].max * fct.terms[i].coefficient
+            max_val = search_space[vidx].min * fct.terms[i].coefficient
         end
         maxs[i] = max_val
         mins[i] = min_val
@@ -45,8 +45,8 @@ function prune_constraint!(
         return false
     end
 
-    for (i, idx) in enumerate(indices)
-        if isfixed(search_space[idx])
+    for (i, vidx) in enumerate(indices)
+        if isfixed(search_space[vidx])
             continue
         end
         # minimum without current index
@@ -58,16 +58,16 @@ function prune_constraint!(
     end
 
     # update all
-    for (i, idx) in enumerate(indices)
+    for (i, vidx) in enumerate(indices)
         # if the maximum of coefficient * variable got reduced
         # get a safe threshold because of floating point errors
         if maxs[i] < pre_maxs[i]
             if fct.terms[i].coefficient > 0
                 threshold = get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
-                still_feasible = remove_above!(com, search_space[idx], threshold)
+                still_feasible = remove_above!(com, search_space[vidx], threshold)
             else
                 threshold = get_safe_lower_threshold(com, maxs[i], fct.terms[i].coefficient)
-                still_feasible = remove_below!(com, search_space[idx], threshold)
+                still_feasible = remove_below!(com, search_space[vidx], threshold)
             end
             if !still_feasible
                 return false
@@ -95,26 +95,22 @@ function still_feasible(
     rhs = set.upper - fct.constant
     min_sum = zero(T)
 
-    for (i, idx) in enumerate(constraint.indices)
-        if idx == index
+    for (i, vidx) in enumerate(constraint.indices)
+        if vidx == index
             min_sum += val * fct.terms[i].coefficient
             continue
         end
-        if isfixed(search_space[idx])
-            min_sum += CS.value(search_space[idx]) * fct.terms[i].coefficient
+        if isfixed(search_space[vidx])
+            min_sum += CS.value(search_space[vidx]) * fct.terms[i].coefficient
         else
             if fct.terms[i].coefficient >= 0
-                min_sum += search_space[idx].min * fct.terms[i].coefficient
+                min_sum += search_space[vidx].min * fct.terms[i].coefficient
             else
-                min_sum += search_space[idx].max * fct.terms[i].coefficient
+                min_sum += search_space[vidx].max * fct.terms[i].coefficient
             end
         end
     end
-    if min_sum > rhs + com.options.atol
-        return false
-    end
-
-    return true
+    return min_sum <= rhs + com.options.atol
 end
 
 function is_solved_constraint(

@@ -19,6 +19,7 @@ end
 function _reified_variable_set(::Function, variable::Symbol)
     return variable, ReifiedSet{MOI.ACTIVATE_ON_ONE}
 end
+
 function _reified_variable_set(_error::Function, expr::Expr)
     if expr.args[1] == :¬ || expr.args[1] == :!
         if length(expr.args) != 2
@@ -31,7 +32,6 @@ function _reified_variable_set(_error::Function, expr::Expr)
 end
 
 function JuMP.parse_constraint_head(_error::Function, ::Val{:(:=)}, lhs, rhs)
-
     variable, S = _reified_variable_set(_error, lhs)
     if !JuMP.isexpr(rhs, :braces) || length(rhs.args) != 1
         _error("Invalid right-hand side `$(rhs)` of reified constraint. Expected constraint surrounded by `{` and `}`.")

@@ -148,15 +148,15 @@ function get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; vidx = 0, lb =
 end
 
 """
-    checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
+    checkout_from_to!(com::CS.CoM, from_nidx::Int, to_nidx::Int)
 
-Change the state of the search space given the current position in the tree (`from_idx`) and the index we want 
-to change to (`to_idx`)
+Change the state of the search space given the current position in the tree (`from_nidx`) and the index we want 
+to change to (`to_nidx`)
 """
-function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
+function checkout_from_to!(com::CS.CoM, from_nidx::Int, to_nidx::Int)
     backtrack_vec = com.backtrack_vec
-    from = backtrack_vec[from_idx]
-    to = backtrack_vec[to_idx]
+    from = backtrack_vec[from_nidx]
+    to = backtrack_vec[to_nidx]
     if to.parent_idx == from.idx
         return
     end
@@ -166,27 +166,27 @@ function checkout_from_to!(com::CS.CoM, from_idx::Int, to_idx::Int)
     # first go to same level if new is higher in the tree
     if to.depth < from.depth
         depth = from.depth
-        parent_idx = from.parent_idx
-        parent = backtrack_vec[parent_idx]
+        parent_nidx = from.parent_idx
+        parent = backtrack_vec[parent_nidx]
         while to.depth < depth
-            reverse_pruning!(com, parent_idx)
-            parent = backtrack_vec[parent_idx]
-            parent_idx = parent.parent_idx
+            reverse_pruning!(com, parent_nidx)
+            parent = backtrack_vec[parent_nidx]
+            parent_nidx = parent.parent_idx
             depth -= 1
         end
-        if parent_idx == to.parent_idx
+        if parent_nidx == to.parent_idx
             return
         else
             from = parent
         end
     elseif from.depth < to.depth
         depth = to.depth
-        parent_idx = to.parent_idx
-        parent = backtrack_vec[parent_idx]
+        parent_nidx = to.parent_idx
+        parent = backtrack_vec[parent_nidx]
         while from.depth < depth
-            pushfirst!(prune_steps, parent_idx)
-            parent = backtrack_vec[parent_idx]
-            parent_idx = parent.parent_idx
+            pushfirst!(prune_steps, parent_nidx)
+            parent = backtrack_vec[parent_nidx]
+            parent_nidx = parent.parent_idx
             depth -= 1
         end
 

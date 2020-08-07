@@ -19,9 +19,9 @@ function prune_constraint!(
         search_space = com.search_space
         sum = -set.value+fct.constant
         unfixed_i = 0
-        for (i, idx) in enumerate(indices)
-            if isfixed(search_space[idx])
-                sum += CS.value(search_space[idx]) * fct.terms[i].coefficient
+        for (i, vidx) in enumerate(indices)
+            if isfixed(search_space[vidx])
+                sum += CS.value(search_space[vidx]) * fct.terms[i].coefficient
             else 
                 unfixed_i = i
             end
@@ -67,10 +67,10 @@ function still_feasible(
         search_space = com.search_space
         sum = -set.value+fct.constant
         unfixed_i = 0
-        for (i, idx) in enumerate(indices)
-            if isfixed(search_space[idx])
-                sum += CS.value(search_space[idx]) * fct.terms[i].coefficient
-            elseif vidx == idx
+        for (i, cvidx) in enumerate(indices)
+            if isfixed(search_space[cvidx])
+                sum += CS.value(search_space[cvidx]) * fct.terms[i].coefficient
+            elseif vidx == cvidx
                 sum += value * fct.terms[i].coefficient
             else
                 unfixed_i = i
