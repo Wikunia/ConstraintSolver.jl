@@ -106,6 +106,7 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         get_traverse_strategy(), 
         get_branch_strategy(), 
         get_branch_split(),
+        ActivityObj(),
         zero(T), # best_sol,
         zero(T), # best_bound
         Vector{Solution}(), # all solution objects

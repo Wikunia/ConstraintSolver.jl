@@ -62,6 +62,7 @@
     end
 
     @testset "Knapsack problems" begin
+        println("Knapsack problems")
         m = Model(CSJuMPTestOptimizer())
 
         @variable(m, 1 <= x[1:5] <= 9, Int)
@@ -176,6 +177,7 @@
     end
 
     @testset "Bipartite matching" begin
+        println("Bipartite problems")
         match = CS.bipartite_cardinality_matching([2, 1, 3], [1, 2, 3], 3, 3)
         @test match.weight == 3
         @test match.match == [2, 1, 3]
@@ -233,6 +235,7 @@
     end
 
     @testset "Not equal" begin
+        println("Not equal problems")
         m = Model(CSJuMPTestOptimizer())
 
         @variable(m, 1 <= x <= 10, Int)
@@ -261,6 +264,7 @@
     end
 
     @testset "Integers basic" begin
+        println("Integers problems")
         m = Model(CSJuMPTestOptimizer())
         @variable(m, x, CS.Integers([1,2,4]))
         @variable(m, y, CS.Integers([2,3,5,6]))
@@ -288,6 +292,7 @@
     end
 
     @testset "Biggest cube square number up to 100" begin
+        println("biggest cube")
         m = Model(CSJuMPTestOptimizer())
         @variable(m, x, CS.Integers([i^2 for i=1:20 if i^2 < 100]))
         @variable(m, y, CS.Integers([i^3 for i=1:20 if i^3 < 100]))
@@ -300,6 +305,7 @@
     end
 
     @testset "Pythagorean triples" begin
+        println("Py triplets")
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "all_solutions" => true,
@@ -315,6 +321,7 @@
     end
 
     @testset "Infeasible by fixing variable to outside domain" begin
+        println("Infeasible by fixing")
         m = Model(CSJuMPTestOptimizer())
         @variable(m, x, CS.Integers([1,2,4]))
         @constraint(m, x == 3)
@@ -323,6 +330,7 @@
     end
 
     @testset "Infeasible by fixing variable to two values" begin
+        println("Infeasible by fixing 2")
         m = Model(CSJuMPTestOptimizer())
         @variable(m, x, CS.Integers([1,2,4]))
         @constraint(m, x == 1)
@@ -332,6 +340,7 @@
     end
 
     @testset "5 variables all equal" begin
+        println("5 variables all equal")
         m = Model(optimizer_with_attributes(CS.Optimizer, "all_solutions" => true, "logging" => []))
 
         @variable(m, 5 <= x <= 10, Int)

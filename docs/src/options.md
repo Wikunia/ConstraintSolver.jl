@@ -51,6 +51,10 @@ For satisfiability problems the incumbent and best bound are `0` so you could re
 
 Time limit for backtracking in seconds. If reached before the problem was solved or infeasibility was proven will return the status `MOI.TIME_LIMIT`.
 
+## `seed` (`1`)
+
+Some parts of the constraint solver use random numbers. Nevertheless everything should be reproducable which is the default case. You can make it "truly" random by setting a random `seed`.
+
 ## `rtol` (`1e-6`)
 
 Defines the relative tolerance of the solver.

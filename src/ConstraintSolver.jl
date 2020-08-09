@@ -1,9 +1,11 @@
 module ConstraintSolver
 
+using Random
 using MatrixNetworks
 using JSON
 using MathOptInterface
 using Statistics
+using StatsBase
 using JuMP:
     @variable,
     @constraint,
@@ -22,6 +24,7 @@ using JuMP:
 import JuMP.sense_to_set
 import JuMP
 using Formatting
+const CS_RNG = MersenneTwister(1)
 
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
@@ -242,22 +245,30 @@ function addBacktrackObj2Backtrack_vec!(
     num_backtrack_objs,
     step_nr,
 )
-    push!(backtrack_vec, backtrack_obj)
-    for v in com.search_space
-        push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
+    if num_backtrack_objs > length(backtrack_vec)
+        push!(backtrack_vec, backtrack_obj)
+        for v in com.search_space
+            push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
+        end
+    else
+        backtrack_vec[num_backtrack_objs] = backtrack_obj
     end
     if com.input[:logs]
-        push!(
-            com.logs,
-            log_one_node(com, length(com.search_space), num_backtrack_objs, step_nr),
-        )
-    end
+        if num_backtrack_objs > length(com.logs)
+            push!(
+                com.logs,
+                log_one_node(com, length(com.search_space), num_backtrack_objs, step_nr),
+            )
+        else
+            com.logs[num_backtrack_objs] = log_one_node(com, length(com.search_space), num_backtrack_objs, step_nr)
+        end
+    end        
 end
 
 """
     backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{T},num_backtrack_objs, parent_idx, depth, step_nr, vidx; check_bound=false)
 
-Create two branches with two additional BacktrackObj and add them to backtrack_vec 
+Create two branches with two additional BacktrackObj and aaddBacktrackObj2Backtrack_vec!dd them to backtrack_vec 
 """
 function add2backtrack_vec!(
     backtrack_vec::Vector{BacktrackObj{T}},
@@ -268,6 +279,7 @@ function add2backtrack_vec!(
     step_nr,
     vidx;
     check_bound = false,
+    only_one = false
 ) where {T<:Real}
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
     left_lb, left_ub, right_lb, right_ub = get_split_pvals(com, com.branch_split, com.search_space[vidx])
@@ -309,6 +321,7 @@ function add2backtrack_vec!(
             num_backtrack_objs,
             -1,
         )
+        only_one && return num_backtrack_objs
     else
         num_backtrack_objs -= 1
     end
@@ -452,6 +465,11 @@ If `sorting` is set to `false` the same ordering is used as when used without ob
 Return :Solved or :Infeasible if proven or `:NotSolved` if interrupted by `max_bt_steps`.
 """
 function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
+    dummy_backtrack_obj = BacktrackObj(com)
+
+    backtrack_vec = com.backtrack_vec
+    push!(backtrack_vec, dummy_backtrack_obj)
+
     found, vidx = get_next_branch_variable(com)
     com.info.backtrack_fixes = 1
     find_more_solutions = com.options.all_solutions || com.options.all_optimal_solutions
@@ -461,11 +479,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         log_table = true
         println(get_header(com.options.table))
     end
-
-    dummy_backtrack_obj = BacktrackObj(com)
-
-    backtrack_vec = com.backtrack_vec
-    push!(backtrack_vec, dummy_backtrack_obj)
 
     # the first solve (before backtrack) has idx 1
     num_backtrack_objs = 1
@@ -781,6 +794,7 @@ Solve the constraint model based on the given settings.
 """
 function solve!(com::CS.CoM, options::SolverOptions)
     com.options = options
+    Random.seed!(CS_RNG, options.seed)
     backtrack = options.backtrack
     max_bt_steps = options.max_bt_steps
     backtrack_sorting = options.backtrack_sorting

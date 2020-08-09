@@ -28,6 +28,7 @@ mutable struct SolverOptions
     logging::Vector{Symbol}
     table::TableSetup
     time_limit::Float64 # time limit in backtracking in seconds
+    seed::Int
     traverse_strategy::Symbol
     branch_strategy::Symbol
     branch_split::Symbol # defines splitting in the middle, or takes smallest, biggest value
@@ -384,6 +385,12 @@ mutable struct Solution{T<:Real}
     values::Vector{Int}
 end
 
+mutable struct ActivityObj
+    nprobes :: Int
+    is_free :: Vector{Bool}
+    ActivityObj() = new(0, [false]) # will be overwritten later
+end
+
 mutable struct ConstraintSolverModel{T<:Real}
     lp_model::Union{Nothing,Model} # only used if lp_optimizer is set
     lp_x::Vector{VariableRef}
@@ -401,6 +408,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     traverse_strategy::Val
     branch_strategy::Val
     branch_split::Val
+    activity_vars::ActivityObj
     best_sol::T # Objective of the best solution
     best_bound::T # Overall best bound
     solutions::Vector{Solution}

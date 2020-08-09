@@ -125,18 +125,188 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:OLD})
     return found, best_vidx
 end
 
-function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
+function get_next_branch_variable(com::CS.CoM, ::Val{:Random})
+    variables = com.search_space
+    is_free = com.activity_vars.is_free
+    if com.c_backtrack_idx == 1
+        com.activity_vars.is_free = zeros(Bool, length(variables))
+        is_free = com.activity_vars.is_free
+    else
+        is_free .= false
+    end
+
+    for variable in variables
+        if !isfixed(variable)
+            is_free[variable.idx] = true
+        end
+    end
+    found = any(is_free)
+    vidx = -1
+    if found
+        vidx = sample(CS_RNG, 1:length(variables), Weights(is_free))
+    end
+    return found, vidx 
+end
+
+"""
+    probe_until(com::CS.CoM, until_fct)
+
+Start probing from current node:
+- Create paths in a depth first search way and use a random branch variable strategy
+- Update activity
+- Return if `until_fct(com)` evaluates to true
+This creates new `BacktrackObj` inside `backtrack_vec` which get overwritten in each probe 
+"""
+function probe_until(com::CS.CoM, until_fct)
+    probe_start_id = com.c_backtrack_idx
+    num_backtrack_objs = length(com.backtrack_vec)
+    temp_nidxs = Set{Int}()
+    before_logs = com.input[:logs] 
+    com.input[:logs] = false
+    while !until_fct(com)
+
+        copied_traverse_strategy = com.traverse_strategy
+        com.traverse_strategy = Val(:DFS)
+
+        backtrack_idx_before = com.c_backtrack_idx
+
+        feasible, backtrack_ids = probe(com, num_backtrack_objs)
+        checkout_new_node!(com,  com.c_backtrack_idx, probe_start_id)
+        restore_prune!(com, probe_start_id)
+
+        # reset backtrack_vec and var.changes
+        for variable in com.search_space
+            for backtrack_id in backtrack_ids
+                empty!(variable.changes[backtrack_id])
+            end
+        end
+        
+        for backtrack_id in backtrack_ids
+            com.backtrack_vec[backtrack_id].status = :Closed
+            push!(temp_nidxs, backtrack_id)
+        end
+    
+        com.c_backtrack_idx = probe_start_id
+    end
+    com.input[:logs] = before_logs
+    sorted_temp_nidxs = sort!(collect(temp_nidxs))
+    splice!(com.backtrack_vec, sorted_temp_nidxs)
+    return get_next_branch_variable(com, Val(:ABS))
+end
+
+"""
+    probe(com::CS.CoM, num_backtrack_objs)
+
+Probe from node id: `num_backtrack_objs`
+- Follow a DFS path by random selection of a branching variable
+- Update activity 
+Return if feasible and the created backtrack ids along the way
+"""
+function probe(com::CS.CoM, num_backtrack_objs)
+    backtrack_vec = com.backtrack_vec
+    found, vidx = get_next_branch_variable(com, Val(:Random))
+    
+    step_nr = 1
+    backtrack_ids = Int[]
+    parent_idx = backtrack_vec[num_backtrack_objs].parent_idx
+    parent_idx == 0 && (parent_idx = 1)
+    depth = backtrack_vec[num_backtrack_objs].depth
+    depth == 0 && (depth = 1)
+    num_backtrack_objs = add2backtrack_vec!(
+        backtrack_vec,
+        com,
+        num_backtrack_objs,
+        parent_idx,
+        depth,
+        step_nr,
+        vidx
+    )
+    
+    last_backtrack_id = 0
+
+    feasible = true
+    found = true
+    while feasible
+        step_nr += 1
+
+        if last_backtrack_id != 0
+            backtrack_vec[last_backtrack_id].status = :Closed
+        end
+
+        found, backtrack_obj = get_next_node(com, backtrack_vec, true)
+        !found && break
+
+        vidx = backtrack_obj.variable_idx
+        com.c_backtrack_idx = backtrack_obj.idx
+        push!(backtrack_ids, backtrack_obj.idx)
+        checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
+        last_backtrack_id = com.c_backtrack_idx
+
+        feasible = set_bounds!(com, backtrack_obj)
+        !feasible && break
+
+        constraints = com.constraints[com.subscription[vidx]]
+        
+        feasible = prune!(com)
+        call_finished_pruning!(com)
+
+        com.activity_vars.nprobes += 1
+        update_activity!(com; in_probing_phase=true)
+        !feasible && break
+
+        found, vidx = get_next_branch_variable(com, Val(:Random))
+        !found && break
+        
+        last_backtrack_obj = backtrack_vec[backtrack_obj.idx]
+        num_backtrack_objs = add2backtrack_vec!(
+            backtrack_vec,
+            com,
+            num_backtrack_objs,
+            last_backtrack_obj.idx,
+            last_backtrack_obj.depth + 1,
+            step_nr,
+            vidx;
+            check_bound = true,
+            only_one = true
+        )
+    end
+    return feasible, backtrack_ids
+end
+
+function update_activity!(com; in_probing_phase=false)
     # update activity 
     c_backtrack_idx = com.c_backtrack_idx
     γ = com.options.activity_decay
     for variable in com.search_space
         if length(variable.changes[c_backtrack_idx]) > 0
             variable.activity += 1
-        elseif nvalues(variable) > 1
+        elseif nvalues(variable) > 1 && !in_probing_phase
             variable.activity *= γ
         end
     end
+end
 
+function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
+    # probing phase currently probes 50*#variables
+    in_probing_phase = com.activity_vars.nprobes <= 10*length(com.search_space)
+    
+    update_activity!(com; in_probing_phase=in_probing_phase)
+
+    if in_probing_phase
+        return probe_until(com, (com)->com.activity_vars.nprobes > 10*length(com.search_space)) 
+    end
+    
+    #=
+    if com.info.backtrack_fixes == 100*length(com.search_space)+1
+        for variable in com.search_space
+            if !isfixed(variable)
+                println("vidx: $(variable.idx) -> $(variable.activity)")
+            end
+        end
+    end
+    =#
+
+    # activity bases search
     is_in_objective = false
     highest_activity = -1.0
     best_vidx = -1
@@ -148,6 +318,7 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
             num_pvals = nvalues(variable)
             activity_ratio = variable.activity / num_pvals
             if !is_in_objective && com.var_in_obj[vidx]
+                highest_activity = activity_ratio
                 is_in_objective = true
                 found = true
                 best_vidx = vidx
