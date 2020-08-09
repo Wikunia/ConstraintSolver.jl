@@ -268,7 +268,7 @@ end
 """
     backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{T},num_backtrack_objs, parent_idx, depth, step_nr, vidx; check_bound=false)
 
-Create two branches with two additional BacktrackObj and aaddBacktrackObj2Backtrack_vec!dd them to backtrack_vec 
+Create two branches with two additional `BacktrackObj`s and add them to `backtrack_vec`.
 """
 function add2backtrack_vec!(
     backtrack_vec::Vector{BacktrackObj{T}},
