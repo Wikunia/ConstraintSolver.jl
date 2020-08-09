@@ -189,8 +189,10 @@ function probe_until(com::CS.CoM, until_fct)
         com.c_backtrack_idx = probe_start_id
     end
     com.input[:logs] = before_logs
-    sorted_temp_nidxs = sort!(collect(temp_nidxs))
-    splice!(com.backtrack_vec, sorted_temp_nidxs)
+    sorted_temp_nidxs = sort!(collect(temp_nidxs); rev=true)
+    for nidx in sorted_temp_nidxs
+        splice!(com.backtrack_vec, nidx)
+    end
     return get_next_branch_variable(com, Val(:ABS))
 end
 
