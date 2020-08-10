@@ -23,7 +23,7 @@ You can install this julia package using
 You can easily use this package with the same modelling package as you might be used to for solving (non)linear problems in Julia: [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl).
 
 ### Sudoku
-```
+```julia
 using JuMP
 
 grid = [6 0 2 0 5 0 0 0 0;
