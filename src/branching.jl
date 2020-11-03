@@ -280,7 +280,10 @@ function update_activity!(com; in_probing_phase=false)
     c_backtrack_idx = com.c_backtrack_idx
     γ = com.options.activity_decay
     for variable in com.search_space
-        if length(variable.changes[c_backtrack_idx]) > 0
+        # Decay the activity of the last used variable to avoid calling it for every branch
+        if variable.idx == com.backtrack_vec[com.c_backtrack_idx].variable_idx
+            variable.activity *= 0.9
+        elseif length(variable.changes[c_backtrack_idx]) > 0
             variable.activity += 1
         elseif nvalues(variable) > 1 && !in_probing_phase
             variable.activity *= γ
@@ -289,13 +292,13 @@ function update_activity!(com; in_probing_phase=false)
 end
 
 function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
-    # probing phase currently probes 50*#variables
-    in_probing_phase = com.activity_vars.nprobes <= 10*length(com.search_space)
+    # probing phase currently probes 10*#variables
+    in_probing_phase = com.activity_vars.nprobes <= 20*length(com.search_space)
     
     update_activity!(com; in_probing_phase=in_probing_phase)
 
     if in_probing_phase
-        return probe_until(com, (com)->com.activity_vars.nprobes > 10*length(com.search_space)) 
+        return probe_until(com, (com)->com.activity_vars.nprobes > 20*length(com.search_space)) 
     end
     
     #=

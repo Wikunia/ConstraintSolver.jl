@@ -22,7 +22,7 @@ end
 
 const POSSIBLE_OPTIONS = Dict(
     :traverse_strategy => [:Auto, :BFS, :DFS, :DBFS],
-    :branch_strategy => [:Auto, :ABS],
+    :branch_strategy => [:Auto, :ABS, :OLD],
     :branch_split => [:Auto, :Smallest, :Biggest, :InHalf]
 )
 
