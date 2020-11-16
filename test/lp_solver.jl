@@ -1,6 +1,6 @@
 @testset "LP Solver" begin
     @testset "Issue 83 TimeLimit" begin
-        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.OFF)
+        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_OFF)
         model = Model(optimizer_with_attributes(
             CS.Optimizer,
             "lp_optimizer" => glpk_optimizer,
@@ -40,7 +40,7 @@
 
 
     @testset "Issue 83 max_bt_steps" begin
-        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.OFF)
+        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_OFF)
         model = Model(optimizer_with_attributes(
             CS.Optimizer,
             "lp_optimizer" => glpk_optimizer,
@@ -77,7 +77,7 @@
 
 
     @testset "Issue 83" begin
-        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.OFF)
+        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_OFF)
         model = Model(optimizer_with_attributes(
             CS.Optimizer,
             "lp_optimizer" => glpk_optimizer,
@@ -123,11 +123,11 @@
 
         # Variables
         @variable(model, 1 <= x[1:10] <= 15, Int)
-        
+
         # Constraints
         @constraint(model, sum(x[1:5]) >= 10)
         @constraint(model, sum(x[6:10]) <= 15)
-    
+
         table_left = [
             1 2 3 4 5; # sum 16
             1 2 3 4 6; #     17
@@ -142,7 +142,7 @@
 
         @constraint(model, x[1:5] in CS.TableSet(table_left))
         @constraint(model, x[6:10] in CS.TableSet(table_right))
-    
+
         @objective(model, Max, sum(x))
         optimize!(model)
 
@@ -162,7 +162,7 @@
 
         # Variables
         @variable(model, 1 <= x[1:10] <= 15, Int)
-        
+
         # Constraints
         @constraint(model, sum(x[1:4]) >= 10)
         @constraint(model, sum(x[5:10]) <= 15)
@@ -219,7 +219,7 @@
         @objective(model, Max, sum(x))
         optimize!(model)
         # possible solution 11+12+13+14+15  + 1+2+3+4+5
-        # only works fast if the all different bound works 
+        # only works fast if the all different bound works
         @test JuMP.objective_value(model) ≈ 80
         @test sum(JuMP.value.(x[6:10])) ≈ 15
         @test !(1.5*JuMP.value(x[1]) + 2*JuMP.value(x[2]) ≈ 40.5)
@@ -238,18 +238,18 @@
 
         # Variables
         @variable(model, 1 <= x[1:10] <= 15, Int)
-        
+
         # Constraints
         @constraint(model, sum(x[1:5]) >= 10)
         @constraint(model, sum(x[6:10]) <= 15)
         # disallow x[1] = 11 and x[2] == 12
         @constraint(model, 1.5*x[1]+2*x[2] != 40.5)
         @constraint(model, x in CS.AllDifferentSet())
-       
+
         @objective(model, Max, sum(x))
         optimize!(model)
         # possible solution 11+12+13+14+15  + 1+2+3+4+5
-        # only works fast if the all different bound works 
+        # only works fast if the all different bound works
         @test JuMP.objective_value(model) ≈ 80
         @test sum(JuMP.value.(x[6:10])) ≈ 15
         @test !(1.5*JuMP.value(x[1]) + 2*JuMP.value(x[2]) ≈ 40.5)
@@ -271,18 +271,18 @@
 
         # Variables
         @variable(model, 1 <= x[1:10] <= 15, Int)
-        
+
         # Constraints
         @constraint(model, sum(x[1:5]) >= 10)
         @constraint(model, sum(x[6:10]) <= 15)
         # disallow x[1] = 11 and x[2] == 12
         @constraint(model, 1.5*x[1]+2*x[2] != 40.5)
         @constraint(model, x in CS.AllDifferentSet())
-       
+
         @objective(model, Max, sum(x))
         optimize!(model)
         # possible solution 11+12+13+14+15  + 1+2+3+4+5
-        # only works fast if the all different bound works 
+        # only works fast if the all different bound works
         @test JuMP.objective_value(model) ≈ 80
         @test sum(JuMP.value.(x[6:10])) ≈ 15
         @test !(1.5*JuMP.value(x[1]) + 2*JuMP.value(x[2]) ≈ 40.5)

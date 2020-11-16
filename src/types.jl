@@ -46,14 +46,16 @@ end
 =================== SETS FOR VARIABLES AND CONSTRAINTS ==============================
 ====================================================================================#
 
-struct Integers <: MOI.AbstractScalarSet 
+struct Integers <: MOI.AbstractScalarSet
     values::Vector{Int}
 end
 Integers(vals::Union{UnitRange{Int}, StepRange{Int, Int}}) = Integers(collect(vals))
+Base.copy(I::Integers) = Integers(I.values)
 
 struct AllDifferentSetInternal <: MOI.AbstractVectorSet
     dimension :: Int
 end
+Base.copy(A::AllDifferentSetInternal) = AllDifferentSetInternal(A.dimension)
 
 struct AllDifferentSet <: JuMP.AbstractVectorSet end
 JuMP.moi_set(::AllDifferentSet, dim) = AllDifferentSetInternal(dim)
@@ -62,8 +64,9 @@ struct TableSetInternal <: MOI.AbstractVectorSet
     dimension :: Int
     table     :: Array{Int, 2}
 end
+Base.copy(T::TableSetInternal) = TableSetInternal(T.dimension, T.table)
 
-struct TableSet <: JuMP.AbstractVectorSet 
+struct TableSet <: JuMP.AbstractVectorSet
     table     :: Array{Int, 2}
 end
 JuMP.moi_set(ts::TableSet, dim) = TableSetInternal(dim, ts.table)
@@ -71,6 +74,7 @@ JuMP.moi_set(ts::TableSet, dim) = TableSetInternal(dim, ts.table)
 struct EqualSetInternal <: MOI.AbstractVectorSet
     dimension::Int
 end
+Base.copy(E::EqualSetInternal) = EqualSetInternal(E.dimension)
 
 struct EqualSet <: JuMP.AbstractVectorSet end
 JuMP.moi_set(::EqualSet, dim) = EqualSetInternal(dim)
@@ -78,6 +82,7 @@ JuMP.moi_set(::EqualSet, dim) = EqualSetInternal(dim)
 struct NotEqualTo{T} <: MOI.AbstractScalarSet
     value::T
 end
+Base.copy(N::NotEqualTo) = NotEqualTo(N.value)
 
 #====================================================================================
 ====================== TYPES FOR CONSTRAINTS ========================================
@@ -86,7 +91,7 @@ end
 abstract type Constraint end
 
 """
-    BoundRhsVariable 
+    BoundRhsVariable
 idx - variable index in the lp Model
 lb  - lower bound of that variable
 ub  - upper bound of that variable
@@ -110,10 +115,10 @@ mutable struct MatchingInit
 end
 
 """
-    RSparseBitSet  
+    RSparseBitSet
 
 See https://arxiv.org/pdf/1604.06641.pdf
-words[x] will save 64 possibilities in a TableConstraint a `1` at position y will mean that the 
+words[x] will save 64 possibilities in a TableConstraint a `1` at position y will mean that the
 words in row (x-1)*64+y of the table are possible a 0 means that they aren't
 Similar to `Variable` a whole block of 64 rows can be removed by changing the `indices` and `last_ptr`.
 The `mask` saves the current mask to change words
@@ -123,21 +128,21 @@ mutable struct RSparseBitSet
     indices   :: Vector{Int}
     last_ptr  :: Int
     mask      :: Vector{UInt64}
-    RSparseBitSet() = new() 
+    RSparseBitSet() = new()
 end
 
 mutable struct TableSupport
-    # defines the range for each variable 
+    # defines the range for each variable
     # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
-    var_start   :: Vector{Int} 
+    var_start   :: Vector{Int}
     values      :: Array{UInt64, 2}
     TableSupport() = new()
 end
 
 mutable struct TableResidues
-    # defines the range for each variable 
+    # defines the range for each variable
     # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
-    var_start   :: Vector{Int} 
+    var_start   :: Vector{Int}
     values      :: Vector{Int}
     TableResidues() = new()
 end
@@ -153,18 +158,20 @@ struct IndicatorSet{A} <: MOI.AbstractVectorSet
     set     :: MOI.AbstractVectorSet
     dimension::Int
 end
+Base.copy(I::IndicatorSet{A}) where A = IndicatorSet{A}(I.func, I.set, I.dimension)
 
 struct ReifiedSet{A} <: MOI.AbstractVectorSet
     func    :: Union{JuMP.GenericAffExpr, MOI.VectorOfVariables}
     set     :: Union{MOI.AbstractScalarSet, MOI.AbstractVectorSet}
     dimension::Int
 end
+Base.copy(R::ReifiedSet{A}) where A = ReifiedSet{A}(R.func, R.set, R.dimension)
 
 #====================================================================================
 ====================================================================================#
 
 mutable struct ImplementedConstraintFunctions
-    init :: Bool 
+    init :: Bool
     finished_pruning :: Bool
     restore_pruning :: Bool
     single_reverse_pruning :: Bool
@@ -233,7 +240,7 @@ mutable struct TableConstraint <: Constraint
     supports::TableSupport
     last_sizes::Vector{Int}
     residues::TableResidues
-    # holds current, last_ptr and indices from each node 
+    # holds current, last_ptr and indices from each node
     # maybe it's better to compute some of them to save some space...
     # This is the easy implementation first
     backtrack::Vector{TableBacktrackInfo}
