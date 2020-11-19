@@ -2,14 +2,14 @@
     get_split_pvals(com, ::Val{:Auto}, var::Variable)
 
 Splits the possible values into two by using either :smallest or :biggest value and the rest.
-It depends on whether it's a satisfiability or optimization problem and whether the variable has a positive 
-or negative coefficient + minimization or maximization 
+It depends on whether it's a satisfiability or optimization problem and whether the variable has a positive
+or negative coefficient + minimization or maximization
 Return lb, leq, geq, ub => the bounds for the lower part and the bounds for the upper part
 """
 function get_split_pvals(com, ::Val{:Auto}, var::Variable)
     @assert var.min != var.max
     if isa(com.objective, LinearCombinationObjective)
-        linear_comb = com.objective.lc 
+        linear_comb = com.objective.lc
         for i in 1:length(linear_comb.indices)
             if linear_comb.indices[i] == var.idx
                 coeff = linear_comb.coeffs[i]
@@ -46,10 +46,10 @@ function get_split_pvals(com, ::Val{:InHalf}, var::Variable)
         elseif pval > mean_val && pval < geq
             geq = pval
         end
-        if pval < lb 
+        if pval < lb
             lb = pval
         end
-        if pval > ub 
+        if pval > ub
             ub = pval
         end
     end
@@ -145,7 +145,7 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:Random})
     if found
         vidx = sample(CS_RNG, 1:length(variables), Weights(is_free))
     end
-    return found, vidx 
+    return found, vidx
 end
 
 """
@@ -155,13 +155,13 @@ Start probing from current node:
 - Create paths in a depth first search way and use a random branch variable strategy
 - Update activity
 - Return if `until_fct(com)` evaluates to true
-This creates new `BacktrackObj` inside `backtrack_vec` which get overwritten in each probe 
+This creates new `BacktrackObj` inside `backtrack_vec` which get overwritten in each probe
 """
 function probe_until(com::CS.CoM, until_fct)
     probe_start_id = com.c_backtrack_idx
     num_backtrack_objs = length(com.backtrack_vec)
     temp_nidxs = Set{Int}()
-    before_logs = com.input[:logs] 
+    before_logs = com.input[:logs]
     com.input[:logs] = false
     while !until_fct(com)
 
@@ -180,12 +180,12 @@ function probe_until(com::CS.CoM, until_fct)
                 empty!(variable.changes[backtrack_id])
             end
         end
-        
+
         for backtrack_id in backtrack_ids
             com.backtrack_vec[backtrack_id].status = :Closed
             push!(temp_nidxs, backtrack_id)
         end
-    
+
         com.c_backtrack_idx = probe_start_id
     end
     com.input[:logs] = before_logs
@@ -201,13 +201,13 @@ end
 
 Probe from node id: `num_backtrack_objs`
 - Follow a DFS path by random selection of a branching variable
-- Update activity 
+- Update activity
 Return if feasible and the created backtrack ids along the way
 """
 function probe(com::CS.CoM, num_backtrack_objs)
     backtrack_vec = com.backtrack_vec
     found, vidx = get_next_branch_variable(com, Val(:Random))
-    
+
     step_nr = 1
     backtrack_ids = Int[]
     parent_idx = backtrack_vec[num_backtrack_objs].parent_idx
@@ -223,7 +223,7 @@ function probe(com::CS.CoM, num_backtrack_objs)
         step_nr,
         vidx
     )
-    
+
     last_backtrack_id = 0
 
     feasible = true
@@ -248,7 +248,7 @@ function probe(com::CS.CoM, num_backtrack_objs)
         !feasible && break
 
         constraints = com.constraints[com.subscription[vidx]]
-        
+
         feasible = prune!(com)
         call_finished_pruning!(com)
 
@@ -258,7 +258,7 @@ function probe(com::CS.CoM, num_backtrack_objs)
 
         found, vidx = get_next_branch_variable(com, Val(:Random))
         !found && break
-        
+
         last_backtrack_obj = backtrack_vec[backtrack_obj.idx]
         num_backtrack_objs = add2backtrack_vec!(
             backtrack_vec,
@@ -276,14 +276,11 @@ function probe(com::CS.CoM, num_backtrack_objs)
 end
 
 function update_activity!(com; in_probing_phase=false)
-    # update activity 
+    # update activity
     c_backtrack_idx = com.c_backtrack_idx
     γ = com.options.activity_decay
     for variable in com.search_space
-        # Decay the activity of the last used variable to avoid calling it for every branch
-        if variable.idx == com.backtrack_vec[com.c_backtrack_idx].variable_idx
-            variable.activity *= 0.9
-        elseif length(variable.changes[c_backtrack_idx]) > 0
+        if length(variable.changes[c_backtrack_idx]) > 0
             variable.activity += 1
         elseif nvalues(variable) > 1 && !in_probing_phase
             variable.activity *= γ
@@ -294,13 +291,13 @@ end
 function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
     # probing phase currently probes 10*#variables
     in_probing_phase = com.activity_vars.nprobes <= 20*length(com.search_space)
-    
+
     update_activity!(com; in_probing_phase=in_probing_phase)
 
     if in_probing_phase
-        return probe_until(com, (com)->com.activity_vars.nprobes > 20*length(com.search_space)) 
+        return probe_until(com, (com)->com.activity_vars.nprobes > 20*length(com.search_space))
     end
-    
+
     #=
     if com.info.backtrack_fixes == 100*length(com.search_space)+1
         for variable in com.search_space
