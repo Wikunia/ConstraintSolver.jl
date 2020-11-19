@@ -415,6 +415,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     traverse_strategy::Val
     branch_strategy::Val
     branch_split::Val
+    in_probing_phase::Bool
     activity_vars::ActivityObj
     best_sol::T # Objective of the best solution
     best_bound::T # Overall best bound

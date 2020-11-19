@@ -148,29 +148,47 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:Random})
     return found, vidx
 end
 
+function still_probing(n, μ, σ)
+    n < 2 && return true
+    t = TDist(n-1)
+    for i in 1:length(μ)
+        if real(cf(t, 0.05))*(σ[i]/sqrt(n)) > 0.05*μ[i]
+            return true
+        end
+    end
+    return false
+end
+
 """
     probe_until(com::CS.CoM, until_fct)
 
 Start probing from current node:
 - Create paths in a depth first search way and use a random branch variable strategy
 - Update activity
-- Return if `until_fct(com)` evaluates to true
 This creates new `BacktrackObj` inside `backtrack_vec` which get overwritten in each probe
 """
-function probe_until(com::CS.CoM, until_fct)
+function probe_until(com::CS.CoM)
     probe_start_id = com.c_backtrack_idx
     num_backtrack_objs = length(com.backtrack_vec)
     temp_nidxs = Set{Int}()
     before_logs = com.input[:logs]
     com.input[:logs] = false
     copied_traverse_strategy = com.traverse_strategy
-
-    while !until_fct(com)
+    mean_activities = zeros(length(com.search_space))
+    std_activities = zeros(length(com.search_space))
+    n = 0
+    while still_probing(n, mean_activities, std_activities)
+        n += 1
         com.traverse_strategy = Val(:DFS)
 
         backtrack_idx_before = com.c_backtrack_idx
 
-        feasible, backtrack_ids = probe(com, num_backtrack_objs)
+        feasible, backtrack_ids, activities = probe(com, num_backtrack_objs)
+        for i in 1:length(com.search_space)
+            new_mean = mean_activities[i] + (activities[i]-mean_activities[i]) / n
+            # update std: https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
+            std_activities[i] = ((n-2)*std_activities[i]+(n-1)*(mean_activities[i]-new_mean)^2+(activities[i]-new_mean)^2)/(n-1)
+        end
         checkout_new_node!(com,  com.c_backtrack_idx, probe_start_id)
         restore_prune!(com, probe_start_id)
 
@@ -187,6 +205,10 @@ function probe_until(com::CS.CoM, until_fct)
         end
 
         com.c_backtrack_idx = probe_start_id
+    end
+    println("#probes: ", n)
+    for i in 1:length(com.search_space)
+        com.search_space[i].activity += mean_activities[i]
     end
     com.traverse_strategy = copied_traverse_strategy
     com.input[:logs] = before_logs
@@ -206,6 +228,8 @@ Probe from node id: `num_backtrack_objs`
 Return if feasible and the created backtrack ids along the way
 """
 function probe(com::CS.CoM, num_backtrack_objs)
+    activities = zeros(length(com.search_space))
+
     backtrack_vec = com.backtrack_vec
     found, vidx = get_next_branch_variable(com, Val(:Random))
 
@@ -254,7 +278,7 @@ function probe(com::CS.CoM, num_backtrack_objs)
         call_finished_pruning!(com)
 
         com.activity_vars.nprobes += 1
-        update_activity!(com; in_probing_phase=true)
+        update_probe_activity!(activities, com)
         !feasible && break
 
         found, vidx = get_next_branch_variable(com, Val(:Random))
@@ -273,30 +297,38 @@ function probe(com::CS.CoM, num_backtrack_objs)
             only_one = true
         )
     end
-    return feasible, backtrack_ids
+    return feasible, backtrack_ids, activities
 end
 
-function update_activity!(com; in_probing_phase=false)
+function update_activity!(com)
     # update activity
     c_backtrack_idx = com.c_backtrack_idx
     γ = com.options.activity_decay
     for variable in com.search_space
         if length(variable.changes[c_backtrack_idx]) > 0
             variable.activity += 1
-        elseif nvalues(variable) > 1 && !in_probing_phase
+        elseif nvalues(variable) > 1
             variable.activity *= γ
         end
     end
 end
 
+function update_probe_activity!(activities, com)
+    # update activity
+    c_backtrack_idx = com.c_backtrack_idx
+    for variable in com.search_space
+        if length(variable.changes[c_backtrack_idx]) > 0
+            activities[variable.idx] += 1
+        end
+    end
+end
+
 function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
-    # probing phase currently probes 10*#variables
-    in_probing_phase = com.activity_vars.nprobes <= 20*length(com.search_space)
+    update_activity!(com)
 
-    update_activity!(com; in_probing_phase=in_probing_phase)
-
-    if in_probing_phase
-        return probe_until(com, (com)->com.activity_vars.nprobes > 20*length(com.search_space))
+    if com.in_probing_phase
+        com.in_probing_phase = false
+        return probe_until(com)
     end
 
     #=

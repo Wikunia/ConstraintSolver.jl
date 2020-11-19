@@ -101,11 +101,12 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         1, # c_backtrack_idx
         Vector{BacktrackObj{T}}(), # backtrack_vec
         MOI.FEASIBILITY_SENSE, #
-        NoObjective(), # 
+        NoObjective(), #
         Vector{Bool}(), # var_in_obj
-        get_traverse_strategy(), 
-        get_branch_strategy(), 
+        get_traverse_strategy(),
+        get_branch_strategy(),
         get_branch_split(),
+        true,
         ActivityObj(),
         zero(T), # best_sol,
         zero(T), # best_bound
@@ -133,7 +134,7 @@ function BacktrackObj(com::CS.CoM)
         0, # depth
         :Closed, # status
         0, # variable_idx
-        0, # lb and ub only take effect if variable_idx != 0 
+        0, # lb and ub only take effect if variable_idx != 0
         0, # ub
         com.sense == MOI.MIN_SENSE ? typemax(com.best_bound) : typemin(com.best_bound),
         zeros(length(com.search_space)),

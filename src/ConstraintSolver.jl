@@ -1,5 +1,6 @@
 module ConstraintSolver
 
+using Distributions
 using Random
 using MatrixNetworks
 using JSON
@@ -17,7 +18,7 @@ using JuMP:
     set_optimizer,
     direct_model,
     optimize!,
-    objective_value, 
+    objective_value,
     set_lower_bound,
     set_upper_bound,
     termination_status
@@ -140,7 +141,7 @@ end
 """
     get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; vidx=0, lb=0, ub=0)
 
-Return the best bound if setting the variable with idx: `vidx` to 
+Return the best bound if setting the variable with idx: `vidx` to
     lb <= var[vidx] <= ub if vidx != 0
 Without an objective function return 0.
 """
@@ -154,7 +155,7 @@ end
 """
     checkout_from_to!(com::CS.CoM, from_nidx::Int, to_nidx::Int)
 
-Change the state of the search space given the current position in the tree (`from_nidx`) and the index we want 
+Change the state of the search space given the current position in the tree (`from_nidx`) and the index we want
 to change to (`to_nidx`)
 """
 function checkout_from_to!(com::CS.CoM, from_nidx::Int, to_nidx::Int)
@@ -262,7 +263,7 @@ function addBacktrackObj2Backtrack_vec!(
         else
             com.logs[num_backtrack_objs] = log_one_node(com, length(com.search_space), num_backtrack_objs, step_nr)
         end
-    end        
+    end
 end
 
 """
@@ -286,11 +287,11 @@ function add2backtrack_vec!(
 
     #=
         Check whether the new node is needed which depends on
-        - Is there a solution already? 
-            - no => Add 
-        - Do we want all solutions? 
+        - Is there a solution already?
+            - no => Add
+        - Do we want all solutions?
             - yes => Add
-        - Do we want all optimal solutions? 
+        - Do we want all optimal solutions?
             - yes => Add if better or same as previous optimal one
     =#
 
@@ -313,7 +314,7 @@ function add2backtrack_vec!(
     if com.options.all_solutions || !check_bound || length(com.bt_solution_ids) == 0 ||
         backtrack_obj.best_bound * obj_factor < com.best_sol * obj_factor ||
         com.options.all_optimal_solutions && backtrack_obj.best_bound * obj_factor <= com.best_sol * obj_factor
-    
+
         addBacktrackObj2Backtrack_vec!(
             backtrack_vec,
             backtrack_obj,
@@ -374,7 +375,7 @@ end
 """
     add_new_solution!(com::CS.CoM, backtrack_vec::Vector{BacktrackObj{T}}, backtrack_obj::BacktrackObj{T}, log_table) where T <: Real
 
-A new solution was found. 
+A new solution was found.
 - Add it to the solutions objects
 Return true if backtracking can be stopped
 """
@@ -533,7 +534,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         last_backtrack_id = backtrack_obj.idx
 
         # limit the variable bounds
-        if !set_bounds!(com, backtrack_obj) 
+        if !set_bounds!(com, backtrack_obj)
             com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
             continue
         end
@@ -584,7 +585,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         end
 
         leafs_best_bound = get_best_bound(com, backtrack_obj)
-        
+
         last_backtrack_obj = backtrack_vec[last_backtrack_id]
         num_backtrack_objs = add2backtrack_vec!(
             backtrack_vec,
@@ -876,7 +877,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     end
     if backtrack
         com.info.backtracked = true
-        if time() - com.start_time > com.options.time_limit 
+        if time() - com.start_time > com.options.time_limit
             com.solve_time = time() - com.start_time
             return :Time
         end
