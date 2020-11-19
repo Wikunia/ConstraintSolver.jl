@@ -1,5 +1,6 @@
 [deps]
 ConstraintSolver = "e0e52ebd-5523-408d-9ca3-7641f1cd1405"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Formatting = "59287772-0a20-5a39-b81b-1366585eb4c0"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
