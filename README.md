@@ -6,7 +6,8 @@
 
 ![Logo](https://user-images.githubusercontent.com/4931746/83681097-2c247480-a5e2-11ea-9301-0c46726dea25.png)
 
-This package aims to be a constraint solver written in Julia and will be documented completely on my blog [OpenSourc.es](https://opensourc.es/blog/constraint-solver-1)
+This package aims to be a constraint solver written in Julia and will be documented completely on my blog [OpenSourc.es](https://opensourc.es/blog/constraint-solver-1).
+There is of course also the general user manual [here](https://wikunia.github.io/ConstraintSolver.jl/stable)
 
 
 ## Goals
@@ -23,7 +24,7 @@ You can install this julia package using
 You can easily use this package with the same modelling package as you might be used to for solving (non)linear problems in Julia: [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl).
 
 ### Sudoku
-```
+```julia
 using JuMP
 
 grid = [6 0 2 0 5 0 0 0 0;

@@ -22,7 +22,7 @@ end
 """
     test_string(arr::AbstractArray)
 
-In Julia 1.0 string(arr) starts with Array{Int, 1} or something. In 1.5 it doesn't. 
+In Julia 1.0 string(arr) starts with Array{Int, 1} or something. In 1.5 it doesn't.
 This function removes Array{...} and starts with `[`. Additionally all white spaces are removed.
 """
 function test_string(arr::AbstractArray)

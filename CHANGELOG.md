@@ -1,5 +1,8 @@
 # ConstrainSolver.jl - Changelog
 
+## v0.3.1
+- Added `copy` function for constraint structs for latest JuMP/MOI versions
+
 ## v0.3.0
 - Reified constraint [#171](https://github.com/Wikunia/ConstraintSolver.jl/pull/171)
 
