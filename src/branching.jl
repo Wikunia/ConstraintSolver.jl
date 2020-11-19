@@ -163,9 +163,9 @@ function probe_until(com::CS.CoM, until_fct)
     temp_nidxs = Set{Int}()
     before_logs = com.input[:logs]
     com.input[:logs] = false
-    while !until_fct(com)
+    copied_traverse_strategy = com.traverse_strategy
 
-        copied_traverse_strategy = com.traverse_strategy
+    while !until_fct(com)
         com.traverse_strategy = Val(:DFS)
 
         backtrack_idx_before = com.c_backtrack_idx
@@ -188,6 +188,7 @@ function probe_until(com::CS.CoM, until_fct)
 
         com.c_backtrack_idx = probe_start_id
     end
+    com.traverse_strategy = copied_traverse_strategy
     com.input[:logs] = before_logs
     sorted_temp_nidxs = sort!(collect(temp_nidxs); rev=true)
     for nidx in sorted_temp_nidxs
