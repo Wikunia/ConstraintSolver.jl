@@ -2,7 +2,7 @@ function log_one_node(com, nvars, back_idx, step_nr)
     parent_idx = 0
     if length(com.backtrack_vec) > 0
         status = com.backtrack_vec[back_idx].status
-        vidx = com.backtrack_vec[back_idx].variable_idx
+        vidx = com.backtrack_vec[back_idx].vidx
         lb = com.backtrack_vec[back_idx].lb
         ub = com.backtrack_vec[back_idx].ub
         best_bound = com.backtrack_vec[back_idx].best_bound
@@ -31,7 +31,7 @@ function log_one_node(com, nvars, back_idx, step_nr)
     )
 
     log_node_state!(tree_log_node, nothing, com.search_space)
-  
+
     if parent_idx > 0
         changed = false
         for (i, child) in enumerate(com.logs[parent_idx].children)
