@@ -12,8 +12,6 @@ function simplify!(com)
     # (all different where every value is used)
     b_all_different_sum = false
     b_equal_to = false
-    # != constraint
-    b_not_equal_to = false
     for constraint in com.constraints
         if isa(constraint.set, AllDifferentSetInternal)
             b_all_different = true
@@ -22,96 +20,14 @@ function simplify!(com)
             end
         elseif isa(constraint.fct, SAF) && isa(constraint.set, MOI.EqualTo)
             b_equal_to = true
-        elseif isa(constraint.fct, SAF) && isa(constraint.set, CS.NotEqualTo)
-            b_not_equal_to = true
         end
     end
     if b_all_different_sum && b_equal_to
         append!(added_constraint_idxs, simplify_all_different_and_equal_to(com))
     end
-    if b_not_equal_to
-        append!(added_constraint_idxs, simplify_not_equal_to_cliques(com))
-    end
-
-    println("Added $(length(added_constraint_idxs)) new constraints")
     return added_constraint_idxs
 end
 
-"""
-    simplify_not_equal_to_cliques(com)
-
-Combine simple `a != b` constraints to `alldifferent` constraints using maximal cliques
-"""
-function simplify_not_equal_to_cliques(com)
-    added_constraint_idxs = Int[]
-    simple_not_equal_constraints = Int[]
-    # one node per variable which is part of != constraint
-    nodes = Set()
-    # check for simple != constraints like `a != b`
-    for constraint_idx = 1:length(com.constraints)
-        constraint = com.constraints[constraint_idx]
-
-        if isa(constraint.set, CS.NotEqualTo) && length(constraint.indices) == 2
-            if constraint.fct.terms[1].coefficient == -constraint.fct.terms[2].coefficient &&
-                abs(constraint.fct.terms[1].coefficient) == 1
-
-                if constraint.fct.constant == 0 && constraint.set.value == 0
-                    push!(simple_not_equal_constraints, constraint_idx)
-                    for vidx in constraint.indices
-                        push!(nodes, vidx)
-                    end
-                end
-            end
-        end
-    end
-
-
-    g = SimpleGraph(length(nodes))
-    variables_to_constraint = Dict{Tuple{Int, Int}, Int}()
-    for constraint_idx in simple_not_equal_constraints
-        constraint = com.constraints[constraint_idx]
-        add_edge!(g, constraint.indices[1], constraint.indices[2])
-        variables_to_constraint[(constraint.indices[1], constraint.indices[2])] = constraint_idx
-    end
-    cliques = maximal_cliques(g)
-    for clique in cliques
-        clique_size = length(clique)
-        if clique_size > 2
-            # add new all different constraint
-            set = AllDifferentSetInternal(clique_size)
-            vars = MOI.VectorOfVariables([MOI.VariableIndex(vidx) for vidx in clique])
-            internals = ConstraintInternals(
-                length(com.constraints) + 1,
-                vars,
-                set,
-                Int[v.value for v in vars.variables]
-            )
-
-            constraint = init_constraint_struct(AllDifferentSetInternal, internals)
-            add_constraint!(com, constraint)
-            push!(added_constraint_idxs, length(com.constraints))
-
-            # deactivate old constraints
-            for first_idx in 1:clique_size
-                for second_idx in first_idx+1:clique_size
-                    constraint_idx = get(variables_to_constraint, (first_idx, second_idx), 0)
-                    if constraint_idx != 0
-                        com.constraints[constraint_idx].is_deactivated = true
-                    end
-                end
-            end
-        end
-    end
-
-    return added_constraint_idxs
-end
-
-"""
-    simplify_all_different_and_equal_to(com)
-
-Several functions to combine all_different constraints and equal to constraints
-to add new equal to constraints
-"""
 function simplify_all_different_and_equal_to(com)
     added_constraint_idxs = Int[]
     # for each all_different constraint

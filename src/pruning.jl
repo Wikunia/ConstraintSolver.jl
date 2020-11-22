@@ -71,7 +71,6 @@ function prune!(
         if new_var_length > 0 || all || initial_check
             prev_var_length[var.idx] = new_var_length
             for ci in com.subscription[var.idx]
-                com.constraints[ci].is_deactivated && continue
                 inner_constraint = com.constraints[ci]
                 constraint_idxs_vec[inner_constraint.idx] =
                     open_possibilities(search_space, inner_constraint.indices)
@@ -114,9 +113,8 @@ function prune!(
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
                 for ci in com.subscription[var.idx]
-                    com.constraints[ci].is_deactivated && continue
-                    # don't call the same constraint again.
-                    # Each constraint should prune as much as possible
+                    # don't call the same constraint again. 
+                    # Each constraint should prune as much as possible 
                     if ci != constraint.idx
                         inner_constraint = com.constraints[ci]
                         # if initial check or don't add constraints => update only those which already have open possibilities
