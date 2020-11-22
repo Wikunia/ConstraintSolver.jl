@@ -1,9 +1,7 @@
 module ConstraintSolver
 
-using MatrixNetworks
+using Formatting
 using JSON
-using MathOptInterface
-using Statistics
 using JuMP:
     @variable,
     @constraint,
@@ -21,7 +19,10 @@ using JuMP:
     termination_status
 import JuMP.sense_to_set
 import JuMP
-using Formatting
+using LightGraphs
+using MathOptInterface
+using MatrixNetworks
+using Statistics
 
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities

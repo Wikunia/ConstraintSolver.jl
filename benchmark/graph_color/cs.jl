@@ -1,8 +1,9 @@
-using ConstraintSolver, JuMP
+using ConstraintSolver, JuMP, GLPK
 CS = ConstraintSolver
 
 function main(filename; benchmark = false, time_limit=100)
-    m = Model(optimizer_with_attributes(CS.Optimizer, "time_limit"=>time_limit))
+    glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_OFF)
+    m = Model(optimizer_with_attributes(CS.Optimizer, "time_limit"=>time_limit, "lp_optimizer" => glpk_optimizer))
 
     lines = readlines(filename)
     num_colors = 0
@@ -39,6 +40,8 @@ function main(filename; benchmark = false, time_limit=100)
 
     if !benchmark
         println("status: ", status)
-        println("objective: ", JuMP.objective_value(m))
+        if MOI.get(m, MOI.ResultCount()) >= 1
+            println("objective: ", JuMP.objective_value(m))
+        end
     end
 end

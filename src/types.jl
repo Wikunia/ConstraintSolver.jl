@@ -190,6 +190,7 @@ mutable struct ConstraintInternals{
     pvals::Vector{Int}
     impl :: ImplementedConstraintFunctions
     is_initialized :: Bool
+    is_deactivated :: Bool
     bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `update_best_bound` is true
 end
 
