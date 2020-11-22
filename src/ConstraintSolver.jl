@@ -348,11 +348,11 @@ end
 """
     set_bounds!(com, backtrack_obj)
 
-Set lower/upper bounds for the current variable index `backtrack_obj.variable_idx`.
+Set lower/upper bounds for the current variable index `backtrack_obj.vidx`.
 Return if simple removable is still feasible
 """
 function set_bounds!(com, backtrack_obj)
-    vidx = backtrack_obj.variable_idx
+    vidx = backtrack_obj.vidx
     !remove_above!(com, com.search_space[vidx], backtrack_obj.ub) && return false
     !remove_below!(com, com.search_space[vidx], backtrack_obj.lb) && return false
     return true
@@ -506,7 +506,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         # there is no better node => return best solution
         !find_more_solutions && found_best_node(com) && break
 
-        vidx = backtrack_obj.variable_idx
+        vidx = backtrack_obj.vidx
 
         com.c_backtrack_idx = backtrack_obj.idx
 

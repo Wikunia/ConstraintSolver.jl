@@ -46,9 +46,9 @@ function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_s
     @variable(m, 0 <= pr[1:height, 1:width] <= ncolors, Int)
     @variable(m, 0 <= pd[1:height, 1:width] <= ncolors, Int)
     @variable(m, 0 <= pl[1:height, 1:width] <= ncolors, Int)
-    if indicator 
+    if indicator
         @variable(m, b, Bin)
-    elseif reified 
+    elseif reified
         @variable(m, b[1:height, 1:width], Bin)
     end
 
