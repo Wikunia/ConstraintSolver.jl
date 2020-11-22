@@ -27,11 +27,12 @@ function log_one_node(com, nvars, back_idx, step_nr)
         ub,
         Dict{Int,Vector{Int}}(), # var_states
         Dict{Int,Vector{Tuple{Symbol,Int,Int,Int}}}(), # var_changes
+        Dict{Int,Float64}(), # activity
         Vector{TreeLogNode{typeof(best_bound)}}(), # children
     )
 
     log_node_state!(tree_log_node, nothing, com.search_space)
-  
+
     if parent_idx > 0
         changed = false
         for (i, child) in enumerate(com.logs[parent_idx].children)
@@ -61,6 +62,7 @@ function log_node_state!(tree_log_node, bo, variables; feasible=nothing)
             if length(var.changes[back_idx]) > 0
                 tree_log_node.var_changes[var.idx] = var.changes[back_idx]
             end
+            tree_log_node.activity[var.idx] = var.activity
         end
     end
 end

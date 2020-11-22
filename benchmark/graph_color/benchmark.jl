@@ -1,7 +1,9 @@
-function solve_us_graph_coloring(;num_colors=8, equality=false)    
+function solve_us_graph_coloring(;num_colors=8, equality=false)
     m = Model(optimizer_with_attributes(
         CS.Optimizer,
-        "logging" => [],
+        "logging" => [:Info, :Table],
+        "branch_strategy" => :OLD,
+        "seed"=>1
     ))
     @variable(m, 1 <= max_color <= num_colors, Int)
 

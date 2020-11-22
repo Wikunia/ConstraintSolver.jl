@@ -1,12 +1,12 @@
 module ConstraintSolver
 
-using Distributions
 using Random
 using MatrixNetworks
 using JSON
 using MathOptInterface
 using Statistics
 using StatsBase
+using StatsFuns
 using JuMP:
     @variable,
     @constraint,
@@ -326,6 +326,7 @@ function add2backtrack_vec!(
     else
         num_backtrack_objs -= 1
     end
+    @assert left_ub < right_lb
     # right branch
     num_backtrack_objs += 1
     backtrack_obj = BacktrackObj(

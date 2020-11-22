@@ -384,6 +384,7 @@ mutable struct TreeLogNode{T<:Real}
     ub::Int
     var_states::Dict{Int,Vector{Int}}
     var_changes::Dict{Int,Vector{Tuple{Symbol,Int,Int,Int}}}
+    activity::Dict{Int, Float64}
     children::Vector{TreeLogNode{T}}
 end
 

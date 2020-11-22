@@ -27,7 +27,7 @@ function get_rotations(puzzle)
     return rotations
 end
 
-function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_solutions=false, optimize=false, indicator=false, reified=false)
+function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_solutions=false, optimize=false, indicator=false, reified=false, branch_strategy=:Auto)
     puzzle = read_puzzle(fname)
     rotations = get_rotations(puzzle)
     npieces = size(puzzle)[1]
@@ -35,7 +35,8 @@ function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_s
     height === nothing && (height = convert(Int, sqrt(npieces)))
     ncolors = maximum(puzzle[:,2:end])
 
-    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_solutions"=>all_solutions))
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [:Info, :Table],
+                "all_solutions"=>all_solutions, "seed"=>1, "branch_strategy"=>branch_strategy))
     if optimize
         cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
         m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_solutions"=>all_solutions, "lp_optimizer" => cbc_optimizer))

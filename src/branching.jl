@@ -23,7 +23,7 @@ function get_split_pvals(com, ::Val{:Auto}, var::Variable)
         end
     end
     # fallback for satisfiability or not in objective
-    return get_split_pvals(com, Val(:Smallest), var)
+    return get_split_pvals(com, rand(CS_RNG, [Val(:Smallest), Val(:Biggest)]), var)
 end
 
 """
@@ -54,6 +54,18 @@ function get_split_pvals(com, ::Val{:InHalf}, var::Variable)
         end
     end
     return lb, leq, geq, ub
+end
+
+"""
+    get_split_pvals(com, ::Val{:Random}, var::Variable)
+
+Splits the possible values into two by using a random value for the left branch
+**Attention:** The right branch is not useable atm.
+"""
+function get_split_pvals(com, ::Val{:Random}, var::Variable)
+    @assert var.min != var.max
+    val = rand(CS_RNG, values(var))
+    return val, val, typemin(typeof(val)), typemin(typeof(val))
 end
 
 """
@@ -148,11 +160,12 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:Random})
     return found, vidx
 end
 
-function still_probing(n, μ, σ)
+function still_probing(n, μ, variance)
     n < 2 && return true
-    t = TDist(n-1)
     for i in 1:length(μ)
-        if real(cf(t, 0.05))*(σ[i]/sqrt(n)) > 0.05*μ[i]
+        σ = sqrt(variance[i])
+        if tdistcdf(n-1, 0.05)*(σ/sqrt(n)) > 0.2*μ[i]
+            range = tdistcdf(n-1, 0.05)*(σ/sqrt(n))
             return true
         end
     end
@@ -168,96 +181,92 @@ Start probing from current node:
 This creates new `BacktrackObj` inside `backtrack_vec` which get overwritten in each probe
 """
 function probe_until(com::CS.CoM)
-    probe_start_id = com.c_backtrack_idx
     num_backtrack_objs = length(com.backtrack_vec)
-    temp_nidxs = Set{Int}()
-    before_logs = com.input[:logs]
-    com.input[:logs] = false
-    copied_traverse_strategy = com.traverse_strategy
-    mean_activities = zeros(length(com.search_space))
-    std_activities = zeros(length(com.search_space))
-    n = 0
-    while still_probing(n, mean_activities, std_activities)
+    mean_activities = [var.activity for var in com.search_space]
+    variance_activities = zeros(length(com.search_space))
+    n = 1
+    while n < 100 && still_probing(n, mean_activities, variance_activities)
         n += 1
-        com.traverse_strategy = Val(:DFS)
-
-        backtrack_idx_before = com.c_backtrack_idx
-
-        feasible, backtrack_ids, activities = probe(com, num_backtrack_objs)
+        println("n: $n")
+        ccom = deepcopy(com)
+        ccom.traverse_strategy = Val(:DFS)
+        ccom.branch_split = Val(:Random)
+        println("Started probe")
+        root_feasible, feasible, activities = probe(ccom)
+        println("Finished probe")
+        # CS.save_logs(ccom, "/srv/http/ConstraintVisual/data/json/killer_$n.json")
         for i in 1:length(com.search_space)
             new_mean = mean_activities[i] + (activities[i]-mean_activities[i]) / n
             # update std: https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
-            std_activities[i] = ((n-2)*std_activities[i]+(n-1)*(mean_activities[i]-new_mean)^2+(activities[i]-new_mean)^2)/(n-1)
+            if n != 1
+                variance_activities[i] = ((n-2)*variance_activities[i]+(n-1)*(mean_activities[i]-new_mean)^2+(activities[i]-new_mean)^2)/(n-1)
+            end
+            mean_activities[i] = new_mean
         end
-        checkout_new_node!(com,  com.c_backtrack_idx, probe_start_id)
-        restore_prune!(com, probe_start_id)
-
-        # reset backtrack_vec and var.changes
-        for variable in com.search_space
-            for backtrack_id in backtrack_ids
-                empty!(variable.changes[backtrack_id])
+        # if root infeasible we can remove that setting completely
+        if !root_feasible
+            backtrack_obj = ccom.backtrack_vec[ccom.c_backtrack_idx]
+            vidx = backtrack_obj.variable_idx
+            # use the variable from com not ccom to remove it from the actual model
+            variable = com.search_space[vidx]
+            lb = backtrack_obj.lb
+            ub = backtrack_obj.ub
+            for val in lb:ub
+                if has(variable, val)
+                    rm!(com, variable, val)
+                end
             end
         end
-
-        for backtrack_id in backtrack_ids
-            com.backtrack_vec[backtrack_id].status = :Closed
-            push!(temp_nidxs, backtrack_id)
+        if (!isempty(ccom.solutions))
+            push!(com.solutions, ccom.solutions[1])
         end
-
-        com.c_backtrack_idx = probe_start_id
     end
     println("#probes: ", n)
     for i in 1:length(com.search_space)
-        com.search_space[i].activity += mean_activities[i]
+        com.search_space[i].activity = mean_activities[i]
     end
-    com.traverse_strategy = copied_traverse_strategy
-    com.input[:logs] = before_logs
-    sorted_temp_nidxs = sort!(collect(temp_nidxs); rev=true)
-    for nidx in sorted_temp_nidxs
-        splice!(com.backtrack_vec, nidx)
-    end
-    return get_next_branch_variable(com, Val(:ABS))
+    println("com.backtrack_vec: ", length(com.backtrack_vec))
 end
 
 """
-    probe(com::CS.CoM, num_backtrack_objs)
+    probe(com::CS.CoM)
 
-Probe from node id: `num_backtrack_objs`
+Probe from node root node
 - Follow a DFS path by random selection of a branching variable
 - Update activity
 Return if feasible and the created backtrack ids along the way
 """
-function probe(com::CS.CoM, num_backtrack_objs)
+function probe(com::CS.CoM)
     activities = zeros(length(com.search_space))
 
     backtrack_vec = com.backtrack_vec
     found, vidx = get_next_branch_variable(com, Val(:Random))
 
     step_nr = 1
-    backtrack_ids = Int[]
-    parent_idx = backtrack_vec[num_backtrack_objs].parent_idx
-    parent_idx == 0 && (parent_idx = 1)
-    depth = backtrack_vec[num_backtrack_objs].depth
-    depth == 0 && (depth = 1)
+    parent_idx = 1
+    depth = 1
     num_backtrack_objs = add2backtrack_vec!(
         backtrack_vec,
         com,
-        num_backtrack_objs,
+        1,
         parent_idx,
         depth,
         step_nr,
-        vidx
+        vidx;
+        only_one = true
     )
 
     last_backtrack_id = 0
-
+    root_feasible = true
     feasible = true
     found = true
     while feasible
         step_nr += 1
+        step_nr % 50 == 0 && println("step_nr: $step_nr")
 
         if last_backtrack_id != 0
             backtrack_vec[last_backtrack_id].status = :Closed
+            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
         end
 
         found, backtrack_obj = get_next_node(com, backtrack_vec, true)
@@ -265,24 +274,45 @@ function probe(com::CS.CoM, num_backtrack_objs)
 
         vidx = backtrack_obj.variable_idx
         com.c_backtrack_idx = backtrack_obj.idx
-        push!(backtrack_ids, backtrack_obj.idx)
         checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
+        if com.input[:logs]
+            com.logs[backtrack_obj.idx].step_nr = step_nr
+        end
+
         last_backtrack_id = com.c_backtrack_idx
 
         feasible = set_bounds!(com, backtrack_obj)
-        !feasible && break
+        if !feasible
+            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
+            if step_nr == 2
+                root_feasible = false
+            end
+            break
+        end
 
         constraints = com.constraints[com.subscription[vidx]]
 
         feasible = prune!(com)
         call_finished_pruning!(com)
 
-        com.activity_vars.nprobes += 1
         update_probe_activity!(activities, com)
-        !feasible && break
+        if !feasible
+            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
+            if step_nr == 2
+               root_feasible = false
+            end
+            break
+        end
 
         found, vidx = get_next_branch_variable(com, Val(:Random))
-        !found && break
+        if com.input[:logs]
+            com.logs[backtrack_obj.idx] =
+                log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr)
+        end
+        if !found
+            add_new_solution!(com, backtrack_vec, backtrack_obj, false)
+            break
+        end
 
         last_backtrack_obj = backtrack_vec[backtrack_obj.idx]
         num_backtrack_objs = add2backtrack_vec!(
@@ -297,26 +327,31 @@ function probe(com::CS.CoM, num_backtrack_objs)
             only_one = true
         )
     end
-    return feasible, backtrack_ids, activities
+    return root_feasible, feasible, activities
 end
 
 function update_activity!(com)
-    # update activity
     c_backtrack_idx = com.c_backtrack_idx
+    backtrack_obj = com.backtrack_vec[c_backtrack_idx]
+    branch_vidx = backtrack_obj.variable_idx
     γ = com.options.activity_decay
     for variable in com.search_space
+        variable.idx == branch_vidx && continue
+        if nvalues(variable) > 1
+            variable.activity *= γ
+        end
         if length(variable.changes[c_backtrack_idx]) > 0
             variable.activity += 1
-        elseif nvalues(variable) > 1
-            variable.activity *= γ
         end
     end
 end
 
 function update_probe_activity!(activities, com)
-    # update activity
     c_backtrack_idx = com.c_backtrack_idx
+    backtrack_obj = com.backtrack_vec[c_backtrack_idx]
+    branch_vidx = backtrack_obj.variable_idx
     for variable in com.search_space
+        variable.idx == branch_vidx && continue
         if length(variable.changes[c_backtrack_idx]) > 0
             activities[variable.idx] += 1
         end
@@ -328,15 +363,13 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
 
     if com.in_probing_phase
         com.in_probing_phase = false
-        return probe_until(com)
+        probe_until(com)
     end
 
     #=
-    if com.info.backtrack_fixes == 100*length(com.search_space)+1
-        for variable in com.search_space
-            if !isfixed(variable)
-                println("vidx: $(variable.idx) -> $(variable.activity)")
-            end
+    for variable in com.search_space
+        if variable.idx == 12
+            println("vidx: $(variable.idx) -> $(variable.activity)")
         end
     end
     =#
