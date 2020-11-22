@@ -56,6 +56,7 @@ include("constraints/indicator.jl")
 include("constraints/reified.jl")
 
 include("pruning.jl")
+include("simplify.jl")
 
 """
     fulfills_constraints(com::CS.CoM, vidx, value)
@@ -601,131 +602,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
     else
         return :Infeasible
     end
-end
-
-"""
-    simplify!(com)
-
-Simplify constraints i.e by adding new constraints which uses an implicit connection between two constraints.
-i.e an `all_different` does sometimes include information about the sum.
-Return a list of newly added constraint ids
-"""
-function simplify!(com)
-    added_constraint_idxs = Int[]
-    # check if we have all_different and sum constraints
-    # (all different where every value is used)
-    b_all_different = false
-    b_all_different_sum = false
-    b_eq_sum = false
-    for constraint in com.constraints
-        if isa(constraint.set, AllDifferentSetInternal)
-            b_all_different = true
-            if length(constraint.indices) == length(constraint.pvals)
-                b_all_different_sum = true
-            end
-        elseif isa(constraint.fct, SAF) && isa(constraint.set, MOI.EqualTo)
-            b_eq_sum = true
-        end
-    end
-    if b_all_different_sum && b_eq_sum
-        # for each all_different constraint
-        # which has an implicit sum constraint
-        # check which sum constraints are completely inside all different
-        # which are partially inside
-        # compute inside sum and total sum
-        n_constraints_before = length(com.constraints)
-        for constraint_idx = 1:length(com.constraints)
-            constraint = com.constraints[constraint_idx]
-
-            if isa(constraint.set, AllDifferentSetInternal)
-                add_sum_constraint = true
-                if length(constraint.indices) == length(constraint.pvals)
-                    all_diff_sum = sum(constraint.pvals)
-                    # check if some sum constraints are completely inside this alldifferent constraint
-                    in_sum = 0
-                    found_possible_constraint = false
-                    outside_indices = constraint.indices
-                    for sc_idx in constraint.sub_constraint_idxs
-                        sub_constraint = com.constraints[sc_idx]
-                        if isa(sub_constraint.fct, SAF) &&
-                            isa(sub_constraint.set, MOI.EqualTo)
-                            # the coefficients must be all 1
-                            if all(t.coefficient == 1 for t in sub_constraint.fct.terms)
-                                found_possible_constraint = true
-                                in_sum += sub_constraint.set.value -
-                                    sub_constraint.fct.constant
-                                outside_indices = setdiff(outside_indices, sub_constraint.indices)
-                            end
-                        end
-                    end
-                    if found_possible_constraint && length(outside_indices) <= 4
-                        # TODO: check for a better way of accessing the parameteric type of ConstraintSolverModel (also see below)
-                        constraint_idx = length(com.constraints)+1
-                        T = isapprox_discrete(com, all_diff_sum - in_sum) ? Int : Float64
-                        lc =  LinearConstraint(constraint_idx, outside_indices, ones(Int, length(outside_indices)),
-                        0, MOI.EqualTo{T}(all_diff_sum - in_sum))
-                        add_constraint!(
-                            com,
-                            lc
-                        )
-                        push!(added_constraint_idxs, constraint_idx)
-                    end
-
-                    total_sum = 0
-                    outside_indices = Int[]
-                    cons_indices_dict = arr2dict(constraint.indices)
-                    for vidx in keys(cons_indices_dict)
-                        found_sum_constraint = false
-                        for sub_constraint_idx in com.subscription[vidx]
-                            # don't mess with constraints added later on
-                            if sub_constraint_idx > n_constraints_before
-                                continue
-                            end
-                            sub_constraint = com.constraints[sub_constraint_idx]
-                            # it must be an equal constraint and all coefficients must be 1 otherwise we can't add a constraint
-                            if isa(sub_constraint.fct, SAF) &&
-                               isa(sub_constraint.set, MOI.EqualTo)
-                                if all(t.coefficient == 1 for t in sub_constraint.fct.terms)
-                                    found_sum_constraint = true
-                                    total_sum +=
-                                        sub_constraint.set.value -
-                                        sub_constraint.fct.constant
-                                    all_inside = true
-                                    for sub_vidx in sub_constraint.indices
-                                        if !haskey(cons_indices_dict, sub_vidx)
-                                            all_inside = false
-                                            push!(outside_indices, sub_vidx)
-                                        else
-                                            delete!(cons_indices_dict, sub_vidx)
-                                        end
-                                    end
-                                    break
-                                end
-                            end
-                        end
-                        if !found_sum_constraint
-                            add_sum_constraint = false
-                            break
-                        end
-                    end
-
-                    # make sure that there are not too many outside indices
-                    if add_sum_constraint && length(outside_indices) <= 4
-                        constraint_idx = length(com.constraints)+1
-                        T = isapprox_discrete(com, total_sum - all_diff_sum) ? Int : Float64
-                        lc =  LinearConstraint(constraint_idx, outside_indices, ones(Int, length(outside_indices)),
-                        0, MOI.EqualTo{T}(total_sum - all_diff_sum))
-                        add_constraint!(
-                            com,
-                            lc
-                        )
-                        push!(added_constraint_idxs, constraint_idx)
-                    end
-                end
-            end
-        end
-    end
-    return added_constraint_idxs
 end
 
 """

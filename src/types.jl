@@ -367,3 +367,4 @@ mutable struct ConstraintSolverModel{T<:Real}
     start_time::Float64
     solve_time::Float64 # seconds spend in solve
 end
+parametric_type(::ConstraintSolverModel{T}) where T = T
