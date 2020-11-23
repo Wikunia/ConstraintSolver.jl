@@ -77,7 +77,6 @@ function get_best_bound(
     lb::Int,
     ub::Int,
 )
-    com.options.lp_optimizer !== nothing && get_best_bound_lp(com, backtrack_obj, vidx, lb, ub)
     if obj_fct.vidx != vidx
         if com.sense == MOI.MIN_SENSE
             return com.search_space[obj_fct.vidx].min
@@ -129,10 +128,7 @@ function get_best_bound(
         end
     end
 
-    # if all variables are fixed we don't have to compute several bounds
-    if all(v -> isfixed(v), com.search_space)
-        return objval
-    end
+    return objval
 end
 
 function get_best_bound_lp(com, backtrack_obj, vidx, lb, ub)
