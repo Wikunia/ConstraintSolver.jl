@@ -33,7 +33,7 @@ function simplify!(com)
         append!(added_constraint_idxs, simplify_not_equal_to_cliques(com))
     end
 
-    if length(added_constraint_idxs) > 0
+    if length(added_constraint_idxs) > 0 && !isempty(om.options.logging)
         println("Added $(length(added_constraint_idxs)) new constraints")
     end
     return added_constraint_idxs

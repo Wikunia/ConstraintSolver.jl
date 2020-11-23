@@ -1,6 +1,6 @@
 @testset "LP Solver" begin
     @testset "Issue 83 TimeLimit" begin
-        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_OFF)
+        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)
         model = Model(optimizer_with_attributes(
             CS.Optimizer,
             "lp_optimizer" => glpk_optimizer,
@@ -40,7 +40,7 @@
 
 
     @testset "Issue 83 max_bt_steps" begin
-        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_OFF)
+        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)
         model = Model(optimizer_with_attributes(
             CS.Optimizer,
             "lp_optimizer" => glpk_optimizer,
@@ -77,7 +77,7 @@
 
 
     @testset "Issue 83" begin
-        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_OFF)
+        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)
         model = Model(optimizer_with_attributes(
             CS.Optimizer,
             "lp_optimizer" => glpk_optimizer,
