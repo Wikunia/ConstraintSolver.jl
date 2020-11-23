@@ -37,8 +37,5 @@ function main(filename; benchmark = false, time_limit=100)
 
     status = JuMP.termination_status(m)
 
-    if !benchmark
-        println("status: ", status)
-        println("objective: ", JuMP.objective_value(m))
-    end
+    print("$status, $(JuMP.objective_value(m)), $(JuMP.solve_time(m))")
 end
