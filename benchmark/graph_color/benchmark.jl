@@ -184,8 +184,8 @@ function solve_us_graph_coloring(;num_colors=8, equality=false)
     end
 end
 
-function color_graph(filename, correct_num_colors; time_limit=100)
-    m = Model(optimizer_with_attributes(CS.Optimizer, "time_limit"=>time_limit))
+function color_graph(filename, correct_num_colors; time_limit=100, logging=[])
+    m = Model(optimizer_with_attributes(CS.Optimizer, "time_limit"=>time_limit, "logging"=>logging))
 
     lines = readlines(filename)
     num_colors = 0
@@ -219,5 +219,5 @@ function color_graph(filename, correct_num_colors; time_limit=100)
     status = JuMP.termination_status(m)
 
     @assert status == MOI.OPTIMAL
-    @assert JuMP.objective_value(m) ≈ num_colors
+    @assert JuMP.objective_value(m) ≈ correct_num_colors
 end

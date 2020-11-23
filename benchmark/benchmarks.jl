@@ -53,5 +53,5 @@ solve_us_graph_coloring()
 SUITE["graph_coloring"]["US_8+equal"] = @benchmarkable solve_us_graph_coloring(;num_colors=8, equality=true) seconds=5
 SUITE["graph_coloring"]["US_50colors+equal"] = @benchmarkable solve_us_graph_coloring(;num_colors=50, equality=true) seconds=5
 SUITE["graph_coloring"]["US_50colors"] = @benchmarkable solve_us_graph_coloring(;num_colors=50, equality=false) seconds=5
-SUITE["graph_coloring"]["queen7_7"] = @benchmarkable color_graph("benchmark/graph_color/data/queen7_7.col", 7) seconds=10
-SUITE["graph_coloring"]["le450_5d"] = @benchmarkable color_graph("benchmark/graph_color/data/le450_5d.col", 5) seconds=10
+SUITE["graph_coloring"]["queen7_7"] = @benchmarkable color_graph(joinpath(dir, "benchmark/graph_color/data/queen7_7.col"), 7) seconds=10
+SUITE["graph_coloring"]["le450_5d"] = @benchmarkable color_graph(joinpath(dir, "benchmark/graph_color/data/le450_5d.col"), 5) seconds=10
