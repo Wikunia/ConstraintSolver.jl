@@ -219,5 +219,5 @@ function color_graph(filename, correct_num_colors; time_limit=100)
     status = JuMP.termination_status(m)
 
     @assert status == MOI.OPTIMAL
-    @assert JuMP.objective_value(m) ≈ num_colors
+    @assert JuMP.objective_value(m) ≈ correct_num_colors
 end
