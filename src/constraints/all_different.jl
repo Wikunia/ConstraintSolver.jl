@@ -43,6 +43,7 @@ function init_constraint!(
     # fill matching_init
     m = nindices
     n = len_range
+
     constraint.matching_init = MatchingInit(
         0,
         zeros(Int, m),
@@ -65,7 +66,7 @@ function init_constraint!(
     push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_vidx)))
     saf = MOI.ScalarAffineFunction(sats, 0.0)
     MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
-    
+
     constraint.bound_rhs = [BoundRhsVariable(lp_vidx, typemin(Int), typemax(Int))]
 
     # if constraints are part of the all different constraint
@@ -94,8 +95,8 @@ function get_alldifferent_extrema(sorted_min, sorted_max, len)
     last_val = max_sum
     for i=2:len
         if sorted_max[i] >= last_val
-            last_val -= 1 
-        else 
+            last_val -= 1
+        else
             last_val = sorted_max[i]
         end
         max_sum += last_val
@@ -105,8 +106,8 @@ function get_alldifferent_extrema(sorted_min, sorted_max, len)
     last_val = min_sum
     for i=2:len
         if sorted_min[i] <= last_val
-            last_val += 1 
-        else 
+            last_val += 1
+        else
             last_val = sorted_min[i]
         end
         min_sum += last_val
@@ -125,8 +126,8 @@ end
         ub::Int
     )
 
-Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to 
-the possible values the all different constraint allows. 
+Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to
+the possible values the all different constraint allows.
 i.e if we have 4 variables all between 1 and 10 the maximum sum is 10+9+8+7 and the minimum sum is 1+2+3+4
 Additionally one of the variables can be bounded using `vidx`, `lb` and `ub`
 """
@@ -155,12 +156,12 @@ function update_best_bound_constraint!(com::CS.CoM,
             max_vals[i] = search_space[v_idx].max
         end
     end
-    
+
     # sort the max_vals desc and obtain bound by enforcing all different
     sort!(max_vals; rev=true)
     # sort the min_vals asc and obtain bound by enforcing all different
     sort!(min_vals)
-  
+
     min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(constraint.indices))
 
     constraint.bound_rhs[1].lb = min_sum
@@ -299,6 +300,8 @@ function prune_constraint!(
 
     matching_init = constraint.matching_init
     matching_init.l_in_len = num_edges
+    # there have to be at least as many values `len_range` as variables `vc`
+    vc > len_range && return false
     maximum_matching = bipartite_cardinality_matching(
         di_ei,
         di_ej,

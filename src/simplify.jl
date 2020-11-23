@@ -33,7 +33,9 @@ function simplify!(com)
         append!(added_constraint_idxs, simplify_not_equal_to_cliques(com))
     end
 
-    println("Added $(length(added_constraint_idxs)) new constraints")
+    if length(added_constraint_idxs) > 0
+        println("Added $(length(added_constraint_idxs)) new constraints")
+    end
     return added_constraint_idxs
 end
 
