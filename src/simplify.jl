@@ -78,7 +78,8 @@ function simplify_not_equal_to_cliques(com)
     cliques = maximal_cliques(g)
     for clique in cliques
         clique_size = length(clique)
-        if clique_size > 2
+        # use cliques if they contain at least 4 nodes
+        if clique_size >= 4
             # add new all different constraint
             set = AllDifferentSetInternal(clique_size)
             vars = MOI.VectorOfVariables([MOI.VariableIndex(vidx) for vidx in clique])

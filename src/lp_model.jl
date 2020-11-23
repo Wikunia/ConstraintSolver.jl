@@ -3,7 +3,7 @@ function create_lp_model!(model)
     com = model.inner
     com.sense == MOI.FEASIBILITY_SENSE && return
     lp_model = Model()
-    
+
     set_optimizer(lp_model, model.options.lp_optimizer)
     lp_x = Vector{VariableRef}(undef, length(com.search_space))
     for variable in com.search_space
@@ -21,13 +21,13 @@ function create_lp_model!(model)
     typeof_objective = typeof(com.objective.fct)
     if MOI.supports(lp_backend, MOI.ObjectiveFunction{typeof_objective}())
         MOI.set(lp_backend, MOI.ObjectiveFunction{typeof_objective}(), com.objective.fct)
-    else 
-        @error "The given `lp_optimizer` doesn't support the objective function $(typeof_objective)" 
+    else
+        @error "The given `lp_optimizer` doesn't support the objective function $(typeof_objective)"
     end
     if MOI.supports(lp_backend, MOI.ObjectiveSense())
         MOI.set(lp_backend, MOI.ObjectiveSense(), com.sense)
-    else 
-        @error "The given `lp_optimizer` doesn't support setting `ObjectiveSense`" 
+    else
+        @error "The given `lp_optimizer` doesn't support setting `ObjectiveSense`"
     end
     com.lp_x = lp_x
     com.lp_model = lp_model

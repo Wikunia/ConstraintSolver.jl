@@ -204,7 +204,7 @@
         @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
         @test JuMP.termination_status(m1) == MOI.TIME_LIMIT
         # can take longer as preprocessing takes time
-        @test 0 <= MOI.get(m1, MOI.SolveTime()) < 0.1
+        @test 0 <= MOI.get(m1, MOI.SolveTime()) < 0.5
     end
 
 
