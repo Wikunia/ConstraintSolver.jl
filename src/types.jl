@@ -264,7 +264,7 @@ mutable struct GeqSetConstraint <: Constraint
     std::ConstraintInternals
     vidx::Int
     greater_than::Vector{Int}
-    # saves all constraints where all constraints are part of the 2:end variables in this constraint
+    # saves all constraints where all indices are part of the greater_than
     sub_constraint_idxs::Vector{Int}
 end
 

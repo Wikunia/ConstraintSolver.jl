@@ -116,6 +116,28 @@ function get_alldifferent_extrema(sorted_min, sorted_max, len)
     return min_sum, max_sum
 end
 
+function get_sorted_extrema(com, constraint::AllDifferentConstraint, vidx::Int, lb::Int, ub::Int)
+    max_vals = zeros(Int, length(constraint.indices))
+    min_vals = zeros(Int, length(constraint.indices))
+    search_space = com.search_space
+    for i=1:length(constraint.indices)
+        v_idx = constraint.indices[i]
+        if v_idx == vidx
+            max_vals[i] = ub
+            min_vals[i] = lb
+        else
+            min_vals[i] = search_space[v_idx].min
+            max_vals[i] = search_space[v_idx].max
+        end
+    end
+
+    # sort the max_vals desc and obtain bound by enforcing all different
+    sort!(max_vals; rev=true)
+    # sort the min_vals asc and obtain bound by enforcing all different
+    sort!(min_vals)
+    return min_vals, max_vals
+end
+
 """
     update_best_bound_constraint!(com::CS.CoM,
         constraint::AllDifferentConstraint,
@@ -144,23 +166,7 @@ function update_best_bound_constraint!(com::CS.CoM,
 
     # compute bounds
     # get the maximum/minimum value for each variable
-    max_vals = zeros(Int, length(constraint.indices))
-    min_vals = zeros(Int, length(constraint.indices))
-    for i=1:length(constraint.indices)
-        v_idx = constraint.indices[i]
-        if v_idx == vidx
-            max_vals[i] = ub
-            min_vals[i] = lb
-        else
-            min_vals[i] = search_space[v_idx].min
-            max_vals[i] = search_space[v_idx].max
-        end
-    end
-
-    # sort the max_vals desc and obtain bound by enforcing all different
-    sort!(max_vals; rev=true)
-    # sort the min_vals asc and obtain bound by enforcing all different
-    sort!(min_vals)
+    min_vals, max_vals = get_sorted_extrema(com, constraint, vidx, lb, ub)
 
     min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(constraint.indices))
 

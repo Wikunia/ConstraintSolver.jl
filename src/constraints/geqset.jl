@@ -60,12 +60,33 @@ function prune_constraint!(
     feasible = remove_below!(com, variables[constraint.vidx], max_val)
     !feasible && return false
 
+    # remove values bigger than the maximum of constraint.vidx
+    # as this violates constraint.vidx >= constraint.greater_than
     max_val_variable = variables[constraint.vidx].max
     for vidx in constraint.greater_than
         feasible = remove_above!(com, variables[vidx], max_val_variable)
         !feasible && return false
     end
-    return true
+
+    # remove more values from constraint.vidx by checking the maximal
+    # minimum value in all different constraints that are completely inside
+    max_min = -typemax(Int)
+    for cidx in constraint.sub_constraint_idxs
+        sub_constraint = com.constraints[cidx]
+        !(sub_constraint isa AllDifferentConstraint) && continue
+        min_vals, max_vals = get_sorted_extrema(com, sub_constraint, 0, 0, 0)
+        cmax_min = min_vals[1]
+        for i in 2:length(sub_constraint.indices)
+            if min_vals[i] <= cmax_min
+                cmax_min += 1
+            else
+                cmax_min = min_vals[i]
+            end
+        end
+        max_min = max(max_min, cmax_min)
+    end
+    feasible = remove_below!(com, variables[constraint.vidx], max_min)
+    return feasible
 end
 
 function still_feasible(
