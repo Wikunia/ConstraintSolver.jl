@@ -71,6 +71,14 @@ struct TableSet <: JuMP.AbstractVectorSet
 end
 JuMP.moi_set(ts::TableSet, dim) = TableSetInternal(dim, ts.table)
 
+struct GeqSetInternal <: MOI.AbstractVectorSet
+    dimension :: Int
+end
+Base.copy(G::GeqSetInternal) = GeqSetInternal(G.dimension)
+
+struct GeqSet <: JuMP.AbstractVectorSet end
+JuMP.moi_set(::GeqSet, dim) = GeqSetInternal(dim)
+
 struct EqualSetInternal <: MOI.AbstractVectorSet
     dimension::Int
 end
@@ -172,6 +180,7 @@ Base.copy(R::ReifiedSet{A}) where A = ReifiedSet{A}(R.func, R.set, R.dimension)
 
 mutable struct ImplementedConstraintFunctions
     init :: Bool
+    update_init :: Bool
     finished_pruning :: Bool
     restore_pruning :: Bool
     single_reverse_pruning :: Bool
@@ -249,6 +258,14 @@ mutable struct TableConstraint <: Constraint
     unfixed_vars::Vector{Int}
     sum_min::Vector{Int}
     sum_max::Vector{Int}
+end
+
+mutable struct GeqSetConstraint <: Constraint
+    std::ConstraintInternals
+    vidx::Int
+    greater_than::Vector{Int}
+    # saves all constraints where all constraints are part of the 2:end variables in this constraint
+    sub_constraint_idxs::Vector{Int}
 end
 
 mutable struct IndicatorConstraint{C<:Constraint} <: Constraint

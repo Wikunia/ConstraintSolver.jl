@@ -55,6 +55,7 @@ include("constraints/not_equal.jl")
 include("constraints/table.jl")
 include("constraints/indicator.jl")
 include("constraints/reified.jl")
+include("constraints/geqset.jl")
 
 include("pruning.jl")
 include("simplify.jl")
@@ -699,7 +700,9 @@ function solve!(com::CS.CoM, options::SolverOptions)
         set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
         set_impl_functions!(com; constraints=com.constraints[added_con_idxs])
         !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
+        !update_init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
     end
+
 
     options.no_prune && return :NotSolved
 
