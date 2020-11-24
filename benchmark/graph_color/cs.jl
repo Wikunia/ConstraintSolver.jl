@@ -1,8 +1,8 @@
-using ConstraintSolver, JuMP, GLPK, Cbc, Gurobi
+using ConstraintSolver, JuMP, GLPK
 CS = ConstraintSolver
 
 function main(filename; benchmark = false, time_limit=100)
-    lp_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+    lp_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)
     m = Model(optimizer_with_attributes(CS.Optimizer, "time_limit"=>time_limit, "lp_optimizer" => lp_optimizer))
 
     lines = readlines(filename)
@@ -11,7 +11,7 @@ function main(filename; benchmark = false, time_limit=100)
     max_color = nothing
     degrees = nothing
     for line in lines
-        parts = split(line, " ")
+        parts = split(line)
         if parts[1] == "p"
             num_colors = parse(Int, parts[3])
             @variable(m, 1 <= max_color <= num_colors, Int)
@@ -31,7 +31,7 @@ function main(filename; benchmark = false, time_limit=100)
     println("num_colors: ", num_colors)
     @constraint(m, max_color <= max_degree)
 
-    @constraint(m, [max_color, x...] in CS.GeqSet())
+    @constraint(m, max_color .>= x)
     @objective(m, Min, max_color)
 
     optimize!(m)
