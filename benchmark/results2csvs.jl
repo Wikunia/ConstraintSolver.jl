@@ -3,11 +3,12 @@
 using DataFrames, CSV
 
 function create_csv()
-    root_dir = "results"
+    root_dir = "graph_color/results"
     max_time = 1800
 
 
     for dir in readdir(root_dir)
+        !isdir(dir) && continue
         df = DataFrame("instance"=>String[],
             "status"=>String[], "result"=>Float64[], "time"=>Float64[])
         for (root, dirs, files) in walkdir(joinpath(root_dir, dir))

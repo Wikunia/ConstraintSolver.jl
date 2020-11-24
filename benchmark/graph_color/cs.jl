@@ -11,6 +11,7 @@ function main(filename; benchmark = false, time_limit=100)
     max_color = nothing
     degrees = nothing
     for line in lines
+        isempty(line) && continue
         parts = split(line)
         if parts[1] == "p"
             num_colors = parse(Int, parts[3])
@@ -37,6 +38,9 @@ function main(filename; benchmark = false, time_limit=100)
     optimize!(m)
 
     status = JuMP.termination_status(m)
-
-    print("$status, $(JuMP.objective_value(m)), $(JuMP.solve_time(m))")
+    if status == MOI.OPTIMAL
+        print("$status, $(JuMP.objective_value(m)), $(JuMP.solve_time(m))")
+    else
+        print("$status, NaN, $(time_limit)")
+    end
 end
