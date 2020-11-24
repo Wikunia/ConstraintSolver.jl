@@ -701,8 +701,8 @@ function solve!(com::CS.CoM, options::SolverOptions)
         set_impl_functions!(com; constraints=com.constraints[added_con_idxs])
         !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
         !update_init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
+        recompute_subscriptions(com)
     end
-
 
     options.no_prune && return :NotSolved
 
