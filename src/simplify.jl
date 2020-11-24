@@ -14,6 +14,7 @@ function simplify!(com)
     b_equal_to = false
     # != constraint
     b_not_equal_to = false
+    b_svc_less_than = false
     for constraint in com.constraints
         if isa(constraint.set, AllDifferentSetInternal)
             b_all_different = true
@@ -24,6 +25,8 @@ function simplify!(com)
             b_equal_to = true
         elseif isa(constraint.fct, SAF) && isa(constraint.set, CS.NotEqualTo)
             b_not_equal_to = true
+        elseif isa(constraint, SingleVariableConstraint) && isa(constraint.set, MOI.LessThan)
+            b_svc_less_than = true
         end
     end
     if b_all_different_sum && b_equal_to
@@ -32,10 +35,69 @@ function simplify!(com)
     if b_not_equal_to
         append!(added_constraint_idxs, simplify_not_equal_to_cliques(com))
     end
+    if b_svc_less_than
+        append!(added_constraint_idxs, simplify_svc_less_than(com))
+    end
 
     if length(added_constraint_idxs) > 0 && !isempty(com.options.logging)
         println("Added $(length(added_constraint_idxs)) new constraints")
     end
+    return added_constraint_idxs
+end
+
+function simplify_svc_less_than(com)
+    added_constraint_idxs = Int[]
+    # save all variables, constraints of the form a <= b
+    lhs_vars = Dict{Int, Vector{Int}}()
+    lhs_cons = Dict{Int, Vector{Int}}()
+    # save all variables, constraints of the form a >= b
+    rhs_vars = Dict{Int, Vector{Int}}()
+    rhs_cons = Dict{Int, Vector{Int}}()
+    for constraint_idx = 1:length(com.constraints)
+        constraint = com.constraints[constraint_idx]
+        if isa(constraint, SingleVariableConstraint) && isa(constraint.set, MOI.LessThan)
+            if haskey(lhs_vars, constraint.lhs)
+                push!(lhs_vars[constraint.lhs], constraint.rhs)
+                push!(lhs_cons[constraint.lhs], constraint.idx)
+            else
+                lhs_vars[constraint.lhs] = [constraint.rhs]
+                lhs_cons[constraint.lhs] = [constraint.idx]
+            end
+
+            if haskey(rhs_vars, constraint.rhs)
+                push!(rhs_vars[constraint.rhs], constraint.lhs)
+                push!(rhs_cons[constraint.rhs], constraint.idx)
+            else
+                rhs_vars[constraint.rhs] = [constraint.lhs]
+                rhs_cons[constraint.rhs] = [constraint.idx]
+            end
+        end
+    end
+
+    # check for >= which constraint appears >= 5 times on the left side
+    # Todo: Do the same for lhs_vars with LeqSet
+    for (key, value) in rhs_vars
+        if length(value) >= 5
+            # add new all different constraint
+            set = GeqSetInternal(1+length(value))
+            vars = MOI.VectorOfVariables([MOI.VariableIndex(key), [MOI.VariableIndex(vidx) for vidx in value]...])
+            internals = ConstraintInternals(
+                length(com.constraints) + 1,
+                vars,
+                set,
+                Int[v.value for v in vars.variables]
+            )
+
+            constraint = init_constraint_struct(GeqSetInternal, internals)
+            add_constraint!(com, constraint)
+            push!(added_constraint_idxs, length(com.constraints))
+
+            for cidx in rhs_cons[key]
+                com.constraints[cidx].is_deactivated = true
+            end
+        end
+    end
+
     return added_constraint_idxs
 end
 
@@ -260,4 +322,21 @@ function simplify_all_different_outer_equal_to(com, constraint::AllDifferentCons
         push!(added_constraint_idxs, constraint_idx)
     end
     return added_constraint_idxs
+end
+
+"""
+    recompute_subscriptions(com)
+
+Reset all subscriptions and recomputes them to only point to constraints that aren't deactivated
+"""
+function recompute_subscriptions(com)
+    for variable in com.search_space
+        empty!(com.subscription[variable.idx])
+    end
+    for constraint in com.constraints
+        constraint.is_deactivated && continue
+        for vidx in constraint.indices
+            push!(com.subscription[vidx], constraint.idx)
+        end
+    end
 end

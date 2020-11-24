@@ -31,7 +31,7 @@ function main(filename; benchmark = false, time_limit=100)
     println("num_colors: ", num_colors)
     @constraint(m, max_color <= max_degree)
 
-    @constraint(m, [max_color, x...] in CS.GeqSet())
+    @constraint(m, max_color .>= x)
     @objective(m, Min, max_color)
 
     optimize!(m)

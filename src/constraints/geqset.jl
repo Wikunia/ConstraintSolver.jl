@@ -103,3 +103,16 @@ function still_feasible(
     variables = com.search_space
     return value <= variables[constraint.vidx].max
 end
+
+function is_solved_constraint(
+    constraint::GeqSetConstraint,
+    fct::MOI.VectorOfVariables,
+    set::GeqSetInternal,
+    values::Vector{Int}
+)
+    max_val = values[1]
+    for i in 2:length(values)
+        values[i] > max_val && return false
+    end
+    return true
+end
