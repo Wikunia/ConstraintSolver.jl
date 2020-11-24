@@ -80,6 +80,16 @@ Other options:
 - `:Biggest` same as smallest but splits into biggest value as a single choice and the rest the second choice
 - `:InHalf` takes the mean value to split the problem into two branches of equal size
 
+## `simplify` (`True`)
+
+Defines whether the solver should spend some time and effort to simplify constraints.
+Curently this works for the following:
+- combining `!=` constraints to all different constraints
+- combining `sum(x) == V` overlapping all different constraints to introduce more constraints
+- combining `x .>= y` constraints to a `GeqSet` constraint which helps with bound computation
+
+It can be turned off to not waste time if this isn't applicable or not wanted for whatever reason.
+
 ## `all_solutions` (`false`)
 
 You can set this to `true` to get **all feasible** solutions. This can be used to get all solutions for a sudoku for example but maybe shouldn't be used for an optimization problem. Nevertheless I leave it here so you be able to use it even for optimization problems and get all feasible solutions.

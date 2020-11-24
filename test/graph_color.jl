@@ -1,11 +1,12 @@
 @testset "Graph coloring" begin
 
-    function normal_49_states(; reverse_constraint = false, tests=true, time_limit=Inf)
+    function normal_49_states(; reverse_constraint = false, tests=true, time_limit=Inf, simplify=true)
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "keep_logs" => true,
             "logging" => [],
-            "time_limit" => time_limit
+            "time_limit" => time_limit,
+            "simplify" => simplify
         ))
         num_colors = 20
 
@@ -196,15 +197,15 @@
     end
 
     @testset "49 US states + DC time limit" begin
-        com1, m1 = normal_49_states(; time_limit = 0.001, tests=false)
-        com2, m2 = normal_49_states()
+        com1, m1 = normal_49_states(; time_limit = 0.001, tests=false, simplify=false)
+        com2, m2 = normal_49_states(; simplify=false)
         @test test_string([constraint.indices for constraint in com1.constraints]) == test_string([constraint.indices for constraint in com2.constraints])
         info_1 = com1.info
         info_2 = com2.info
         @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
         @test JuMP.termination_status(m1) == MOI.TIME_LIMIT
         # can take longer as preprocessing takes time
-        @test 0 <= MOI.get(m1, MOI.SolveTime()) < 0.5
+        @test 0 <= MOI.get(m1, MOI.SolveTime()) < 0.1
     end
 
 

@@ -39,7 +39,7 @@ function simplify!(com)
         append!(added_constraint_idxs, simplify_svc_less_than(com))
     end
 
-    if length(added_constraint_idxs) > 0 && !isempty(com.options.logging)
+    if length(added_constraint_idxs) > 0 && :Info in com.options.logging
         println("Added $(length(added_constraint_idxs)) new constraints")
     end
     return added_constraint_idxs

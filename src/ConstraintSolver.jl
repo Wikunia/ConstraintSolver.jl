@@ -695,13 +695,15 @@ function solve!(com::CS.CoM, options::SolverOptions)
 
 
     # check for better constraints
-    added_con_idxs = simplify!(com)
-    if length(added_con_idxs) > 0
-        set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
-        set_impl_functions!(com; constraints=com.constraints[added_con_idxs])
-        !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
-        !update_init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
-        recompute_subscriptions(com)
+    if options.simplify
+        added_con_idxs = simplify!(com)
+        if length(added_con_idxs) > 0
+            set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
+            set_impl_functions!(com; constraints=com.constraints[added_con_idxs])
+            !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
+            !update_init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
+            recompute_subscriptions(com)
+        end
     end
 
     options.no_prune && return :NotSolved

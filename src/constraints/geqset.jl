@@ -40,7 +40,6 @@ function update_init_constraint!(
             push!(constraint.sub_constraint_idxs, other_constraint.idx)
         end
     end
-    println("#sub constraints: ", length(constraint.sub_constraint_idxs))
     return true
 end
 
