@@ -349,8 +349,8 @@ mutable struct BacktrackObj{T<:Real}
     parent_idx::Int
     depth::Int
     status::Symbol
-    variable_idx::Int
-    lb::Int # lb <= var[variable_idx] <= ub
+    vidx::Int
+    lb::Int # lb <= var[vidx] <= ub
     ub::Int
     best_bound::T
     primal_start::Vector{Float64}
@@ -364,7 +364,7 @@ function Base.convert(::Type{B}, obj::BacktrackObj{T2}) where {T1,T2,B<:Backtrac
         obj.parent_idx,
         obj.depth,
         obj.status,
-        obj.variable_idx,
+        obj.vidx,
         obj.lb,
         obj.ub,
         convert(T1, obj.best_bound),
@@ -429,3 +429,4 @@ mutable struct ConstraintSolverModel{T<:Real}
     start_time::Float64
     solve_time::Float64 # seconds spend in solve
 end
+parametric_type(::ConstraintSolverModel{T}) where T = T

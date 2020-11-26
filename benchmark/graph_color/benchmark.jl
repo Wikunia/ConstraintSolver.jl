@@ -185,3 +185,41 @@ function solve_us_graph_coloring(;num_colors=8, equality=false)
         @assert status == MOI.INFEASIBLE
     end
 end
+
+function color_graph(filename, correct_num_colors; time_limit=100, logging=[])
+    m = Model(optimizer_with_attributes(CS.Optimizer, "time_limit"=>time_limit, "logging"=>logging))
+
+    lines = readlines(filename)
+    num_colors = 0
+    x = nothing
+    max_color = nothing
+    degrees = nothing
+    for line in lines
+        parts = split(line, " ")
+        if parts[1] == "p"
+            num_colors = parse(Int, parts[3])
+            @variable(m, 1 <= max_color <= num_colors, Int)
+            @variable(m, 1 <= x[1:num_colors] <= num_colors, Int)
+            degrees = zeros(Int, num_colors)
+        elseif parts[1] == "e"
+            f = parse(Int, parts[2])
+            t = parse(Int, parts[3])
+            @constraint(m, x[f] != x[t])
+            degrees[f] += 1
+            degrees[t] += 1
+        end
+    end
+    max_degree = maximum(degrees)
+
+    @constraint(m, max_color <= max_degree)
+
+    @constraint(m, max_color .>= x)
+    @objective(m, Min, max_color)
+
+    optimize!(m)
+
+    status = JuMP.termination_status(m)
+
+    @assert status == MOI.OPTIMAL
+    @assert JuMP.objective_value(m) ≈ correct_num_colors
+end

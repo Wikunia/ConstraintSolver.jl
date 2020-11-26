@@ -133,8 +133,8 @@ function BacktrackObj(com::CS.CoM)
         0, # parent_idx
         0, # depth
         :Closed, # status
-        0, # variable_idx
-        0, # lb and ub only take effect if variable_idx != 0
+        0, # vidx
+        0, # lb and ub only take effect if vidx != 0
         0, # ub
         com.sense == MOI.MIN_SENSE ? typemax(com.best_bound) : typemin(com.best_bound),
         zeros(length(com.search_space)),
