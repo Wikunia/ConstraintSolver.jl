@@ -159,7 +159,7 @@ function simplify_not_equal_to_cliques(com)
             # deactivate old constraints
             for first_idx in 1:clique_size
                 for second_idx in first_idx+1:clique_size
-                    constraint_idx = get(variables_to_constraint, (first_idx, second_idx), 0)
+                    constraint_idx = get(variables_to_constraint, (clique[first_idx], clique[second_idx]), 0)
                     if constraint_idx != 0
                         com.constraints[constraint_idx].is_deactivated = true
                     end

@@ -764,4 +764,45 @@
         @test com.best_sol == 17
         @test minimum([JuMP.value(var) for var in states]) == 17 == JuMP.value(max_color)
     end
+
+    @testset "small graph coloring correctness test" begin
+        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        m = Model(
+            optimizer_with_attributes(
+                CS.Optimizer,
+                "logging" => [], "lp_optimizer" => cbc_optimizer,
+                "keep_logs" => true,
+            )
+        )
+
+        n = 10
+        @variable(m, 1 <= c[1:n] <= n, Int)
+        @variable(m, 1 <= max_color <= n, Int)
+
+        edge_list = [(1,2), (1,5), (1,7), (1,8),
+                    (2,4), (2,7), (2,8), (2,9),
+                    (3,7), (3,9), (3,10),
+                    (4,9), (4,10),
+                    (5,10),
+                    (6,7), (6,9),
+                    (7,8), (7,10)];
+
+        for edge in edge_list
+            @constraint(m, c[edge[1]] != c[edge[2]])
+        end
+
+        @constraint(m, max_color .>= c)
+        @objective(m, Min, max_color)
+
+        optimize!(m)
+
+        status = JuMP.termination_status(m)
+        objval = JuMP.objective_value(m)
+        @test status == MOI.OPTIMAL
+        @test objval ≈ 4
+        colors = JuMP.value.(c)
+        for edge in edge_list
+            @test !(colors[edge[1]] ≈ colors[edge[2]])
+        end
+    end
 end
