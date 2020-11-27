@@ -518,6 +518,12 @@ function set_pvals!(model::CS.Optimizer)
     end
 end
 
+"""
+    init_constraints!(com::CS.CoM; constraints=com.constraints)
+
+Initializes all `constraints` which implement the `init_constraint!` function.
+Return if feasible after initalization
+"""
 function init_constraints!(com::CS.CoM; constraints=com.constraints)
     feasible = true
     for constraint in constraints
@@ -530,6 +536,12 @@ function init_constraints!(com::CS.CoM; constraints=com.constraints)
     return feasible
 end
 
+"""
+    init_constraints!(com::CS.CoM; constraints=com.constraints)
+
+Initializes all constraints of the model as new `constraints` were added.
+Return if feasible after the update of the initalization
+"""
 function update_init_constraints!(com::CS.CoM; constraints=com.constraints)
     feasible = true
     for constraint in com.constraints
@@ -537,7 +549,6 @@ function update_init_constraints!(com::CS.CoM; constraints=com.constraints)
             feasible = update_init_constraint!(com, constraint, constraint.fct, constraint.set, constraints)
             !feasible && break
         end
-        constraint.is_initialized = true
     end
     return feasible
 end

@@ -45,6 +45,12 @@ function simplify!(com)
     return added_constraint_idxs
 end
 
+"""
+    simplify_svc_less_than(com)
+
+Simplify several a >= X constraints (with the same a) to a GeqSetConstraint.
+TODO: A LeqSetConstraint is missing to do the same for a <= X
+"""
 function simplify_svc_less_than(com)
     added_constraint_idxs = Int[]
     # save all variables, constraints of the form a <= b
@@ -92,6 +98,7 @@ function simplify_svc_less_than(com)
             add_constraint!(com, constraint)
             push!(added_constraint_idxs, length(com.constraints))
 
+            # deactivate the single constraints
             for cidx in rhs_cons[key]
                 com.constraints[cidx].is_deactivated = true
             end

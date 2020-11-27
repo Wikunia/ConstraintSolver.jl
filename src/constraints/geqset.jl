@@ -8,10 +8,11 @@ function init_constraint_struct(::Type{GeqSetInternal}, internals)
 end
 
 """
-    init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal;
+    init_constraint!(com::CS.CoM, constraint::GeqSetConstraint, fct::MOI.VectorOfVariables, set::GeqSetInternal;
                      active = true)
 
-Initialize the AllDifferentConstraint by filling matching_init
+Initialize the GeqSetConstraint by filling `sub_constraint_idxs` with all constraints
+which variables are fully included in this constraint.
 """
 function init_constraint!(
     com::CS.CoM,
@@ -28,6 +29,12 @@ function init_constraint!(
     return true
 end
 
+"""
+    update_init_constraint!(com::CS.CoM, constraint::GeqSetConstraint, fct::MOI.VectorOfVariables,
+        set::GeqSetInternal, constraints::Vector{<:Constraint})
+
+Updates the `sub_constraint_idxs` when new constraints were added.
+"""
 function update_init_constraint!(
     com::CS.CoM,
     constraint::GeqSetConstraint,
@@ -43,12 +50,26 @@ function update_init_constraint!(
     return true
 end
 
+"""
+    prune_constraint!(
+        com::CS.CoM,
+        constraint::GeqSetConstraint,
+        fct::MOI.VectorOfVariables,
+        set::GeqSetInternal;
+        logs = true
+    )
+
+Prune the constraint with:
+- Finding the maximum of the minima as a lower bound for the `a` in `a >= X`
+- Remove values bigger than the allowed maximum from `X`
+- Set the lower bound of `a` even higher if there fully included `AllDifferentConstraints` allow it
+"""
 function prune_constraint!(
     com::CS.CoM,
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,
     set::GeqSetInternal;
-    logs = true,
+    logs = true
 )
     # find the maximum of the minima
     max_val = -typemax(Int)
@@ -88,6 +109,18 @@ function prune_constraint!(
     return feasible
 end
 
+"""
+    still_feasible(
+        com::CoM,
+        constraint::GeqSetConstraint,
+        fct::MOI.VectorOfVariables,
+        set::GeqSetInternal,
+        vidx::Int,
+        value::Int,
+    )
+
+Check if the constraint is still feasible when setting vidx to value
+"""
 function still_feasible(
     com::CoM,
     constraint::GeqSetConstraint,
@@ -103,6 +136,16 @@ function still_feasible(
     return value <= variables[constraint.vidx].max
 end
 
+"""
+    is_solved_constraint(
+        constraint::GeqSetConstraint,
+        fct::MOI.VectorOfVariables,
+        set::GeqSetInternal,
+        values::Vector{Int}
+    )
+
+Return true if `values` fulfills the constraint
+"""
 function is_solved_constraint(
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,

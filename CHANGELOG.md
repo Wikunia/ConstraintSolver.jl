@@ -3,6 +3,8 @@
 ## Unreleased
 - Use LP solver also for single variable objectives
 - Combine several `x != y` constraints into all different constraints
+- Combine several `a >= x` constraints with the same `a` into a vector constraints
+  - used for better bounds using all different constraints
 
 ## v0.3.1 (16th of November 2020)
 - Added `copy` function for constraint structs for latest JuMP/MOI versions
