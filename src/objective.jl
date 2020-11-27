@@ -65,7 +65,7 @@ end
 """
     get_best_bound(com::CS.CoM, backtrack_obj::CS.BacktrackObj, obj_fct::SingleVariableObjective, vidx::Int, lb::Int, ub::Int)
 
-Compute the best bound if we have a `SingleVariableObjective` and limit `vidx` using 
+Compute the best bound if we have a `SingleVariableObjective` and limit `vidx` using
     `lb <= var[vidx] <= ub` if `vidx != 0`.
 Return a best bound given the constraints on `vidx`
 """
@@ -95,7 +95,7 @@ end
 """
     get_best_bound(com::CS.CoM, backtrack_obj::CS.BacktrackObj, obj_fct::LinearCombinationObjective, vidx::Int, lb::Int, ub::Int)
 
-Compute the best bound if we have a `LinearCombinationObjective` and limit `vidx` using 
+Compute the best bound if we have a `LinearCombinationObjective` and limit `vidx` using
     `lb <= var[vidx] <= ub` if `vidx != 0`.
 Return a best bound given the constraints on `vidx`
 """
@@ -128,13 +128,10 @@ function get_best_bound(
         end
     end
 
-    # if all variables are fixed we don't have to compute several bounds
-    if all(v -> isfixed(v), com.search_space)
-        return objval
-    end
-    
-    com.options.lp_optimizer === nothing && return objval
-    
+    return objval
+end
+
+function get_best_bound_lp(com, backtrack_obj, vidx, lb, ub)
     # check if last best_bound is affected
     # check that we have a parent node to maybe use the bound of the parent
     if backtrack_obj.parent_idx != 0 && vidx == 0
@@ -143,12 +140,12 @@ function get_best_bound(
             lb = com.search_space[variable.idx].min
             ub = com.search_space[variable.idx].max
             if lb > backtrack_obj.primal_start[variable.idx] || ub < backtrack_obj.primal_start[variable.idx]
-                use_last = false                
+                use_last = false
             end
         end
         # best_bound is the best_bound from parent
-        if use_last 
-            backtrack_obj.solution = backtrack_obj.primal_start 
+        if use_last
+            backtrack_obj.solution = backtrack_obj.primal_start
             return backtrack_obj.best_bound
         end
     end
@@ -156,7 +153,7 @@ function get_best_bound(
     # compute bound using the lp optimizer
     # setting all bounds
     for variable in com.search_space
-        if variable.idx == vidx 
+        if variable.idx == vidx
             set_lower_bound(com.lp_x[vidx], lb)
             set_upper_bound(com.lp_x[vidx], ub)
         else
@@ -165,7 +162,7 @@ function get_best_bound(
         end
     end
     lp_backend = backend(com.lp_model)
-    if MOI.supports(lp_backend, MOI.VariablePrimalStart(), MOI.VariableIndex) 
+    if MOI.supports(lp_backend, MOI.VariablePrimalStart(), MOI.VariableIndex)
         for variable in com.search_space
             v_idx = variable.idx
             MOI.set(lp_backend, MOI.VariablePrimalStart(), MOI.VariableIndex(v_idx), backtrack_obj.primal_start[v_idx])

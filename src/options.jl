@@ -55,6 +55,7 @@ function SolverOptions()
     time_limit = Inf
     no_prune = false
     activity_decay = 0.999
+    simplify = true
 
     return SolverOptions(
         logging,
@@ -75,7 +76,8 @@ function SolverOptions()
         all_optimal_solutions,
         lp_optimizer,
         no_prune,
-        activity_decay
+        activity_decay,
+        simplify
     )
 end
 

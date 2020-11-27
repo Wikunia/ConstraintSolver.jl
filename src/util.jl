@@ -85,7 +85,7 @@ function update_table_log(com::CS.CoM, backtrack_vec; force = false)
     # -1 for dummy node
     closed_nodes = length(backtrack_vec) - open_nodes - 1
     best_bound = com.best_bound
-    incumbent = length(com.bt_solution_ids) == 0 ? "-" : com.best_sol
+    incumbent = length(com.solutions) == 0 ? "-" : com.best_sol
     duration = time() - com.start_time
     push_to_table!(
         table;
@@ -122,7 +122,7 @@ end
     Access standard ConstraintInternals without using .std syntax
 =#
 @inline function Base.getproperty(c::Constraint, s::Symbol)
-    if s in (:idx, :indices, :fct, :set, :pvals, :impl, :is_initialized, :bound_rhs)
+    if s in (:idx, :indices, :fct, :set, :pvals, :impl, :is_initialized, :is_deactivated, :bound_rhs)
         Core.getproperty(Core.getproperty(c, :std), s)
     else
         getfield(c, s)
@@ -130,7 +130,7 @@ end
 end
 
 @inline function Base.setproperty!(c::Constraint, s::Symbol, v)
-    if s in (:idx, :indices, :fct, :set, :pvals, :impl, :is_initialized, :bound_rhs)
+    if s in (:idx, :indices, :fct, :set, :pvals, :impl, :is_initialized, :is_deactivated, :bound_rhs)
         Core.setproperty!(c.std, s, v)
     else
         Core.setproperty!(c, s, v)

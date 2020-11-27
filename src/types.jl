@@ -123,6 +123,14 @@ struct TableSet <: JuMP.AbstractVectorSet
 end
 JuMP.moi_set(ts::TableSet, dim) = TableSetInternal(dim, ts.table)
 
+struct GeqSetInternal <: MOI.AbstractVectorSet
+    dimension :: Int
+end
+Base.copy(G::GeqSetInternal) = GeqSetInternal(G.dimension)
+
+struct GeqSet <: JuMP.AbstractVectorSet end
+JuMP.moi_set(::GeqSet, dim) = GeqSetInternal(dim)
+
 struct EqualSetInternal <: MOI.AbstractVectorSet
     dimension::Int
 end
@@ -224,6 +232,7 @@ Base.copy(R::ReifiedSet{A}) where A = ReifiedSet{A}(R.func, R.set, R.dimension)
 
 mutable struct ImplementedConstraintFunctions
     init :: Bool
+    update_init :: Bool
     finished_pruning :: Bool
     restore_pruning :: Bool
     single_reverse_pruning :: Bool
@@ -242,6 +251,7 @@ mutable struct ConstraintInternals{
     pvals::Vector{Int}
     impl :: ImplementedConstraintFunctions
     is_initialized :: Bool
+    is_deactivated :: Bool # can be deactivated if it's absorbed by other constraints
     bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `update_best_bound` is true
 end
 
@@ -302,6 +312,14 @@ mutable struct TableConstraint <: Constraint
     sum_max::Vector{Int}
 end
 
+mutable struct GeqSetConstraint <: Constraint
+    std::ConstraintInternals
+    vidx::Int
+    greater_than::Vector{Int}
+    # saves all constraints where all indices are part of the greater_than
+    sub_constraint_idxs::Vector{Int}
+end
+
 mutable struct IndicatorConstraint{C<:Constraint} <: Constraint
     std::ConstraintInternals
     activate_on::MOI.ActivationCondition
@@ -354,7 +372,7 @@ mutable struct BacktrackObj{T<:Real}
     ub::Int
     best_bound::T
     primal_start::Vector{Float64}
-    solution::Vector{Float64} # holds the solution values
+    solution::Vector{Float64} # holds the solution values of the bound computation
 end
 
 
@@ -391,6 +409,7 @@ end
 mutable struct Solution{T<:Real}
     incumbent::T
     values::Vector{Int}
+    backtrack_id::Int # save where the solution was found
 end
 
 mutable struct ActivityObj
@@ -421,7 +440,6 @@ mutable struct ConstraintSolverModel{T<:Real}
     best_sol::T # Objective of the best solution
     best_bound::T # Overall best bound
     solutions::Vector{Solution}
-    bt_solution_ids::Vector{Int} # saves only the id to the BacktrackObj
     info::CSInfo
     input::Dict{Symbol,Any}
     logs::Vector{TreeLogNode{T}}

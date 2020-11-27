@@ -71,7 +71,7 @@ function get_next_node(
     backtrack_vec::Vector{BacktrackObj{T}},
     sorting
 ) where {T<:Real}
-    found_sol = length(com.bt_solution_ids) > 0
+    found_sol = length(com.solutions) > 0
     strategy = found_sol ? Val(:BFS) : Val(:DFS)
     return get_next_node(com, strategy, backtrack_vec, sorting)
 end

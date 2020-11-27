@@ -1,11 +1,12 @@
 @testset "Graph coloring" begin
 
-    function normal_49_states(; reverse_constraint = false, tests=true, time_limit=Inf)
+    function normal_49_states(; reverse_constraint = false, tests=true, time_limit=Inf, simplify=true)
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "keep_logs" => true,
             "logging" => [],
-            "time_limit" => time_limit
+            "time_limit" => time_limit,
+            "simplify" => simplify
         ))
         num_colors = 20
 
@@ -196,14 +197,15 @@
     end
 
     @testset "49 US states + DC time limit" begin
-        com1, m1 = normal_49_states(; time_limit = 0.001, tests=false)
-        com2, m2 = normal_49_states()
-        @test_reference "refs/graph_color_49_states" test_string([constraint.indices for constraint in com2.constraints])
+        com1, m1 = normal_49_states(; time_limit = 0.001, tests=false, simplify=false)
+        com2, m2 = normal_49_states(; simplify=false)
+        @test test_string([constraint.indices for constraint in com1.constraints]) == test_string([constraint.indices for constraint in com2.constraints])
         info_1 = com1.info
         info_2 = com2.info
         @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
         @test JuMP.termination_status(m1) == MOI.TIME_LIMIT
-        @test 0 <= MOI.get(m1, MOI.SolveTime()) < 0.05
+        # can take longer as preprocessing takes time
+        @test 0 <= MOI.get(m1, MOI.SolveTime()) < 0.1
     end
 
 
@@ -403,18 +405,14 @@
         status = JuMP.termination_status(m)
 
         com = JuMP.backend(m).optimizer.model.inner
-        # -1 for equal Set - length(states) for max_color
-        not_equal_constraints = length(com.constraints) - 1 - length(states)
-        @test com.info.n_constraint_types.notequal == not_equal_constraints
         @test com.info.n_constraint_types.equality == 1
         @test com.info.n_constraint_types.inequality == length(states)
-        @test com.info.n_constraint_types.alldifferent == 0
 
         CS.save_logs(com, "graph_color_optimize.json")
         rm("graph_color_optimize.json")
 
         @test status == MOI.OPTIMAL
-     
+
         # all values fixed
         @test com.best_sol ≈ 5.1
         @test maximum([JuMP.value(var) for var in states]) == JuMP.value(max_color) == 4
@@ -765,5 +763,46 @@
         @test status == MOI.OPTIMAL
         @test com.best_sol == 17
         @test minimum([JuMP.value(var) for var in states]) == 17 == JuMP.value(max_color)
+    end
+
+    @testset "small graph coloring correctness test" begin
+        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        m = Model(
+            optimizer_with_attributes(
+                CS.Optimizer,
+                "logging" => [], "lp_optimizer" => cbc_optimizer,
+                "keep_logs" => true,
+            )
+        )
+
+        n = 10
+        @variable(m, 1 <= c[1:n] <= n, Int)
+        @variable(m, 1 <= max_color <= n, Int)
+
+        edge_list = [(1,2), (1,5), (1,7), (1,8),
+                    (2,4), (2,7), (2,8), (2,9),
+                    (3,7), (3,9), (3,10),
+                    (4,9), (4,10),
+                    (5,10),
+                    (6,7), (6,9),
+                    (7,8), (7,10)];
+
+        for edge in edge_list
+            @constraint(m, c[edge[1]] != c[edge[2]])
+        end
+
+        @constraint(m, max_color .>= c)
+        @objective(m, Min, max_color)
+
+        optimize!(m)
+
+        status = JuMP.termination_status(m)
+        objval = JuMP.objective_value(m)
+        @test status == MOI.OPTIMAL
+        @test objval ≈ 4
+        colors = JuMP.value.(c)
+        for edge in edge_list
+            @test !(colors[edge[1]] ≈ colors[edge[2]])
+        end
     end
 end
