@@ -12,6 +12,9 @@ function simplify!(com)
     # (all different where every value is used)
     b_all_different_sum = false
     b_equal_to = false
+    # != constraint
+    b_not_equal_to = false
+    b_svc_less_than = false
     for constraint in com.constraints
         if isa(constraint.set, AllDifferentSetInternal)
             b_all_different = true
@@ -20,14 +23,167 @@ function simplify!(com)
             end
         elseif isa(constraint.fct, SAF) && isa(constraint.set, MOI.EqualTo)
             b_equal_to = true
+        elseif isa(constraint.fct, SAF) && isa(constraint.set, CS.NotEqualTo)
+            b_not_equal_to = true
+        elseif isa(constraint, SingleVariableConstraint) && isa(constraint.set, MOI.LessThan)
+            b_svc_less_than = true
         end
     end
     if b_all_different_sum && b_equal_to
         append!(added_constraint_idxs, simplify_all_different_and_equal_to(com))
     end
+    if b_not_equal_to
+        append!(added_constraint_idxs, simplify_not_equal_to_cliques(com))
+    end
+    if b_svc_less_than
+        append!(added_constraint_idxs, simplify_svc_less_than(com))
+    end
+
+    if length(added_constraint_idxs) > 0 && :Info in com.options.logging
+        println("Added $(length(added_constraint_idxs)) new constraints")
+    end
     return added_constraint_idxs
 end
 
+"""
+    simplify_svc_less_than(com)
+
+Simplify several a >= X constraints (with the same a) to a GeqSetConstraint.
+TODO: A LeqSetConstraint is missing to do the same for a <= X
+"""
+function simplify_svc_less_than(com)
+    added_constraint_idxs = Int[]
+    # save all variables, constraints of the form a <= b
+    lhs_vars = Dict{Int, Vector{Int}}()
+    lhs_cons = Dict{Int, Vector{Int}}()
+    # save all variables, constraints of the form a >= b
+    rhs_vars = Dict{Int, Vector{Int}}()
+    rhs_cons = Dict{Int, Vector{Int}}()
+    for constraint_idx = 1:length(com.constraints)
+        constraint = com.constraints[constraint_idx]
+        if isa(constraint, SingleVariableConstraint) && isa(constraint.set, MOI.LessThan)
+            if haskey(lhs_vars, constraint.lhs)
+                push!(lhs_vars[constraint.lhs], constraint.rhs)
+                push!(lhs_cons[constraint.lhs], constraint.idx)
+            else
+                lhs_vars[constraint.lhs] = [constraint.rhs]
+                lhs_cons[constraint.lhs] = [constraint.idx]
+            end
+
+            if haskey(rhs_vars, constraint.rhs)
+                push!(rhs_vars[constraint.rhs], constraint.lhs)
+                push!(rhs_cons[constraint.rhs], constraint.idx)
+            else
+                rhs_vars[constraint.rhs] = [constraint.lhs]
+                rhs_cons[constraint.rhs] = [constraint.idx]
+            end
+        end
+    end
+
+    # check for >= which constraint appears >= 5 times on the left side
+    # Todo: Do the same for lhs_vars with LeqSet
+    for (key, value) in rhs_vars
+        if length(value) >= 5
+            # add new all different constraint
+            set = GeqSetInternal(1+length(value))
+            vars = MOI.VectorOfVariables([MOI.VariableIndex(key), [MOI.VariableIndex(vidx) for vidx in value]...])
+            internals = ConstraintInternals(
+                length(com.constraints) + 1,
+                vars,
+                set,
+                Int[v.value for v in vars.variables]
+            )
+
+            constraint = init_constraint_struct(GeqSetInternal, internals)
+            add_constraint!(com, constraint)
+            push!(added_constraint_idxs, length(com.constraints))
+
+            # deactivate the single constraints
+            for cidx in rhs_cons[key]
+                com.constraints[cidx].is_deactivated = true
+            end
+        end
+    end
+
+    return added_constraint_idxs
+end
+
+"""
+    simplify_not_equal_to_cliques(com)
+
+Combine simple `a != b` constraints to `alldifferent` constraints using maximal cliques
+"""
+function simplify_not_equal_to_cliques(com)
+    added_constraint_idxs = Int[]
+    simple_not_equal_constraints = Int[]
+    # one node per variable which is part of != constraint
+    nodes = Set()
+    # check for simple != constraints like `a != b`
+    for constraint_idx = 1:length(com.constraints)
+        constraint = com.constraints[constraint_idx]
+
+        if isa(constraint.set, CS.NotEqualTo) && length(constraint.indices) == 2
+            if constraint.fct.terms[1].coefficient == -constraint.fct.terms[2].coefficient &&
+                abs(constraint.fct.terms[1].coefficient) == 1
+
+                if constraint.fct.constant == 0 && constraint.set.value == 0
+                    push!(simple_not_equal_constraints, constraint_idx)
+                    for vidx in constraint.indices
+                        push!(nodes, vidx)
+                    end
+                end
+            end
+        end
+    end
+
+
+    g = SimpleGraph(length(nodes))
+    variables_to_constraint = Dict{Tuple{Int, Int}, Int}()
+    for constraint_idx in simple_not_equal_constraints
+        constraint = com.constraints[constraint_idx]
+        add_edge!(g, constraint.indices[1], constraint.indices[2])
+        variables_to_constraint[(constraint.indices[1], constraint.indices[2])] = constraint_idx
+    end
+    cliques = maximal_cliques(g)
+    for clique in cliques
+        clique_size = length(clique)
+        # use cliques if they contain at least 4 nodes
+        if clique_size >= 4
+            # add new all different constraint
+            set = AllDifferentSetInternal(clique_size)
+            vars = MOI.VectorOfVariables([MOI.VariableIndex(vidx) for vidx in clique])
+            internals = ConstraintInternals(
+                length(com.constraints) + 1,
+                vars,
+                set,
+                Int[v.value for v in vars.variables]
+            )
+
+            constraint = init_constraint_struct(AllDifferentSetInternal, internals)
+            add_constraint!(com, constraint)
+            push!(added_constraint_idxs, length(com.constraints))
+
+            # deactivate old constraints
+            for first_idx in 1:clique_size
+                for second_idx in first_idx+1:clique_size
+                    constraint_idx = get(variables_to_constraint, (clique[first_idx], clique[second_idx]), 0)
+                    if constraint_idx != 0
+                        com.constraints[constraint_idx].is_deactivated = true
+                    end
+                end
+            end
+        end
+    end
+
+    return added_constraint_idxs
+end
+
+"""
+    simplify_all_different_and_equal_to(com)
+
+Several functions to combine all_different constraints and equal to constraints
+to add new equal to constraints
+"""
 function simplify_all_different_and_equal_to(com)
     added_constraint_idxs = Int[]
     # for each all_different constraint
@@ -173,4 +329,21 @@ function simplify_all_different_outer_equal_to(com, constraint::AllDifferentCons
         push!(added_constraint_idxs, constraint_idx)
     end
     return added_constraint_idxs
+end
+
+"""
+    recompute_subscriptions(com)
+
+Reset all subscriptions and recomputes them to only point to constraints that aren't deactivated
+"""
+function recompute_subscriptions(com)
+    for variable in com.search_space
+        empty!(com.subscription[variable.idx])
+    end
+    for constraint in com.constraints
+        constraint.is_deactivated && continue
+        for vidx in constraint.indices
+            push!(com.subscription[vidx], constraint.idx)
+        end
+    end
 end

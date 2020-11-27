@@ -1,9 +1,7 @@
 module ConstraintSolver
 
-using MatrixNetworks
+using Formatting
 using JSON
-using MathOptInterface
-using Statistics
 using JuMP:
     @variable,
     @constraint,
@@ -21,7 +19,10 @@ using JuMP:
     termination_status
 import JuMP.sense_to_set
 import JuMP
-using Formatting
+using LightGraphs
+using MathOptInterface
+using MatrixNetworks
+using Statistics
 
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
@@ -54,6 +55,7 @@ include("constraints/not_equal.jl")
 include("constraints/table.jl")
 include("constraints/indicator.jl")
 include("constraints/reified.jl")
+include("constraints/geqset.jl")
 
 include("pruning.jl")
 include("simplify.jl")
@@ -144,6 +146,9 @@ Without an objective function return 0.
 function get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; vidx = 0, lb = 0, ub = 0)
     if com.sense == MOI.FEASIBILITY_SENSE
         return zero(com.best_bound)
+    end
+    if com.options.lp_optimizer !== nothing
+        return get_best_bound_lp(com, backtrack_obj, vidx, lb, ub)
     end
     return get_best_bound(com, backtrack_obj, com.objective, vidx, lb, ub)
 end
@@ -644,11 +649,15 @@ function solve!(com::CS.CoM, options::SolverOptions)
 
 
     # check for better constraints
-    added_con_idxs = simplify!(com)
-    if length(added_con_idxs) > 0
-        set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
-        set_impl_functions!(com; constraints=com.constraints[added_con_idxs])
-        !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
+    if options.simplify
+        added_con_idxs = simplify!(com)
+        if length(added_con_idxs) > 0
+            set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
+            set_impl_functions!(com; constraints=com.constraints[added_con_idxs])
+            !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
+            !update_init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
+            recompute_subscriptions(com)
+        end
     end
 
     options.no_prune && return :NotSolved

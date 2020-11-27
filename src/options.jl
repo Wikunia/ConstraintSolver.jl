@@ -15,6 +15,7 @@ mutable struct SolverOptions
     all_optimal_solutions::Bool
     lp_optimizer::Any
     no_prune::Bool
+    simplify::Bool
 end
 
 function get_traverse_strategy(;options=SolverOptions())
@@ -57,6 +58,7 @@ function SolverOptions()
     lp_optimizer = nothing
     time_limit = Inf
     no_prune = false
+    simplify = true
 
     return SolverOptions(
         logging,
@@ -74,7 +76,8 @@ function SolverOptions()
         all_solutions,
         all_optimal_solutions,
         lp_optimizer,
-        no_prune
+        no_prune,
+        simplify
     )
 end
 

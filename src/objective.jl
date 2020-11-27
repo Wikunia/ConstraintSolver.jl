@@ -128,13 +128,10 @@ function get_best_bound(
         end
     end
 
-    # if all variables are fixed we don't have to compute several bounds
-    if all(v -> isfixed(v), com.search_space)
-        return objval
-    end
+    return objval
+end
 
-    com.options.lp_optimizer === nothing && return objval
-
+function get_best_bound_lp(com, backtrack_obj, vidx, lb, ub)
     # check if last best_bound is affected
     # check that we have a parent node to maybe use the bound of the parent
     if backtrack_obj.parent_idx != 0 && vidx == 0
