@@ -1,5 +1,5 @@
 function solve_lp()
-    glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.OFF)
+    glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)
     model = Model(optimizer_with_attributes(
         CS.Optimizer,
         "lp_optimizer" => glpk_optimizer,
