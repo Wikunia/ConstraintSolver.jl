@@ -284,8 +284,10 @@ function still_feasible(
     not_fixed_i = 0
     max_extra = 0
     min_extra = 0
+    was_inside = false
     for (i, cvidx) in enumerate(constraint.indices)
         if cvidx == vidx
+            was_inside = true
             csum += val * fct.terms[i].coefficient
             continue
         end
@@ -308,7 +310,7 @@ function still_feasible(
        !isapprox(csum, rhs; atol = com.options.atol, rtol = com.options.rtol)
         return false
     end
-    if num_not_fixed == 1 
+    if num_not_fixed == 1
         if isapprox_divisible(com, rhs-csum, fct.terms[not_fixed_i].coefficient)
             return has(search_space[not_fixed_idx], get_approx_discrete((rhs-csum)/fct.terms[not_fixed_i].coefficient))
         else
@@ -324,10 +326,13 @@ function still_feasible(
         return false
     end
 
-    return true
+    was_inside && return true
+    # check if all are fixed that it's actually solved
+    # can happen inside a previously deactived constraint
+    return is_constraint_feasible(com, constraint, fct, set)
 end
 
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::MOI.EqualTo{T},

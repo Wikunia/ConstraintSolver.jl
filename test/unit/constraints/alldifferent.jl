@@ -4,12 +4,12 @@
     @constraint(m, x in CS.AllDifferentSet())
     optimize!(m)
     com = JuMP.backend(m).optimizer.model.inner
-    
+
     constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
 
     # doesn't check the length
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1,2,3])
-    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [2,2,3])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1,2,3])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [2,2,3])
 
     sorted_min = [1,1,2,2,3]
     sorted_max = [5,5,4,4,2]
@@ -68,7 +68,7 @@
         @test CS.remove_below!(com, com.search_space[constr_indices[ind]], -4)
     end
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
-    
+
     # but we need -4 to have enough values available
     @test CS.remove_below!(com, com.search_space[constr_indices[1]], -3)
     for ind in constr_indices[5:end]

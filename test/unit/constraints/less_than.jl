@@ -8,8 +8,8 @@
     com = JuMP.backend(m).optimizer.model.inner
 
     constraint = com.constraints[1]
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1,2,3])
-    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [3,2,1])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1,2,3])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [3,2,1])
 
     constr_indices = constraint.indices
     @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], -5)
@@ -24,7 +24,7 @@
     # reverse previous fix
     CS.reverse_pruning!(com, 1)
     com.c_backtrack_idx = 1
- 
+
     # now setting it to -4 should be feasible
     @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], -4)
 

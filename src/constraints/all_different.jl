@@ -441,18 +441,25 @@ function still_feasible(
     value::Int,
 )
     indices = constraint.indices
+    was_inside = false
     for i = 1:length(indices)
         if indices[i] == vidx
+            was_inside = true
             continue
         end
         if issetto(com.search_space[indices[i]], value)
             return false
         end
     end
-    return true
+    if was_inside
+        return true
+    end
+    # check if all are fixed that it's actually solved
+    # can happen inside a previously deactived constraint
+    return is_constraint_feasible(com, constraint, fct, set)
 end
 
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal,

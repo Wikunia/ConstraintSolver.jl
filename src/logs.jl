@@ -16,6 +16,7 @@ function log_one_node(com, nvars, back_idx, step_nr)
         best_bound = com.best_bound
     end
 
+    println("step_nr: $step_nr")
     tree_log_node = TreeLogNode(
         back_idx,
         status,
@@ -37,13 +38,14 @@ function log_one_node(com, nvars, back_idx, step_nr)
         changed = false
         for (i, child) in enumerate(com.logs[parent_idx].children)
             if child.id == back_idx
-                com.logs[parent_idx].children[i] = tree_log_node
+                com.logs[parent_idx].children[i] = deepcopy(tree_log_node)
                 changed = true
                 break
             end
         end
         if !changed
-            push!(com.logs[parent_idx].children, tree_log_node)
+            println("New not changed")
+            push!(com.logs[parent_idx].children, deepcopy(tree_log_node))
         end
     end
     return tree_log_node
@@ -116,6 +118,9 @@ function sanity_check_log(log)
             push!(step_nrs, node.step_nr)
         end
     end
+    @show length(step_nrs)
+    @show allunique(step_nrs)
+    @show sort!(step_nrs)
     passed = nclosed >= 2 && allunique(step_nrs)
     !passed && write("FAILED.json", JSON.json(log))
     return passed

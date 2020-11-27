@@ -27,18 +27,22 @@ function prune_constraint!(
     logs = true
 ) where {A, T<:Real, RS<:ReifiedSet{A}}
     # 1. if the inner constraint is solved then the reified variable can be set to activate_on
-    # 2. if the reified constraint is active then prune can be called for the inner constraint
-    # 3. if the reified constraint is fixed to inactive one would need to "anti" prune which is currently not possible
-    
+    # 2. if the inner constraint is ant-solved (all fixed but don't fulfill) the reified variable can be set to !activate_on
+    # 3. if the reified constraint is active then prune can be called for the inner constraint
+    # 4. if the reified constraint is fixed to inactive one would need to "anti" prune which is currently not possible
+
     variables = com.search_space
     rei_vidx = constraint.indices[1]
     inner_constraint = constraint.inner_constraint
     activate_on = Int(constraint.activate_on)
 
     # 1
-    if is_solved_constraint(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
+    if is_constraint_solved(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
         !fix!(com, variables[rei_vidx], activate_on) && return false
     #2
+    elseif all(isfixed(variables[vidx]) for vidx in inner_constraint.indices)
+        !fix!(com, variables[rei_vidx], activate_on == 1 ? 0 : 1) && return false
+    # 3
     elseif issetto(variables[rei_vidx], activate_on)
         return prune_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
     end
@@ -60,10 +64,15 @@ function still_feasible(
     if (vidx == rei_vidx && val == activate_on) || issetto(variables[rei_vidx], activate_on)
         return still_feasible(com, inner_constraint, inner_constraint.fct, inner_constraint.set, vidx, val)
     end
+    # if inner constraint is not activated it shouldn't be solved
+    if all(i == vidx || isfixed(com.search_space[i]) for i in inner_constraint.indices)
+        values = [i == vidx ? val : value(com.search_space[i]) for i in inner_constraint.indices]
+        return !is_constraint_solved(inner_constraint, inner_constraint.fct, inner_constraint.set, values)
+    end
     return true
 end
 
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::ReifiedConstraint,
     fct::Union{MOI.VectorOfVariables, VAF{T}},
     set::RS,
@@ -71,7 +80,7 @@ function is_solved_constraint(
 ) where {A, T<:Real, RS<:ReifiedSet{A}}
     activate_on = Int(constraint.activate_on)
     inner_constraint = constraint.inner_constraint
-    return is_solved_constraint(inner_constraint, inner_constraint.fct, inner_constraint.set, values[2:end]) == (values[1] == activate_on)
+    return is_constraint_solved(inner_constraint, inner_constraint.fct, inner_constraint.set, values[2:end]) == (values[1] == activate_on)
 end
 
 function update_best_bound_constraint!(com::CS.CoM,
@@ -87,7 +96,7 @@ function update_best_bound_constraint!(com::CS.CoM,
     search_space = com.search_space
     reified_var = search_space[reified_vidx]
     if inner_constraint.impl.update_best_bound
-        if CS.issetto(reified_var, Int(constraint.activate_on)) 
+        if CS.issetto(reified_var, Int(constraint.activate_on))
             return update_best_bound_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set, vidx, lb, ub)
         else
             # if not activated (for example in a different subtree) we reset the bounds

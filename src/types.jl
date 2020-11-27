@@ -44,6 +44,7 @@ mutable struct SolverOptions
     lp_optimizer::Any
     no_prune::Bool
     activity_decay::Float64
+    simplify::Bool
 end
 
 # General
@@ -410,12 +411,25 @@ mutable struct Solution{T<:Real}
     incumbent::T
     values::Vector{Int}
     backtrack_id::Int # save where the solution was found
+    hash::UInt64
 end
+Solution(incumbent, values, backtrack_id) = Solution(incumbent, values, backtrack_id, hash(values))
 
 mutable struct ActivityObj
     nprobes :: Int
     is_free :: Vector{Bool}
     ActivityObj() = new(0, [false]) # will be overwritten later
+end
+
+"""
+    BranchVarObj
+
+Determines the next branch variable and stores if still feasible and if solution was found
+"""
+mutable struct BranchVarObj
+    is_feasible :: Bool
+    is_solution :: Bool
+    vidx :: Int # only relevant if is_feasible && !is_solution
 end
 
 mutable struct ConstraintSolverModel{T<:Real}
@@ -428,6 +442,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     constraints::Vector{Constraint}
     bt_infeasible::Vector{Int}
     c_backtrack_idx::Int
+    c_step_nr::Int
     backtrack_vec::Vector{BacktrackObj{T}}
     sense::MOI.OptimizationSense
     objective::ObjectiveFunction

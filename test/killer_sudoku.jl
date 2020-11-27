@@ -100,6 +100,7 @@ end
             CS.Optimizer,
             "keep_logs" => true,
             "logging" => [],
+            "seed" => 1
         ))
 
         @variable(m, -9 <= com_grid[1:9, 1:9] <= -1, Int)

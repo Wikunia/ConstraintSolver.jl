@@ -99,6 +99,7 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         Vector{Constraint}(), # constraints
         Vector{Int}(), # bt_infeasible
         1, # c_backtrack_idx
+        1, # c_step_nr
         Vector{BacktrackObj{T}}(), # backtrack_vec
         MOI.FEASIBILITY_SENSE, #
         NoObjective(), #

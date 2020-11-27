@@ -46,7 +46,7 @@
   - Call `call_finished_pruning!(com)` after second `prune!` before backtracking
 
 ## v0.1.4 (6th of May 2020)
-- Added `is_solved_constraint` functions to check whether problem gets actually solved
+- Added `is_constraint_solved` functions to check whether problem gets actually solved
 - **Bugfixes:**
   - Correct incremental update in table constraint
   - Fixed `restore_pruning_constraint!` in table

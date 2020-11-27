@@ -21,7 +21,7 @@ function general_tree_test(com::CS.CoM)
     path_type = Symbol[]
     all_correct = true
     n_children_tests = 0
-    
+
     for t = 1:100
         status = :Open
         next_idx = 0
@@ -30,7 +30,7 @@ function general_tree_test(com::CS.CoM)
             next_idx = rand(2:n_backtracks)
             status = com.logs[next_idx].status
         end
-        
+
         CS.checkout_from_to!(com, c_backtrack_idx, next_idx)
 
         if com.backtrack_vec[next_idx].parent_idx != 0
@@ -55,14 +55,14 @@ function general_tree_test(com::CS.CoM)
         end
 
         c_backtrack_idx = next_idx
-    
+
         # if it has children
         if length(com.logs[c_backtrack_idx].children) > 0 && n_children_tests < 5
             com.c_backtrack_idx = c_backtrack_idx
             var_idx = com.logs[c_backtrack_idx].var_idx
             n_children_tests += 1
             # test that pruning produces the same output as before
-            
+
             for var in com.search_space
                 var.changes[c_backtrack_idx] = Vector{Tuple{Symbol,Int,Int,Int}}()
             end
@@ -75,7 +75,7 @@ function general_tree_test(com::CS.CoM)
                 @assert feasible
                 @assert further_pruning
             end
-            
+
             @assert CS.prune!(com)
             CS.call_finished_pruning!(com)
             push!(path_type, :prune)
@@ -84,7 +84,7 @@ function general_tree_test(com::CS.CoM)
             CS.restore_prune!(com, c_backtrack_idx)
             push!(path_type, :restore_prune)
         end
-                
+
         push!(path, c_backtrack_idx)
         c_search_space = com.search_space
         # this is a dict =>
@@ -110,7 +110,7 @@ function general_tree_test(com::CS.CoM)
     end
     @assert n_children_tests == 5
 
-    # back to solved state 
+    # back to solved state
     CS.checkout_from_to!(com, c_backtrack_idx, path[1])
     # prune the last step
     CS.restore_prune!(com, path[1])
@@ -121,13 +121,13 @@ end
 function is_solved(com::CS.CoM)
     variables = com.search_space
     all_fixed = all(v->CS.isfixed(v), variables)
-    if !all_fixed 
+    if !all_fixed
         @error "Not all variables are fixed"
         return false
     end
     for constraint in com.constraints
         values = CS.value.(com.search_space[constraint.indices])
-        c_solved = CS.is_solved_constraint(constraint, constraint.fct, constraint.set, values)
+        c_solved = CS.is_constraint_solved(constraint, constraint.fct, constraint.set, values)
         if !c_solved
             @error "Constraint $(constraint.idx) is not solved"
             @error "Info about constraint: $(typeof(constraint)), $(typeof(constraint.fct)), $(typeof(constraint.set))"

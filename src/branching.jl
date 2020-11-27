@@ -108,7 +108,7 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:OLD})
     best_vidx = -1
     biggest_dependent = typemax(Int)
     is_in_objective = false
-    found = false
+    is_solution = true
 
     for vidx = 1:length(com.search_space)
         if !isfixed(com.search_space[vidx])
@@ -119,7 +119,7 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:OLD})
                 lowest_num_pvals = num_pvals
                 biggest_inf = inf
                 best_vidx = vidx
-                found = true
+                is_solution = false
                 continue
             end
             if !is_in_objective || com.var_in_obj[vidx]
@@ -128,13 +128,13 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:OLD})
                         lowest_num_pvals = num_pvals
                         biggest_inf = inf
                         best_vidx = vidx
-                        found = true
+                        is_solution = false
                     end
                 end
             end
         end
     end
-    return found, best_vidx
+    return BranchVarObj(true, is_solution, best_vidx)
 end
 
 function get_next_branch_variable(com::CS.CoM, ::Val{:Random})
@@ -152,12 +152,12 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:Random})
             is_free[variable.idx] = true
         end
     end
-    found = any(is_free)
+    is_solution = !any(is_free)
     vidx = -1
-    if found
+    if !is_solution
         vidx = sample(CS_RNG, 1:length(variables), Weights(is_free))
     end
-    return found, vidx
+    return BranchVarObj(true, is_solution, vidx)
 end
 
 function still_probing(n, μ, variance)
@@ -173,7 +173,7 @@ function still_probing(n, μ, variance)
 end
 
 """
-    probe_until(com::CS.CoM, until_fct)
+    probe_until(com::CS.CoM)
 
 Start probing from current node:
 - Create paths in a depth first search way and use a random branch variable strategy
@@ -181,16 +181,19 @@ Start probing from current node:
 This creates new `BacktrackObj` inside `backtrack_vec` which get overwritten in each probe
 """
 function probe_until(com::CS.CoM)
-    num_backtrack_objs = length(com.backtrack_vec)
     mean_activities = [var.activity for var in com.search_space]
     variance_activities = zeros(length(com.search_space))
+    saved_traverse_strategy = com.traverse_strategy
+    saved_branch_split = com.branch_split
+
+    com.traverse_strategy = Val(:DFS)
+    com.branch_split = Val(:Random)
+    global_feasible = true
+
     n = 1
-    while n < 100 && still_probing(n, mean_activities, variance_activities)
+    while n < 100 && still_probing(n, mean_activities, variance_activities) && global_feasible
         n += 1
-        ccom = deepcopy(com)
-        ccom.traverse_strategy = Val(:DFS)
-        ccom.branch_split = Val(:Random)
-        root_feasible, feasible, activities = probe(ccom)
+        root_feasible, feasible, activities = probe(com)
         for i in 1:length(com.search_space)
             new_mean = mean_activities[i] + (activities[i]-mean_activities[i]) / n
             # update std: https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
@@ -201,7 +204,7 @@ function probe_until(com::CS.CoM)
         end
         # if root infeasible we can remove that setting completely
         if !root_feasible
-            backtrack_obj = ccom.backtrack_vec[ccom.c_backtrack_idx]
+            backtrack_obj = com.backtrack_vec[com.c_backtrack_idx]
             vidx = backtrack_obj.vidx
             vidx == 0 && break # all variables are fixed already
             # use the variable from com not ccom to remove it from the actual model
@@ -210,17 +213,18 @@ function probe_until(com::CS.CoM)
             ub = backtrack_obj.ub
             for val in lb:ub
                 if has(variable, val)
-                    rm!(com, variable, val)
+                    global_feasible = rm!(com, variable, val)
+                    !global_feasible && break
                 end
             end
-        end
-        if (!isempty(ccom.solutions))
-            push!(com.solutions, ccom.solutions[1])
         end
     end
     for i in 1:length(com.search_space)
         com.search_space[i].activity = mean_activities[i]
     end
+    com.branch_split = saved_branch_split
+    com.traverse_strategy = saved_traverse_strategy
+    return global_feasible
 end
 
 """
@@ -235,30 +239,26 @@ function probe(com::CS.CoM)
     activities = zeros(length(com.search_space))
 
     backtrack_vec = com.backtrack_vec
-    found, vidx = get_next_branch_variable(com, Val(:Random))
-    !found && return false, false, activities
+    branch_var = get_next_branch_variable(com, Val(:Random))
+    if branch_var.is_solution || !branch_var.is_feasible
+        return false, branch_var.is_feasible, activities
+    end
 
-    step_nr = 1
     parent_idx = 1
     depth = 1
-    num_backtrack_objs = add2backtrack_vec!(
+    add2backtrack_vec!(
         backtrack_vec,
         com,
         1,
-        parent_idx,
         depth,
-        step_nr,
-        vidx;
-        only_one = true
+        branch_var.vidx; only_one = true
     )
-
     last_backtrack_id = 0
     root_feasible = true
     feasible = true
-    found = true
+    is_root = true
     while feasible
-        step_nr += 1
-        step_nr % 50 == 0 && println("step_nr: $step_nr")
+        com.c_step_nr += 1
 
         if last_backtrack_id != 0
             backtrack_vec[last_backtrack_id].status = :Closed
@@ -272,7 +272,7 @@ function probe(com::CS.CoM)
         com.c_backtrack_idx = backtrack_obj.idx
         checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
         if com.input[:logs]
-            com.logs[backtrack_obj.idx].step_nr = step_nr
+            com.logs[backtrack_obj.idx].step_nr = com.c_step_nr
         end
 
         last_backtrack_id = com.c_backtrack_idx
@@ -280,11 +280,12 @@ function probe(com::CS.CoM)
         feasible = set_bounds!(com, backtrack_obj)
         if !feasible
             com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
-            if step_nr == 2
+            if is_root == 2
                 root_feasible = false
             end
             break
         end
+
 
         constraints = com.constraints[com.subscription[vidx]]
 
@@ -294,35 +295,40 @@ function probe(com::CS.CoM)
         update_probe_activity!(activities, com)
         if !feasible
             com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
-            if step_nr == 2
+            if is_root
                root_feasible = false
             end
             break
         end
+        is_root = false
 
-        found, vidx = get_next_branch_variable(com, Val(:Random))
+        branch_var = get_next_branch_variable(com, Val(:Random))
         if com.input[:logs]
             com.logs[backtrack_obj.idx] =
-                log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr)
+                log_one_node(com, length(com.search_space), backtrack_obj.idx, com.c_step_nr)
         end
-        if !found
+        if branch_var.is_solution
             add_new_solution!(com, backtrack_vec, backtrack_obj, false)
             break
         end
 
         last_backtrack_obj = backtrack_vec[backtrack_obj.idx]
-        num_backtrack_objs = add2backtrack_vec!(
+
+        add2backtrack_vec!(
             backtrack_vec,
             com,
-            num_backtrack_objs,
             last_backtrack_obj.idx,
             last_backtrack_obj.depth + 1,
-            step_nr,
-            vidx;
-            check_bound = true,
-            only_one = true
+            branch_var.vidx; only_one = true, check_bound=true
         )
     end
+    backtrack_vec[last_backtrack_id].status = :Closed
+
+    # checkout root node
+    checkout_from_to!(com, com.c_backtrack_idx, 1)
+    # prune the last step as checkout_from_to! excludes the to part
+    restore_prune!(com, 1)
+
     return root_feasible, feasible, activities
 end
 
@@ -358,8 +364,12 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
     update_activity!(com)
 
     if com.in_probing_phase
+        println("HERE")
         com.in_probing_phase = false
-        probe_until(com)
+        global_feasible = probe_until(com)
+        if !global_feasible
+            return BranchVarObj(false, false, -1)
+        end
     end
 
     #=
@@ -370,11 +380,11 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
     end
     =#
 
-    # activity bases search
+    # activity based search
     is_in_objective = false
     highest_activity = -1.0
     best_vidx = -1
-    found = false
+    is_solution = true
 
     for variable in com.search_space
         if !isfixed(variable)
@@ -384,7 +394,7 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
             if !is_in_objective && com.var_in_obj[vidx]
                 highest_activity = activity_ratio
                 is_in_objective = true
-                found = true
+                is_solution = false
                 best_vidx = vidx
                 continue
             end
@@ -392,10 +402,10 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
                 if activity_ratio >= highest_activity
                     highest_activity = activity_ratio
                     best_vidx = vidx
-                    found = true
+                    is_solution = false
                 end
             end
         end
     end
-    return found, best_vidx
+    return BranchVarObj(true, is_solution, best_vidx)
 end

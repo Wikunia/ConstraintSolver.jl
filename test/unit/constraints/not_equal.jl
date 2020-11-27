@@ -8,8 +8,8 @@
 
     # doesn't check the length
     # 1+2+1 + constant (1) == 5
-    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1,2,1])
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1,2,2])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1,2,1])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1,2,2])
 
     constr_indices = constraint.indices
     @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[1], -3)

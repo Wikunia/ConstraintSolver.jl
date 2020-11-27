@@ -4,12 +4,12 @@
     @constraint(m, x in CS.EqualSet())
     optimize!(m)
     com = JuMP.backend(m).optimizer.model.inner
-    
+
     constraint = com.constraints[1]
 
     # doesn't check the length
-    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1,2,3])
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [2,2,2])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1,2,3])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [2,2,2])
 
     constr_indices = constraint.indices
     @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[2], 5)
@@ -62,7 +62,7 @@
     for ind in constr_indices
         @test sort(CS.values(com.search_space[ind])) == 3:5
     end
-    
+
     @test CS.rm!(com, com.search_space[constr_indices[1]], 5)
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
     for ind in constr_indices

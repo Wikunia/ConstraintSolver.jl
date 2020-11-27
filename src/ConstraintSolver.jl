@@ -1,11 +1,5 @@
 module ConstraintSolver
 
-using LightGraphs
-using MathOptInterface
-using MatrixNetworks
-using Statistics
-using StatsBase
-using StatsFuns
 using Formatting
 using JSON
 using JuMP:
@@ -25,6 +19,13 @@ using JuMP:
     termination_status
 import JuMP.sense_to_set
 import JuMP
+using LightGraphs
+using MathOptInterface
+using MatrixNetworks
+using Random
+using Statistics
+using StatsBase
+using StatsFuns
 
 const CS = ConstraintSolver
 const CS_RNG = MersenneTwister(1)
@@ -208,7 +209,7 @@ function checkout_from_to!(com::CS.CoM, from_nidx::Int, to_nidx::Int)
         end
     end
     @assert from.depth == to.depth
-    # same diff but different parent
+    # same depth but different parent
     # => level up until same parent
     while from.parent_idx != to.parent_idx
         reverse_pruning!(com, from.parent_idx)
@@ -304,6 +305,7 @@ function add2backtrack_vec!(
             com
         )
     end
+    only_one && return
     @assert left_ub < right_lb
     # right branch
     backtrack_obj = new_BacktrackObj(com, parent_idx, depth, vidx, right_lb, right_ub)
@@ -426,20 +428,12 @@ If `sorting` is set to `false` the same ordering is used as when used without ob
 Return :Solved or :Infeasible if proven or `:NotSolved` if interrupted by `max_bt_steps`.
 """
 function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
-    dummy_backtrack_obj = BacktrackObj(com)
+    branch_var = get_next_branch_variable(com)
+    branch_var.is_solution && return :Solved
+    !branch_var.is_feasible && return :Infeasible
 
     backtrack_vec = com.backtrack_vec
-    push!(backtrack_vec, dummy_backtrack_obj)
 
-    found, vidx = get_next_branch_variable(com)
-    if !found
-        all_fixed = all(v->CS.isfixed(v), com.search_space)
-        if all_fixed
-            return :Solved
-        else
-            return :Infeasible
-        end
-    end
     com.info.backtrack_fixes = 1
     find_more_solutions = com.options.all_solutions || com.options.all_optimal_solutions
 
@@ -451,22 +445,24 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
     # the first solve (before backtrack) has idx 1
     backtrack_vec = com.backtrack_vec
-    step_nr = 1
 
     add2backtrack_vec!(
         backtrack_vec,
         com,
         1, # parent_idx
         1, # depth
-        vidx
+        branch_var.vidx
     )
-    last_backtrack_id = 0
+    last_backtrack_id = 1
 
     started = true
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
 
+    current_backtrack_id = 0
+    current_step_nr = 0
     while length(backtrack_vec) > 0
-        step_nr += 1
+        com.c_step_nr += 1
+        current_step_nr = com.c_step_nr
         # get next open backtrack object
         l = 1
         if !started
@@ -475,7 +471,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
         end
         # run at least once so that everything is well defined
-        if step_nr > 2 && time() - com.start_time > com.options.time_limit
+        if !started && time() - com.start_time > com.options.time_limit
             break
         end
 
@@ -492,8 +488,11 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
         checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
 
+        current_backtrack_id = backtrack_obj.idx
         if com.input[:logs]
-            com.logs[backtrack_obj.idx].step_nr = step_nr
+            @assert current_step_nr == com.c_step_nr
+            println("1 backtrack_obj.parent_idx: ", backtrack_obj.parent_idx)
+            com.logs[backtrack_obj.idx].step_nr = com.c_step_nr
         end
 
         started = false
@@ -526,9 +525,8 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             last_table_row = update_table_log(com, backtrack_vec)
         end
 
-        found, vidx = get_next_branch_variable(com)
-        # no index found => solution found
-        if !found
+        branch_var = get_next_branch_variable(com)
+        if branch_var.is_solution
             finished = add_new_solution!(com, backtrack_vec, backtrack_obj, log_table)
             if finished
                 # close the previous backtrack object
@@ -546,8 +544,14 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         end
 
         if com.input[:logs]
+            @assert current_backtrack_id == backtrack_obj.idx
+            @assert current_step_nr == com.c_step_nr
+            println("2 backtrack_obj.parent_idx: ", backtrack_obj.parent_idx)
+            @show com.logs[backtrack_obj.idx].step_nr
             com.logs[backtrack_obj.idx] =
-                log_one_node(com, length(com.search_space), backtrack_obj.idx, step_nr)
+                log_one_node(com, length(com.search_space), backtrack_obj.idx, com.c_step_nr)
+            @show com.logs[backtrack_obj.idx].step_nr
+            println("=============")
         end
 
         leafs_best_bound = get_best_bound(com, backtrack_obj)
@@ -558,11 +562,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             com,
             last_backtrack_obj.idx,
             last_backtrack_obj.depth + 1,
-            vidx;
+            branch_var.vidx;
             check_bound = true,
         )
     end
-
     backtrack_vec[last_backtrack_id].status = :Closed
     com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
     if length(com.solutions) > 0
@@ -697,7 +700,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
         com.best_bound = get_best_bound(com, dummy_backtrack_obj)
 
         backtrack_vec = com.backtrack_vec
-        push!(backtrack_vec, dummy_backtrack_obj)
+        addBacktrackObj2Backtrack_vec!(backtrack_vec, dummy_backtrack_obj, com)
 
         com.best_sol = com.best_bound
         com.solve_time = time() - com.start_time
@@ -713,7 +716,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     com.best_bound = get_best_bound(com, dummy_backtrack_obj)
 
     backtrack_vec = com.backtrack_vec
-    push!(backtrack_vec, dummy_backtrack_obj)
+    addBacktrackObj2Backtrack_vec!(backtrack_vec, dummy_backtrack_obj, com)
 
     if keep_logs
         push!(com.logs, log_one_node(com, length(com.search_space), 1, 1))
@@ -738,7 +741,6 @@ function solve!(com::CS.CoM, options::SolverOptions)
             return :Time
         end
         status = backtrack!(com, max_bt_steps; sorting = backtrack_sorting)
-        sort_solutions!(com)
         com.solve_time = time() - com.start_time
         return status
     else

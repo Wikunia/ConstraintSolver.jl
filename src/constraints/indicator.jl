@@ -98,7 +98,7 @@ function still_feasible(
 end
 
 """
-    is_solved_constraint(
+    is_constraint_solved(
         constraint::IndicatorConstraint,
         fct::Union{MOI.VectorOfVariables, VAF{T}},
         set::IS,
@@ -107,7 +107,7 @@ end
 
 Return whether given `values` the constraint is fulfilled.
 """
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables, VAF{T}},
     set::IS,
@@ -115,7 +115,7 @@ function is_solved_constraint(
 ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
     if values[1] == Int(constraint.activate_on)
         inner_constraint = constraint.inner_constraint
-        return is_solved_constraint(inner_constraint, inner_constraint.fct, inner_constraint.set, values[2:end])
+        return is_constraint_solved(inner_constraint, inner_constraint.fct, inner_constraint.set, values[2:end])
     end
     return true
 end
@@ -131,9 +131,9 @@ end
         ub::Int
     ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
 
-Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to 
+Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to
 the possible values the table constraint allows. `vidx`, `lb` and `ub` don't are not considered atm.
-Additionally only a rough estimated bound is used which can be computed relatively fast. 
+Additionally only a rough estimated bound is used which can be computed relatively fast.
 This method calls the inner_constraint method if it exists and the indicator is activated.
 """
 function update_best_bound_constraint!(com::CS.CoM,
@@ -149,7 +149,7 @@ function update_best_bound_constraint!(com::CS.CoM,
     search_space = com.search_space
     indicator_var = search_space[indicator_vidx]
     if inner_constraint.impl.update_best_bound
-        if CS.issetto(indicator_var, Int(constraint.activate_on)) 
+        if CS.issetto(indicator_var, Int(constraint.activate_on))
             return update_best_bound_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set, vidx, lb, ub)
         else
             # if not activated (for example in a different subtree) we reset the bounds
@@ -189,7 +189,7 @@ function reverse_pruning_constraint!(
         reverse_pruning_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set, backtrack_id)
     end
 end
-  
+
 function restore_pruning_constraint!(
     com::CoM,
     constraint::IndicatorConstraint,

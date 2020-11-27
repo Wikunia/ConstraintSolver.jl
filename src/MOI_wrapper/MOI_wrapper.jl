@@ -124,4 +124,13 @@ function MOI.optimize!(model::Optimizer)
 
     status = solve!(model)
     set_status!(model, status)
+
+    if status == :Solved
+        com = model.inner
+        unique!(sol->sol.hash, com.solutions)
+        if !com.options.all_solutions
+            filter!(sol->sol.incumbent == com.best_sol, com.solutions)
+        end
+        sort_solutions!(com)
+    end
 end
