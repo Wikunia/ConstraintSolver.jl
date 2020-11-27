@@ -241,6 +241,7 @@ function addBacktrackObj2Backtrack_vec!(
     com::CS.CoM,
 )
     push!(backtrack_vec, backtrack_obj)
+    @assert length(backtrack_vec) == backtrack_obj.idx
     for v in com.search_space
         push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
     end
