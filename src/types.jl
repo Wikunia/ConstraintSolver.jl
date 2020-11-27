@@ -302,7 +302,7 @@ mutable struct BacktrackObj{T<:Real}
     ub::Int
     best_bound::T
     primal_start::Vector{Float64}
-    solution::Vector{Float64} # holds the solution values
+    solution::Vector{Float64} # holds the solution values of the bound computation
 end
 
 

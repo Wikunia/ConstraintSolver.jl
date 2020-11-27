@@ -231,7 +231,7 @@ function set_state_to_best_sol!(com::CS.CoM, last_backtrack_id::Int)
 end
 
 """
-    addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com::CS.CoM, num_backtrack_objs, step_nr)
+    addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com::CS.CoM)
 
 Add a backtrack object to the backtrack vector and create necessary vectors and maybe include it in the logs
 """
@@ -239,33 +239,30 @@ function addBacktrackObj2Backtrack_vec!(
     backtrack_vec,
     backtrack_obj,
     com::CS.CoM,
-    num_backtrack_objs,
-    step_nr,
 )
     push!(backtrack_vec, backtrack_obj)
     for v in com.search_space
         push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
     end
     if com.input[:logs]
+        # new => isn't called yet => step_nr = -1
         push!(
             com.logs,
-            log_one_node(com, length(com.search_space), num_backtrack_objs, step_nr),
+            log_one_node(com, length(com.search_space), backtrack_obj.idx, -1),
         )
     end
 end
 
 """
-    backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{T},num_backtrack_objs, parent_idx, depth, step_nr, vidx; check_bound=false)
+    backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{T}, parent_idx, depth, vidx; check_bound=false)
 
 Create two branches with two additional BacktrackObj and add them to backtrack_vec
 """
 function add2backtrack_vec!(
     backtrack_vec::Vector{BacktrackObj{T}},
     com::CS.CoM{T},
-    num_backtrack_objs,
     parent_idx,
     depth,
-    step_nr,
     vidx;
     check_bound = false,
 ) where {T<:Real}
@@ -283,19 +280,7 @@ function add2backtrack_vec!(
     =#
 
     # left branch
-    num_backtrack_objs += 1
-    backtrack_obj = BacktrackObj{parametric_type(com)}(
-        num_backtrack_objs,
-        parent_idx,
-        depth,
-        :Open,
-        vidx,
-        left_lb,
-        left_ub,
-        backtrack_vec[parent_idx].best_bound, # initialize with parent best bound
-        backtrack_vec[parent_idx].solution,
-        zeros(length(com.search_space))
-    )
+    backtrack_obj = new_BacktrackObj(com, parent_idx, depth, vidx, left_lb, left_ub)
     backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; vidx = vidx, lb = left_lb, ub = left_ub)
     # only include nodes which have a better objective than the current best solution if one was found already
     if com.options.all_solutions || !check_bound || length(com.solutions) == 0 ||
@@ -305,27 +290,11 @@ function add2backtrack_vec!(
         addBacktrackObj2Backtrack_vec!(
             backtrack_vec,
             backtrack_obj,
-            com,
-            num_backtrack_objs,
-            -1,
+            com
         )
-    else
-        num_backtrack_objs -= 1
     end
     # right branch
-    num_backtrack_objs += 1
-    backtrack_obj = BacktrackObj{parametric_type(com)}(
-        num_backtrack_objs,
-        parent_idx,
-        depth,
-        :Open,
-        vidx,
-        right_lb,
-        right_ub,
-        backtrack_vec[parent_idx].best_bound,
-        backtrack_vec[parent_idx].solution,
-        zeros(length(com.search_space))
-    )
+    backtrack_obj = new_BacktrackObj(com, parent_idx, depth, vidx, right_lb, right_ub)
     backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; vidx = vidx, lb = right_lb, ub = right_ub)
     if com.options.all_solutions || !check_bound || length(com.solutions) == 0 ||
         backtrack_obj.best_bound * obj_factor < com.best_sol ||
@@ -334,15 +303,9 @@ function add2backtrack_vec!(
         addBacktrackObj2Backtrack_vec!(
             backtrack_vec,
             backtrack_obj,
-            com,
-            num_backtrack_objs,
-            -1,
+            com
         )
-    else
-        num_backtrack_objs -= 1
     end
-
-    return num_backtrack_objs
 end
 
 """
@@ -463,16 +426,13 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
     # the first solve (before backtrack) has idx 1
     backtrack_vec = com.backtrack_vec
-    num_backtrack_objs = 1
     step_nr = 1
 
-    num_backtrack_objs = add2backtrack_vec!(
+    add2backtrack_vec!(
         backtrack_vec,
         com,
-        num_backtrack_objs,
-        1,
-        1,
-        step_nr,
+        1, # parent_idx
+        1, # depth
         vidx
     )
     last_backtrack_id = 0
@@ -568,13 +528,11 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         leafs_best_bound = get_best_bound(com, backtrack_obj)
 
         last_backtrack_obj = backtrack_vec[last_backtrack_id]
-        num_backtrack_objs = add2backtrack_vec!(
+        add2backtrack_vec!(
             backtrack_vec,
             com,
-            num_backtrack_objs,
             last_backtrack_obj.idx,
             last_backtrack_obj.depth + 1,
-            step_nr,
             vidx;
             check_bound = true,
         )
