@@ -320,7 +320,7 @@ mutable struct BacktrackObj{T<:Real}
     ub::Int
     best_bound::T
     primal_start::Vector{Float64}
-    solution::Vector{Float64} # holds the solution values
+    solution::Vector{Float64} # holds the solution values of the bound computation
 end
 
 
@@ -356,6 +356,7 @@ end
 mutable struct Solution{T<:Real}
     incumbent::T
     values::Vector{Int}
+    backtrack_id::Int # save where the solution was found
 end
 
 mutable struct ConstraintSolverModel{T<:Real}
@@ -377,7 +378,6 @@ mutable struct ConstraintSolverModel{T<:Real}
     best_sol::T # Objective of the best solution
     best_bound::T # Overall best bound
     solutions::Vector{Solution}
-    bt_solution_ids::Vector{Int} # saves only the id to the BacktrackObj
     info::CSInfo
     input::Dict{Symbol,Any}
     logs::Vector{TreeLogNode{T}}

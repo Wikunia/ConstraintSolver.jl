@@ -107,7 +107,6 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         zero(T), # best_sol,
         zero(T), # best_bound
         Vector{Solution}(), # all solution objects
-        Vector{Int}(), # save backtrack id to solution
         CSInfo(0, false, 0, 0, 0, NumberConstraintTypes()), # info
         Dict{Symbol,Any}(), # input
         Vector{TreeLogNode{T}}(), # logs
@@ -121,6 +120,22 @@ end
 
 function NumberConstraintTypes()
     return NumberConstraintTypes(zeros(Int, length(fieldnames(NumberConstraintTypes)))...)
+end
+
+function new_BacktrackObj(com::CS.CoM, parent_idx, depth, vidx, lb, ub)
+    parent = com.backtrack_vec[parent_idx]
+    return BacktrackObj{parametric_type(com)}(
+        length(com.backtrack_vec)+1, # idx
+        parent_idx,
+        depth,
+        :Open, # status
+        vidx,
+        lb, # lb and ub only take effect if vidx != 0
+        ub, # ub
+        parent.best_bound,
+        parent.solution,
+        zeros(length(com.search_space)) # solution values of bound computation
+    )
 end
 
 function BacktrackObj(com::CS.CoM)

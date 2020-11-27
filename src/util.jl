@@ -85,7 +85,7 @@ function update_table_log(com::CS.CoM, backtrack_vec; force = false)
     # -1 for dummy node
     closed_nodes = length(backtrack_vec) - open_nodes - 1
     best_bound = com.best_bound
-    incumbent = length(com.bt_solution_ids) == 0 ? "-" : com.best_sol
+    incumbent = length(com.solutions) == 0 ? "-" : com.best_sol
     duration = time() - com.start_time
     push_to_table!(
         table;
