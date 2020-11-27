@@ -107,7 +107,6 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         zero(T), # best_sol,
         zero(T), # best_bound
         Vector{Solution}(), # all solution objects
-        Vector{Int}(), # save backtrack id to solution
         CSInfo(0, false, 0, 0, 0, NumberConstraintTypes()), # info
         Dict{Symbol,Any}(), # input
         Vector{TreeLogNode{T}}(), # logs
