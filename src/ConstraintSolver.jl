@@ -474,6 +474,14 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
     push!(backtrack_vec, dummy_backtrack_obj)
 
     found, vidx = get_next_branch_variable(com)
+    if !found
+        all_fixed = all(v->CS.isfixed(v), com.search_space)
+        if all_fixed
+            return :Solved
+        else
+            return :Infeasible
+        end
+    end
     com.info.backtrack_fixes = 1
     find_more_solutions = com.options.all_solutions || com.options.all_optimal_solutions
 

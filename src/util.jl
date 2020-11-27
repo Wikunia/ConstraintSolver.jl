@@ -121,7 +121,7 @@ end
 #=
     Access standard ConstraintInternals without using .std syntax
 =#
-@inline function Base.getproperty(c::Constraint, s::Symbol) 
+@inline function Base.getproperty(c::Constraint, s::Symbol)
     if s in (:idx, :indices, :fct, :set, :pvals, :impl, :is_initialized, :bound_rhs)
         Core.getproperty(Core.getproperty(c, :std), s)
     else
@@ -129,7 +129,7 @@ end
     end
 end
 
-@inline function Base.setproperty!(c::Constraint, s::Symbol, v) 
+@inline function Base.setproperty!(c::Constraint, s::Symbol, v)
     if s in (:idx, :indices, :fct, :set, :pvals, :impl, :is_initialized, :bound_rhs)
         Core.setproperty!(c.std, s, v)
     else

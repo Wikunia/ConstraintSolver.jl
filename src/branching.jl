@@ -187,14 +187,10 @@ function probe_until(com::CS.CoM)
     n = 1
     while n < 100 && still_probing(n, mean_activities, variance_activities)
         n += 1
-        println("n: $n")
         ccom = deepcopy(com)
         ccom.traverse_strategy = Val(:DFS)
         ccom.branch_split = Val(:Random)
-        println("Started probe")
         root_feasible, feasible, activities = probe(ccom)
-        println("Finished probe")
-        # CS.save_logs(ccom, "/srv/http/ConstraintVisual/data/json/killer_$n.json")
         for i in 1:length(com.search_space)
             new_mean = mean_activities[i] + (activities[i]-mean_activities[i]) / n
             # update std: https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
@@ -206,7 +202,8 @@ function probe_until(com::CS.CoM)
         # if root infeasible we can remove that setting completely
         if !root_feasible
             backtrack_obj = ccom.backtrack_vec[ccom.c_backtrack_idx]
-            vidx = backtrack_obj.variable_idx
+            vidx = backtrack_obj.vidx
+            vidx == 0 && break # all variables are fixed already
             # use the variable from com not ccom to remove it from the actual model
             variable = com.search_space[vidx]
             lb = backtrack_obj.lb
@@ -221,11 +218,9 @@ function probe_until(com::CS.CoM)
             push!(com.solutions, ccom.solutions[1])
         end
     end
-    println("#probes: ", n)
     for i in 1:length(com.search_space)
         com.search_space[i].activity = mean_activities[i]
     end
-    println("com.backtrack_vec: ", length(com.backtrack_vec))
 end
 
 """
@@ -241,6 +236,7 @@ function probe(com::CS.CoM)
 
     backtrack_vec = com.backtrack_vec
     found, vidx = get_next_branch_variable(com, Val(:Random))
+    !found && return false, false, activities
 
     step_nr = 1
     parent_idx = 1
@@ -272,7 +268,7 @@ function probe(com::CS.CoM)
         found, backtrack_obj = get_next_node(com, backtrack_vec, true)
         !found && break
 
-        vidx = backtrack_obj.variable_idx
+        vidx = backtrack_obj.vidx
         com.c_backtrack_idx = backtrack_obj.idx
         checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
         if com.input[:logs]
@@ -333,7 +329,7 @@ end
 function update_activity!(com)
     c_backtrack_idx = com.c_backtrack_idx
     backtrack_obj = com.backtrack_vec[c_backtrack_idx]
-    branch_vidx = backtrack_obj.variable_idx
+    branch_vidx = backtrack_obj.vidx
     γ = com.options.activity_decay
     for variable in com.search_space
         variable.idx == branch_vidx && continue
@@ -349,7 +345,7 @@ end
 function update_probe_activity!(activities, com)
     c_backtrack_idx = com.c_backtrack_idx
     backtrack_obj = com.backtrack_vec[c_backtrack_idx]
-    branch_vidx = backtrack_obj.variable_idx
+    branch_vidx = backtrack_obj.vidx
     for variable in com.search_space
         variable.idx == branch_vidx && continue
         if length(variable.changes[c_backtrack_idx]) > 0

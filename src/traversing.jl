@@ -60,7 +60,7 @@ end
 """
     get_next_node(com::CS.CoM, ::Val{:DBFS}, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
 
-Get the next node we want to prune on if there is any. 
+Get the next node we want to prune on if there is any.
 This uses depth first search if no solution was found so far and BFS otherwise.
 Check other `get_next_node` functions for other possible traverse strategies.
 Return whether a node was found and the corresponding backtrack_obj
@@ -79,8 +79,8 @@ end
 """
     get_next_node(com::CS.CoM, ::Val{:BFS}, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
 
-Get the next node we want to prune on if there is any. This uses best first search and if two 
-nodes have the same `best_bound` the deeper one is chosen. 
+Get the next node we want to prune on if there is any. This uses best first search and if two
+nodes have the same `best_bound` the deeper one is chosen.
 Check other `get_next_node` functions for other possible traverse strategies.
 Return whether a node was found and the corresponding backtrack_obj
 """
@@ -128,8 +128,8 @@ end
 """
     get_next_node(com::CS.CoM, :Val{:DFS}, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
 
-Get the next node we want to prune on if there is any. This uses depth first search and if two 
-nodes have the same depth the one with the better `best_bound` is chosen. 
+Get the next node we want to prune on if there is any. This uses depth first search and if two
+nodes have the same depth the one with the better `best_bound` is chosen.
 Check other `get_next_node` functions for other possible traverse strategies.
 Return whether a node was found and the corresponding backtrack_obj
 """
