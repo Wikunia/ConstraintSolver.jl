@@ -61,5 +61,5 @@ function solve_killer_sudoku(filename; special=false)
         end
     end
 
-    MOI.optimize!(m)           
+    MOI.optimize!(m)
 end
