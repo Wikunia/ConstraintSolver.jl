@@ -127,7 +127,18 @@ function MOI.optimize!(model::Optimizer)
 
     if status == :Solved
         com = model.inner
-        unique!(sol->sol.hash, com.solutions)
+        # TODO: when dropping 1.0: unique!(sol->sol.hash, com.solutions)
+        unique_solution_hashes = unique!([sol.hash for sol in com.solutions])
+        new_solutions = Vector{Solution}()
+        for hash in unique_solution_hashes
+            for sol in com.solutions
+                if sol.hash == hash
+                    push!(new_solutions, sol)
+                    break
+                end
+            end
+        end
+        com.solutions = new_solutions
         if !com.options.all_solutions
             filter!(sol->sol.incumbent == com.best_sol, com.solutions)
         end
