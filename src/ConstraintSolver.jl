@@ -269,7 +269,6 @@ function add2backtrack_vec!(
     backtrack_vec::Vector{BacktrackObj{T}},
     com::CS.CoM{T},
     parent_idx,
-    depth,
     vidx;
     check_bound = false,
     only_one = false
@@ -288,7 +287,7 @@ function add2backtrack_vec!(
     =#
 
     # left branch
-    backtrack_obj = new_BacktrackObj(com, parent_idx, depth, vidx, left_lb, left_ub)
+    backtrack_obj = new_BacktrackObj(com, parent_idx, vidx, left_lb, left_ub)
     backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; vidx = vidx, lb = left_lb, ub = left_ub)
     # only include nodes which have a better objective than the current best solution if one was found already
     if com.options.all_solutions || !check_bound || length(com.solutions) == 0 ||
@@ -304,7 +303,7 @@ function add2backtrack_vec!(
     only_one && return
     @assert left_ub < right_lb
     # right branch
-    backtrack_obj = new_BacktrackObj(com, parent_idx, depth, vidx, right_lb, right_ub)
+    backtrack_obj = new_BacktrackObj(com, parent_idx, vidx, right_lb, right_ub)
     backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; vidx = vidx, lb = right_lb, ub = right_ub)
     if com.options.all_solutions || !check_bound || length(com.solutions) == 0 ||
         backtrack_obj.best_bound * obj_factor < com.best_sol ||
@@ -446,7 +445,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         backtrack_vec,
         com,
         1, # parent_idx
-        1, # depth
         branch_var.vidx
     )
     last_backtrack_id = 1
@@ -542,7 +540,6 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             backtrack_vec,
             com,
             last_backtrack_obj.idx,
-            last_backtrack_obj.depth + 1,
             branch_var.vidx;
             check_bound = true,
         )

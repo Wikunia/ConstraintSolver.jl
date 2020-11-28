@@ -4,6 +4,7 @@ function solve_lp()
         CS.Optimizer,
         "lp_optimizer" => glpk_optimizer,
         "logging" => [],
+        "seed"=>1
     ))
 
     # Variables

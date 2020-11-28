@@ -199,6 +199,7 @@ function probe_until(com::CS.CoM)
     backtrack_obj = BacktrackObj(com)
     backtrack_obj.idx = length(com.backtrack_vec) + 1
     backtrack_obj.parent_idx = 1
+    backtrack_obj.depth = 1
 
     addBacktrackObj2Backtrack_vec!(com.backtrack_vec, backtrack_obj, com)
 
@@ -237,6 +238,12 @@ function probe_until(com::CS.CoM)
     com.branch_split = saved_branch_split
     com.traverse_strategy = saved_traverse_strategy
     com.branch_strategy = saved_branch_strategy
+
+    # checkout root node
+    checkout_from_to!(com, com.c_backtrack_idx, 1)
+    # prune the last step as checkout_from_to! excludes the to part
+    restore_prune!(com, 1)
+
     return global_feasible
 end
 
@@ -258,12 +265,10 @@ function probe(com::CS.CoM)
     end
 
     parent_idx = 2
-    depth = 1
     add2backtrack_vec!(
         backtrack_vec,
         com,
         parent_idx,
-        depth,
         branch_var.vidx; only_one = true
     )
     last_backtrack_id = 0
@@ -327,7 +332,6 @@ function probe(com::CS.CoM)
             backtrack_vec,
             com,
             last_backtrack_obj.idx,
-            last_backtrack_obj.depth + 1,
             branch_var.vidx; only_one = true
         )
     end
