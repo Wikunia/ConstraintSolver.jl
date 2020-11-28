@@ -99,7 +99,11 @@ Get the next weak index for backtracking. This will be the next branching variab
 Return whether there is an unfixed variable and a best index
 """
 function get_next_branch_variable(com::CS.CoM)
-    return get_next_branch_variable(com, com.branch_strategy)
+    branch_var = get_next_branch_variable(com, com.branch_strategy)
+    if !branch_var.is_feasible || branch_var.is_solution
+        com.backtrack_vec[com.c_backtrack_idx].status = :Closed
+    end
+    return branch_var
 end
 
 function get_next_branch_variable(com::CS.CoM, ::Val{:OLD})
@@ -184,19 +188,27 @@ function probe_until(com::CS.CoM)
     mean_activities = [var.activity for var in com.search_space]
     variance_activities = zeros(length(com.search_space))
     saved_traverse_strategy = com.traverse_strategy
+    saved_branch_strategy = com.branch_strategy
     saved_branch_split = com.branch_split
 
     com.traverse_strategy = Val(:DFS)
     com.branch_split = Val(:Random)
+    com.branch_strategy = Val(:Random)
     global_feasible = true
 
+    backtrack_obj = BacktrackObj(com)
+    backtrack_obj.idx = length(com.backtrack_vec) + 1
+    backtrack_obj.parent_idx = 1
+
+    addBacktrackObj2Backtrack_vec!(com.backtrack_vec, backtrack_obj, com)
+
     n = 1
-    while n < 100 && still_probing(n, mean_activities, variance_activities) && global_feasible
+    while n < 10 && still_probing(n, mean_activities, variance_activities) && global_feasible
         n += 1
         root_feasible, feasible, activities = probe(com)
         for i in 1:length(com.search_space)
             new_mean = mean_activities[i] + (activities[i]-mean_activities[i]) / n
-            # update std: https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
+            # update variance: https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
             if n != 1
                 variance_activities[i] = ((n-2)*variance_activities[i]+(n-1)*(mean_activities[i]-new_mean)^2+(activities[i]-new_mean)^2)/(n-1)
             end
@@ -224,6 +236,7 @@ function probe_until(com::CS.CoM)
     end
     com.branch_split = saved_branch_split
     com.traverse_strategy = saved_traverse_strategy
+    com.branch_strategy = saved_branch_strategy
     return global_feasible
 end
 
@@ -239,17 +252,17 @@ function probe(com::CS.CoM)
     activities = zeros(length(com.search_space))
 
     backtrack_vec = com.backtrack_vec
-    branch_var = get_next_branch_variable(com, Val(:Random))
+    branch_var = get_next_branch_variable(com)
     if branch_var.is_solution || !branch_var.is_feasible
         return false, branch_var.is_feasible, activities
     end
 
-    parent_idx = 1
+    parent_idx = 2
     depth = 1
     add2backtrack_vec!(
         backtrack_vec,
         com,
-        1,
+        parent_idx,
         depth,
         branch_var.vidx; only_one = true
     )
@@ -299,7 +312,7 @@ function probe(com::CS.CoM)
         end
         is_root = false
 
-        branch_var = get_next_branch_variable(com, Val(:Random))
+        branch_var = get_next_branch_variable(com)
         if com.input[:logs]
             update_log_node!(com, backtrack_obj.idx)
         end
@@ -315,15 +328,15 @@ function probe(com::CS.CoM)
             com,
             last_backtrack_obj.idx,
             last_backtrack_obj.depth + 1,
-            branch_var.vidx; only_one = true, check_bound=true
+            branch_var.vidx; only_one = true
         )
     end
     backtrack_vec[last_backtrack_id].status = :Closed
 
     # checkout root node
-    checkout_from_to!(com, com.c_backtrack_idx, 1)
+    checkout_from_to!(com, com.c_backtrack_idx, 2)
     # prune the last step as checkout_from_to! excludes the to part
-    restore_prune!(com, 1)
+    restore_prune!(com, 2)
 
     return root_feasible, feasible, activities
 end
