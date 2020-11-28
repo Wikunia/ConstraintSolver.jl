@@ -39,7 +39,7 @@ function solve_eternity(fname="eternity_7"; height=nothing, width=nothing, all_s
                 "all_solutions"=>all_solutions, "seed"=>1, "branch_strategy"=>branch_strategy))
     if optimize
         cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
-        m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_solutions"=>all_solutions, "lp_optimizer" => cbc_optimizer))
+        m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [:Info, :Table], "all_solutions"=>all_solutions, "lp_optimizer" => cbc_optimizer, "seed"=>1))
     end
 
     @variable(m, 1 <= p[1:height, 1:width] <= npieces, Int)
