@@ -398,7 +398,7 @@ mutable struct TreeLogNode{T<:Real}
     feasible::Bool
     best_bound::T
     step_nr::Int
-    var_idx::Int
+    vidx::Int
     lb::Int
     ub::Int
     var_states::Dict{Int,Vector{Int}}

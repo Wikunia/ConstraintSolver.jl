@@ -258,12 +258,12 @@ function probe(com::CS.CoM)
     feasible = true
     is_root = true
     while feasible
-        com.c_step_nr += 1
-
+        # close the previous and update the log
         if last_backtrack_id != 0
             backtrack_vec[last_backtrack_id].status = :Closed
-            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
+            com.input[:logs] && update_log_node!(com, last_backtrack_id)
         end
+        com.c_step_nr += 1
 
         found, backtrack_obj = get_next_node(com, backtrack_vec, true)
         !found && break
@@ -271,15 +271,12 @@ function probe(com::CS.CoM)
         vidx = backtrack_obj.vidx
         com.c_backtrack_idx = backtrack_obj.idx
         checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
-        if com.input[:logs]
-            com.logs[backtrack_obj.idx].step_nr = com.c_step_nr
-        end
 
         last_backtrack_id = com.c_backtrack_idx
 
         feasible = set_bounds!(com, backtrack_obj)
         if !feasible
-            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
+            com.input[:logs] && update_log_node!(com, last_backtrack_id; feasible=false)
             if is_root == 2
                 root_feasible = false
             end
@@ -294,7 +291,7 @@ function probe(com::CS.CoM)
 
         update_probe_activity!(activities, com)
         if !feasible
-            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space; feasible=false)
+            com.input[:logs] && update_log_node!(com, last_backtrack_id; feasible=false)
             if is_root
                root_feasible = false
             end
@@ -304,8 +301,7 @@ function probe(com::CS.CoM)
 
         branch_var = get_next_branch_variable(com, Val(:Random))
         if com.input[:logs]
-            com.logs[backtrack_obj.idx] =
-                log_one_node(com, length(com.search_space), backtrack_obj.idx, com.c_step_nr)
+            update_log_node!(com, backtrack_obj.idx)
         end
         if branch_var.is_solution
             add_new_solution!(com, backtrack_vec, backtrack_obj, false)
@@ -364,7 +360,6 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
     update_activity!(com)
 
     if com.in_probing_phase
-        println("HERE")
         com.in_probing_phase = false
         global_feasible = probe_until(com)
         if !global_feasible

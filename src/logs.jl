@@ -1,4 +1,5 @@
-function log_one_node(com, nvars, back_idx, step_nr)
+function create_log_node(com)
+    back_idx = length(com.backtrack_vec)
     parent_idx = 0
     if length(com.backtrack_vec) > 0
         status = com.backtrack_vec[back_idx].status
@@ -16,13 +17,12 @@ function log_one_node(com, nvars, back_idx, step_nr)
         best_bound = com.best_bound
     end
 
-    println("step_nr: $step_nr")
     tree_log_node = TreeLogNode(
         back_idx,
         status,
         true, # feasible
         best_bound,
-        step_nr,
+        -1, # initial step nr
         vidx,
         lb,
         ub,
@@ -32,29 +32,28 @@ function log_one_node(com, nvars, back_idx, step_nr)
         Vector{TreeLogNode{typeof(best_bound)}}(), # children
     )
 
-    log_node_state!(tree_log_node, nothing, com.search_space)
+
+    push!(com.logs, tree_log_node)
+    @assert length(com.logs) == back_idx
 
     if parent_idx > 0
-        changed = false
-        for (i, child) in enumerate(com.logs[parent_idx].children)
-            if child.id == back_idx
-                com.logs[parent_idx].children[i] = deepcopy(tree_log_node)
-                changed = true
-                break
-            end
-        end
-        if !changed
-            println("New not changed")
-            push!(com.logs[parent_idx].children, deepcopy(tree_log_node))
-        end
+        push!(com.logs[parent_idx].children, tree_log_node)
     end
-    return tree_log_node
+
 end
 
-function log_node_state!(tree_log_node, bo, variables; feasible=nothing)
-    back_idx = tree_log_node.id
-    bo !== nothing && (tree_log_node.status = bo.status)
-    feasible !== nothing && (tree_log_node.feasible = feasible)
+function update_log_node!(com, back_idx; feasible=true)
+    tree_log_node = com.logs[back_idx]
+
+    tree_log_node.status = com.backtrack_vec[back_idx].status
+    tree_log_node.vidx = com.backtrack_vec[back_idx].vidx
+    tree_log_node.lb = com.backtrack_vec[back_idx].lb
+    tree_log_node.ub = com.backtrack_vec[back_idx].ub
+    tree_log_node.best_bound = com.backtrack_vec[back_idx].best_bound
+    tree_log_node.step_nr = com.c_step_nr
+    tree_log_node.feasible = feasible
+
+    variables = com.search_space
     if tree_log_node.status == :Closed
         for var in variables
             # easier to visualize if we save it every step even if unchanged
@@ -118,9 +117,6 @@ function sanity_check_log(log)
             push!(step_nrs, node.step_nr)
         end
     end
-    @show length(step_nrs)
-    @show allunique(step_nrs)
-    @show sort!(step_nrs)
     passed = nclosed >= 2 && allunique(step_nrs)
     !passed && write("FAILED.json", JSON.json(log))
     return passed
@@ -145,7 +141,7 @@ function same_logs(log1, log2)
 
         if node1.id != node2.id || node1.status != node2.status ||
            node1.best_bound != node2.best_bound || node1.step_nr != node2.step_nr ||
-           node1.var_idx != node2.var_idx || node1.lb != node2.lb ||
+           node1.vidx != node2.vidx || node1.lb != node2.lb ||
            node1.ub != node2.ub || node1.var_states != node2.var_states || node1.feasible != node2.feasible
             println("Not identical at i=", i)
             println("node1: ")
@@ -160,8 +156,8 @@ function same_logs(log1, log2)
                 node1.step_nr,
             )
             println(
-                "var_idx: ",
-                node1.var_idx,
+                "vidx: ",
+                node1.vidx,
                 " lb:",
                 node1.lb,
                 " ub: ",
@@ -181,8 +177,8 @@ function same_logs(log1, log2)
                 node2.step_nr,
             )
             println(
-                "var_idx: ",
-                node2.var_idx,
+                "vidx: ",
+                node2.vidx,
                 " lb:",
                 node2.lb,
                 " ub: ",
