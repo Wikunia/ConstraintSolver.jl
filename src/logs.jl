@@ -42,8 +42,15 @@ function create_log_node(com)
 
 end
 
-function update_log_node!(com, back_idx; feasible=true)
+function update_log_node!(com, back_idx; feasible=nothing)
     tree_log_node = com.logs[back_idx]
+
+   # never set an infeasible one to feasible
+   # + infeasible nodes are closed
+   if feasible !== nothing
+        tree_log_node.feasible = feasible
+        com.backtrack_vec[back_idx].status = :Closed
+    end
 
     tree_log_node.status = com.backtrack_vec[back_idx].status
     tree_log_node.vidx = com.backtrack_vec[back_idx].vidx
@@ -51,7 +58,7 @@ function update_log_node!(com, back_idx; feasible=true)
     tree_log_node.ub = com.backtrack_vec[back_idx].ub
     tree_log_node.best_bound = com.backtrack_vec[back_idx].best_bound
     tree_log_node.step_nr = com.c_step_nr
-    tree_log_node.feasible = feasible
+
 
     variables = com.search_space
     if tree_log_node.status == :Closed

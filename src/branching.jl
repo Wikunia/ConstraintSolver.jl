@@ -202,6 +202,8 @@ function probe_until(com::CS.CoM)
     backtrack_obj.depth = 1
 
     addBacktrackObj2Backtrack_vec!(com.backtrack_vec, backtrack_obj, com)
+    com.c_step_nr += 1
+    com.input[:logs] && update_log_node!(com, 2)
 
     n = 1
     while n < 10 && still_probing(n, mean_activities, variance_activities) && global_feasible

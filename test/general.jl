@@ -72,8 +72,8 @@ function general_tree_test(com::CS.CoM)
             if com.sense != MOI.FEASIBILITY_SENSE
                 constraints = com.constraints[com.subscription[vidx]]
                 feasible, further_pruning = CS.update_best_bound!(com.backtrack_vec[c_backtrack_idx], com, constraints)
+                # has to be feasible as it has children
                 @assert feasible
-                @assert further_pruning
             end
 
             @assert CS.prune!(com)
