@@ -261,9 +261,14 @@ function addBacktrackObj2Backtrack_vec!(
 end
 
 """
-    backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{T}, parent_idx, depth, vidx; check_bound=false)
+    backtrack_vec::Vector{BacktrackObj{T}}, com::CS.CoM{T}, parent_idx, depth, vidx;
+     check_bound=false, only_one=false, compute_bound=true)
 
 Create two branches with two additional `BacktrackObj`s and add them to `backtrack_vec`.
+Normally bounds are not checked so it gets added even if it's worse.
+One can use `only_one` if one wants to probe instead one strain instead of creating the two
+    possible children.
+If the bound is not important one can set `compute_bound = false` to improve running time.
 """
 function add2backtrack_vec!(
     backtrack_vec::Vector{BacktrackObj{T}},
@@ -271,8 +276,10 @@ function add2backtrack_vec!(
     parent_idx,
     vidx;
     check_bound = false,
-    only_one = false
+    only_one = false,
+    compute_bound = true
 ) where {T<:Real}
+    @assert !check_bound || compute_bound
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
     left_lb, left_ub, right_lb, right_ub = get_split_pvals(com, com.branch_split, com.search_space[vidx])
 
@@ -288,7 +295,9 @@ function add2backtrack_vec!(
 
     # left branch
     backtrack_obj = new_BacktrackObj(com, parent_idx, vidx, left_lb, left_ub)
-    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; vidx = vidx, lb = left_lb, ub = left_ub)
+    if compute_bound
+        backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; vidx = vidx, lb = left_lb, ub = left_ub)
+    end
     # only include nodes which have a better objective than the current best solution if one was found already
     if com.options.all_solutions || !check_bound || length(com.solutions) == 0 ||
         backtrack_obj.best_bound * obj_factor < com.best_sol * obj_factor ||
@@ -304,7 +313,9 @@ function add2backtrack_vec!(
     @assert left_ub < right_lb
     # right branch
     backtrack_obj = new_BacktrackObj(com, parent_idx, vidx, right_lb, right_ub)
-    backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; vidx = vidx, lb = right_lb, ub = right_ub)
+    if compute_bound
+        backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; vidx = vidx, lb = right_lb, ub = right_ub)
+    end
     if com.options.all_solutions || !check_bound || length(com.solutions) == 0 ||
         backtrack_obj.best_bound * obj_factor < com.best_sol ||
         com.options.all_optimal_solutions && backtrack_obj.best_bound * obj_factor <= com.best_sol * obj_factor

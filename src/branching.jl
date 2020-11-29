@@ -207,8 +207,10 @@ function probe_until(com::CS.CoM)
 
     n = 1
     while n < 10 && still_probing(n, mean_activities, variance_activities) && global_feasible
+        println("n: $n")
         n += 1
         root_feasible, feasible, activities = probe(com)
+        println("Finished a probe")
         for i in 1:length(com.search_space)
             new_mean = mean_activities[i] + (activities[i]-mean_activities[i]) / n
             # update variance: https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
@@ -271,7 +273,7 @@ function probe(com::CS.CoM)
         backtrack_vec,
         com,
         parent_idx,
-        branch_var.vidx; only_one = true
+        branch_var.vidx; only_one = true, compute_bound = false
     )
     last_backtrack_id = 0
     root_feasible = true
@@ -334,7 +336,7 @@ function probe(com::CS.CoM)
             backtrack_vec,
             com,
             last_backtrack_obj.idx,
-            branch_var.vidx; only_one = true
+            branch_var.vidx; only_one = true, compute_bound = false
         )
     end
     backtrack_vec[last_backtrack_id].status = :Closed
