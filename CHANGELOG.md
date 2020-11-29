@@ -1,8 +1,9 @@
 # ConstrainSolver.jl - Changelog
 
-## Unreleased
+## v0.4.0 (29th of November 2020)
+**Improvements for graph coloring**
 - Use LP solver also for single variable objectives
-- Combine several `x != y` constraints into all different constraints
+- Combine several `x != y` constraints into an all different constraint
 - Combine several `a >= x` constraints with the same `a` into a vector constraints
   - used for better bounds using all different constraints
 
