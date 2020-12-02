@@ -10,6 +10,7 @@ function init_constraint_struct(::Type{AllDifferentSetInternal}, internals)
         Int[], # di_ei => later
         Int[], # di_ej => later
         MatchingInit(),
+        SCCInit(),
         Int[]
     )
 end
@@ -56,6 +57,14 @@ function init_constraint!(
         zeros(Int, m + n),
         zeros(Bool, m),
         zeros(Bool, n),
+    )
+
+    constraint.scc_init = SCCInit(
+        zeros(Int, m + n + 2),
+        zeros(Int, m + n + 1),
+        zeros(Int, m + n + 1),
+        zeros(Bool, m + n + 1),
+        zeros(Int, m + n + 1)
     )
 
     # check if lp model exists and then add an equality constraint for better bound computation
@@ -261,18 +270,18 @@ function prune_constraint!(
     vertex_mapping = constraint.vertex_mapping
     vertex_mapping_bw = constraint.vertex_mapping_bw
 
-    vc = 1
+    vc = 0
     for i in indices
-        vertex_mapping_bw[vc] = i
         vc += 1
+        vertex_mapping_bw[vc] = i
     end
-    pvc = 1
+    pvc = 0
     for pv in pvals
+        vc += 1
+        pvc += 1
         pval_mapping[pvc] = pv
         vertex_mapping[pv-min_pvals_m1] = vc
         vertex_mapping_bw[vc] = pv
-        vc += 1
-        pvc += 1
     end
     num_nodes = vc
 
@@ -380,7 +389,7 @@ function prune_constraint!(
     end
 
     # Important di_ei must be sorted asc !!!
-    sccs_map = scc(di_ei, di_ej)
+    sccs_map = scc(di_ei, di_ej, constraint.scc_init)
 
     # remove the left over edges from the search space
     vmb = vertex_mapping_bw

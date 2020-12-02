@@ -1,12 +1,12 @@
-function scc(di_ei, di_ej)
-    n = max(maximum(di_ei), maximum(di_ej))
+function scc(di_ei, di_ej, scc_init)
     len = length(di_ei)
-    index_ei = zeros(Int, n+1)
+    index_ei = scc_init.index_ei
+    n = length(index_ei)-1
     last = di_ei[1]
     prev_last = 1
     c = 2
     last_i = 0
-    @inbounds for i = 2:len
+    for i = 2:len
         di_ei[i] == 0 && break
         if di_ei[i] > last
             j = last
@@ -22,15 +22,20 @@ function scc(di_ei, di_ej)
 
     id = 0
     sccCount = 0
-    ids = fill(-1, n)
-    low = zeros(Int, n)
-    parent = zeros(Int, n)
-    on_stack = zeros(Bool, n)
+
+    ids = scc_init.ids
+    low = scc_init.low
+    on_stack = scc_init.on_stack
+    group_id = scc_init.group_id
+
+    ids .= -1
+    low .= 0
+    on_stack .= false
     stack = Int[]
-    group_id = zeros(Int, n)
+    group_id .= 0
     c_group_id = 1
 
-    @inbounds for s in 1:n
+    for s in 1:n
         ids[s] != -1 && continue # if visited already continue
         dfs_work = Vector{Tuple{Int, Int}}()
         push!(dfs_work, (s, 0))

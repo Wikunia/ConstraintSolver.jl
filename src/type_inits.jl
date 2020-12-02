@@ -19,6 +19,7 @@ Variable(vidx) = Variable(
 )
 
 MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[], Bool[])
+SCCInit() = SCCInit(Int[], Int[], Int[], Bool[], Int[])
 
 function ConstraintInternals(cidx::Int, fct, set, indices::Vector{Int})
     return ConstraintInternals(

@@ -122,6 +122,14 @@ mutable struct MatchingInit
     used_r::Vector{Bool}
 end
 
+mutable struct SCCInit
+    index_ei::Vector{Int}
+    ids::Vector{Int}
+    low::Vector{Int}
+    on_stack::Vector{Bool}
+    group_id::Vector{Int}
+end
+
 """
     RSparseBitSet
 
@@ -224,6 +232,7 @@ mutable struct AllDifferentConstraint <: Constraint
     di_ei::Vector{Int}
     di_ej::Vector{Int}
     matching_init::MatchingInit
+    scc_init::SCCInit
     # corresponds to `in_all_different`: Saves the constraint idxs where all variables are part of this alldifferent constraint
     sub_constraint_idxs::Vector{Int}
 end
