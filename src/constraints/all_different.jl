@@ -1,4 +1,5 @@
 include("all_different/bipartite.jl")
+include("all_different/scc.jl")
 
 function init_constraint_struct(::Type{AllDifferentSetInternal}, internals)
     AllDifferentConstraint(
@@ -32,7 +33,8 @@ function init_constraint!(
     min_pvals, max_pvals = extrema(pvals)
     len_range = max_pvals - min_pvals + 1
 
-    num_edges = length(pvals) * nindices
+    # we need the + length(pvals) for scc edges from the new vertex
+    num_edges = length(pvals) * (nindices + 1)
 
     constraint.pval_mapping = zeros(Int, length(pvals))
     constraint.vertex_mapping = zeros(Int, len_range)
@@ -322,6 +324,7 @@ function prune_constraint!(
     end
 
     # directed edges for strongly connected components
+    # Important: di_ei must be sorted asc for strongly connected components
     vc = 0
     edge_counter = 0
     @inbounds for i in indices
@@ -331,63 +334,53 @@ function prune_constraint!(
             di_ei[edge_counter] = vc
             di_ej[edge_counter] = vertex_mapping[CS.value(search_space[i])-min_pvals_m1]
         else
-            for pv in view_values(search_space[i])
-                edge_counter += 1
-                if pv == pval_mapping[maximum_matching.match[vc]]
-                    di_ei[edge_counter] = vc
-                    di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1]
-                else
-                    di_ei[edge_counter] = vertex_mapping[pv-min_pvals_m1]
-                    di_ej[edge_counter] = vc
-                end
-            end
+            edge_counter += 1
+            pv = pval_mapping[maximum_matching.match[vc]]
+            di_ei[edge_counter] = vc
+            di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1]
         end
     end
 
-    # if we have more values than indices
-    if length(pvals) > nindices
-        # add extra node which has all values as input which are used in the maximum matching
-        # and the ones in maximum matching as inputs see: http://www.minicp.org (Part 6)
-        # the direction is opposite to that of minicp
-        used_in_maximum_matching = Dict{Int,Bool}()
-        for pval in pvals
-            used_in_maximum_matching[pval] = false
-        end
+    new_vertex = num_nodes + 1
+    used_in_maximum_matching = zeros(Bool, length(pvals))
+    @inbounds for pv in pvals
         vc = 0
         for i in indices
             vc += 1
-            for pv in view_values(search_space[i])
-                if pv == pval_mapping[maximum_matching.match[vc]]
-                    used_in_maximum_matching[pv] = true
-                    break
-                end
-            end
-        end
-        new_vertex = num_nodes + 1
-        for kv in used_in_maximum_matching
-            # not in maximum matching
-            edge_counter += 1
-            if length(di_ei) >= edge_counter
-                if !kv.second
-                    di_ei[edge_counter] = new_vertex
-                    di_ej[edge_counter] = vertex_mapping[kv.first-min_pvals_m1]
-                else
-                    di_ei[edge_counter] = vertex_mapping[kv.first-min_pvals_m1]
+            if has(search_space[i], pv)
+                if pv != pval_mapping[maximum_matching.match[vc]]
+                    edge_counter += 1
+                    di_ei[edge_counter] = vertex_mapping[pv-min_pvals_m1]
+                    di_ej[edge_counter] = vc
+                elseif length(pvals) > nindices # if we have more values than indices
+                    edge_counter += 1
+                    di_ei[edge_counter] = vertex_mapping[pv-min_pvals_m1]
                     di_ej[edge_counter] = new_vertex
-                end
-            else
-                if !kv.second
-                    push!(di_ei, new_vertex)
-                    push!(di_ej, vertex_mapping[kv.first-min_pvals_m1])
-                else
-                    push!(di_ei, vertex_mapping[kv.first-min_pvals_m1])
-                    push!(di_ej, new_vertex)
+                    used_in_maximum_matching[pv-min_pvals_m1] = true
                 end
             end
         end
     end
 
-    sccs_map = strong_components_map(di_ei[1:edge_counter], di_ej[1:edge_counter])
+    # INFO for both: length(pvals) > nindices
+    # add extra node which has all values as input which are used in the maximum matching
+    # and the ones in maximum matching as inputs see: http://www.minicp.org (Part 6)
+    # the direction is opposite to that of minicp
+
+    # if we have more values than indices
+    if length(pvals) > nindices
+        for pv in pvals
+            # value not in maximum matching
+            if !used_in_maximum_matching[pv-min_pvals_m1]
+                edge_counter += 1
+                di_ei[edge_counter] = new_vertex
+                di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1]
+            end
+        end
+    end
+
+    # Important di_ei must be sorted asc !!!
+    sccs_map = scc(di_ei, di_ej)
 
     # remove the left over edges from the search space
     vmb = vertex_mapping_bw
@@ -416,11 +409,6 @@ function prune_constraint!(
         if !rm!(com, search_space[cind], vmb[src])
             logs && @warn "The problem is infeasible"
             return false
-        end
-
-        # if only one value possible make it fixed
-        if nvalues(search_space[cind]) == 1
-            only_value = CS.value(search_space[cind])
         end
     end
 
