@@ -1,12 +1,28 @@
-function scc(di_ei, di_ej, scc_init)
+"""
+    scc(di_ei, di_ej, scc_init::SCCInit)
+
+Compute to which strongly connected component each vertex belongs.
+
+`di_ei` and `di_ej` describe the edges such that the k-th component of di_ei and k-th component
+of `di_ej` form an edge i.e `di_ei = [1, 1, 2]` and `di_ej = [3, 4, 3]` =>
+  those three edges  (1, 3), (1, 4), (2, 3)
+
+`di_ei` must be sorted asc to make this function work.
+
+The last argument is a `SCCInit` struct which itself provides the memory for the functionality.
+This speeds up the process as no new memory needs to be allocated.
+"""
+function scc(di_ei, di_ej, scc_init::SCCInit)
     len = length(di_ei)
     index_ei = scc_init.index_ei
     n = length(index_ei)-1
+    # compute the starting index for each vertex
+    # bascially knowing where to start/end when looking for neighbors
     last = di_ei[1]
     prev_last = 1
     c = 2
     last_i = 0
-    for i = 2:len
+    @inbounds for i = 2:len
         di_ei[i] == 0 && break
         if di_ei[i] > last
             j = last
@@ -35,14 +51,15 @@ function scc(di_ei, di_ej, scc_init)
     group_id .= 0
     c_group_id = 1
 
-    for s in 1:n
+    # start dfs from each vertex if unconnected graph
+    @inbounds for s in 1:n
         ids[s] != -1 && continue # if visited already continue
         dfs_work = Vector{Tuple{Int, Int}}()
+        # the 0 in dfs_work represents whether it's the first time calling that vertex
         push!(dfs_work, (s, 0))
         dfs_stack = Int[]
 
         while !isempty(dfs_work)
-            # @show dfs_work[end]
             at,i = pop!(dfs_work)
             if i == 0
                 on_stack[at] = true
@@ -66,7 +83,10 @@ function scc(di_ei, di_ej, scc_init)
                 end
             end
             recurse && continue
+            # if at is the representative of the group
             if ids[at] == low[at]
+                # take from stack as long as the representative doesn't appear
+                # and put all of them in the same scc
                 while true
                     w = pop!(dfs_stack)
                     on_stack[w] = false
