@@ -30,7 +30,7 @@ function general_tree_test(com::CS.CoM)
             next_idx = rand(2:n_backtracks)
             status = com.logs[next_idx].status
         end
-        
+        println("next_idx: $next_idx")
         CS.checkout_from_to!(com, c_backtrack_idx, next_idx)
 
         if com.backtrack_vec[next_idx].parent_idx != 0
@@ -55,6 +55,7 @@ function general_tree_test(com::CS.CoM)
         end
 
         c_backtrack_idx = next_idx
+        @show [values(var) for var in com.search_space]
     
         # if it has children
         if length(com.logs[c_backtrack_idx].children) > 0 && n_children_tests < 5
@@ -75,6 +76,7 @@ function general_tree_test(com::CS.CoM)
                 @assert feasible
                 @assert further_pruning
             end
+            @show [values(var) for var in com.search_space]
             
             @assert CS.prune!(com)
             CS.call_finished_pruning!(com)

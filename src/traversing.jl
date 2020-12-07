@@ -1,3 +1,77 @@
+function changed_traverse_strategy!(com::CS.CoM, old_traverse_strategy)
+    old_backtrack_pq = deepcopy(com.backtrack_pq)
+    com.backtrack_pq = PriorityQueue{Int, Priority}(Base.Order.Reverse)
+    if old_traverse_strategy == Val(:DFS)
+        for elem in old_backtrack_pq
+            idx = elem.first
+            priority = elem.second
+            com.backtrack_pq[idx] = PriorityBFS(priority.bound, priority.depth)
+        end
+    else # :BFS
+        for elem in old_backtrack_pq
+            idx = elem.first
+            priority = elem.second
+            com.backtrack_pq[idx] = PriorityDFS(priority.depth, priority.bound)
+        end
+    end
+end
+
+"""
+    add2priorityqueue(com::CS.CoM, backtrack_obj::BacktrackObj)
+
+Add the backtrack_obj to the priority queue `backtrack_pq`
+"""
+function add2priorityqueue(com::CS.CoM, backtrack_obj::BacktrackObj)
+     if com.traverse_strategy == Val(:DFS)
+        if com.sense == MOI.MIN_SENSE
+            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, -backtrack_obj.best_bound)
+        else
+            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, backtrack_obj.best_bound)
+        end
+    else
+        if com.sense == MOI.MIN_SENSE
+            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(-backtrack_obj.best_bound, backtrack_obj.depth)
+        else
+            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(backtrack_obj.best_bound, backtrack_obj.depth)
+        end
+    end
+end
+
+
+"""
+    close_node!(com::CS.CoM, node_idx::Int)
+
+Close a backtrack object node by setting the status to `:Closed` 
+and deleting it from the priority queue `backtrack_pq`
+"""
+function close_node!(com::CS.CoM, node_idx::Int)
+    backtrack_vec = com.backtrack_vec
+    backtrack_vec[node_idx].status = :Closed
+
+    delete!(com.backtrack_pq, node_idx)
+end
+
+"""
+    update_backtrack_pq!(com::CS.CoM, backtrack_obj::BacktrackObj, best_bound)
+
+Update the priority queue with the new best bound.
+"""
+function update_backtrack_pq!(com::CS.CoM, backtrack_obj::BacktrackObj, best_bound)
+    if com.traverse_strategy == Val(:DFS)
+        if com.sense == MOI.MIN_SENSE
+            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, -best_bound)
+        else
+            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, best_bound)
+        end
+    else
+        if com.sense == MOI.MIN_SENSE
+            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(-best_bound, backtrack_obj.depth, )
+        else
+            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(best_bound, backtrack_obj.depth)
+        end
+    end
+end
+
 function get_first_open(backtrack_vec)
     found = false
     l = length(backtrack_vec)
@@ -55,25 +129,6 @@ function get_next_node(
         end
     end
     return found, backtrack_obj
-end
-
-"""
-    get_next_node(com::CS.CoM, ::Val{:DBFS}, backtrack_vec::Vector{BacktrackObj{T}}, sorting) where T <: Real
-
-Get the next node we want to prune on if there is any.
-This uses depth first search if no solution was found so far and BFS otherwise.
-Check other `get_next_node` functions for other possible traverse strategies.
-Return whether a node was found and the corresponding backtrack_obj
-"""
-function get_next_node(
-    com::CS.CoM,
-    ::Val{:DBFS},
-    backtrack_vec::Vector{BacktrackObj{T}},
-    sorting
-) where {T<:Real}
-    found_sol = length(com.solutions) > 0
-    strategy = found_sol ? Val(:BFS) : Val(:DFS)
-    return get_next_node(com, strategy, backtrack_vec, sorting)
 end
 
 """
@@ -139,7 +194,6 @@ function get_next_node(
     backtrack_vec::Vector{BacktrackObj{T}},
     sorting
 ) where {T<:Real}
-    found = false
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
     backtrack_obj = backtrack_vec[1]
 
@@ -148,28 +202,12 @@ function get_next_node(
         return get_first_open(backtrack_vec)
     end # sort for depth
     # don't actually sort => just get the best backtrack idx
-    # the one with the best bound and if same best bound choose the one with higher depth
-    l = 0
-    best_fac_bound = typemax(Int)
-    best_depth = 0
-    for i = 1:length(backtrack_vec)
-        bo = backtrack_vec[i]
-        if bo.status == :Open
-            if bo.depth > best_depth || (
-                obj_factor * bo.best_bound < best_fac_bound &&
-                bo.depth == best_depth
-            )
-                    l = i
-                    best_depth = bo.depth
-                    best_fac_bound = obj_factor * bo.best_bound
-            end
-        end
-    end
+    # the one with the highest depth and if same choose better bound
+    isempty(com.backtrack_pq) && return false, backtrack_obj
+    
+    backtrack_idx, _ = peek(com.backtrack_pq)
 
-    if l != 0
-        backtrack_obj = backtrack_vec[l]
-        found = true
-    end
+    backtrack_obj = backtrack_vec[backtrack_idx]
 
-    return found, backtrack_obj
+    return true, backtrack_obj
 end
