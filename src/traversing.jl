@@ -41,11 +41,12 @@ end
 """
     close_node!(com::CS.CoM, node_idx::Int)
 
-Close a backtrack object node by setting the status to `:Closed` 
+Close a backtrack object node if not already closed by setting the status to `:Closed` 
 and deleting it from the priority queue `backtrack_pq`
 """
 function close_node!(com::CS.CoM, node_idx::Int)
     backtrack_vec = com.backtrack_vec
+    backtrack_vec[node_idx].status == :Closed && return
     backtrack_vec[node_idx].status = :Closed
 
     delete!(com.backtrack_pq, node_idx)

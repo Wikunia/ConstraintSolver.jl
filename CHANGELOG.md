@@ -2,6 +2,8 @@
 
 ## Unreleased
 - Using faster version of strongly connected components with lower memory footprint
+- Using a priority queue for faster `get_next_node`
+- Removed `further_pruning`
 
 ## v0.4.0 (29th of November 2020)
 **Improvements for graph coloring**
