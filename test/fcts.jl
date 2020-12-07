@@ -496,8 +496,8 @@
         com.traverse_strategy = Val(:DFS)
         com.sense = MOI.MIN_SENSE
         com.backtrack_vec = Vector{CS.BacktrackObj{Float64}}()
-        bounds = [0.4, 0.15, 0.15, 0.1]
-        depths = [3, 2, 1, 2]
+        bounds = [0.4, 0.15, 0.15, 0.1, 0.1]
+        depths = [3, 2, 1, 2, 2]
         bo = CS.BacktrackObj(com)
         for i = 1:length(bounds)
             bo.status = :Open
@@ -507,7 +507,7 @@
             push!(com.backtrack_vec, bo)
             CS.add2priorityqueue(com, com.backtrack_vec[end])
         end
-        order = [1,4,2,3]
+        order = [1,4,5,2,3]
         for i=1:length(bounds)
             found, bo = CS.get_next_node(com, com.backtrack_vec, true)
             @test found 
@@ -520,11 +520,8 @@
         com.options.traverse_strategy = :BFS
         com.sense = MOI.MIN_SENSE
         com.backtrack_vec = Vector{CS.BacktrackObj{Float64}}()
-        bounds = [0.4, 0.15, 0.15, 0.1]
-        depths = [3, 2, 1, 2]
-        bo = CS.BacktrackObj(com)
-        bounds = [0.4, 0.15, 0.15, 0.1]
-        depths = [3, 2, 1, 2]
+        bounds = [0.4, 0.15, 0.15, 0.1, 0.1]
+        depths = [3, 2, 1, 2, 2]
         bo = CS.BacktrackObj(com)
         for i = 1:length(bounds)
             bo.status = :Open
@@ -535,7 +532,7 @@
             CS.add2priorityqueue(com, com.backtrack_vec[end])
         end
 
-        order = [4,2,3,1]
+        order = [4,5,2,3,1]
         for i=1:length(bounds)
             found, bo = CS.get_next_node(com, com.backtrack_vec, true)
             @test found 

@@ -5,13 +5,13 @@ function changed_traverse_strategy!(com::CS.CoM, old_traverse_strategy)
         for elem in old_backtrack_pq
             idx = elem.first
             priority = elem.second
-            com.backtrack_pq[idx] = PriorityBFS(priority.bound, priority.depth)
+            com.backtrack_pq[idx] = PriorityBFS(priority.bound, priority.depth, priority.neg_idx)
         end
     else # :BFS
         for elem in old_backtrack_pq
             idx = elem.first
             priority = elem.second
-            com.backtrack_pq[idx] = PriorityDFS(priority.depth, priority.bound)
+            com.backtrack_pq[idx] = PriorityDFS(priority.depth, priority.bound, priority.neg_idx)
         end
     end
 end
@@ -24,15 +24,15 @@ Add the backtrack_obj to the priority queue `backtrack_pq`
 function add2priorityqueue(com::CS.CoM, backtrack_obj::BacktrackObj)
      if com.traverse_strategy == Val(:DFS)
         if com.sense == MOI.MIN_SENSE
-            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, -backtrack_obj.best_bound)
+            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, -backtrack_obj.best_bound, -backtrack_obj.idx)
         else
-            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, backtrack_obj.best_bound)
+            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, backtrack_obj.best_bound, -backtrack_obj.idx)
         end
     else
         if com.sense == MOI.MIN_SENSE
-            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(-backtrack_obj.best_bound, backtrack_obj.depth)
+            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(-backtrack_obj.best_bound, backtrack_obj.depth, -backtrack_obj.idx)
         else
-            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(backtrack_obj.best_bound, backtrack_obj.depth)
+            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(backtrack_obj.best_bound, backtrack_obj.depth, -backtrack_obj.idx)
         end
     end
 end
@@ -60,15 +60,15 @@ Update the priority queue with the new best bound.
 function update_backtrack_pq!(com::CS.CoM, backtrack_obj::BacktrackObj, best_bound)
     if com.traverse_strategy == Val(:DFS)
         if com.sense == MOI.MIN_SENSE
-            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, -best_bound)
+            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, -best_bound, -backtrack_obj.idx)
         else
-            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, best_bound)
+            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, best_bound, -backtrack_obj.idx)
         end
     else
         if com.sense == MOI.MIN_SENSE
-            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(-best_bound, backtrack_obj.depth, )
+            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(-best_bound, backtrack_obj.depth, -backtrack_obj.idx)
         else
-            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(best_bound, backtrack_obj.depth)
+            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(best_bound, backtrack_obj.depth, -backtrack_obj.idx)
         end
     end
 end

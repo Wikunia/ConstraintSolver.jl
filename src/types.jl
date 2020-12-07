@@ -101,13 +101,20 @@ abstract type Priority end
 struct PriorityDFS{T<:Real} <: Priority
     depth::Int
     bound::T
+    neg_idx::Int # the negative backtrack index (negative because of maximizing)
 end
 
 function Base.isless(p1::PriorityDFS, p2::PriorityDFS)
     if p1.depth < p2.depth
         return true
     elseif p1.depth == p2.depth
-        return p1.bound < p2.bound
+        if p1.bound < p2.bound
+            return true
+        elseif p1.bound == p2.bound
+            return p1.neg_idx < p2.neg_idx
+        else
+            return false
+        end
     end
     return false
 end
@@ -115,13 +122,20 @@ end
 struct PriorityBFS{T<:Real} <: Priority
     bound::T
     depth::Int
+    neg_idx::Int # the negative backtrack index (negative because of maximizing)
 end
 
 function Base.isless(p1::PriorityBFS, p2::PriorityBFS)
     if p1.bound < p2.bound
         return true
     elseif p1.bound == p2.bound
-        return p1.depth < p2.depth
+        if p1.depth < p2.depth
+            return true
+        elseif p1.depth == p2.depth
+            return p1.neg_idx < p2.neg_idx
+        else
+            return false
+        end
     end
     return false
 end
