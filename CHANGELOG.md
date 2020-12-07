@@ -1,5 +1,8 @@
 # ConstrainSolver.jl - Changelog
 
+## Unreleased
+- Using faster version of strongly connected components with lower memory footprint
+
 ## v0.4.0 (29th of November 2020)
 **Improvements for graph coloring**
 - Use LP solver also for single variable objectives

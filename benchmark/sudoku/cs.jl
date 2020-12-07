@@ -53,7 +53,7 @@ function solve_all(grids; benchmark = false, single_times = true)
             MOI.optimize!(m)
             status = MOI.get(m, MOI.TerminationStatus())
             GC.enable(true)
-            println(i - 1, ", ", MOI.get(m, MOI.SolveTime()))
+            # println(i - 1, ", ", MOI.get(m, MOI.SolveTime()))
         else
             GC.enable(false)
             MOI.optimize!(m)
@@ -70,10 +70,10 @@ function solve_all(grids; benchmark = false, single_times = true)
             @assert jump_fulfills_sudoku_constr(solution)
         end
     end
-    println("")
+    # println("")
     tt = time() - ct
-    println("total time: ", tt)
-    println("avg: ", tt / length(grids))
+    # println("total time: ", tt)
+    # println("avg: ", tt / length(grids))
 end
 
 function main(; benchmark = false, single_times = true)
