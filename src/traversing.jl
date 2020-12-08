@@ -1,3 +1,9 @@
+"""
+    changed_traverse_strategy!(com::CS.CoM, old_traverse_strategy)
+
+Changing from one traverse strategy to another. This means that the priority queue
+needs to be rebuilt from scratch.
+"""
 function changed_traverse_strategy!(com::CS.CoM, old_traverse_strategy)
     old_backtrack_pq = deepcopy(com.backtrack_pq)
     com.backtrack_pq = PriorityQueue{Int, Priority}(Base.Order.Reverse)
@@ -16,48 +22,14 @@ function changed_traverse_strategy!(com::CS.CoM, old_traverse_strategy)
     end
 end
 
-"""
-    add2priorityqueue(com::CS.CoM, backtrack_obj::BacktrackObj)
-
-Add the backtrack_obj to the priority queue `backtrack_pq`
-"""
-function add2priorityqueue(com::CS.CoM, backtrack_obj::BacktrackObj)
-     if com.traverse_strategy == Val(:DFS)
-        if com.sense == MOI.MIN_SENSE
-            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, -backtrack_obj.best_bound, -backtrack_obj.idx)
-        else
-            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, backtrack_obj.best_bound, -backtrack_obj.idx)
-        end
-    else
-        if com.sense == MOI.MIN_SENSE
-            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(-backtrack_obj.best_bound, backtrack_obj.depth, -backtrack_obj.idx)
-        else
-            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(backtrack_obj.best_bound, backtrack_obj.depth, -backtrack_obj.idx)
-        end
-    end
-end
-
 
 """
-    close_node!(com::CS.CoM, node_idx::Int)
+    set_update_backtrack_pq!(com::CS.CoM, backtrack_obj::BacktrackObj; best_bound=backtrack_obj.best_bound)
 
-Close a backtrack object node if not already closed by setting the status to `:Closed` 
-and deleting it from the priority queue `backtrack_pq`
+Inserts or updates the value for `backtrack_obj` in the priority queue: `backtrack_pq`.
+It uses the best bound of the object by default but can be overwritten with `; best_bound=other`
 """
-function close_node!(com::CS.CoM, node_idx::Int)
-    backtrack_vec = com.backtrack_vec
-    backtrack_vec[node_idx].status == :Closed && return
-    backtrack_vec[node_idx].status = :Closed
-
-    delete!(com.backtrack_pq, node_idx)
-end
-
-"""
-    update_backtrack_pq!(com::CS.CoM, backtrack_obj::BacktrackObj, best_bound)
-
-Update the priority queue with the new best bound.
-"""
-function update_backtrack_pq!(com::CS.CoM, backtrack_obj::BacktrackObj, best_bound)
+function set_update_backtrack_pq!(com::CS.CoM, backtrack_obj::BacktrackObj; best_bound=backtrack_obj.best_bound)
     if com.traverse_strategy == Val(:DFS)
         if com.sense == MOI.MIN_SENSE
             com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, -best_bound, -backtrack_obj.idx)
@@ -71,6 +43,30 @@ function update_backtrack_pq!(com::CS.CoM, backtrack_obj::BacktrackObj, best_bou
             com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(best_bound, backtrack_obj.depth, -backtrack_obj.idx)
         end
     end
+end
+
+"""
+    add2priorityqueue(com::CS.CoM, backtrack_obj::BacktrackObj)
+
+Add the backtrack_obj to the priority queue `backtrack_pq`
+"""
+function add2priorityqueue(com::CS.CoM, backtrack_obj::BacktrackObj)
+    set_update_backtrack_pq!(com, backtrack_obj)
+end
+
+
+"""
+    close_node!(com::CS.CoM, node_idx::Int)
+
+Close a backtrack object node if not already closed by setting the status to `:Closed`
+and deleting it from the priority queue `backtrack_pq`
+"""
+function close_node!(com::CS.CoM, node_idx::Int)
+    backtrack_vec = com.backtrack_vec
+    backtrack_vec[node_idx].status == :Closed && return
+    backtrack_vec[node_idx].status = :Closed
+
+    delete!(com.backtrack_pq, node_idx)
 end
 
 function get_first_open(backtrack_vec)
@@ -205,7 +201,7 @@ function get_next_node(
     # don't actually sort => just get the best backtrack idx
     # the one with the highest depth and if same choose better bound
     isempty(com.backtrack_pq) && return false, backtrack_obj
-    
+
     backtrack_idx, _ = peek(com.backtrack_pq)
 
     backtrack_obj = backtrack_vec[backtrack_idx]

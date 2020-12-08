@@ -151,10 +151,10 @@ function get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; vidx = 0, lb =
     best_bound = zero(com.best_bound)
     if com.options.lp_optimizer !== nothing
         best_bound = get_best_bound_lp(com, backtrack_obj, vidx, lb, ub)
-    else 
+    else
         best_bound = get_best_bound(com, backtrack_obj, com.objective, vidx, lb, ub)
     end
-    update_backtrack_pq!(com, backtrack_obj, best_bound)
+    set_update_backtrack_pq!(com, backtrack_obj; best_bound = best_bound)
     return best_bound
 end
 
