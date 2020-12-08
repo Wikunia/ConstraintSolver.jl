@@ -154,7 +154,10 @@ function get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; vidx = 0, lb =
     else
         best_bound = get_best_bound(com, backtrack_obj, com.objective, vidx, lb, ub)
     end
-    set_update_backtrack_pq!(com, backtrack_obj; best_bound = best_bound)
+    # vidx != 0 can mean a temporary backtrack object that doesn't get added to backtrack_vec
+    if vidx == 0 && backtrack_obj.status == :Open
+        set_update_backtrack_pq!(com, backtrack_obj; best_bound = best_bound)
+    end
     return best_bound
 end
 
@@ -351,6 +354,7 @@ function add_new_solution!(
     find_more_solutions = com.options.all_solutions || com.options.all_optimal_solutions
 
     new_sol = get_best_bound(com, backtrack_obj)
+    backtrack_obj.best_bound = new_sol
     if length(com.solutions) == 0 || obj_factor * new_sol <= obj_factor * com.best_sol
         # also push it to the solutions object
         new_sol_obj = Solution(new_sol, CS.value.(com.search_space), backtrack_obj.idx)
@@ -521,10 +525,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         # no index found => solution found
         if !found
             finished = add_new_solution!(com, backtrack_vec, backtrack_obj, log_table)
+            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
             if finished
                 # close the previous backtrack object
                 close_node!(com, last_backtrack_id)
-                com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
                 return :Solved
             end
             continue
