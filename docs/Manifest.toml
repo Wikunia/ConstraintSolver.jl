@@ -70,12 +70,10 @@ uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 version = "0.3.4+0"
 
 [[ConstraintSolver]]
-deps = ["JSON", "MatrixNetworks"]
-git-tree-sha1 = "81f6d427d55c3e8d673de4bc53149ea21631365c"
-repo-rev = "feature-jump-solver"
-repo-url = ".."
+deps = ["DataStructures", "Formatting", "JSON", "JuMP", "LightGraphs", "MathOptInterface", "MatrixNetworks", "Statistics"]
+path = ".."
 uuid = "e0e52ebd-5523-408d-9ca3-7641f1cd1405"
-version = "0.1.0"
+version = "0.4.0"
 
 [[DataAPI]]
 git-tree-sha1 = "ad84f52c0b8f05aa20839484dbaf01690b41ff84"
