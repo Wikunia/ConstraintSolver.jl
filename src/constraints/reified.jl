@@ -69,7 +69,7 @@ function still_feasible(
     if !has(variables[rei_vidx], activate_on)
         if all(i == vidx || isfixed(com.search_space[i]) for i in inner_constraint.indices)
             values = [i == vidx ? val : value(com.search_space[i]) for i in inner_constraint.indices]
-            return !is_solved_constraint(inner_constraint, inner_constraint.fct, inner_constraint.set, values)
+            return !is_constraint_solved(inner_constraint, inner_constraint.fct, inner_constraint.set, values)
         end
     end
     return true

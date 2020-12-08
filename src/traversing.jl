@@ -7,13 +7,13 @@ needs to be rebuilt from scratch.
 function changed_traverse_strategy!(com::CS.CoM, old_traverse_strategy)
     old_backtrack_pq = deepcopy(com.backtrack_pq)
     com.backtrack_pq = PriorityQueue{Int, Priority}(Base.Order.Reverse)
-    if old_traverse_strategy == Val(:DFS)
+    if old_traverse_strategy == Val(:DFS) && com.traverse_strategy == Val(:BFS)
         for elem in old_backtrack_pq
             idx = elem.first
             priority = elem.second
             com.backtrack_pq[idx] = PriorityBFS(priority.bound, priority.depth, priority.neg_idx)
         end
-    else # :BFS
+    elseif old_traverse_strategy == Val(:BFS) && com.traverse_strategy == Val(:DFS)
         for elem in old_backtrack_pq
             idx = elem.first
             priority = elem.second

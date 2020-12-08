@@ -85,7 +85,7 @@ end
     com = JuMP.backend(m).optimizer.model.inner
 
     constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [-2, 0, 7, -5])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [-2, 0, 7, -5])
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 
     constr_indices = constraint.indices

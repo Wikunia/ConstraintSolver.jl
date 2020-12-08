@@ -49,7 +49,7 @@ function update_log_node!(com, back_idx; feasible=nothing)
    # + infeasible nodes are closed
    if feasible !== nothing
         tree_log_node.feasible = feasible
-        com.backtrack_vec[back_idx].status = :Closed
+        close_node!(com, back_idx)
     end
 
     tree_log_node.status = com.backtrack_vec[back_idx].status

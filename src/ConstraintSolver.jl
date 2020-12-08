@@ -539,11 +539,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         branch_var = get_next_branch_variable(com)
         if branch_var.is_solution
             finished = add_new_solution!(com, backtrack_vec, backtrack_obj, log_table)
-            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
+            com.input[:logs] && update_log_node!(com, last_backtrack_id)
             if finished
                 # close the previous backtrack object
                 close_node!(com, last_backtrack_id)
-                com.input[:logs] && update_log_node!(com, last_backtrack_id)
                 return :Solved
             end
             continue

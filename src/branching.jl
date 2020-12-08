@@ -101,7 +101,7 @@ Return whether there is an unfixed variable and a best index
 function get_next_branch_variable(com::CS.CoM)
     branch_var = get_next_branch_variable(com, com.branch_strategy)
     if !branch_var.is_feasible || branch_var.is_solution
-        com.backtrack_vec[com.c_backtrack_idx].status = :Closed
+        close_node!(com, com.c_backtrack_idx)
     end
     return branch_var
 end
@@ -195,6 +195,7 @@ function probe_until(com::CS.CoM)
     com.branch_split = Val(:Random)
     com.branch_strategy = Val(:Random)
     global_feasible = true
+    changed_traverse_strategy!(com, saved_traverse_strategy)
 
     backtrack_obj = BacktrackObj(com)
     backtrack_obj.idx = length(com.backtrack_vec) + 1
@@ -207,10 +208,8 @@ function probe_until(com::CS.CoM)
 
     n = 1
     while n < 10 && still_probing(n, mean_activities, variance_activities) && global_feasible
-        println("n: $n")
         n += 1
         root_feasible, feasible, activities = probe(com)
-        println("Finished a probe")
         for i in 1:length(com.search_space)
             new_mean = mean_activities[i] + (activities[i]-mean_activities[i]) / n
             # update variance: https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
@@ -242,6 +241,7 @@ function probe_until(com::CS.CoM)
     com.branch_split = saved_branch_split
     com.traverse_strategy = saved_traverse_strategy
     com.branch_strategy = saved_branch_strategy
+    changed_traverse_strategy!(com, Val(:DFS))
 
     # checkout root node
     checkout_from_to!(com, com.c_backtrack_idx, 1)
@@ -282,7 +282,7 @@ function probe(com::CS.CoM)
     while feasible
         # close the previous and update the log
         if last_backtrack_id != 0
-            backtrack_vec[last_backtrack_id].status = :Closed
+            close_node!(com, last_backtrack_id)
             com.input[:logs] && update_log_node!(com, last_backtrack_id)
         end
         com.c_step_nr += 1
@@ -339,7 +339,7 @@ function probe(com::CS.CoM)
             branch_var.vidx; only_one = true, compute_bound = false
         )
     end
-    backtrack_vec[last_backtrack_id].status = :Closed
+    last_backtrack_id != 0 && close_node!(com, last_backtrack_id)
 
     # checkout root node
     checkout_from_to!(com, com.c_backtrack_idx, 2)
