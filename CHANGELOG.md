@@ -1,6 +1,6 @@
 # ConstrainSolver.jl - Changelog
 
-## v0.5.0
+## v0.5.0 (8th of December 2020)
 - Using a priority queue for faster `get_next_node`
 - Removed `further_pruning`
 
