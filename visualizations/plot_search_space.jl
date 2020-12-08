@@ -12,7 +12,7 @@ function plot_search_space(grid, com_grid, fname)
         yaxis = false,
         aspect_ratio = :equal,
     )
-    for i = 0:8, j = 0:8
+    for i in 0:8, j in 0:8
         plot!(rectangle(1, 1, i, j), color = :white)
     end
     for i in [3, 6]
@@ -74,7 +74,11 @@ function plot_killer(grid, sums, fname; fill = true, mark = nothing)
         annotate!(x, y, text(s.result, 15, :black))
         if mark === nothing
             for vidx in s.indices
-                plot!(rectangle(1, 1, vidx[2] - 1, 9 - vidx[1]), color = s.color, alpha = 0.4)
+                plot!(
+                    rectangle(1, 1, vidx[2] - 1, 9 - vidx[1]),
+                    color = s.color,
+                    alpha = 0.4,
+                )
             end
         else
             for vidx in s.indices
@@ -137,7 +141,7 @@ function plot_killer(grid, sums, fname; fill = true, mark = nothing)
     png("/home/ole/Julia/ConstraintSolver/visualizations/images/$(fname)")
 end
 
-function plot_str8ts(grid, white, fname; search_space = nothing, only_fixed=true)
+function plot_str8ts(grid, white, fname; search_space = nothing, only_fixed = true)
     plot(;
         size = (900, 900),
         legend = false,
@@ -146,20 +150,22 @@ function plot_str8ts(grid, white, fname; search_space = nothing, only_fixed=true
         aspect_ratio = :equal,
     )
 
-    for r=1:9, c=1:9
-        plot!(
-            rectangle(1, 1, c - 1, 9 - r),
-            color = white[r,c] == 1 ? "white" : "black",
-        )
+    for r in 1:9, c in 1:9
+        plot!(rectangle(1, 1, c - 1, 9 - r), color = white[r, c] == 1 ? "white" : "black")
         x = c - 0.5
         y = 10 - r - 0.5
-        if grid[r,c] != 0
-            annotate!(x, y, text(string(grid[r,c]), 20, white[r,c] == 1 ? :black : :white))
+        if grid[r, c] != 0
+            annotate!(
+                x,
+                y,
+                text(string(grid[r, c]), 20, white[r, c] == 1 ? :black : :white),
+            )
         end
-        if search_space !== nothing 
-            if search_space[r,c] != 0 && (search_space[r,c] isa Int || length(search_space[r,c]) == 1)
-                @assert white[r,c] == 1
-                annotate!(x, y, text(string(search_space[r,c]), 20, :blue))
+        if search_space !== nothing
+            if search_space[r, c] != 0 &&
+               (search_space[r, c] isa Int || length(search_space[r, c]) == 1)
+                @assert white[r, c] == 1
+                annotate!(x, y, text(string(search_space[r, c]), 20, :blue))
             end
         end
     end

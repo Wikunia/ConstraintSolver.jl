@@ -22,8 +22,8 @@ end
 
 function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction, func::SAF{T}) where {T<:Real}
     check_inbounds(model, func)
-    indices = [func.terms[i].variable_index.value for i = 1:length(func.terms)]
-    coeffs = [func.terms[i].coefficient for i = 1:length(func.terms)]
+    indices = [func.terms[i].variable_index.value for i in 1:length(func.terms)]
+    coeffs = [func.terms[i].coefficient for i in 1:length(func.terms)]
     lc = LinearCombination(indices, coeffs)
     model.inner.var_in_obj[indices] .= true
     model.inner.objective = LinearCombinationObjective(func, lc, func.constant, indices)

@@ -242,10 +242,10 @@
         @constraint(m, 2x != 4) # != 2
         @constraint(m, π / 3 * x != π) # != 3
         @constraint(m, 2.2x != 8.8) # != 4
-        @constraint(m, 4x+5y != 25) # != 5
-        @constraint(m, 4x+π*y != 10) # just some random stuff
-        @constraint(m, x+y+z-π != 10)
-        @constraint(m, x+y+z+2 != 10)
+        @constraint(m, 4x + 5y != 25) # != 5
+        @constraint(m, 4x + π * y != 10) # just some random stuff
+        @constraint(m, x + y + z - π != 10)
+        @constraint(m, x + y + z + 2 != 10)
         @objective(m, Min, x)
         optimize!(m)
 
@@ -254,16 +254,16 @@
         @test JuMP.value(x) == 6
         @test JuMP.value(y) == 1
         # the values should be fixed
-        @test length(CS.values(m, x)) == 1 
-        @test length(CS.values(m, y)) == 1 
-        @test length(CS.values(m, z)) == 1 
-        @test JuMP.value(x) + JuMP.value(y) + JuMP.value(z) + 2 != 10 
+        @test length(CS.values(m, x)) == 1
+        @test length(CS.values(m, y)) == 1
+        @test length(CS.values(m, z)) == 1
+        @test JuMP.value(x) + JuMP.value(y) + JuMP.value(z) + 2 != 10
     end
 
     @testset "Integers basic" begin
         m = Model(CSJuMPTestOptimizer())
-        @variable(m, x, CS.Integers([1,2,4]))
-        @variable(m, y, CS.Integers([2,3,5,6]))
+        @variable(m, x, CS.Integers([1, 2, 4]))
+        @variable(m, y, CS.Integers([2, 3, 5, 6]))
         @constraint(m, x == y)
         @objective(m, Max, x)
         optimize!(m)
@@ -272,25 +272,25 @@
         @test JuMP.objective_value(m) ≈ 2
 
         m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack" => false))
-        @variable(m, x, CS.Integers([1,2,4]))
+        @variable(m, x, CS.Integers([1, 2, 4]))
         optimize!(m)
         com = JuMP.backend(m).optimizer.model.inner
         @test !CS.has(com.search_space[1], 3)
-        @test sort(CS.values(com.search_space[1])) == [1,2,4]
+        @test sort(CS.values(com.search_space[1])) == [1, 2, 4]
 
         m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack" => false))
-        @variable(m, y, CS.Integers([2,5,6,3]))
+        @variable(m, y, CS.Integers([2, 5, 6, 3]))
         optimize!(m)
         com = JuMP.backend(m).optimizer.model.inner
         @test !CS.has(com.search_space[1], 1)
         @test !CS.has(com.search_space[1], 4)
-        @test sort(CS.values(com.search_space[1])) == [2,3,5,6]
+        @test sort(CS.values(com.search_space[1])) == [2, 3, 5, 6]
     end
 
     @testset "Biggest cube square number up to 100" begin
         m = Model(CSJuMPTestOptimizer())
-        @variable(m, x, CS.Integers([i^2 for i=1:20 if i^2 < 100]))
-        @variable(m, y, CS.Integers([i^3 for i=1:20 if i^3 < 100]))
+        @variable(m, x, CS.Integers([i^2 for i = 1:20 if i^2 < 100]))
+        @variable(m, y, CS.Integers([i^3 for i = 1:20 if i^3 < 100]))
         @constraint(m, x == y)
         @objective(m, Max, x)
         optimize!(m)
@@ -305,8 +305,8 @@
             "all_solutions" => true,
             "logging" => [],
         ))
-        @variable(m, x[1:3], CS.Integers([i^2 for i=1:50]))
-        @constraint(m, x[1]+x[2] == x[3])
+        @variable(m, x[1:3], CS.Integers([i^2 for i in 1:50]))
+        @constraint(m, x[1] + x[2] == x[3])
         @constraint(m, x[1] <= x[2])
         optimize!(m)
         com = JuMP.backend(m).optimizer.model.inner
@@ -316,7 +316,7 @@
 
     @testset "Infeasible by fixing variable to outside domain" begin
         m = Model(CSJuMPTestOptimizer())
-        @variable(m, x, CS.Integers([1,2,4]))
+        @variable(m, x, CS.Integers([1, 2, 4]))
         @constraint(m, x == 3)
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.INFEASIBLE
@@ -324,7 +324,7 @@
 
     @testset "Infeasible by fixing variable to two values" begin
         m = Model(CSJuMPTestOptimizer())
-        @variable(m, x, CS.Integers([1,2,4]))
+        @variable(m, x, CS.Integers([1, 2, 4]))
         @constraint(m, x == 1)
         @constraint(m, x == 2)
         optimize!(m)
@@ -332,7 +332,11 @@
     end
 
     @testset "5 variables all equal" begin
-        m = Model(optimizer_with_attributes(CS.Optimizer, "all_solutions" => true, "logging" => []))
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "all_solutions" => true,
+            "logging" => [],
+        ))
 
         @variable(m, 5 <= x <= 10, Int)
         @variable(m, 2 <= y <= 15, Int)
@@ -350,10 +354,18 @@
         optimize!(m)
 
         @test JuMP.termination_status(m) == MOI.OPTIMAL
-        @test JuMP.value(x) == JuMP.value(y) == JuMP.value(z) == JuMP.value(a) == JuMP.value(b)
-        @test JuMP.value(x; result=2) == JuMP.value(y; result=2) == JuMP.value(z; result=2) == JuMP.value(a; result=2) == JuMP.value(b; result=2)
-        @test JuMP.value(x) == 6 || JuMP.value(x) == 7 
-        @test JuMP.value(x; result=2) == 6 || JuMP.value(x; result=2) == 7 
-        @test JuMP.value(x) != JuMP.value(x; result=2)
+        @test JuMP.value(x) ==
+              JuMP.value(y) ==
+              JuMP.value(z) ==
+              JuMP.value(a) ==
+              JuMP.value(b)
+        @test JuMP.value(x; result = 2) ==
+              JuMP.value(y; result = 2) ==
+              JuMP.value(z; result = 2) ==
+              JuMP.value(a; result = 2) ==
+              JuMP.value(b; result = 2)
+        @test JuMP.value(x) == 6 || JuMP.value(x) == 7
+        @test JuMP.value(x; result = 2) == 6 || JuMP.value(x; result = 2) == 7
+        @test JuMP.value(x) != JuMP.value(x; result = 2)
     end
 end

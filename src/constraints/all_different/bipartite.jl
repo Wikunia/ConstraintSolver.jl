@@ -26,7 +26,7 @@ function bipartite_cardinality_matching(
         if matching_init === nothing
             perm = sortperm(l_in)
         else
-            perm = sortperm(l_in[1:matching_init.l_in_len])
+            perm = sortperm(l_in[1:(matching_init.l_in_len)])
         end
         l = l_in[perm]
         r = r_in[perm]
@@ -49,7 +49,7 @@ function bipartite_cardinality_matching(
 
     # create initial matching
     match_len = 0
-    for i = 1:len
+    for i in 1:len
         li, ri = l[i], r[i]
         if matching_l[li] == 0 && matching_r[ri] == 0
             matching_l[li] = ri
@@ -69,14 +69,14 @@ function bipartite_cardinality_matching(
         end
         last = l[1]
         c = 2
-        for i = 2:len
+        for i in 2:len
             if l[i] != last
-                index_l[last+1] = c
+                index_l[last + 1] = c
                 last = l[i]
             end
             c += 1
         end
-        index_l[l[len]+1] = c
+        index_l[l[len] + 1] = c
 
         index_l[1] = 1
 
@@ -104,7 +104,7 @@ function bipartite_cardinality_matching(
         while match_len < m
             pend = 1
             pstart = 1
-            for i = 1:len
+            for i in 1:len
                 li = l[i]
                 # free vertex
                 if matching_l[li] == 0
@@ -122,7 +122,7 @@ function bipartite_cardinality_matching(
                 if depth % 2 == 1
                     used_l[node] = true
                     # only works if l is sorted
-                    for ri = index_l[node]:index_l[node+1]-1
+                    for ri in index_l[node]:(index_l[node + 1] - 1)
                         child_node = r[ri]
                         # don't use matching edge
                         if matching_r[child_node] != node && !used_r[child_node]

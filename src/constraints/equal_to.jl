@@ -4,7 +4,16 @@
 Get the updated full_min, full_max as well as updated pre_mins[i] and pre_maxs[i] after values got removed from search_space[vidx]
 Return full_min, full_max, pre_mins[i], pre_maxs[i]
 """
-function get_new_extrema_and_sum(search_space, vidx, i, terms, full_min, full_max, pre_mins, pre_maxs)
+function get_new_extrema_and_sum(
+    search_space,
+    vidx,
+    i,
+    terms,
+    full_min,
+    full_max,
+    pre_mins,
+    pre_maxs,
+)
     new_min = pre_mins[i]
     new_max = pre_maxs[i]
     if terms[i].coefficient > 0
@@ -104,13 +113,24 @@ function prune_constraint!(
             # get a safe threshold because of floating point errors
             if maxs[i] < pre_maxs[i]
                 if fct.terms[i].coefficient > 0
-                    threshold = get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
+                    threshold =
+                        get_safe_upper_threshold(com, maxs[i], fct.terms[i].coefficient)
                     still_feasible = remove_above!(com, search_space[vidx], threshold)
                 else
-                    threshold = get_safe_lower_threshold(com, maxs[i], fct.terms[i].coefficient)
+                    threshold =
+                        get_safe_lower_threshold(com, maxs[i], fct.terms[i].coefficient)
                     still_feasible = remove_below!(com, search_space[vidx], threshold)
                 end
-                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, vidx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
+                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(
+                    search_space,
+                    vidx,
+                    i,
+                    fct.terms,
+                    full_min,
+                    full_max,
+                    pre_mins,
+                    pre_maxs,
+                )
                 if new_min != pre_mins[i]
                     changed = true
                     pre_mins[i] = new_min
@@ -130,13 +150,24 @@ function prune_constraint!(
                 new_min = pre_mins[i]
                 new_max = pre_maxs[i]
                 if fct.terms[i].coefficient > 0
-                    threshold = get_safe_lower_threshold(com, mins[i], fct.terms[i].coefficient)
+                    threshold =
+                        get_safe_lower_threshold(com, mins[i], fct.terms[i].coefficient)
                     still_feasible = remove_below!(com, search_space[vidx], threshold)
                 else
-                    threshold = get_safe_upper_threshold(com, mins[i], fct.terms[i].coefficient)
+                    threshold =
+                        get_safe_upper_threshold(com, mins[i], fct.terms[i].coefficient)
                     still_feasible = remove_above!(com, search_space[vidx], threshold)
                 end
-                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(search_space, vidx, i, fct.terms, full_min, full_max, pre_mins, pre_maxs)
+                full_min, full_max, new_min, new_max = get_new_extrema_and_sum(
+                    search_space,
+                    vidx,
+                    i,
+                    fct.terms,
+                    full_min,
+                    full_max,
+                    pre_mins,
+                    pre_maxs,
+                )
                 if new_min != pre_mins[i]
                     changed = true
                     pre_mins[i] = new_min
@@ -180,7 +211,10 @@ function prune_constraint!(
 
     # only a single one left
     if n_unfixed == 1
-        if !isapprox_discrete(com, unfixed_rhs / fct.terms[unfixed_local_vidx_1].coefficient)
+        if !isapprox_discrete(
+            com,
+            unfixed_rhs / fct.terms[unfixed_local_vidx_1].coefficient,
+        )
             com.bt_infeasible[unfixed_vidx_1] += 1
             return false
         else
@@ -201,8 +235,10 @@ function prune_constraint!(
     elseif n_unfixed == 2
         is_all_different = constraint.in_all_different
         if !is_all_different
-            intersect_cons =
-                intersect(com.subscription[unfixed_vidx_1], com.subscription[unfixed_vidx_2])
+            intersect_cons = intersect(
+                com.subscription[unfixed_vidx_1],
+                com.subscription[unfixed_vidx_2],
+            )
             for constraint_idx in intersect_cons
                 if isa(com.constraints[constraint_idx].set, AllDifferentSetInternal)
                     is_all_different = true
@@ -211,7 +247,7 @@ function prune_constraint!(
             end
         end
 
-        for v = 1:2
+        for v in 1:2
             if v == 1
                 this, local_this = unfixed_vidx_1, unfixed_local_vidx_1
                 other, local_other = unfixed_vidx_2, unfixed_local_vidx_2
@@ -336,7 +372,7 @@ function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::MOI.EqualTo{T},
-    values::Vector{Int}
+    values::Vector{Int},
 ) where {T<:Real}
 
     indices = [t.variable_index.value for t in fct.terms]

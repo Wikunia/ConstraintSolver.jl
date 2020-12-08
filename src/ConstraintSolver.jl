@@ -118,9 +118,9 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
             push!(pvals_intervals, (from = extra_from, to = extra_to))
         end
     end
-    pvals = collect(pvals_intervals[1].from:pvals_intervals[1].to)
+    pvals = collect((pvals_intervals[1].from):(pvals_intervals[1].to))
     for interval in pvals_intervals[2:end]
-        pvals = vcat(pvals, collect(interval.from:interval.to))
+        pvals = vcat(pvals, collect((interval.from):(interval.to)))
     end
     constraint.pvals = pvals
     if constraint isa IndicatorConstraint || constraint isa ReifiedConstraint
@@ -253,11 +253,7 @@ end
 
 Add a backtrack object to the backtrack vector and create necessary vectors and maybe include it in the logs
 """
-function addBacktrackObj2Backtrack_vec!(
-    backtrack_vec,
-    backtrack_obj,
-    com::CS.CoM,
-)
+function addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com::CS.CoM)
     push!(backtrack_vec, backtrack_obj)
     @assert length(backtrack_vec) == backtrack_obj.idx
     add2priorityqueue(com, backtrack_obj)
@@ -291,7 +287,8 @@ function add2backtrack_vec!(
 ) where {T<:Real}
     @assert !check_bound || compute_bound
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
-    left_lb, left_ub, right_lb, right_ub = get_split_pvals(com, com.branch_split, com.search_space[vidx])
+    left_lb, left_ub, right_lb, right_ub =
+        get_split_pvals(com, com.branch_split, com.search_space[vidx])
 
     #=
         Check whether the new node is needed which depends on
@@ -309,15 +306,14 @@ function add2backtrack_vec!(
         backtrack_obj.best_bound = get_best_bound(com, backtrack_obj; vidx = vidx, lb = left_lb, ub = left_ub)
     end
     # only include nodes which have a better objective than the current best solution if one was found already
-    if com.options.all_solutions || !check_bound || length(com.solutions) == 0 ||
-        backtrack_obj.best_bound * obj_factor < com.best_sol * obj_factor ||
-        com.options.all_optimal_solutions && backtrack_obj.best_bound * obj_factor <= com.best_sol * obj_factor
+    if com.options.all_solutions ||
+       !check_bound ||
+       length(com.solutions) == 0 ||
+       backtrack_obj.best_bound * obj_factor < com.best_sol * obj_factor ||
+       com.options.all_optimal_solutions &&
+       backtrack_obj.best_bound * obj_factor <= com.best_sol * obj_factor
 
-        addBacktrackObj2Backtrack_vec!(
-            backtrack_vec,
-            backtrack_obj,
-            com
-        )
+        addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com)
     end
     only_one && return
     @assert left_ub < right_lb
@@ -330,11 +326,7 @@ function add2backtrack_vec!(
         backtrack_obj.best_bound * obj_factor < com.best_sol ||
         com.options.all_optimal_solutions && backtrack_obj.best_bound * obj_factor <= com.best_sol * obj_factor
 
-        addBacktrackObj2Backtrack_vec!(
-            backtrack_vec,
-            backtrack_obj,
-            com
-        )
+        addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com)
     end
 end
 
@@ -420,7 +412,8 @@ Return whether a optimal solution was found
 """
 function found_best_node(com::CS.CoM)
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
-    return length(com.solutions) > 0 && obj_factor * com.best_bound >= obj_factor * com.best_sol
+    return length(com.solutions) > 0 &&
+           obj_factor * com.best_bound >= obj_factor * com.best_sol
 end
 
 """
@@ -433,7 +426,7 @@ Handle infeasibility:
 
 Return true to make calls like `!feasible && handle_infeasible!(com) && continue` possible
 """
-function handle_infeasible!(com::CS.CoM; finish_pruning=false)
+function handle_infeasible!(com::CS.CoM; finish_pruning = false)
     # need to call as some function might have pruned something.
     # Just need to be sure that we save the latest states
     finish_pruning && call_finished_pruning!(com)
@@ -524,12 +517,12 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         # first update the best bound (only constraints which have an index in the objective function)
         if com.sense != MOI.FEASIBILITY_SENSE
             feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
-            !feasible && handle_infeasible!(com; finish_pruning=true) && continue
+            !feasible && handle_infeasible!(com; finish_pruning = true) && continue
         end
 
         # prune completely start with all that changed by the fix or by updating best bound
         feasible = prune!(com)
-        !feasible && handle_infeasible!(com; finish_pruning=true) && continue
+        !feasible && handle_infeasible!(com; finish_pruning = true) && continue
         call_finished_pruning!(com)
 
         if log_table
@@ -594,7 +587,7 @@ end
 
 Set `constraint.in_all_different` if all variables in the constraint are part of the same `all_different` constraint.
 """
-function set_in_all_different!(com::CS.CoM; constraints=com.constraints)
+function set_in_all_different!(com::CS.CoM; constraints = com.constraints)
     for constraint in constraints
         if :in_all_different in fieldnames(typeof(constraint))
             if !constraint.in_all_different
@@ -679,10 +672,12 @@ function solve!(com::CS.CoM, options::SolverOptions)
     if options.simplify
         added_con_idxs = simplify!(com)
         if length(added_con_idxs) > 0
-            set_in_all_different!(com; constraints=com.constraints[added_con_idxs])
-            set_impl_functions!(com; constraints=com.constraints[added_con_idxs])
-            !init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
-            !update_init_constraints!(com; constraints=com.constraints[added_con_idxs]) && return :Infeasible
+            set_in_all_different!(com; constraints = com.constraints[added_con_idxs])
+            set_impl_functions!(com; constraints = com.constraints[added_con_idxs])
+            !init_constraints!(com; constraints = com.constraints[added_con_idxs]) &&
+                return :Infeasible
+            !update_init_constraints!(com; constraints = com.constraints[added_con_idxs]) &&
+                return :Infeasible
             recompute_subscriptions(com)
         end
     end

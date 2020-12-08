@@ -29,15 +29,16 @@ end
         end
 
         # sudoku constraints
-        for rc = 1:9
+        for rc in 1:9
             @constraint(m, x[rc, :] in CS.AllDifferentSet())
             @constraint(m, x[:, rc] in CS.AllDifferentSet())
         end
-        for br = 0:2
-            for bc = 0:2
+        for br in 0:2
+            for bc in 0:2
                 @constraint(
                     m,
-                    vec(x[br*3+1:(br+1)*3, bc*3+1:(bc+1)*3]) in CS.AllDifferentSet()
+                    vec(x[(br * 3 + 1):((br + 1) * 3), (bc * 3 + 1):((bc + 1) * 3)]) in
+                    CS.AllDifferentSet()
                 )
             end
         end
@@ -65,22 +66,20 @@ end
 
         for s in sums
             @constraint(m, sum([x[ind[1], ind[2]] for ind in s.indices]) == s.result)
-            @constraint(
-                m,
-                [x[ind[1], ind[2]] for ind in s.indices] in CS.AllDifferentSet()
-            )
+            @constraint(m, [x[ind[1], ind[2]] for ind in s.indices] in CS.AllDifferentSet())
         end
 
         # sudoku constraints
-        for rc = 1:9
+        for rc in 1:9
             @constraint(m, x[rc, :] in CS.AllDifferentSet())
             @constraint(m, x[:, rc] in CS.AllDifferentSet())
         end
-        for br = 0:2
-            for bc = 0:2
+        for br in 0:2
+            for bc in 0:2
                 @constraint(
                     m,
-                    vec(x[br*3+1:(br+1)*3, bc*3+1:(bc+1)*3]) in CS.AllDifferentSet()
+                    vec(x[(br * 3 + 1):((br + 1) * 3), (bc * 3 + 1):((bc + 1) * 3)]) in
+                    CS.AllDifferentSet()
                 )
             end
         end
@@ -95,7 +94,7 @@ end
         end
     end
 
-    function killer_negative(;reverse_order=false)
+    function killer_negative(; reverse_order = false)
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "keep_logs" => true,

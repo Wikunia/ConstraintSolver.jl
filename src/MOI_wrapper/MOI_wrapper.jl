@@ -11,7 +11,11 @@ const VAR_TYPES = Union{MOI.ZeroOne,MOI.Integer}
 var_idx(x::JuMP.VariableRef) = JuMP.optimizer_index(x).value
 var_idx(x::MOI.VariableIndex) = x.value
 # support for @variable(m, x, Set)
-function JuMP.build_variable(_error::Function, info::JuMP.VariableInfo, set::T) where T<:MOI.AbstractScalarSet
+function JuMP.build_variable(
+    _error::Function,
+    info::JuMP.VariableInfo,
+    set::T,
+) where {T<:MOI.AbstractScalarSet}
     return JuMP.VariableConstrainedOnCreation(JuMP.ScalarVariable(info), set)
 end
 
@@ -102,7 +106,7 @@ end
 
 Set the time limit
 """
-function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value::Union{Nothing, Float64})
+function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value::Union{Nothing,Float64})
     if value === nothing
         model.options.time_limit = Inf
     else

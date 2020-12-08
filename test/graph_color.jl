@@ -1,6 +1,11 @@
 @testset "Graph coloring" begin
 
-    function normal_49_states(; reverse_constraint = false, tests=true, time_limit=Inf, simplify=true)
+    function normal_49_states(;
+        reverse_constraint = false,
+        tests = true,
+        time_limit = Inf,
+        simplify = true,
+    )
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "keep_logs" => true,
@@ -185,7 +190,12 @@
 
         com = JuMP.backend(m).optimizer.model.inner
 
-        CS.save_logs(com, "graph_color_optimize.json", :states => states, :max_color => max_color)
+        CS.save_logs(
+            com,
+            "graph_color_optimize.json",
+            :states => states,
+            :max_color => max_color,
+        )
         rm("graph_color_optimize.json")
 
         if tests
@@ -198,8 +208,8 @@
     end
 
     @testset "49 US states + DC time limit" begin
-        com1, m1 = normal_49_states(; time_limit = 0.001, tests=false, simplify=false)
-        com2, m2 = normal_49_states(; simplify=false)
+        com1, m1 = normal_49_states(; time_limit = 0.001, tests = false, simplify = false)
+        com2, m2 = normal_49_states(; simplify = false)
         @test test_string([constraint.indices for constraint in com1.constraints]) == test_string([constraint.indices for constraint in com2.constraints])
         info_1 = com1.info
         info_2 = com2.info
@@ -211,8 +221,8 @@
 
 
     @testset "49 US states + DC" begin
-        com1,_ = normal_49_states(; reverse_constraint = true)
-        com2,_ = normal_49_states()
+        com1, _ = normal_49_states(; reverse_constraint = true)
+        com2, _ = normal_49_states()
         info_1 = com1.info
         info_2 = com2.info
         @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
@@ -768,25 +778,37 @@
 
     @testset "small graph coloring correctness test" begin
         cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
-        m = Model(
-            optimizer_with_attributes(
-                CS.Optimizer,
-                "logging" => [], "lp_optimizer" => cbc_optimizer,
-                "keep_logs" => true,
-            )
-        )
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => [],
+            "lp_optimizer" => cbc_optimizer,
+            "keep_logs" => true,
+        ))
 
         n = 10
         @variable(m, 1 <= c[1:n] <= n, Int)
         @variable(m, 1 <= max_color <= n, Int)
 
-        edge_list = [(1,2), (1,5), (1,7), (1,8),
-                    (2,4), (2,7), (2,8), (2,9),
-                    (3,7), (3,9), (3,10),
-                    (4,9), (4,10),
-                    (5,10),
-                    (6,7), (6,9),
-                    (7,8), (7,10)];
+        edge_list = [
+            (1, 2),
+            (1, 5),
+            (1, 7),
+            (1, 8),
+            (2, 4),
+            (2, 7),
+            (2, 8),
+            (2, 9),
+            (3, 7),
+            (3, 9),
+            (3, 10),
+            (4, 9),
+            (4, 10),
+            (5, 10),
+            (6, 7),
+            (6, 9),
+            (7, 8),
+            (7, 10),
+        ]
 
         for edge in edge_list
             @constraint(m, c[edge[1]] != c[edge[2]])

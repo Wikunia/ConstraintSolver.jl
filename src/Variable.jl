@@ -9,7 +9,7 @@ Can be used if the status is :Solved as then all variables are fixed.
 """
 @inline value(v::CS.Variable) = v.values[v.last_ptr]
 
-@inline values(v::CS.Variable) = v.values[v.first_ptr:v.last_ptr]
+@inline values(v::CS.Variable) = v.values[(v.first_ptr):(v.last_ptr)]
 
 """
     values(m::Model, v::VariableRef)
@@ -21,17 +21,17 @@ function values(m::Model, v::VariableRef)
     return values(com.search_space[v.index.value])
 end
 
-@inline view_values(v::CS.Variable) = @views v.values[v.first_ptr:v.last_ptr]
+@inline view_values(v::CS.Variable) = @views v.values[(v.first_ptr):(v.last_ptr)]
 
 """
     view_removed_values(v::CS.Variable)
 
 Return a view of all removed values
 """
-@inline view_removed_values(v::CS.Variable) = @views v.values[v.last_ptr+1:end]
+@inline view_removed_values(v::CS.Variable) = @views v.values[(v.last_ptr + 1):end]
 
 function num_removed(var::CS.Variable)
-    return length(var.values)-var.last_ptr
+    return length(var.values) - var.last_ptr
 end
 
 function issetto(v::CS.Variable, x::Int)
@@ -46,11 +46,18 @@ function has(v::CS.Variable, x::Int)
     if x > v.max || x < v.min
         return false
     end
-    vidx = v.indices[x+v.offset]
+    vidx = v.indices[x + v.offset]
     return v.first_ptr <= vidx <= v.last_ptr
 end
 
-function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several = false, changes = true, check_feasibility=true)
+function rm!(
+    com::CS.CoM,
+    v::CS.Variable,
+    x::Int;
+    in_remove_several = false,
+    changes = true,
+    check_feasibility = true,
+)
     if !in_remove_several && check_feasibility
         # after removing nothing would be possible
         len_vals = nvalues(v)
@@ -67,9 +74,9 @@ function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several = false, cha
         end
     end
 
-    vidx = v.indices[x+v.offset]
-    v.indices[x+v.offset], v.indices[v.values[v.last_ptr]+v.offset] =
-        v.indices[v.values[v.last_ptr]+v.offset], v.indices[x+v.offset]
+    vidx = v.indices[x + v.offset]
+    v.indices[x + v.offset], v.indices[v.values[v.last_ptr] + v.offset] =
+        v.indices[v.values[v.last_ptr] + v.offset], v.indices[x + v.offset]
     v.values[vidx], v.values[v.last_ptr] = v.values[v.last_ptr], v.values[vidx]
     v.last_ptr -= 1
     if !in_remove_several
@@ -87,13 +94,13 @@ function rm!(com::CS.CoM, v::CS.Variable, x::Int; in_remove_several = false, cha
     return true
 end
 
-function fix!(com::CS.CoM, v::CS.Variable, x::Int; changes = true, check_feasibility=true)
+function fix!(com::CS.CoM, v::CS.Variable, x::Int; changes = true, check_feasibility = true)
     if check_feasibility && !fulfills_constraints(com, v.idx, x)
         com.bt_infeasible[v.idx] += 1
         return false
     end
     !has(v, x) && return false
-    vidx = v.indices[x+v.offset]
+    vidx = v.indices[x + v.offset]
     pr_below = vidx - v.first_ptr
     pr_above = v.last_ptr - vidx
     changes && push!(v.changes[com.c_backtrack_idx], (:fix, x, v.last_ptr, 0))
@@ -108,7 +115,13 @@ function isfixed(v::CS.Variable)
     return v.last_ptr == v.first_ptr
 end
 
-function remove_below!(com::CS.CoM, var::CS.Variable, val::Int; changes = true, check_feasibility=true)
+function remove_below!(
+    com::CS.CoM,
+    var::CS.Variable,
+    val::Int;
+    changes = true,
+    check_feasibility = true,
+)
     vals = values(var)
     still_possible = filter(v -> v >= val, vals)
     if nvalues(var) == length(still_possible)
@@ -136,12 +149,18 @@ function remove_below!(com::CS.CoM, var::CS.Variable, val::Int; changes = true, 
     if nremoved > 0 && feasible(var)
         var.min = minimum(values(var))
         changes &&
-        push!(var.changes[com.c_backtrack_idx], (:remove_below, val, 0, nremoved))
+            push!(var.changes[com.c_backtrack_idx], (:remove_below, val, 0, nremoved))
     end
     return true
 end
 
-function remove_above!(com::CS.CoM, var::CS.Variable, val::Int; changes = true, check_feasibility=true)
+function remove_above!(
+    com::CS.CoM,
+    var::CS.Variable,
+    val::Int;
+    changes = true,
+    check_feasibility = true,
+)
     vals = values(var)
     still_possible = filter(v -> v <= val, vals)
     if nvalues(var) == length(still_possible)
@@ -169,7 +188,7 @@ function remove_above!(com::CS.CoM, var::CS.Variable, val::Int; changes = true, 
     if nremoved > 0 && feasible(var)
         var.max = maximum(values(var))
         changes &&
-        push!(var.changes[com.c_backtrack_idx], (:remove_above, val, 0, nremoved))
+            push!(var.changes[com.c_backtrack_idx], (:remove_above, val, 0, nremoved))
     end
     return true
 end

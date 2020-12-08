@@ -11,19 +11,34 @@
     @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1,2,3])
     @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [2,2,3])
 
-    sorted_min = [1,1,2,2,3]
-    sorted_max = [5,5,4,4,2]
-    @test CS.get_alldifferent_extrema(sorted_min, sorted_max, 3) == (1+2+3, 5+4+3)
+    sorted_min = [1, 1, 2, 2, 3]
+    sorted_max = [5, 5, 4, 4, 2]
+    @test CS.get_alldifferent_extrema(sorted_min, sorted_max, 3) == (1 + 2 + 3, 5 + 4 + 3)
 
-    sorted_min = [1,3,3,3,4]
-    sorted_max = [9,7,7,7,5]
-    @test CS.get_alldifferent_extrema(sorted_min, sorted_max, 3) == (1+3+4, 9+7+6)
-    @test CS.get_alldifferent_extrema(sorted_min, sorted_max, 5) == (1+3+4+5+6, 9+7+6+5+4)
+    sorted_min = [1, 3, 3, 3, 4]
+    sorted_max = [9, 7, 7, 7, 5]
+    @test CS.get_alldifferent_extrema(sorted_min, sorted_max, 3) == (1 + 3 + 4, 9 + 7 + 6)
+    @test CS.get_alldifferent_extrema(sorted_min, sorted_max, 5) ==
+          (1 + 3 + 4 + 5 + 6, 9 + 7 + 6 + 5 + 4)
 
     constr_indices = constraint.indices
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[2], 5)
+    @test CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[2],
+        5,
+    )
     @test CS.fix!(com, com.search_space[constr_indices[2]], 5)
-    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], 5)
+    @test !CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[3],
+        5,
+    )
 
     # need to create a backtrack_vec to reverse pruning
     dummy_backtrack_obj = CS.BacktrackObj(com)
@@ -31,7 +46,14 @@
     # reverse previous fix
     CS.reverse_pruning!(com, 1)
     # now setting it to 5 should be feasible
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], 5)
+    @test CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[3],
+        5,
+    )
 
     com.c_backtrack_idx = 1
 
@@ -46,7 +68,7 @@
     for ind in constr_indices[3:end]
         @test sort(CS.values(com.search_space[ind])) == -5:4
     end
-    @test sort(CS.values(com.search_space[1])) == [-5,-4,-3,-2,-1,0,2,3,4]
+    @test sort(CS.values(com.search_space[1])) == [-5, -4, -3, -2, -1, 0, 2, 3, 4]
     @test sort(CS.values(com.search_space[2])) == [5]
 
     # 3 and 4 are taken by indices 3 and 4 so not available at other positions
@@ -59,7 +81,7 @@
     for ind in constr_indices[5:end]
         @test sort(CS.values(com.search_space[ind])) == -5:2
     end
-    @test sort(CS.values(com.search_space[1])) == [-5,-4,-3,-2,-1,0,2]
+    @test sort(CS.values(com.search_space[1])) == [-5, -4, -3, -2, -1, 0, 2]
     @test sort(CS.values(com.search_space[2])) == [5]
 
     # we don't need -5

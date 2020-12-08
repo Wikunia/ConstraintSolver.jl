@@ -9,14 +9,18 @@ function create_csv()
 
     for dir in readdir(root_dir)
         !isdir(joinpath(root_dir, dir)) && continue
-        df = DataFrame("instance"=>String[],
-            "status"=>String[], "result"=>Float64[], "time"=>Float64[])
+        df = DataFrame(
+            "instance" => String[],
+            "status" => String[],
+            "result" => Float64[],
+            "time" => Float64[],
+        )
         for (root, dirs, files) in walkdir(joinpath(root_dir, dir))
             pnames = joinpath.(root, files) # files is a Vector{String}, can be empty
             for pname in pnames
                 parts = split(pname, "/")
                 if parts[end] == "stdout"
-                    instance = parts[end-1]
+                    instance = parts[end - 1]
                     lines = readlines(pname)
                     isempty(lines) && continue
                     result = lines[end]

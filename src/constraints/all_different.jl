@@ -11,7 +11,7 @@ function init_constraint_struct(::Type{AllDifferentSetInternal}, internals)
         Int[], # di_ej => later
         MatchingInit(),
         SCCInit(),
-        Int[]
+        Int[],
     )
 end
 
@@ -26,7 +26,7 @@ function init_constraint!(
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal;
-    active = true
+    active = true,
 )
     pvals = constraint.pvals
     nindices = length(constraint.indices)
@@ -64,7 +64,7 @@ function init_constraint!(
         zeros(Int, m + n + 1),
         zeros(Int, m + n + 1),
         zeros(Bool, m + n + 1),
-        zeros(Int, m + n + 1)
+        zeros(Int, m + n + 1),
     )
 
     # check if lp model exists and then add an equality constraint for better bound computation
@@ -73,7 +73,8 @@ function init_constraint!(
     lp_backend = backend(com.lp_model)
     lp_vidx = create_lp_variable!(com.lp_model, com.lp_x)
     # create == constraint with sum of all variables equal the newly created variable
-    sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(vidx)) for vidx in constraint.indices]
+    sats =
+        [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(vidx)) for vidx in constraint.indices]
     push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_vidx)))
     saf = MOI.ScalarAffineFunction(sats, 0.0)
     MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
@@ -86,7 +87,10 @@ function init_constraint!(
     for sc_idx in constraint.sub_constraint_idxs
         lp_vidx = create_lp_variable!(com.lp_model, com.lp_x)
         # create == constraint with sum of all variables equal the newly created variable
-        sats = [MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(vidx)) for vidx in com.constraints[sc_idx].indices]
+        sats = [
+            MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(vidx))
+            for vidx in com.constraints[sc_idx].indices
+        ]
         push!(sats, MOI.ScalarAffineTerm(-1.0, MOI.VariableIndex(lp_vidx)))
         saf = MOI.ScalarAffineFunction(sats, 0.0)
         MOI.add_constraint(lp_backend, saf, MOI.EqualTo(0.0))
@@ -104,7 +108,7 @@ Return the minimum and maximum sum using `len` values of sorted_min/sorted_max w
 function get_alldifferent_extrema(sorted_min, sorted_max, len)
     max_sum = sorted_max[1]
     last_val = max_sum
-    for i=2:len
+    for i in 2:len
         if sorted_max[i] >= last_val
             last_val -= 1
         else
@@ -115,7 +119,7 @@ function get_alldifferent_extrema(sorted_min, sorted_max, len)
 
     min_sum = sorted_min[1]
     last_val = min_sum
-    for i=2:len
+    for i in 2:len
         if sorted_min[i] <= last_val
             last_val += 1
         else
@@ -127,11 +131,17 @@ function get_alldifferent_extrema(sorted_min, sorted_max, len)
     return min_sum, max_sum
 end
 
-function get_sorted_extrema(com, constraint::AllDifferentConstraint, vidx::Int, lb::Int, ub::Int)
+function get_sorted_extrema(
+    com,
+    constraint::AllDifferentConstraint,
+    vidx::Int,
+    lb::Int,
+    ub::Int,
+)
     max_vals = zeros(Int, length(constraint.indices))
     min_vals = zeros(Int, length(constraint.indices))
     search_space = com.search_space
-    for i=1:length(constraint.indices)
+    for i in 1:length(constraint.indices)
         v_idx = constraint.indices[i]
         if v_idx == vidx
             max_vals[i] = ub
@@ -143,7 +153,7 @@ function get_sorted_extrema(com, constraint::AllDifferentConstraint, vidx::Int, 
     end
 
     # sort the max_vals desc and obtain bound by enforcing all different
-    sort!(max_vals; rev=true)
+    sort!(max_vals; rev = true)
     # sort the min_vals asc and obtain bound by enforcing all different
     sort!(min_vals)
     return min_vals, max_vals
@@ -164,13 +174,14 @@ the possible values the all different constraint allows.
 i.e if we have 4 variables all between 1 and 10 the maximum sum is 10+9+8+7 and the minimum sum is 1+2+3+4
 Additionally one of the variables can be bounded using `vidx`, `lb` and `ub`
 """
-function update_best_bound_constraint!(com::CS.CoM,
+function update_best_bound_constraint!(
+    com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal,
     vidx::Int,
     lb::Int,
-    ub::Int
+    ub::Int,
 )
     constraint.bound_rhs === nothing && return
     search_space = com.search_space
@@ -179,7 +190,8 @@ function update_best_bound_constraint!(com::CS.CoM,
     # get the maximum/minimum value for each variable
     min_vals, max_vals = get_sorted_extrema(com, constraint, vidx, lb, ub)
 
-    min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(constraint.indices))
+    min_sum, max_sum =
+        get_alldifferent_extrema(min_vals, max_vals, length(constraint.indices))
 
     constraint.bound_rhs[1].lb = min_sum
     constraint.bound_rhs[1].ub = max_sum
@@ -188,7 +200,8 @@ function update_best_bound_constraint!(com::CS.CoM,
     for sc_idx in constraint.sub_constraint_idxs
         i += 1
         sub_constraint = com.constraints[sc_idx]
-        min_sum, max_sum = get_alldifferent_extrema(min_vals, max_vals, length(sub_constraint.indices))
+        min_sum, max_sum =
+            get_alldifferent_extrema(min_vals, max_vals, length(sub_constraint.indices))
         constraint.bound_rhs[i].lb = min_sum
         constraint.bound_rhs[i].ub = max_sum
     end
@@ -227,7 +240,7 @@ function prune_constraint!(
     while bfixed
         new_fixed_vals = Int[]
         bfixed = false
-        for i = 1:length(unfixed_indices)
+        for i in 1:length(unfixed_indices)
             pi = unfixed_indices[i]
             vidx = indices[pi]
             @views c_search_space = search_space[vidx]
@@ -280,7 +293,7 @@ function prune_constraint!(
         vc += 1
         pvc += 1
         pval_mapping[pvc] = pv
-        vertex_mapping[pv-min_pvals_m1] = vc
+        vertex_mapping[pv - min_pvals_m1] = vc
         vertex_mapping_bw[vc] = pv
     end
     num_nodes = vc
@@ -305,12 +318,12 @@ function prune_constraint!(
             edge_counter += 1
             di_ei[edge_counter] = vc
             di_ej[edge_counter] =
-                vertex_mapping[CS.value(search_space[i])-min_pvals_m1] - nindices
+                vertex_mapping[CS.value(search_space[i]) - min_pvals_m1] - nindices
         else
             for pv in view_values(search_space[i])
                 edge_counter += 1
                 di_ei[edge_counter] = vc
-                di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1] - nindices
+                di_ej[edge_counter] = vertex_mapping[pv - min_pvals_m1] - nindices
             end
         end
     end
@@ -341,12 +354,12 @@ function prune_constraint!(
         if isfixed(search_space[i])
             edge_counter += 1
             di_ei[edge_counter] = vc
-            di_ej[edge_counter] = vertex_mapping[CS.value(search_space[i])-min_pvals_m1]
+            di_ej[edge_counter] = vertex_mapping[CS.value(search_space[i]) - min_pvals_m1]
         else
             edge_counter += 1
             pv = pval_mapping[maximum_matching.match[vc]]
             di_ei[edge_counter] = vc
-            di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1]
+            di_ej[edge_counter] = vertex_mapping[pv - min_pvals_m1]
         end
     end
 
@@ -359,13 +372,13 @@ function prune_constraint!(
             if has(search_space[i], pv)
                 if pv != pval_mapping[maximum_matching.match[vc]]
                     edge_counter += 1
-                    di_ei[edge_counter] = vertex_mapping[pv-min_pvals_m1]
+                    di_ei[edge_counter] = vertex_mapping[pv - min_pvals_m1]
                     di_ej[edge_counter] = vc
                 elseif length(pvals) > nindices # if we have more values than indices
                     edge_counter += 1
-                    di_ei[edge_counter] = vertex_mapping[pv-min_pvals_m1]
+                    di_ei[edge_counter] = vertex_mapping[pv - min_pvals_m1]
                     di_ej[edge_counter] = new_vertex
-                    used_in_maximum_matching[pv-min_pvals_m1] = true
+                    used_in_maximum_matching[pv - min_pvals_m1] = true
                 end
             end
         end
@@ -380,10 +393,10 @@ function prune_constraint!(
     if length(pvals) > nindices
         for pv in pvals
             # value not in maximum matching
-            if !used_in_maximum_matching[pv-min_pvals_m1]
+            if !used_in_maximum_matching[pv - min_pvals_m1]
                 edge_counter += 1
                 di_ei[edge_counter] = new_vertex
-                di_ej[edge_counter] = vertex_mapping[pv-min_pvals_m1]
+                di_ej[edge_counter] = vertex_mapping[pv - min_pvals_m1]
             end
         end
     end
@@ -409,7 +422,7 @@ function prune_constraint!(
         end
         #  remove edges in maximum matching and then edges which are part of a cycle
         if src <= nindices &&
-           dst == vertex_mapping[pval_mapping[maximum_matching.match[src]]-min_pvals_m1]
+           dst == vertex_mapping[pval_mapping[maximum_matching.match[src]] - min_pvals_m1]
             continue
         end
 
@@ -460,7 +473,7 @@ function is_constraint_solved(
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal,
-    values::Vector{Int}
+    values::Vector{Int},
 )
     return allunique(values)
 end

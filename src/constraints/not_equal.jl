@@ -15,9 +15,9 @@ function prune_constraint!(
 
     # check if only one variable is variable
     nfixed = count(v -> isfixed(v), com.search_space[constraint.indices])
-    if nfixed >= length(constraint.indices)-1
+    if nfixed >= length(constraint.indices) - 1
         search_space = com.search_space
-        sum = -set.value+fct.constant
+        sum = -set.value + fct.constant
         unfixed_i = 0
         for (i, vidx) in enumerate(indices)
             if isfixed(search_space[vidx])
@@ -64,9 +64,9 @@ function still_feasible(
     was_inside = false
     # check if only one variable is variable
     nfixed = count(v -> isfixed(v), com.search_space[indices])
-    if nfixed >= length(indices)-1
+    if nfixed >= length(indices) - 1
         search_space = com.search_space
-        sum = -set.value+fct.constant
+        sum = -set.value + fct.constant
         unfixed_i = 0
         for (i, cvidx) in enumerate(indices)
             if isfixed(search_space[cvidx])
@@ -99,7 +99,7 @@ function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::NotEqualTo{T},
-    values::Vector{Int}
+    values::Vector{Int},
 ) where {T<:Real}
 
     indices = [t.variable_index.value for t in fct.terms]

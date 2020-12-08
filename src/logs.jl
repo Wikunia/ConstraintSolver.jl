@@ -114,7 +114,7 @@ function sanity_check_log(log)
     nodes_list, num_children = bfs_list(log)
     nclosed = 0
     step_nrs = Int[]
-    for i = 1:length(nodes_list)
+    for i in 1:length(nodes_list)
         node = nodes_list[i]
         num_child = num_children[i]
         if node.status == :Closed
@@ -136,7 +136,7 @@ function same_logs(log1, log2)
         println("Different length")
         return false
     end
-    for i = 1:length(nodes_list1)
+    for i in 1:length(nodes_list1)
         node1 = nodes_list1[i]
         node2 = nodes_list2[i]
         num_child1 = num_children1[i]

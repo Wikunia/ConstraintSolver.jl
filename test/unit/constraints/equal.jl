@@ -12,10 +12,31 @@
     @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [2,2,2])
 
     constr_indices = constraint.indices
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[2], 5)
+    @test CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[2],
+        5,
+    )
     @test CS.fix!(com, com.search_space[constr_indices[2]], 5)
-    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], 4)
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], 5)
+    @test !CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[3],
+        4,
+    )
+    @test CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[3],
+        5,
+    )
 
     # need to create a backtrack_vec to reverse pruning
     dummy_backtrack_obj = CS.BacktrackObj(com)
@@ -25,7 +46,14 @@
     com.c_backtrack_idx = 1
 
     # now setting it to 5 should be feasible
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], 4)
+    @test CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[3],
+        4,
+    )
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:3] <= 5, Int)

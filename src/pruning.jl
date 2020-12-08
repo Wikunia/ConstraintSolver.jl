@@ -217,14 +217,26 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
         for ci in com.subscription[var.idx]
             constraint = com.constraints[ci]
             if constraint.impl.single_reverse_pruning
-                single_reverse_pruning_constraint!(com, constraint, constraint.fct, constraint.set,
-                                                    var, backtrack_idx)
+                single_reverse_pruning_constraint!(
+                    com,
+                    constraint,
+                    constraint.fct,
+                    constraint.set,
+                    var,
+                    backtrack_idx,
+                )
             end
         end
     end
     for constraint in com.constraints
         if constraint.impl.reverse_pruning
-            reverse_pruning_constraint!(com, constraint, constraint.fct, constraint.set, backtrack_idx)
+            reverse_pruning_constraint!(
+                com,
+                constraint,
+                constraint.fct,
+                constraint.set,
+                backtrack_idx,
+            )
         end
     end
     com.c_backtrack_idx = com.backtrack_vec[backtrack_idx].parent_idx

@@ -23,8 +23,13 @@ function init_constraint!(
     return true
 end
 
-function apply_changes!(com::CS.CoM, v::Variable, changes::Vector{Tuple{Symbol, Int, Int, Int}}, first_ptr::Int)
-    for i=first_ptr:length(changes)
+function apply_changes!(
+    com::CS.CoM,
+    v::Variable,
+    changes::Vector{Tuple{Symbol,Int,Int,Int}},
+    first_ptr::Int,
+)
+    for i in first_ptr:length(changes)
         change = changes[i]
         if change[1] == :remove_below
             !remove_below!(com, v, change[2]) && return false
@@ -68,12 +73,12 @@ function prune_constraint!(
                 v1 = search_space[indices[i]]
                 v1_changes = v1.changes[com.c_backtrack_idx]
                 isempty(v1_changes) && continue
-                for j=1:length(indices)
+                for j in 1:length(indices)
                     i == j && continue
                     v2 = search_space[indices[j]]
                     !apply_changes!(com, v2, v1_changes, constraint.first_ptrs[i]) && return false
                 end
-                constraint.first_ptrs[i] = length(v1_changes)+1
+                constraint.first_ptrs[i] = length(v1_changes) + 1
             end
             return true
         end
@@ -99,8 +104,8 @@ function prune_constraint!(
             end
             !apply_changes!(com, v2, changes_v1, constraint.first_ptrs[1]) && return false
             !apply_changes!(com, v1, changes_v2, constraint.first_ptrs[2]) && return false
-            constraint.first_ptrs[1] = length(changes_v1)+1
-            constraint.first_ptrs[2] = length(changes_v2)+1
+            constraint.first_ptrs[1] = length(changes_v1) + 1
+            constraint.first_ptrs[2] = length(changes_v2) + 1
             return true
         elseif fixed_v1 && fixed_v2
             if CS.value(v1) != CS.value(v2)
@@ -134,10 +139,12 @@ end
 
 Reset the first_ptrs to one for the next pruning step
 """
-function finished_pruning_constraint!(com::CS.CoM,
+function finished_pruning_constraint!(
+    com::CS.CoM,
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
-    set::EqualSetInternal)
+    set::EqualSetInternal,
+)
 
     constraint.first_ptrs .= 1
 end
