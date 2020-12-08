@@ -36,6 +36,7 @@ function set_update_backtrack_pq!(
     backtrack_obj::BacktrackObj;
     best_bound = backtrack_obj.best_bound,
 )
+    backtrack_obj.status == :Closed && return
     if com.traverse_strategy == Val(:DFS)
         if com.sense == MOI.MIN_SENSE
             com.backtrack_pq[backtrack_obj.idx] =
