@@ -133,12 +133,12 @@ function NumberConstraintTypes()
     return NumberConstraintTypes(zeros(Int, length(fieldnames(NumberConstraintTypes)))...)
 end
 
-function new_BacktrackObj(com::CS.CoM, parent_idx, depth, vidx, lb, ub)
+function new_BacktrackObj(com::CS.CoM, parent_idx, vidx, lb, ub)
     parent = com.backtrack_vec[parent_idx]
     return BacktrackObj{parametric_type(com)}(
         length(com.backtrack_vec) + 1, # idx
         parent_idx,
-        depth,
+        parent.depth + 1,
         :Open, # status
         vidx,
         lb, # lb and ub only take effect if vidx != 0

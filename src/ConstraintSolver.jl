@@ -290,7 +290,7 @@ function add2backtrack_vec!(
     =#
 
     # left branch
-    backtrack_obj = new_BacktrackObj(com, parent_idx, depth, vidx, left_lb, left_ub)
+    backtrack_obj = new_BacktrackObj(com, parent_idx, vidx, left_lb, left_ub)
     backtrack_obj.best_bound =
         get_best_bound(com, backtrack_obj; vidx = vidx, lb = left_lb, ub = left_ub)
     # only include nodes which have a better objective than the current best solution if one was found already
@@ -304,7 +304,7 @@ function add2backtrack_vec!(
         addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com)
     end
     # right branch
-    backtrack_obj = new_BacktrackObj(com, parent_idx, depth, vidx, right_lb, right_ub)
+    backtrack_obj = new_BacktrackObj(com, parent_idx, vidx, right_lb, right_ub)
     backtrack_obj.best_bound =
         get_best_bound(com, backtrack_obj; vidx = vidx, lb = right_lb, ub = right_ub)
     if com.options.all_solutions ||
