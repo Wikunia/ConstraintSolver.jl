@@ -7,17 +7,26 @@ function create_lp_model!(model)
     set_optimizer(lp_model, model.options.lp_optimizer)
     lp_x = Vector{VariableRef}(undef, length(com.search_space))
     for variable in com.search_space
-        lp_x[variable.idx] = @variable(lp_model, lower_bound = variable.lower_bound, upper_bound = variable.upper_bound)
+        lp_x[variable.idx] = @variable(
+            lp_model,
+            lower_bound = variable.lower_bound,
+            upper_bound = variable.upper_bound
+        )
     end
     lp_backend = backend(lp_model)
     # iterate through all constraints and add all supported constraints
     for constraint in com.constraints
-        if MOI.supports_constraint(model.options.lp_optimizer.optimizer_constructor(), typeof(constraint.fct), typeof(constraint.set))
+        if MOI.supports_constraint(
+            model.options.lp_optimizer.optimizer_constructor(),
+            typeof(constraint.fct),
+            typeof(constraint.set),
+        )
             MOI.add_constraint(lp_backend, constraint.fct, constraint.set)
         end
     end
     # add objective
-    !MOI.supports(lp_backend, MOI.ObjectiveSense()) && @error "The given lp solver doesn't allow objective functions"
+    !MOI.supports(lp_backend, MOI.ObjectiveSense()) &&
+        @error "The given lp solver doesn't allow objective functions"
     typeof_objective = typeof(com.objective.fct)
     if MOI.supports(lp_backend, MOI.ObjectiveFunction{typeof_objective}())
         MOI.set(lp_backend, MOI.ObjectiveFunction{typeof_objective}(), com.objective.fct)
@@ -33,8 +42,8 @@ function create_lp_model!(model)
     com.lp_model = lp_model
 end
 
-function create_lp_variable!(lp_model, lp_x; lb=typemin(Int64), ub=typemax(Int64))
-    v = @variable(lp_model, lower_bound=lb, upper_bound=ub)
+function create_lp_variable!(lp_model, lp_x; lb = typemin(Int64), ub = typemax(Int64))
+    v = @variable(lp_model, lower_bound = lb, upper_bound = ub)
     push!(lp_x, v)
     return length(lp_x)
 end

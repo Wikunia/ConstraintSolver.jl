@@ -18,21 +18,21 @@ mutable struct SolverOptions
     simplify::Bool
 end
 
-function get_traverse_strategy(com; options=SolverOptions())
+function get_traverse_strategy(com; options = SolverOptions())
     if options.traverse_strategy == :DBFS
         return isempty(com.solutions) ? Val(:DFS) : Val(:BFS)
     end
     return Val(options.traverse_strategy)
 end
 
-function get_branch_split(;options=SolverOptions())
+function get_branch_split(; options = SolverOptions())
     strategy = options.branch_split
     return Val(strategy)
 end
 
 const POSSIBLE_OPTIONS = Dict(
     :traverse_strategy => [:Auto, :BFS, :DFS, :DBFS],
-    :branch_split => [:Auto, :Smallest, :Biggest, :InHalf]
+    :branch_split => [:Auto, :Smallest, :Biggest, :InHalf],
 )
 
 function SolverOptions()
@@ -80,7 +80,7 @@ function SolverOptions()
         all_optimal_solutions,
         lp_optimizer,
         no_prune,
-        simplify
+        simplify,
     )
 end
 

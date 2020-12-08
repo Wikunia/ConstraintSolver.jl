@@ -108,7 +108,7 @@ function format_table_value(val::Float64, len::Int)
     s_val_split = split(s_val, ".")
     if length(s_val_split[1]) == 1 && s_val_split[1] == "0" && length(s_val_split) == 2
         while precision < 10
-            if s_val_split[2][precision-1] != '0'
+            if s_val_split[2][precision - 1] != '0'
                 precision -= precision > 2 ? 1 : 0
                 break
             end
@@ -170,7 +170,8 @@ function push_to_table!(table::TableSetup; force = false, kwargs...)
         end
     end
     if force ||
-       !table.new_row_criteria || is_new_row(row, table.last_row, table.diff_criteria)
+       !table.new_row_criteria ||
+       is_new_row(row, table.last_row, table.diff_criteria)
         println(get_row(table, row))
         table.last_row = row
         return true
@@ -185,7 +186,7 @@ Return the formatted and padded table row given `row` and a `TableSetup`
 """
 function get_row(table::TableSetup, row::Vector{TableEntry})
     ln = ""
-    for c = 1:length(table.cols)
+    for c in 1:length(table.cols)
         width = table.cols[c].width
         if isassigned(row, c)
             val = row[c].value

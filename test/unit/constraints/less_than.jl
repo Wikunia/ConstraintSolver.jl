@@ -3,20 +3,41 @@
     @variable(m, -1 <= x <= 5, Int)
     @variable(m, -1 <= y <= 5, Int)
     @variable(m, -5 <= z <= 5, Int)
-    @constraint(m, 1.2x+π*y-2z <= 4.71)
+    @constraint(m, 1.2x + π * y - 2z <= 4.71)
     optimize!(m)
     com = JuMP.backend(m).optimizer.model.inner
 
     constraint = com.constraints[1]
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1,2,3])
-    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [3,2,1])
+    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1, 2, 3])
+    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [3, 2, 1])
 
     constr_indices = constraint.indices
-    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], -5)
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], -4)
+    @test !CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[3],
+        -5,
+    )
+    @test CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[3],
+        -4,
+    )
 
     @test CS.fix!(com, com.search_space[constr_indices[2]], 0)
-    @test !CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], -4)
+    @test !CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[3],
+        -4,
+    )
 
     # need to create a backtrack_vec to reverse pruning
     dummy_backtrack_obj = CS.BacktrackObj(com)
@@ -24,15 +45,22 @@
     # reverse previous fix
     CS.reverse_pruning!(com, 1)
     com.c_backtrack_idx = 1
- 
+
     # now setting it to -4 should be feasible
-    @test CS.still_feasible(com, constraint, constraint.fct, constraint.set, constr_indices[3], -4)
+    @test CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[3],
+        -4,
+    )
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -1 <= x <= 5, Int)
     @variable(m, -1 <= y <= 5, Int)
     @variable(m, -5 <= z <= 5, Int)
-    @constraint(m, 1.2x+π*y-2z <= 4.71)
+    @constraint(m, 1.2x + π * y - 2z <= 4.71)
     optimize!(m)
     com = JuMP.backend(m).optimizer.model.inner
     constraint = com.constraints[1]

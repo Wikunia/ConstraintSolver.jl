@@ -28,14 +28,14 @@ function solve_all(grids; benchmark = false, single_times = true)
     for (i, grid) in enumerate(grids)
         m = CS.Optimizer(logging = [])
 
-        x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i = 1:9] for j = 1:9]
-        for r = 1:9, c = 1:9
+        x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i in 1:9] for j in 1:9]
+        for r in 1:9, c in 1:9
             MOI.add_constraint(m, x[r][c][1], MOI.GreaterThan(1.0))
             MOI.add_constraint(m, x[r][c][1], MOI.LessThan(9.0))
         end
 
         # set variables
-        for r = 1:9, c = 1:9
+        for r in 1:9, c in 1:9
             if grid[r, c] != 0
                 sat = [MOI.ScalarAffineTerm(1.0, x[r][c][1])]
                 MOI.add_constraint(
@@ -64,8 +64,8 @@ function solve_all(grids; benchmark = false, single_times = true)
             println("Status: ", status)
             @show m.inner.info
             solution = zeros(Int, 9, 9)
-            for r = 1:9
-                solution[r, :] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c = 1:9]
+            for r in 1:9
+                solution[r, :] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c in 1:9]
             end
             @assert jump_fulfills_sudoku_constr(solution)
         end

@@ -29,10 +29,10 @@ function solve_all(filenames; benchmark = false, single_times = true)
         # plot_killer(zeros(Int, (9,9)), sums, filename; fill=false)
         # continue
 
-        m = CS.Optimizer(logging=[], keep_logs=true, time_limit=20)
+        m = CS.Optimizer(logging = [], keep_logs = true, time_limit = 20)
 
-        x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i = 1:9] for j = 1:9]
-        for r = 1:9, c = 1:9
+        x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i in 1:9] for j in 1:9]
+        for r in 1:9, c in 1:9
             MOI.add_constraint(m, x[r][c][1], MOI.GreaterThan(1.0))
             MOI.add_constraint(m, x[r][c][1], MOI.LessThan(9.0))
         end
@@ -48,11 +48,11 @@ function solve_all(filenames; benchmark = false, single_times = true)
 
         # sudoku constraints
         moi_add_sudoku_constr!(m, x)
-        
+
 
         if single_times
             GC.enable(false)
-            MOI.optimize!(m)           
+            MOI.optimize!(m)
             status = MOI.get(m, MOI.TerminationStatus())
             GC.enable(true)
             println(i - 1, ", ", MOI.get(m, MOI.SolveTime()))
@@ -65,18 +65,19 @@ function solve_all(filenames; benchmark = false, single_times = true)
         if !benchmark
             println("Status: ", status)
             @show m.inner.info
-            var_x = fill(MOI.VariableIndex(0), (9,9))
-            for r = 1:9
-                var_x[r,:] = [x[r][c][1] for c = 1:9]
+            var_x = fill(MOI.VariableIndex(0), (9, 9))
+            for r in 1:9
+                var_x[r, :] = [x[r][c][1] for c in 1:9]
             end
             # CS.save_logs(m.inner, "/srv/http/ConstraintVisual/data/json/killer_$filename.json", :x => var_x)
             if status == MOI.OPTIMAL
                 solution = zeros(Int, 9, 9)
-                for r = 1:9
-                    solution[r, :] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c = 1:9]
+                for r in 1:9
+                    solution[r, :] =
+                        [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c in 1:9]
                 end
                 @assert jump_fulfills_sudoku_constr(solution)
-            else 
+            else
                 println("NOT SOLVED TO OPTIMALITY")
             end
         end

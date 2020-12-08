@@ -117,10 +117,10 @@ function is_solved_constraint(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::MOI.LessThan{T},
-    values::Vector{Int}
+    values::Vector{Int},
 ) where {T<:Real}
 
     indices = [t.variable_index.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
-    return sum(values .* coeffs)+fct.constant <= set.upper+1e-6
+    return sum(values .* coeffs) + fct.constant <= set.upper + 1e-6
 end

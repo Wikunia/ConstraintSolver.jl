@@ -9,12 +9,12 @@ Return lb, leq, geq, ub => the bounds for the lower part and the bounds for the 
 function get_split_pvals(com, ::Val{:Auto}, var::Variable)
     @assert var.min != var.max
     if isa(com.objective, LinearCombinationObjective)
-        linear_comb = com.objective.lc 
+        linear_comb = com.objective.lc
         for i in 1:length(linear_comb.indices)
             if linear_comb.indices[i] == var.idx
                 coeff = linear_comb.coeffs[i]
                 factor = com.sense == MOI.MIN_SENSE ? -1 : 1
-                if coeff*factor > 0
+                if coeff * factor > 0
                     return get_split_pvals(com, Val(:Biggest), var)
                 else
                     return get_split_pvals(com, Val(:Smallest), var)
@@ -46,10 +46,10 @@ function get_split_pvals(com, ::Val{:InHalf}, var::Variable)
         elseif pval > mean_val && pval < geq
             geq = pval
         end
-        if pval < lb 
+        if pval < lb
             lb = pval
         end
-        if pval > ub 
+        if pval > ub
             ub = pval
         end
     end
@@ -76,7 +76,7 @@ Return lb, leq, geq, ub => the bounds for the lower part and the bounds for the 
 """
 function get_split_pvals(com, ::Val{:Biggest}, var::Variable)
     @assert var.min != var.max
-    left_ub = partialsort(values(var), 2; rev=true)
+    left_ub = partialsort(values(var), 2; rev = true)
     return var.min, left_ub, var.max, var.max
 end
 
@@ -95,7 +95,7 @@ function get_next_branch_variable(com::CS.CoM)
     is_in_objective = false
     found = false
 
-    for vidx = 1:length(com.search_space)
+    for vidx in 1:length(com.search_space)
         if !isfixed(com.search_space[vidx])
             num_pvals = nvalues(com.search_space[vidx])
             inf = com.bt_infeasible[vidx]

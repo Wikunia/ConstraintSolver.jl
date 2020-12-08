@@ -5,9 +5,21 @@
         var_states = Dict{Int,Vector{Int}}()
         var_changes = Dict{Int,Vector{Tuple{Symbol,Int,Int,Int}}}()
         children = CS.TreeLogNode{Int}[]
-        l1 = CS.TreeLogNode(0, :Open, true, 0, 0, 0, 0, 0, var_states, var_changes, children)
-        l2 =
-            CS.TreeLogNode(0, :Closed, true, 0, 0, 0, 0, 0, var_states, var_changes, children)
+        l1 =
+            CS.TreeLogNode(0, :Open, true, 0, 0, 0, 0, 0, var_states, var_changes, children)
+        l2 = CS.TreeLogNode(
+            0,
+            :Closed,
+            true,
+            0,
+            0,
+            0,
+            0,
+            0,
+            var_states,
+            var_changes,
+            children,
+        )
         @test !CS.same_logs(l1, l2)
 
         # different children order
@@ -393,7 +405,7 @@
         @test length(line_split) == length(table.cols) + 2
         @test line_split[2] == "0"
         # only precision 2
-        @test line_split[end-1] == "0.20"
+        @test line_split[end - 1] == "0.20"
 
         table_row = create_table_row(table, [1000000000000, 1000000000000, 1.0, 1.0, 0.203])
         line = CS.get_row(table, table_row)
@@ -411,7 +423,7 @@
         line_split = split(line, r"\s+")
         # +2 for first and last empty
         @test length(line_split) == length(table.cols) + 2
-        @test line_split[end-1] == ">>"
+        @test line_split[end - 1] == ">>"
 
         # better precision for bound
         table_row = create_table_row(table, [1, 2, 1.0, 0.000004, 0.203])
@@ -420,7 +432,7 @@
         line_split = split(line, r"\s+")
         # +2 for first and last empty
         @test length(line_split) == length(table.cols) + 2
-        @test line_split[end-2] == "0.000004"
+        @test line_split[end - 2] == "0.000004"
 
         @assert CS.push_to_table!(
             table;
@@ -499,7 +511,7 @@
         bounds = [0.4, 0.15, 0.15, 0.1, 0.1]
         depths = [3, 2, 1, 2, 2]
         bo = CS.BacktrackObj(com)
-        for i = 1:length(bounds)
+        for i in 1:length(bounds)
             bo.status = :Open
             bo.idx = i
             bo.best_bound = bounds[i]
@@ -507,10 +519,10 @@
             push!(com.backtrack_vec, bo)
             CS.add2priorityqueue(com, com.backtrack_vec[end])
         end
-        order = [1,4,5,2,3]
-        for i=1:length(bounds)
+        order = [1, 4, 5, 2, 3]
+        for i in 1:length(bounds)
             found, bo = CS.get_next_node(com, com.backtrack_vec, true)
-            @test found 
+            @test found
             @test bo.idx == order[i]
             CS.close_node!(com, bo.idx)
         end
@@ -523,7 +535,7 @@
         bounds = [0.4, 0.15, 0.15, 0.1, 0.1]
         depths = [3, 2, 1, 2, 2]
         bo = CS.BacktrackObj(com)
-        for i = 1:length(bounds)
+        for i in 1:length(bounds)
             bo.status = :Open
             bo.idx = i
             bo.best_bound = bounds[i]
@@ -532,10 +544,10 @@
             CS.add2priorityqueue(com, com.backtrack_vec[end])
         end
 
-        order = [4,5,2,3,1]
-        for i=1:length(bounds)
+        order = [4, 5, 2, 3, 1]
+        for i in 1:length(bounds)
             found, bo = CS.get_next_node(com, com.backtrack_vec, true)
-            @test found 
+            @test found
             @test bo.idx == order[i]
             bo.status = :Closed
         end

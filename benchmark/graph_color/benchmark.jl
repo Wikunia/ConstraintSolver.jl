@@ -1,8 +1,5 @@
-function solve_us_graph_coloring(;num_colors=8, equality=false)
-    m = Model(optimizer_with_attributes(
-        CS.Optimizer,
-        "logging" => [],
-    ))
+function solve_us_graph_coloring(; num_colors = 8, equality = false)
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
     @variable(m, 1 <= max_color <= num_colors, Int)
 
     @variable(m, 1 <= states[1:50] <= num_colors, Int)
@@ -184,8 +181,12 @@ function solve_us_graph_coloring(;num_colors=8, equality=false)
     end
 end
 
-function color_graph(filename, correct_num_colors; time_limit=100, logging=[])
-    m = Model(optimizer_with_attributes(CS.Optimizer, "time_limit"=>time_limit, "logging"=>logging))
+function color_graph(filename, correct_num_colors; time_limit = 100, logging = [])
+    m = Model(optimizer_with_attributes(
+        CS.Optimizer,
+        "time_limit" => time_limit,
+        "logging" => logging,
+    ))
 
     lines = readlines(filename)
     num_colors = 0

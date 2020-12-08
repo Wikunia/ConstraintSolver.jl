@@ -18,8 +18,8 @@ using LinearAlgebra: dot
             0 0 1 0
         ]
         model = CS.Optimizer(logging = [], keep_logs = true)
-        x = [MOI.add_constrained_variable(model, MOI.ZeroOne()) for _ = 1:4]
-        for i = 1:4, j = 1:4
+        x = [MOI.add_constrained_variable(model, MOI.ZeroOne()) for _ in 1:4]
+        for i in 1:4, j in 1:4
             if matrix[i, j] == 1 && i < j
                 (z, _) = MOI.add_constrained_variable(model, MOI.GreaterThan(0.0))
                 MOI.add_constraint(model, z, MOI.Integer())
@@ -41,7 +41,7 @@ using LinearAlgebra: dot
         MOI.set(model, MOI.ObjectiveFunction{typeof(objective)}(), objective)
         MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
         MOI.optimize!(model)
-        var_x = [x[i][1] for i = 1:4]
+        var_x = [x[i][1] for i in 1:4]
         CS.save_logs(model.inner, "stable_set.json", :x => var_x)
         rm("stable_set.json")
 
@@ -59,7 +59,7 @@ using LinearAlgebra: dot
         ]
         m = Model(CSJuMPTestOptimizer())
         x = @variable(m, x[1:4], Bin)
-        for i = 1:4, j = i+1:4
+        for i in 1:4, j in (i + 1):4
             if matrix[i, j] == 1
                 zcomp = @variable(m)
                 JuMP.set_binary(zcomp)
@@ -93,7 +93,7 @@ using LinearAlgebra: dot
         m = Model(CSJuMPTestOptimizer())
         @variable(m, x[1:n], Bin)
         nconstraints = 0
-        for i = 1:n, j = i+1:n
+        for i in 1:n, j in (i + 1):n
             if matrix[i, j] == 1
                 @constraint(m, x[i] + x[j] <= 1)
                 nconstraints += 1
@@ -132,7 +132,7 @@ using LinearAlgebra: dot
         ))
         @variable(m, x[1:n], Bin)
         nconstraints = 0
-        for i = 1:n, j = i+1:n
+        for i in 1:n, j in (i + 1):n
             if matrix[i, j] == 1
                 @constraint(m, x[i] + x[j] <= 1)
                 nconstraints += 1
@@ -157,8 +157,8 @@ using LinearAlgebra: dot
             0 0 1 0
         ]
         model = CS.Optimizer(solution_type = Real, logging = [])
-        x = [MOI.add_constrained_variable(model, MOI.ZeroOne()) for _ = 1:4]
-        for i = 1:4, j = 1:4
+        x = [MOI.add_constrained_variable(model, MOI.ZeroOne()) for _ in 1:4]
+        for i in 1:4, j in 1:4
             if matrix[i, j] == 1 && i < j
                 (z, _) = MOI.add_constrained_variable(model, MOI.GreaterThan(0.0))
                 MOI.add_constraint(model, z, MOI.Integer())

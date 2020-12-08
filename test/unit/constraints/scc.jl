@@ -5,7 +5,7 @@
         zeros(Int, n),
         zeros(Int, n),
         zeros(Bool, n),
-        zeros(Int, n)
+        zeros(Int, n),
     )
     di_ei = [1, 2, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 8]
     di_ej = [2, 2, 3, 5, 7, 4, 3, 8, 6, 1, 7, 6, 4, 7]

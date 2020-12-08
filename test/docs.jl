@@ -2,7 +2,7 @@
 @testset "Documentation" begin
     @testset "Options" begin
         cwd = pwd()
-        dir = pathof(ConstraintSolver)[1:end-20]
+        dir = pathof(ConstraintSolver)[1:(end - 20)]
         cd(dir)
         cd("../docs/src")
         options_md = readlines("options.md")

@@ -18,10 +18,17 @@
 
         m = CS.Optimizer()
         # don't use 1-9 here but some other integers to test offset and alldifferent without all numbers
-        x = [[MOI.add_constrained_variable(m, CS.Integers([-5,-4,-3,7,-1,0,1,2,10])) for i = 1:9] for j = 1:9]
+        x = [
+            [
+                MOI.add_constrained_variable(
+                    m,
+                    CS.Integers([-5, -4, -3, 7, -1, 0, 1, 2, 10]),
+                ) for i in 1:9
+            ] for j in 1:9
+        ]
 
         # set variables
-        for r = 1:9, c = 1:9
+        for r in 1:9, c in 1:9
             if grid[r, c] != -6
                 sat = [MOI.ScalarAffineTerm(Int8(1), x[r][c][1])]
                 MOI.add_constraint(
@@ -39,8 +46,8 @@
         MOI.optimize!(m)
         @test MOI.get(m, MOI.TerminationStatus()) == MOI.OPTIMAL
         solution = zeros(Int, 9, 9)
-        for r = 1:9
-            solution[r, :] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c = 1:9]
+        for r in 1:9
+            solution[r, :] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c in 1:9]
         end
         @test jump_fulfills_sudoku_constr(solution)
         @test m.options.time_limit == 10.0
@@ -48,7 +55,7 @@
 
     @testset "Hard sudoku with table constraint" begin
         grid = zeros(Int, (9, 9))
-        
+
         grid[1, :] = [3 8 0 6 0 0 0 0 0]
         grid[2, :] = [0 0 9 0 0 0 0 0 0]
         grid[3, :] = [0 2 0 0 3 0 5 1 0]
@@ -63,34 +70,35 @@
         grid .+= offset
 
         m = Model(optimizer_with_attributes(CS.Optimizer))
-        @variable(m, 1+offset <= x[1:9, 1:9] <= 9+offset, Int)
+        @variable(m, 1 + offset <= x[1:9, 1:9] <= 9 + offset, Int)
         # set variables
         nvars_set = 0
-        for r = 1:9, c = 1:9
+        for r in 1:9, c in 1:9
             if grid[r, c] != offset
                 @constraint(m, x[r, c] == grid[r, c])
                 nvars_set += 1
             end
         end
 
-        table = Array{Int64}(undef,(factorial(9),9))
+        table = Array{Int64}(undef, (factorial(9), 9))
         i = 1
         for row in permutations(1:9)
-            table[i,:] = row .+ offset      
-            i += 1    
+            table[i, :] = row .+ offset
+            i += 1
         end
-        
+
         # sudoku constraints
-        for rc = 1:9
+        for rc in 1:9
             @constraint(m, x[rc, :] in CS.TableSet(table))
             @constraint(m, x[:, rc] in CS.TableSet(table))
         end
-        
-        for br = 0:2
-            for bc = 0:2
+
+        for br in 0:2
+            for bc in 0:2
                 @constraint(
                     m,
-                    vec(x[br*3+1:(br+1)*3, bc*3+1:(bc+1)*3]) in CS.TableSet(table)
+                    vec(x[(br * 3 + 1):((br + 1) * 3), (bc * 3 + 1):((bc + 1) * 3)]) in
+                    CS.TableSet(table)
                 )
             end
         end
@@ -116,7 +124,7 @@
         m = Model(CSJuMPTestOptimizer())
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
-        for r = 1:9, c = 1:9
+        for r in 1:9, c in 1:9
             if grid[r, c] != 0
                 @constraint(m, x[r, c] == grid[r, c])
             end
@@ -145,7 +153,7 @@
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
         nvars_set = 0
-        for r = 1:9, c = 1:9
+        for r in 1:9, c in 1:9
             if grid[r, c] != 0
                 @constraint(m, x[r, c] == grid[r, c])
                 nvars_set += 1
@@ -161,10 +169,12 @@
 
         @test JuMP.termination_status(m) == MOI.OPTIMAL
         com = JuMP.backend(m).optimizer.model.inner
-        @test_reference "refs/hard_fsudoku" test_string([constraint.indices for constraint in com.constraints])
+        @test_reference "refs/hard_fsudoku" test_string([
+            constraint.indices for constraint in com.constraints
+        ])
 
         # check that it actually solves the given sudoku
-        for r = 1:9, c = 1:9
+        for r in 1:9, c in 1:9
             if grid[r, c] != 0
                 @test JuMP.value(x[r, c]) == grid[r, c]
             end
@@ -189,7 +199,7 @@
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
         nvars_set = 0
-        for r = 1:9, c = 1:9
+        for r in 1:9, c in 1:9
             if grid[r, c] != 0
                 @constraint(m, x[r, c] == grid[r, c])
                 nvars_set += 1
@@ -211,12 +221,12 @@
             m = Model(optimizer_with_attributes(
                 CS.Optimizer,
                 "solution_type" => Int8,
-                "logging" => []
+                "logging" => [],
             ))
 
             @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
             # set variables
-            for r = 1:9, c = 1:9
+            for r in 1:9, c in 1:9
                 if grid[r, c] != 0
                     @constraint(m, x[r, c] == grid[r, c])
                 end
@@ -244,7 +254,7 @@
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "backtrack" => false,
-            "logging" => []
+            "logging" => [],
         ))
 
         grid = Int[
@@ -262,7 +272,7 @@
 
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
-        for r = 1:9, c = 1:9
+        for r in 1:9, c in 1:9
             if grid[r, c] != 0
                 @constraint(m, x[r, c] == grid[r, c])
             end
@@ -303,7 +313,7 @@
 
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
-        for r = 1:9, c = 1:9
+        for r in 1:9, c in 1:9
             if grid[r, c] != 0
                 @constraint(m, x[r, c] == grid[r, c])
             end
@@ -348,7 +358,7 @@
 
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
-        for r = 1:9, c = 1:9
+        for r in 1:9, c in 1:9
             if grid[r, c] != 0
                 @constraint(m, x[r, c] == grid[r, c])
             end
@@ -396,7 +406,7 @@
 
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
-        for r = 1:9, c = 1:9
+        for r in 1:9, c in 1:9
             if grid[r, c] != 0
                 @constraint(m, x[r, c] == grid[r, c])
             end
@@ -439,7 +449,7 @@
 
         @variable(m, x[1:9, 1:9], CS.Integers(1:9))
         # set variables
-        for r = 1:9, c = 1:9
+        for r in 1:9, c in 1:9
             if grid[r, c] != 0
                 @constraint(m, x[r, c] == grid[r, c])
             end
@@ -479,25 +489,26 @@
             "all_optimal_solutions" => true,
             "time_limit" => 1.0,
             "keep_logs" => true,
-            "logging" => []
+            "logging" => [],
         ))
 
         @variable(m, 1 <= x[1:n, 1:n] <= n, Int)
         # set variables
-        for r = 1:n, c = 1:n
+        for r in 1:n, c in 1:n
             if grid[r, c] != 0
                 @constraint(m, x[r, c] == grid[r, c])
             end
         end
-        for rc = 1:n
+        for rc in 1:n
             @constraint(m, x[rc, :] in CS.AllDifferentSet())
             @constraint(m, x[:, rc] in CS.AllDifferentSet())
         end
-        for br = 0:g-1
-            for bc = 0:g-1
+        for br in 0:(g - 1)
+            for bc in 0:(g - 1)
                 @constraint(
                     m,
-                    vec(x[br*g+1:(br+1)*g, bc*g+1:(bc+1)*g]) in CS.AllDifferentSet()
+                    vec(x[(br * g + 1):((br + 1) * g), (bc * g + 1):((bc + 1) * g)]) in
+                    CS.AllDifferentSet()
                 )
             end
         end
@@ -505,7 +516,7 @@
         optimize!(m)
         @test MOI.get(m, MOI.SolveTime()) >= 1.0
         # at least more than 1 but in that time frame it should find a lot ;)
-        @test MOI.get(m, MOI.ResultCount()) >= 10 
+        @test MOI.get(m, MOI.ResultCount()) >= 10
         @test JuMP.termination_status(m) == MOI.TIME_LIMIT
         com = JuMP.backend(m).optimizer.model.inner
         general_tree_test(com)
@@ -521,25 +532,26 @@
             CS.Optimizer,
             "all_solutions" => true,
             "time_limit" => 1.0,
-            "logging" => []
+            "logging" => [],
         ))
 
         @variable(m, 1 <= x[1:n, 1:n] <= n, Int)
         # set variables
-        for r = 1:n, c = 1:n
+        for r in 1:n, c in 1:n
             if grid[r, c] != 0
                 @constraint(m, x[r, c] == grid[r, c])
             end
         end
-        for rc = 1:n
+        for rc in 1:n
             @constraint(m, x[rc, :] in CS.AllDifferentSet())
             @constraint(m, x[:, rc] in CS.AllDifferentSet())
         end
-        for br = 0:g-1
-            for bc = 0:g-1
+        for br in 0:(g - 1)
+            for bc in 0:(g - 1)
                 @constraint(
                     m,
-                    vec(x[br*g+1:(br+1)*g, bc*g+1:(bc+1)*g]) in CS.AllDifferentSet()
+                    vec(x[(br * g + 1):((br + 1) * g), (bc * g + 1):((bc + 1) * g)]) in
+                    CS.AllDifferentSet()
                 )
             end
         end
@@ -547,7 +559,7 @@
         optimize!(m)
         @test MOI.get(m, MOI.SolveTime()) >= 1.0
         # at least more than 1 but in that time frame it should find a lot ;)
-        @test MOI.get(m, MOI.ResultCount()) >= 10 
+        @test MOI.get(m, MOI.ResultCount()) >= 10
         @test JuMP.termination_status(m) == MOI.TIME_LIMIT
     end
 end
