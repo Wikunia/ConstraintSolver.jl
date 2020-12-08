@@ -1,5 +1,6 @@
 module ConstraintSolver
 
+using DataStructures
 using Formatting
 using JSON
 using JuMP:
@@ -152,10 +153,17 @@ function get_best_bound(com::CS.CoM, backtrack_obj::BacktrackObj; vidx = 0, lb =
     if com.sense == MOI.FEASIBILITY_SENSE
         return zero(com.best_bound)
     end
+    best_bound = zero(com.best_bound)
     if com.options.lp_optimizer !== nothing
-        return get_best_bound_lp(com, backtrack_obj, vidx, lb, ub)
+        best_bound = get_best_bound_lp(com, backtrack_obj, vidx, lb, ub)
+    else
+        best_bound = get_best_bound(com, backtrack_obj, com.objective, vidx, lb, ub)
     end
-    return get_best_bound(com, backtrack_obj, com.objective, vidx, lb, ub)
+    # vidx != 0 can mean a temporary backtrack object that doesn't get added to backtrack_vec
+    if vidx == 0 && backtrack_obj.status == :Open
+        set_update_backtrack_pq!(com, backtrack_obj; best_bound = best_bound)
+    end
+    return best_bound
 end
 
 """
@@ -252,6 +260,8 @@ function addBacktrackObj2Backtrack_vec!(
 )
     push!(backtrack_vec, backtrack_obj)
     @assert length(backtrack_vec) == backtrack_obj.idx
+    add2priorityqueue(com, backtrack_obj)
+
     for v in com.search_space
         push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
     end
@@ -358,6 +368,7 @@ function add_new_solution!(
     find_more_solutions = com.options.all_solutions || com.options.all_optimal_solutions
 
     new_sol = get_best_bound(com, backtrack_obj)
+    backtrack_obj.best_bound = new_sol
     if length(com.solutions) == 0 || obj_factor * new_sol <= obj_factor * com.best_sol
         # also push it to the solutions object
         new_sol_obj = Solution(new_sol, CS.value.(com.search_space), backtrack_obj.idx)
@@ -379,6 +390,12 @@ function add_new_solution!(
             new_sol_obj = Solution(new_sol, CS.value.(com.search_space), backtrack_obj.idx)
             push!(com.solutions, new_sol_obj)
         end
+    end
+    # change the traverse strategy for example if it was :DBFS and we found the first solution
+    old_traverse_strategy = com.traverse_strategy
+    com.traverse_strategy = get_traverse_strategy(com; options = com.options)
+    if com.traverse_strategy != old_traverse_strategy
+        changed_traverse_strategy!(com, old_traverse_strategy)
     end
     return false
 end
@@ -468,7 +485,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         l = 1
         if !started
             # close the previous backtrack object
-            backtrack_vec[last_backtrack_id].status = :Closed
+            close_node!(com, last_backtrack_id)
             com.input[:logs] && update_log_node!(com, last_backtrack_id)
         end
         # run at least once so that everything is well defined
@@ -504,18 +521,15 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         constraints = com.constraints[com.subscription[vidx]]
         com.info.backtrack_fixes += 1
 
-        further_pruning = true
         # first update the best bound (only constraints which have an index in the objective function)
         if com.sense != MOI.FEASIBILITY_SENSE
             feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
             !feasible && handle_infeasible!(com; finish_pruning=true) && continue
         end
 
-        if further_pruning
-            # prune completely start with all that changed by the fix or by updating best bound
-            feasible = prune!(com)
-            !feasible && handle_infeasible!(com; finish_pruning=true) && continue
-        end
+        # prune completely start with all that changed by the fix or by updating best bound
+        feasible = prune!(com)
+        !feasible && handle_infeasible!(com; finish_pruning=true) && continue
         call_finished_pruning!(com)
 
         if log_table
@@ -525,9 +539,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         branch_var = get_next_branch_variable(com)
         if branch_var.is_solution
             finished = add_new_solution!(com, backtrack_vec, backtrack_obj, log_table)
+            com.input[:logs] && log_node_state!(com.logs[last_backtrack_id], backtrack_vec[last_backtrack_id],  com.search_space)
             if finished
                 # close the previous backtrack object
-                backtrack_vec[last_backtrack_id].status = :Closed
+                close_node!(com, last_backtrack_id)
                 com.input[:logs] && update_log_node!(com, last_backtrack_id)
                 return :Solved
             end
@@ -535,7 +550,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         end
 
         if com.info.backtrack_fixes > max_bt_steps
-            backtrack_vec[last_backtrack_id].status = :Closed
+            close_node!(com, last_backtrack_id)
             com.input[:logs] && update_log_node!(com, last_backtrack_id)
             return :NotSolved
         end
@@ -555,7 +570,8 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             check_bound = true,
         )
     end
-    backtrack_vec[last_backtrack_id].status = :Closed
+
+    close_node!(com, last_backtrack_id)
     com.input[:logs] && update_log_node!(com, last_backtrack_id)
     if length(com.solutions) > 0
         set_state_to_best_sol!(com, last_backtrack_id)
@@ -637,7 +653,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
     if options.branch_strategy == :Auto
         options.branch_strategy = get_auto_branch_strategy(com)
     end
-    com.traverse_strategy = get_traverse_strategy(;options = options)
+    com.traverse_strategy = get_traverse_strategy(com; options = options)
     com.branch_strategy = get_branch_strategy(;options = options)
     com.branch_split = get_branch_split(;options = options)
 

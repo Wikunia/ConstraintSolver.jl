@@ -27,7 +27,7 @@ function prune_constraint!(
     logs = true
 ) where {A, T<:Real, RS<:ReifiedSet{A}}
     # 1. if the inner constraint is solved then the reified variable can be set to activate_on
-    # 2. if the inner constraint is ant-solved (all fixed but don't fulfill) the reified variable can be set to !activate_on
+    # 2. if the inner constraint is anti-solved (all fixed but don't fulfill) the reified variable can be set to !activate_on
     # 3. if the reified constraint is active then prune can be called for the inner constraint
     # 4. if the reified constraint is fixed to inactive one would need to "anti" prune which is currently not possible
 
@@ -39,7 +39,7 @@ function prune_constraint!(
     # 1
     if is_constraint_solved(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
         !fix!(com, variables[rei_vidx], activate_on) && return false
-    #2
+    # 2
     elseif all(isfixed(variables[vidx]) for vidx in inner_constraint.indices)
         !fix!(com, variables[rei_vidx], activate_on == 1 ? 0 : 1) && return false
     # 3
@@ -61,13 +61,16 @@ function still_feasible(
     variables = com.search_space
     activate_on = Int(constraint.activate_on)
     rei_vidx = constraint.indices[1]
+    # if currently activated check if inner constraint is feasible
     if (vidx == rei_vidx && val == activate_on) || issetto(variables[rei_vidx], activate_on)
         return still_feasible(com, inner_constraint, inner_constraint.fct, inner_constraint.set, vidx, val)
     end
-    # if inner constraint is not activated it shouldn't be solved
-    if all(i == vidx || isfixed(com.search_space[i]) for i in inner_constraint.indices)
-        values = [i == vidx ? val : value(com.search_space[i]) for i in inner_constraint.indices]
-        return !is_constraint_solved(inner_constraint, inner_constraint.fct, inner_constraint.set, values)
+    # if inner constraint can't be activated it shouldn't be solved
+    if !has(variables[rei_vidx], activate_on)
+        if all(i == vidx || isfixed(com.search_space[i]) for i in inner_constraint.indices)
+            values = [i == vidx ? val : value(com.search_space[i]) for i in inner_constraint.indices]
+            return !is_solved_constraint(inner_constraint, inner_constraint.fct, inner_constraint.set, values)
+        end
     end
     return true
 end

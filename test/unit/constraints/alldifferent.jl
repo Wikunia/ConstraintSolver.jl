@@ -76,3 +76,40 @@
     end
     @test !CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 end
+
+@testset "all different with gap in variables" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, x[1:4], CS.Integers([-5, -2, 3, 0, 7]))
+    @constraint(m, x in CS.AllDifferentSet())
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
+    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [-2, 0, 7, -5])
+    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+
+    constr_indices = constraint.indices
+    for ind in constr_indices
+        @test sort(CS.values(com.search_space[ind])) == [-5, -2, 0, 3, 7]
+    end
+    @test CS.fix!(com, com.search_space[constr_indices[1]], -5)
+    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    for ind in constr_indices[2:4]
+        @test sort(CS.values(com.search_space[ind])) == [-2, 0, 3, 7]
+    end
+    @test CS.rm!(com, com.search_space[constr_indices[2]], -2)
+    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test sort(CS.values(com.search_space[2])) == [0, 3, 7]
+    for ind in constr_indices[3:4]
+        @test sort(CS.values(com.search_space[ind])) == [-2, 0, 3, 7]
+    end
+
+    @test CS.remove_below!(com, com.search_space[constr_indices[3]], 2)
+    @test CS.remove_below!(com, com.search_space[constr_indices[4]], 2)
+    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.isfixed(com.search_space[2])
+    @test CS.value(com.search_space[2]) == 0
+    for ind in constr_indices[3:4]
+        @test sort(CS.values(com.search_space[ind])) == [3, 7]
+    end
+end

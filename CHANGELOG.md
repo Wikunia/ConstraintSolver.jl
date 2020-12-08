@@ -1,8 +1,19 @@
 # ConstrainSolver.jl - Changelog
 
-## Unreleased
+## v0.5.0 (8th of December 2020)
+- Using a priority queue for faster `get_next_node`
+- Removed `further_pruning`
+
+## v0.4.1 (8th of December 2020)
+- Using faster version of strongly connected components with lower memory footprint
+- Bugfix in reified constraint:
+  - If inner constraint can't be activated it shouldn't be solved
+    - Bug found by @hakank see [Issue #202](https://github.com/Wikunia/ConstraintSolver.jl/issues/202)
+
+## v0.4.0 (29th of November 2020)
+**Improvements for graph coloring**
 - Use LP solver also for single variable objectives
-- Combine several `x != y` constraints into all different constraints
+- Combine several `x != y` constraints into an all different constraint
 - Combine several `a >= x` constraints with the same `a` into a vector constraints
   - used for better bounds using all different constraints
 

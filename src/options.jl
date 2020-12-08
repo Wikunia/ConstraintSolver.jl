@@ -2,7 +2,10 @@ function get_auto_traverse_strategy(com::CS.CoM)
     return com.sense == MOI.FEASIBILITY_SENSE ? :DFS : :BFS
 end
 
-function get_traverse_strategy(;options=SolverOptions())
+function get_traverse_strategy(com; options=SolverOptions())
+    if options.traverse_strategy == :DBFS
+        return isempty(com.solutions) ? Val(:DFS) : Val(:BFS)
+    end
     return Val(options.traverse_strategy)
 end
 

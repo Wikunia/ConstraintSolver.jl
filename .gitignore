@@ -9,3 +9,4 @@ test/logs/
 docs/build/
 benchmark/**/results
 instances
+**/nohup.out

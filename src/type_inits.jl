@@ -20,6 +20,7 @@ Variable(vidx) = Variable(
 )
 
 MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[], Bool[])
+SCCInit() = SCCInit(Int[], Int[], Int[], Bool[], Int[])
 
 function ConstraintInternals(cidx::Int, fct, set, indices::Vector{Int})
     return ConstraintInternals(
@@ -101,10 +102,11 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         1, # c_backtrack_idx
         1, # c_step_nr
         Vector{BacktrackObj{T}}(), # backtrack_vec
+        PriorityQueue{Int, Priority}(Base.Order.Reverse), # priority queue for `get_next_node`
         MOI.FEASIBILITY_SENSE, #
         NoObjective(), #
         Vector{Bool}(), # var_in_obj
-        get_traverse_strategy(),
+        Val(:DFS),
         get_branch_strategy(),
         get_branch_split(),
         true,
