@@ -15,14 +15,14 @@ function prune_constraint!(
 
     # check if only one variable is variable
     nfixed = count(v -> isfixed(v), com.search_space[constraint.indices])
-    if nfixed >= length(constraint.indices)-1
+    if nfixed >= length(constraint.indices) - 1
         search_space = com.search_space
-        sum = -set.value+fct.constant
+        sum = -set.value + fct.constant
         unfixed_i = 0
         for (i, vidx) in enumerate(indices)
             if isfixed(search_space[vidx])
                 sum += CS.value(search_space[vidx]) * fct.terms[i].coefficient
-            else 
+            else
                 unfixed_i = i
             end
         end
@@ -63,9 +63,9 @@ function still_feasible(
     indices = constraint.indices
     # check if only one variable is variable
     nfixed = count(v -> isfixed(v), com.search_space[indices])
-    if nfixed >= length(indices)-1
+    if nfixed >= length(indices) - 1
         search_space = com.search_space
-        sum = -set.value+fct.constant
+        sum = -set.value + fct.constant
         unfixed_i = 0
         for (i, cvidx) in enumerate(indices)
             if isfixed(search_space[cvidx])
@@ -94,10 +94,10 @@ function is_solved_constraint(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::NotEqualTo{T},
-    values::Vector{Int}
+    values::Vector{Int},
 ) where {T<:Real}
 
     indices = [t.variable_index.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
-    return get_approx_discrete(sum(values .* coeffs)+fct.constant) != set.value
+    return get_approx_discrete(sum(values .* coeffs) + fct.constant) != set.value
 end

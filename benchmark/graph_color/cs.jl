@@ -1,9 +1,13 @@
 using ConstraintSolver, JuMP, GLPK
 CS = ConstraintSolver
 
-function main(filename; benchmark = false, time_limit=100)
+function main(filename; benchmark = false, time_limit = 100)
     lp_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)
-    m = Model(optimizer_with_attributes(CS.Optimizer, "time_limit"=>time_limit, "lp_optimizer" => lp_optimizer))
+    m = Model(optimizer_with_attributes(
+        CS.Optimizer,
+        "time_limit" => time_limit,
+        "lp_optimizer" => lp_optimizer,
+    ))
 
     lines = readlines(filename)
     num_colors = 0

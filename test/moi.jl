@@ -2,7 +2,11 @@
     @testset "Supports and SolverName" begin
         optimizer = CSTestOptimizer()
         @test MOI.get(optimizer, MOI.SolverName()) == "ConstraintSolver"
-        @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.AllDifferentSetInternal)
+        @test MOI.supports_constraint(
+            optimizer,
+            MOI.VectorOfVariables,
+            CS.AllDifferentSetInternal,
+        )
         @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.EqualSetInternal)
         @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.TableSetInternal)
         @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.ZeroOne)
@@ -34,46 +38,35 @@
         )
 
         f = MOI.VectorAffineFunction(
-            [MOI.VectorAffineTerm(1, MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(1))),
-            MOI.VectorAffineTerm(2, MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(2))),
-            MOI.VectorAffineTerm(2, MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(3))),
+            [
+                MOI.VectorAffineTerm(1, MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(1))),
+                MOI.VectorAffineTerm(2, MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(2))),
+                MOI.VectorAffineTerm(2, MOI.ScalarAffineTerm(1.0, MOI.VariableIndex(3))),
             ],
             [0.0, 0.0],
         )
         indicator_set = MOI.IndicatorSet{MOI.ACTIVATE_ON_ONE}(MOI.LessThan(9.0))
-        @test MOI.supports_constraint(
-            optimizer,
-            typeof(f),
-            typeof(indicator_set)
-        )
+        @test MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
         indicator_set = MOI.IndicatorSet{MOI.ACTIVATE_ON_ONE}(MOI.GreaterThan(9.0))
-        @test MOI.supports_constraint(
-            optimizer,
-            typeof(f),
-            typeof(indicator_set)
-        )
+        @test MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
         indicator_set = MOI.IndicatorSet{MOI.ACTIVATE_ON_ONE}(MOI.EqualTo(9.0))
-        @test MOI.supports_constraint(
-            optimizer,
-            typeof(f),
-            typeof(indicator_set)
-        )
+        @test MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
         @test MOI.supports_constraint(
             optimizer,
             MOI.VectorOfVariables,
-            CS.IndicatorSet{MOI.ACTIVATE_ON_ONE}
+            CS.IndicatorSet{MOI.ACTIVATE_ON_ONE},
         )
 
         @test MOI.supports_constraint(
             optimizer,
             typeof(f),
-            CS.ReifiedSet{MOI.ACTIVATE_ON_ONE}
+            CS.ReifiedSet{MOI.ACTIVATE_ON_ONE},
         )
 
         @test MOI.supports_constraint(
             optimizer,
             MOI.VectorOfVariables,
-            CS.ReifiedSet{MOI.ACTIVATE_ON_ZERO}
+            CS.ReifiedSet{MOI.ACTIVATE_ON_ZERO},
         )
 
         # TimeLimit

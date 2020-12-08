@@ -6,18 +6,20 @@ needs to be rebuilt from scratch.
 """
 function changed_traverse_strategy!(com::CS.CoM, old_traverse_strategy)
     old_backtrack_pq = deepcopy(com.backtrack_pq)
-    com.backtrack_pq = PriorityQueue{Int, Priority}(Base.Order.Reverse)
+    com.backtrack_pq = PriorityQueue{Int,Priority}(Base.Order.Reverse)
     if old_traverse_strategy == Val(:DFS)
         for elem in old_backtrack_pq
             idx = elem.first
             priority = elem.second
-            com.backtrack_pq[idx] = PriorityBFS(priority.bound, priority.depth, priority.neg_idx)
+            com.backtrack_pq[idx] =
+                PriorityBFS(priority.bound, priority.depth, priority.neg_idx)
         end
     else # :BFS
         for elem in old_backtrack_pq
             idx = elem.first
             priority = elem.second
-            com.backtrack_pq[idx] = PriorityDFS(priority.depth, priority.bound, priority.neg_idx)
+            com.backtrack_pq[idx] =
+                PriorityDFS(priority.depth, priority.bound, priority.neg_idx)
         end
     end
 end
@@ -29,18 +31,26 @@ end
 Inserts or updates the value for `backtrack_obj` in the priority queue: `backtrack_pq`.
 It uses the best bound of the object by default but can be overwritten with `; best_bound=other`
 """
-function set_update_backtrack_pq!(com::CS.CoM, backtrack_obj::BacktrackObj; best_bound=backtrack_obj.best_bound)
+function set_update_backtrack_pq!(
+    com::CS.CoM,
+    backtrack_obj::BacktrackObj;
+    best_bound = backtrack_obj.best_bound,
+)
     if com.traverse_strategy == Val(:DFS)
         if com.sense == MOI.MIN_SENSE
-            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, -best_bound, -backtrack_obj.idx)
+            com.backtrack_pq[backtrack_obj.idx] =
+                PriorityDFS(backtrack_obj.depth, -best_bound, -backtrack_obj.idx)
         else
-            com.backtrack_pq[backtrack_obj.idx] = PriorityDFS(backtrack_obj.depth, best_bound, -backtrack_obj.idx)
+            com.backtrack_pq[backtrack_obj.idx] =
+                PriorityDFS(backtrack_obj.depth, best_bound, -backtrack_obj.idx)
         end
     else
         if com.sense == MOI.MIN_SENSE
-            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(-best_bound, backtrack_obj.depth, -backtrack_obj.idx)
+            com.backtrack_pq[backtrack_obj.idx] =
+                PriorityBFS(-best_bound, backtrack_obj.depth, -backtrack_obj.idx)
         else
-            com.backtrack_pq[backtrack_obj.idx] = PriorityBFS(best_bound, backtrack_obj.depth, -backtrack_obj.idx)
+            com.backtrack_pq[backtrack_obj.idx] =
+                PriorityBFS(best_bound, backtrack_obj.depth, -backtrack_obj.idx)
         end
     end
 end
@@ -89,7 +99,7 @@ end
 function get_next_node(
     com::CS.CoM,
     backtrack_vec::Vector{BacktrackObj{T}},
-    sorting
+    sorting,
 ) where {T<:Real}
     found, backtrack_obj = get_next_node(com, com.traverse_strategy, backtrack_vec, sorting)
 
@@ -140,7 +150,7 @@ function get_next_node(
     com::CS.CoM,
     ::Val{:BFS},
     backtrack_vec::Vector{BacktrackObj{T}},
-    sorting
+    sorting,
 ) where {T<:Real}
     found = false
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
@@ -156,13 +166,11 @@ function get_next_node(
     l = 0
     best_fac_bound = typemax(Int)
     best_depth = 0
-    for i = 1:length(backtrack_vec)
+    for i in 1:length(backtrack_vec)
         bo = backtrack_vec[i]
         if bo.status == :Open
-            if obj_factor * bo.best_bound < best_fac_bound || (
-                obj_factor * bo.best_bound == best_fac_bound &&
-                bo.depth > best_depth
-            )
+            if obj_factor * bo.best_bound < best_fac_bound ||
+               (obj_factor * bo.best_bound == best_fac_bound && bo.depth > best_depth)
                 l = i
                 best_depth = bo.depth
                 best_fac_bound = obj_factor * bo.best_bound
@@ -189,7 +197,7 @@ function get_next_node(
     com::CS.CoM,
     ::Val{:DFS},
     backtrack_vec::Vector{BacktrackObj{T}},
-    sorting
+    sorting,
 ) where {T<:Real}
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
     backtrack_obj = backtrack_vec[1]

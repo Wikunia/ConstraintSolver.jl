@@ -58,7 +58,7 @@ function is_solved_constraint(
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
     set::MOI.LessThan{T},
-    values::Vector{Int}
+    values::Vector{Int},
 ) where {T<:Real}
     return values[1] <= values[2]
 end

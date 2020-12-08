@@ -8,21 +8,21 @@ function graph_coloring(; fast = true, benchmark = false)
 
     @objective(m, Min, max_color)
 
-    for s = 1:49
+    for s in 1:49
         @constraint(m, sum(c[s, 1:4]) == 1)
     end
 
     if fast
-        for s = 1:49
-            @constraint(m, sum(c[s, i] * i for i = 1:4) <= max_color)
+        for s in 1:49
+            @constraint(m, sum(c[s, i] * i for i in 1:4) <= max_color)
         end
     else
-        for s = 1:49, i = 1:4
+        for s in 1:49, i in 1:4
             @constraint(m, max_color >= i * c[s, i])
         end
     end
 
-    for i = 1:4
+    for i in 1:4
         @constraint(m, c[1, i] + c[11, i] <= 1)
         @constraint(m, c[1, i] + c[8, i] <= 1)
         @constraint(m, c[11, i] + c[8, i] <= 1)

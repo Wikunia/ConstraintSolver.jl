@@ -1,10 +1,5 @@
 function init_constraint_struct(::Type{GeqSetInternal}, internals)
-    GeqSetConstraint(
-        internals,
-        internals.indices[1],
-        internals.indices[2:end],
-        []
-    )
+    GeqSetConstraint(internals, internals.indices[1], internals.indices[2:end], [])
 end
 
 """
@@ -19,7 +14,7 @@ function init_constraint!(
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,
     set::GeqSetInternal;
-    active = true
+    active = true,
 )
     for other_constraint in com.constraints
         if other_constraint.indices ⊆ constraint.indices[2:end]
@@ -40,7 +35,7 @@ function update_init_constraint!(
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,
     set::GeqSetInternal,
-    constraints::Vector{<:Constraint}
+    constraints::Vector{<:Constraint},
 )
     for other_constraint in constraints
         if other_constraint.indices ⊆ constraint.indices[2:end]
@@ -69,7 +64,7 @@ function prune_constraint!(
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,
     set::GeqSetInternal;
-    logs = true
+    logs = true,
 )
     # find the maximum of the minima
     max_val = -typemax(Int)
@@ -150,7 +145,7 @@ function is_solved_constraint(
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,
     set::GeqSetInternal,
-    values::Vector{Int}
+    values::Vector{Int},
 )
     max_val = values[1]
     for i in 2:length(values)

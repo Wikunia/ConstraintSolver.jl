@@ -25,7 +25,8 @@ function simplify!(com)
             b_equal_to = true
         elseif isa(constraint.fct, SAF) && isa(constraint.set, CS.NotEqualTo)
             b_not_equal_to = true
-        elseif isa(constraint, SingleVariableConstraint) && isa(constraint.set, MOI.LessThan)
+        elseif isa(constraint, SingleVariableConstraint) &&
+               isa(constraint.set, MOI.LessThan)
             b_svc_less_than = true
         end
     end
@@ -54,12 +55,12 @@ TODO: A LeqSetConstraint is missing to do the same for a <= X
 function simplify_svc_less_than(com)
     added_constraint_idxs = Int[]
     # save all variables, constraints of the form a <= b
-    lhs_vars = Dict{Int, Vector{Int}}()
-    lhs_cons = Dict{Int, Vector{Int}}()
+    lhs_vars = Dict{Int,Vector{Int}}()
+    lhs_cons = Dict{Int,Vector{Int}}()
     # save all variables, constraints of the form a >= b
-    rhs_vars = Dict{Int, Vector{Int}}()
-    rhs_cons = Dict{Int, Vector{Int}}()
-    for constraint_idx = 1:length(com.constraints)
+    rhs_vars = Dict{Int,Vector{Int}}()
+    rhs_cons = Dict{Int,Vector{Int}}()
+    for constraint_idx in 1:length(com.constraints)
         constraint = com.constraints[constraint_idx]
         if isa(constraint, SingleVariableConstraint) && isa(constraint.set, MOI.LessThan)
             if haskey(lhs_vars, constraint.lhs)
@@ -85,13 +86,16 @@ function simplify_svc_less_than(com)
     for (key, value) in rhs_vars
         if length(value) >= 5
             # add new all different constraint
-            set = GeqSetInternal(1+length(value))
-            vars = MOI.VectorOfVariables([MOI.VariableIndex(key), [MOI.VariableIndex(vidx) for vidx in value]...])
+            set = GeqSetInternal(1 + length(value))
+            vars = MOI.VectorOfVariables([
+                MOI.VariableIndex(key),
+                [MOI.VariableIndex(vidx) for vidx in value]...,
+            ])
             internals = ConstraintInternals(
                 length(com.constraints) + 1,
                 vars,
                 set,
-                Int[v.value for v in vars.variables]
+                Int[v.value for v in vars.variables],
             )
 
             constraint = init_constraint_struct(GeqSetInternal, internals)
@@ -119,12 +123,13 @@ function simplify_not_equal_to_cliques(com)
     # one node per variable which is part of != constraint
     nodes = Set()
     # check for simple != constraints like `a != b`
-    for constraint_idx = 1:length(com.constraints)
+    for constraint_idx in 1:length(com.constraints)
         constraint = com.constraints[constraint_idx]
 
         if isa(constraint.set, CS.NotEqualTo) && length(constraint.indices) == 2
-            if constraint.fct.terms[1].coefficient == -constraint.fct.terms[2].coefficient &&
-                abs(constraint.fct.terms[1].coefficient) == 1
+            if constraint.fct.terms[1].coefficient ==
+               -constraint.fct.terms[2].coefficient &&
+               abs(constraint.fct.terms[1].coefficient) == 1
 
                 if constraint.fct.constant == 0 && constraint.set.value == 0
                     push!(simple_not_equal_constraints, constraint_idx)
@@ -138,11 +143,12 @@ function simplify_not_equal_to_cliques(com)
 
 
     g = SimpleGraph(length(nodes))
-    variables_to_constraint = Dict{Tuple{Int, Int}, Int}()
+    variables_to_constraint = Dict{Tuple{Int,Int},Int}()
     for constraint_idx in simple_not_equal_constraints
         constraint = com.constraints[constraint_idx]
         add_edge!(g, constraint.indices[1], constraint.indices[2])
-        variables_to_constraint[(constraint.indices[1], constraint.indices[2])] = constraint_idx
+        variables_to_constraint[(constraint.indices[1], constraint.indices[2])] =
+            constraint_idx
     end
     cliques = maximal_cliques(g)
     for clique in cliques
@@ -156,7 +162,7 @@ function simplify_not_equal_to_cliques(com)
                 length(com.constraints) + 1,
                 vars,
                 set,
-                Int[v.value for v in vars.variables]
+                Int[v.value for v in vars.variables],
             )
 
             constraint = init_constraint_struct(AllDifferentSetInternal, internals)
@@ -165,8 +171,12 @@ function simplify_not_equal_to_cliques(com)
 
             # deactivate old constraints
             for first_idx in 1:clique_size
-                for second_idx in first_idx+1:clique_size
-                    constraint_idx = get(variables_to_constraint, (clique[first_idx], clique[second_idx]), 0)
+                for second_idx in (first_idx + 1):clique_size
+                    constraint_idx = get(
+                        variables_to_constraint,
+                        (clique[first_idx], clique[second_idx]),
+                        0,
+                    )
                     if constraint_idx != 0
                         com.constraints[constraint_idx].is_deactivated = true
                     end
@@ -192,14 +202,24 @@ function simplify_all_different_and_equal_to(com)
     # which are partially inside
     # compute inside sum and total sum
     n_constraints_before = length(com.constraints)
-    for constraint_idx = 1:length(com.constraints)
+    for constraint_idx in 1:length(com.constraints)
         constraint = com.constraints[constraint_idx]
 
         if isa(constraint.set, AllDifferentSetInternal)
             # check that the all different constraint uses every value
             if length(constraint.indices) == length(constraint.pvals)
-                append!(added_constraint_idxs, simplify_all_different_inner_equal_to(com, constraint))
-                append!(added_constraint_idxs, simplify_all_different_outer_equal_to(com, constraint, n_constraints_before))
+                append!(
+                    added_constraint_idxs,
+                    simplify_all_different_inner_equal_to(com, constraint),
+                )
+                append!(
+                    added_constraint_idxs,
+                    simplify_all_different_outer_equal_to(
+                        com,
+                        constraint,
+                        n_constraints_before,
+                    ),
+                )
             end
         end
     end
@@ -228,30 +248,28 @@ function simplify_all_different_inner_equal_to(com, constraint::AllDifferentCons
     for sc_idx in constraint.sub_constraint_idxs
         sub_constraint = com.constraints[sc_idx]
         # if it's an equal_to constraint
-        if isa(sub_constraint.fct, SAF) &&
-            isa(sub_constraint.set, MOI.EqualTo)
+        if isa(sub_constraint.fct, SAF) && isa(sub_constraint.set, MOI.EqualTo)
             # the coefficients must be all 1
             if all(t.coefficient == 1 for t in sub_constraint.fct.terms)
                 # compute sum inside all sum constraints
                 found_possible_constraint = true
-                in_sum += sub_constraint.set.value -
-                    sub_constraint.fct.constant
+                in_sum += sub_constraint.set.value - sub_constraint.fct.constant
                 # for sum which are in alldifferent but not in sum constraints
                 outside_indices = setdiff(outside_indices, sub_constraint.indices)
             end
         end
     end
     if found_possible_constraint && length(outside_indices) <= 4
-        constraint_idx = length(com.constraints)+1
+        constraint_idx = length(com.constraints) + 1
         # all_diff_sum is Int and in_sum must be as well as all variables are Int and coefficients 1
         lc = LinearConstraint(
-            constraint_idx, outside_indices, ones(Int, length(outside_indices)),
-            0, MOI.EqualTo{Int}(all_diff_sum - in_sum)
+            constraint_idx,
+            outside_indices,
+            ones(Int, length(outside_indices)),
+            0,
+            MOI.EqualTo{Int}(all_diff_sum - in_sum),
         )
-        add_constraint!(
-            com,
-            lc
-        )
+        add_constraint!(com, lc)
         push!(added_constraint_idxs, constraint_idx)
     end
     return added_constraint_idxs
@@ -271,7 +289,11 @@ all different constraint but inside one of the sum constraints
 [c,d] in sum constraint == 9
 => 6+d == 12 => d=6
 """
-function simplify_all_different_outer_equal_to(com, constraint::AllDifferentConstraint, n_constraints_before)
+function simplify_all_different_outer_equal_to(
+    com,
+    constraint::AllDifferentConstraint,
+    n_constraints_before,
+)
     @assert length(constraint.indices) == length(constraint.pvals)
     add_sum_constraint = true
     all_diff_sum = sum(constraint.pvals)
@@ -289,13 +311,10 @@ function simplify_all_different_outer_equal_to(com, constraint::AllDifferentCons
             end
             sub_constraint = com.constraints[sub_constraint_idx]
             # it must be an equal constraint and all coefficients must be 1 otherwise we can't add a constraint
-            if isa(sub_constraint.fct, SAF) &&
-                isa(sub_constraint.set, MOI.EqualTo)
+            if isa(sub_constraint.fct, SAF) && isa(sub_constraint.set, MOI.EqualTo)
                 if all(t.coefficient == 1 for t in sub_constraint.fct.terms)
                     found_sum_constraint = true
-                    total_sum +=
-                        sub_constraint.set.value -
-                        sub_constraint.fct.constant
+                    total_sum += sub_constraint.set.value - sub_constraint.fct.constant
                     all_inside = true
                     for sub_variable_idx in sub_constraint.indices
                         if !haskey(cons_indices_dict, sub_variable_idx)
@@ -317,15 +336,15 @@ function simplify_all_different_outer_equal_to(com, constraint::AllDifferentCons
 
     # make sure that there are not too many outside indices
     if add_sum_constraint && length(outside_indices) <= 4
-        constraint_idx = length(com.constraints)+1
+        constraint_idx = length(com.constraints) + 1
         lc = LinearConstraint(
-            constraint_idx, outside_indices, ones(Int, length(outside_indices)),
-            0, MOI.EqualTo{Int}(total_sum - all_diff_sum)
+            constraint_idx,
+            outside_indices,
+            ones(Int, length(outside_indices)),
+            0,
+            MOI.EqualTo{Int}(total_sum - all_diff_sum),
         )
-        add_constraint!(
-            com,
-            lc
-        )
+        add_constraint!(com, lc)
         push!(added_constraint_idxs, constraint_idx)
     end
     return added_constraint_idxs

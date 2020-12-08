@@ -20,18 +20,18 @@ end
 function get_str_repr(variables::Array{CS.Variable})
     if length(size(variables)) == 1
         output = ""
-        for i = 1:length(variables)
+        for i in 1:length(variables)
             if !CS.isfixed(variables[i])
                 output *= "$(compress_var_string(variables[i])), "
             else
                 output *= "$(CS.value(variables[i])), "
             end
         end
-        return [output[1:end-2]]
+        return [output[1:(end - 2)]]
     elseif length(size(variables)) == 2
         max_length = 1
-        for j = 1:size(variables)[2]
-            for i = 1:size(variables)[1]
+        for j in 1:size(variables)[2]
+            for i in 1:size(variables)[1]
                 if !CS.isfixed(variables[i, j])
                     len = length(compress_var_string(variables[i, j]))
                     if len > max_length
@@ -46,9 +46,9 @@ function get_str_repr(variables::Array{CS.Variable})
             end
         end
         lines = String[]
-        for j = 1:size(variables)[2]
+        for j in 1:size(variables)[2]
             line = ""
-            for i = 1:size(variables)[1]
+            for i in 1:size(variables)[1]
                 pstr = ""
                 if !CS.isfixed(variables[i, j])
                     pstr = compress_var_string(variables[i, j])

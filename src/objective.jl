@@ -111,20 +111,26 @@ function get_best_bound(
     coeffs = obj_fct.lc.coeffs
     objval = obj_fct.constant
     if com.sense == MOI.MIN_SENSE
-        for i = 1:length(indices)
+        for i in 1:length(indices)
             if indices[i] == vidx
-                objval += min(coeffs[i]*lb, coeffs[i]*ub)
+                objval += min(coeffs[i] * lb, coeffs[i] * ub)
                 continue
             end
-            objval += min(coeffs[i] * com.search_space[indices[i]].min, coeffs[i] * com.search_space[indices[i]].max)
+            objval += min(
+                coeffs[i] * com.search_space[indices[i]].min,
+                coeffs[i] * com.search_space[indices[i]].max,
+            )
         end
     else # MAX Sense
-        for i = 1:length(indices)
+        for i in 1:length(indices)
             if indices[i] == vidx
-                objval += max(coeffs[i]*lb, coeffs[i]*ub)
+                objval += max(coeffs[i] * lb, coeffs[i] * ub)
                 continue
             end
-            objval += max(coeffs[i] * com.search_space[indices[i]].min, coeffs[i] * com.search_space[indices[i]].max)
+            objval += max(
+                coeffs[i] * com.search_space[indices[i]].min,
+                coeffs[i] * com.search_space[indices[i]].max,
+            )
         end
     end
 
@@ -139,7 +145,8 @@ function get_best_bound_lp(com, backtrack_obj, vidx, lb, ub)
         for variable in com.search_space
             lb = com.search_space[variable.idx].min
             ub = com.search_space[variable.idx].max
-            if lb > backtrack_obj.primal_start[variable.idx] || ub < backtrack_obj.primal_start[variable.idx]
+            if lb > backtrack_obj.primal_start[variable.idx] ||
+               ub < backtrack_obj.primal_start[variable.idx]
                 use_last = false
             end
         end
@@ -165,7 +172,12 @@ function get_best_bound_lp(com, backtrack_obj, vidx, lb, ub)
     if MOI.supports(lp_backend, MOI.VariablePrimalStart(), MOI.VariableIndex)
         for variable in com.search_space
             v_idx = variable.idx
-            MOI.set(lp_backend, MOI.VariablePrimalStart(), MOI.VariableIndex(v_idx), backtrack_obj.primal_start[v_idx])
+            MOI.set(
+                lp_backend,
+                MOI.VariablePrimalStart(),
+                MOI.VariableIndex(v_idx),
+                backtrack_obj.primal_start[v_idx],
+            )
         end
     end
 
@@ -173,7 +185,15 @@ function get_best_bound_lp(com, backtrack_obj, vidx, lb, ub)
     # check each constraint which has `update_best_bound = true` for a better bound
     for constraint in com.constraints
         if constraint.impl.update_best_bound
-            update_best_bound_constraint!(com, constraint, constraint.fct, constraint.set, vidx, lb, ub)
+            update_best_bound_constraint!(
+                com,
+                constraint,
+                constraint.fct,
+                constraint.set,
+                vidx,
+                lb,
+                ub,
+            )
             for bound in constraint.bound_rhs
                 set_lower_bound(com.lp_x[bound.idx], bound.lb)
                 set_upper_bound(com.lp_x[bound.idx], bound.ub)

@@ -19,12 +19,12 @@
 
         m = Model(CSJuMPTestOptimizer())
         @variable(m, x[1:n, 1:n], Bin)
-        for i = 1:n, j = 1:n
+        for i in 1:n, j in 1:n
             if weight_matrix[i, j] == 0 || i > j
                 @constraint(m, x[i, j] == 0)
             end
         end
-        for i = 1:n
+        for i in 1:n
             @constraint(
                 m,
                 sum(x[min(i, j), max(i, j)] for j in neighbors(weight_matrix, i)) <= 1

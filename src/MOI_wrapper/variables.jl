@@ -2,11 +2,8 @@
 Single variable bound constraints
 """
 # MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{AbstractVector{<:MOI.AbstractScalarSet}}) = true
-MOI.supports_constraint(
-    ::Optimizer, 
-    ::Type{SVF}, 
-    ::Type{MOI.LessThan{T}}
-) where {T<:Real} = true
+MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.LessThan{T}}) where {T<:Real} =
+    true
 
 MOI.supports_constraint(
     ::Optimizer,
@@ -14,24 +11,14 @@ MOI.supports_constraint(
     ::Type{MOI.GreaterThan{T}},
 ) where {T<:Real} = true
 
-MOI.supports_constraint(
-    ::Optimizer,
-    ::Type{SVF}, 
-    ::Type{MOI.EqualTo{T}}
-) where {T<:Real} = true
+MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.EqualTo{T}}) where {T<:Real} =
+    true
 
-MOI.supports_constraint(
-    ::Optimizer,
-    ::Type{SVF}, 
-    ::Type{MOI.Interval{T}}
-) where {T<:Real} = true
+MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{MOI.Interval{T}}) where {T<:Real} =
+    true
 
 
-MOI.supports_constraint(
-    ::Optimizer,
-    ::Type{SVF},
-    ::Type{Integers},
-) = true
+MOI.supports_constraint(::Optimizer, ::Type{SVF}, ::Type{Integers}) = true
 
 """
 Binary/Integer variable support
@@ -80,7 +67,7 @@ function MOI.add_variable(model::Optimizer)
     return MOI.VariableIndex(vidx)
 end
 
-MOI.add_variables(model::Optimizer, n::Int) = [MOI.add_variable(model) for i = 1:n]
+MOI.add_variables(model::Optimizer, n::Int) = [MOI.add_variable(model) for i in 1:n]
 
 function check_inbounds(model::Optimizer, vi::VI)
     num_variables = length(model.variable_info)
@@ -161,10 +148,10 @@ function MOI.add_constraint(
     vi = v.variable
     check_inbounds(model, vi)
     isnan(interval.upper) &&
-    throw(ErrorException("The interval bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(interval.upper)"))
+        throw(ErrorException("The interval bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(interval.upper)"))
     has_upper_bound(model, vi) && @error "Upper bound on variable $vi exists already."
     isnan(interval.lower) &&
-    throw(ErrorException("The interval bounds can not contain NaN and must be an Integer. Currently it has a lower bound of $(interval.lower)"))
+        throw(ErrorException("The interval bounds can not contain NaN and must be an Integer. Currently it has a lower bound of $(interval.lower)"))
     has_lower_bound(model, vi) && @error "Lower bound on variable $vi exists already."
     is_fixed(model, vi) && @error "Variable $vi is fixed. Cannot also set upper bound."
 
@@ -177,13 +164,14 @@ function MOI.add_constraint(
     model.variable_info[vi.value].has_lower_bound = true
 
     model.variable_info[vi.value].values =
-        model.variable_info[vi.value].min:model.variable_info[vi.value].max
+        (model.variable_info[vi.value].min):(model.variable_info[vi.value].max)
     num_vals = model.variable_info[vi.value].max - model.variable_info[vi.value].min + 1
     model.variable_info[vi.value].indices = 1:num_vals
     model.variable_info[vi.value].first_ptr = 1
     model.variable_info[vi.value].last_ptr = num_vals
     model.variable_info[vi.value].init_vals = copy(model.variable_info[vi.value].values)
-    model.variable_info[vi.value].init_val_to_index = copy(model.variable_info[vi.value].indices)
+    model.variable_info[vi.value].init_val_to_index =
+        copy(model.variable_info[vi.value].indices)
 
     addupd_var_in_inner_model(model, vi.value)
 
@@ -196,7 +184,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, lt::MOI.LessThan{T}) where
     vi = v.variable
     check_inbounds(model, vi)
     isnan(lt.upper) &&
-    throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(lt.upper)"))
+        throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(lt.upper)"))
     has_upper_bound(model, vi) && @error "Upper bound on variable $vi already exists."
     is_fixed(model, vi) && @error "Variable $vi is fixed. Cannot also set upper bound."
 
@@ -206,13 +194,14 @@ function MOI.add_constraint(model::Optimizer, v::SVF, lt::MOI.LessThan{T}) where
 
     if has_lower_bound(model, vi)
         model.variable_info[vi.value].values =
-            model.variable_info[vi.value].min:model.variable_info[vi.value].max
+            (model.variable_info[vi.value].min):(model.variable_info[vi.value].max)
         num_vals = model.variable_info[vi.value].max - model.variable_info[vi.value].min + 1
         model.variable_info[vi.value].indices = 1:num_vals
         model.variable_info[vi.value].first_ptr = 1
         model.variable_info[vi.value].last_ptr = num_vals
         model.variable_info[vi.value].init_vals = copy(model.variable_info[vi.value].values)
-        model.variable_info[vi.value].init_val_to_index = copy(model.variable_info[vi.value].indices)
+        model.variable_info[vi.value].init_val_to_index =
+            copy(model.variable_info[vi.value].indices)
     end
 
     addupd_var_in_inner_model(model, vi.value)
@@ -230,7 +219,7 @@ function MOI.add_constraint(
     vi = v.variable
     check_inbounds(model, vi)
     isnan(gt.lower) &&
-    throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(gt.upper)"))
+        throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(gt.upper)"))
     has_lower_bound(model, vi) && @error "Lower bound on variable $vi already exists."
     is_fixed(model, vi) && @error "Variable $vi is fixed. Cannot also set lower bound."
 
@@ -241,13 +230,14 @@ function MOI.add_constraint(
 
     if has_upper_bound(model, vi)
         model.variable_info[vi.value].values =
-            model.variable_info[vi.value].min:model.variable_info[vi.value].max
+            (model.variable_info[vi.value].min):(model.variable_info[vi.value].max)
         num_vals = model.variable_info[vi.value].max - model.variable_info[vi.value].min + 1
         model.variable_info[vi.value].indices = 1:num_vals
         model.variable_info[vi.value].first_ptr = 1
         model.variable_info[vi.value].last_ptr = num_vals
         model.variable_info[vi.value].init_vals = copy(model.variable_info[vi.value].values)
-        model.variable_info[vi.value].init_val_to_index = copy(model.variable_info[vi.value].indices)
+        model.variable_info[vi.value].init_val_to_index =
+            copy(model.variable_info[vi.value].indices)
     end
     addupd_var_in_inner_model(model, vi.value)
 
@@ -275,7 +265,8 @@ function MOI.add_constraint(model::Optimizer, v::SVF, eq::MOI.EqualTo{T}) where 
     model.variable_info[vi.value].first_ptr = 1
     model.variable_info[vi.value].last_ptr = 1
     model.variable_info[vi.value].init_vals = copy(model.variable_info[vi.value].values)
-    model.variable_info[vi.value].init_val_to_index = copy(model.variable_info[vi.value].indices)
+    model.variable_info[vi.value].init_val_to_index =
+        copy(model.variable_info[vi.value].indices)
     addupd_var_in_inner_model(model, vi.value)
 
     cidx = length(model.var_constraints) + 1
@@ -285,16 +276,16 @@ end
 
 function set_variable_from_integers!(var::Variable, set_vals)
     min_val, max_val = extrema(set_vals)
-    range = max_val-min_val+1
+    range = max_val - min_val + 1
     vals = copy(set_vals)
 
     # fill the indices such that 1:length(set_vals) map to set_vals
     indices = zeros(Int, range)
     # .- needed for the offset
     # values that don't exist get an index out of the range of the values array
-    indices[set_vals .- (min_val-1)] = 1:length(set_vals)
-    j = length(set_vals)+1
-    for i=1:range
+    indices[set_vals .- (min_val - 1)] = 1:length(set_vals)
+    j = length(set_vals) + 1
+    for i in 1:range
         if indices[i] == 0
             indices[i] = j
             j += 1

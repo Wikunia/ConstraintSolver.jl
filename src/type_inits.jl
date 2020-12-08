@@ -23,15 +23,31 @@ SCCInit() = SCCInit(Int[], Int[], Int[], Bool[], Int[])
 
 function ConstraintInternals(cidx::Int, fct, set, indices::Vector{Int})
     return ConstraintInternals(
-        cidx, fct, set, indices, Int[], ImplementedConstraintFunctions(), false, false, nothing
+        cidx,
+        fct,
+        set,
+        indices,
+        Int[],
+        ImplementedConstraintFunctions(),
+        false,
+        false,
+        nothing,
     )
 end
 
 function ImplementedConstraintFunctions()
-   return ImplementedConstraintFunctions([false for f in fieldnames(ImplementedConstraintFunctions)]...)
+    return ImplementedConstraintFunctions([
+        false for f in fieldnames(ImplementedConstraintFunctions)
+    ]...)
 end
 
-function LinearConstraint(cidx, indices::Vector, coeffs::Vector{T}, constant, set::MOI.AbstractScalarSet) where T
+function LinearConstraint(
+    cidx,
+    indices::Vector,
+    coeffs::Vector{T},
+    constant,
+    set::MOI.AbstractScalarSet,
+) where {T}
     @assert length(indices) == length(coeffs)
     len = length(coeffs)
     scalar_terms = Vector{MOI.ScalarAffineTerm{T}}(undef, len)
@@ -51,7 +67,7 @@ function LinearConstraint(
     # get common type for rhs and coeffs
     # use the first value (can be .upper, .lower, .value) and subtract left constant
     rhs = -fct.constant
-    if isa(set, Union{MOI.EqualTo, CS.NotEqualTo})
+    if isa(set, Union{MOI.EqualTo,CS.NotEqualTo})
         rhs += set.value
     elseif isa(set, MOI.LessThan)
         rhs += set.upper
@@ -72,14 +88,7 @@ function LinearConstraint(
     in_all_different = false
 
     internals = ConstraintInternals(cidx, fct, set, indices)
-    lc = LinearConstraint(
-        internals,
-        in_all_different,
-        mins,
-        maxs,
-        pre_mins,
-        pre_maxs,
-    )
+    lc = LinearConstraint(internals, in_all_different, mins, maxs, pre_mins, pre_maxs)
     return lc
 end
 
@@ -100,7 +109,7 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         Vector{Int}(), # bt_infeasible
         1, # c_backtrack_idx
         Vector{BacktrackObj{T}}(), # backtrack_vec
-        PriorityQueue{Int, Priority}(Base.Order.Reverse), # priority queue for `get_next_node`
+        PriorityQueue{Int,Priority}(Base.Order.Reverse), # priority queue for `get_next_node`
         MOI.FEASIBILITY_SENSE, #
         NoObjective(), #
         Vector{Bool}(), # var_in_obj
@@ -127,7 +136,7 @@ end
 function new_BacktrackObj(com::CS.CoM, parent_idx, depth, vidx, lb, ub)
     parent = com.backtrack_vec[parent_idx]
     return BacktrackObj{parametric_type(com)}(
-        length(com.backtrack_vec)+1, # idx
+        length(com.backtrack_vec) + 1, # idx
         parent_idx,
         depth,
         :Open, # status
@@ -136,7 +145,7 @@ function new_BacktrackObj(com::CS.CoM, parent_idx, depth, vidx, lb, ub)
         ub, # ub
         parent.best_bound,
         parent.solution,
-        zeros(length(com.search_space)) # solution values of bound computation
+        zeros(length(com.search_space)), # solution values of bound computation
     )
 end
 
@@ -151,6 +160,6 @@ function BacktrackObj(com::CS.CoM)
         0, # ub
         com.sense == MOI.MIN_SENSE ? typemax(com.best_bound) : typemin(com.best_bound),
         zeros(length(com.search_space)),
-        zeros(length(com.search_space))
+        zeros(length(com.search_space)),
     )
 end

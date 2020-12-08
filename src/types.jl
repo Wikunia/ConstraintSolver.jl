@@ -49,11 +49,11 @@ end
 struct Integers <: MOI.AbstractScalarSet
     values::Vector{Int}
 end
-Integers(vals::Union{UnitRange{Int}, StepRange{Int, Int}}) = Integers(collect(vals))
+Integers(vals::Union{UnitRange{Int},StepRange{Int,Int}}) = Integers(collect(vals))
 Base.copy(I::Integers) = Integers(I.values)
 
 struct AllDifferentSetInternal <: MOI.AbstractVectorSet
-    dimension :: Int
+    dimension::Int
 end
 Base.copy(A::AllDifferentSetInternal) = AllDifferentSetInternal(A.dimension)
 
@@ -61,18 +61,18 @@ struct AllDifferentSet <: JuMP.AbstractVectorSet end
 JuMP.moi_set(::AllDifferentSet, dim) = AllDifferentSetInternal(dim)
 
 struct TableSetInternal <: MOI.AbstractVectorSet
-    dimension :: Int
-    table     :: Array{Int, 2}
+    dimension::Int
+    table::Array{Int,2}
 end
 Base.copy(T::TableSetInternal) = TableSetInternal(T.dimension, T.table)
 
 struct TableSet <: JuMP.AbstractVectorSet
-    table     :: Array{Int, 2}
+    table::Array{Int,2}
 end
 JuMP.moi_set(ts::TableSet, dim) = TableSetInternal(dim, ts.table)
 
 struct GeqSetInternal <: MOI.AbstractVectorSet
-    dimension :: Int
+    dimension::Int
 end
 Base.copy(G::GeqSetInternal) = GeqSetInternal(G.dimension)
 
@@ -153,9 +153,9 @@ lb  - lower bound of that variable
 ub  - upper bound of that variable
 """
 mutable struct BoundRhsVariable
-    idx :: Int
-    lb  :: Int
-    ub  :: Int
+    idx::Int
+    lb::Int
+    ub::Int
 end
 
 mutable struct MatchingInit
@@ -188,75 +188,75 @@ Similar to `Variable` a whole block of 64 rows can be removed by changing the `i
 The `mask` saves the current mask to change words
 """
 mutable struct RSparseBitSet
-    words     :: Vector{UInt64}
-    indices   :: Vector{Int}
-    last_ptr  :: Int
-    mask      :: Vector{UInt64}
+    words::Vector{UInt64}
+    indices::Vector{Int}
+    last_ptr::Int
+    mask::Vector{UInt64}
     RSparseBitSet() = new()
 end
 
 mutable struct TableSupport
     # defines the range for each variable
     # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
-    var_start   :: Vector{Int}
-    values      :: Array{UInt64, 2}
+    var_start::Vector{Int}
+    values::Array{UInt64,2}
     TableSupport() = new()
 end
 
 mutable struct TableResidues
     # defines the range for each variable
     # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
-    var_start   :: Vector{Int}
-    values      :: Vector{Int}
+    var_start::Vector{Int}
+    values::Vector{Int}
     TableResidues() = new()
 end
 
 mutable struct TableBacktrackInfo
-    words    :: Vector{UInt64}
-    last_ptr :: Int
-    indices  :: Vector{Int}
+    words::Vector{UInt64}
+    last_ptr::Int
+    indices::Vector{Int}
 end
 
 struct IndicatorSet{A} <: MOI.AbstractVectorSet
-    func    :: MOI.VectorOfVariables
-    set     :: MOI.AbstractVectorSet
+    func::MOI.VectorOfVariables
+    set::MOI.AbstractVectorSet
     dimension::Int
 end
-Base.copy(I::IndicatorSet{A}) where A = IndicatorSet{A}(I.func, I.set, I.dimension)
+Base.copy(I::IndicatorSet{A}) where {A} = IndicatorSet{A}(I.func, I.set, I.dimension)
 
 struct ReifiedSet{A} <: MOI.AbstractVectorSet
-    func    :: Union{JuMP.GenericAffExpr, MOI.VectorOfVariables}
-    set     :: Union{MOI.AbstractScalarSet, MOI.AbstractVectorSet}
+    func::Union{JuMP.GenericAffExpr,MOI.VectorOfVariables}
+    set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
     dimension::Int
 end
-Base.copy(R::ReifiedSet{A}) where A = ReifiedSet{A}(R.func, R.set, R.dimension)
+Base.copy(R::ReifiedSet{A}) where {A} = ReifiedSet{A}(R.func, R.set, R.dimension)
 
 #====================================================================================
 ====================================================================================#
 
 mutable struct ImplementedConstraintFunctions
-    init :: Bool
-    update_init :: Bool
-    finished_pruning :: Bool
-    restore_pruning :: Bool
-    single_reverse_pruning :: Bool
-    reverse_pruning :: Bool
-    update_best_bound :: Bool
+    init::Bool
+    update_init::Bool
+    finished_pruning::Bool
+    restore_pruning::Bool
+    single_reverse_pruning::Bool
+    reverse_pruning::Bool
+    update_best_bound::Bool
 end
 
 mutable struct ConstraintInternals{
-        FCT <: Union{MOI.AbstractScalarFunction, MOI.AbstractVectorFunction},
-        SET <: Union{MOI.AbstractScalarSet, MOI.AbstractVectorSet}
-    }
+    FCT<:Union{MOI.AbstractScalarFunction,MOI.AbstractVectorFunction},
+    SET<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
+}
     idx::Int
     fct::FCT
     set::SET
     indices::Vector{Int}
     pvals::Vector{Int}
-    impl :: ImplementedConstraintFunctions
-    is_initialized :: Bool
-    is_deactivated :: Bool # can be deactivated if it's absorbed by other constraints
-    bound_rhs::Union{Nothing, Vector{BoundRhsVariable}} # should be set if `update_best_bound` is true
+    impl::ImplementedConstraintFunctions
+    is_initialized::Bool
+    is_deactivated::Bool # can be deactivated if it's absorbed by other constraints
+    bound_rhs::Union{Nothing,Vector{BoundRhsVariable}} # should be set if `update_best_bound` is true
 end
 
 #====================================================================================
@@ -392,7 +392,7 @@ function Base.convert(::Type{B}, obj::BacktrackObj{T2}) where {T1,T2,B<:Backtrac
         obj.ub,
         convert(T1, obj.best_bound),
         obj.primal_start,
-        obj.solution
+        obj.solution,
     )
 end
 
@@ -443,4 +443,4 @@ mutable struct ConstraintSolverModel{T<:Real}
     start_time::Float64
     solve_time::Float64 # seconds spend in solve
 end
-parametric_type(::ConstraintSolverModel{T}) where T = T
+parametric_type(::ConstraintSolverModel{T}) where {T} = T

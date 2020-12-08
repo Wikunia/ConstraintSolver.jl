@@ -4,9 +4,7 @@ using JuMP
 
 makedocs(
     # See https://github.com/JuliaDocs/Documenter.jl/issues/868
-    format = Documenter.HTML(
-        prettyurls = get(ENV, "CI", nothing) == "true",
-    ),
+    format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
     strict = true,
     sitename = "ConstraintSolver",
     pages = [

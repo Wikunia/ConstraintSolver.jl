@@ -30,7 +30,7 @@ function create_sudoku_grid!(com, grid)
 end
 
 function add_sudoku_constr!(com, grid)
-    for rc = 1:9
+    for rc in 1:9
         #row
         variables = grid[CartesianIndices((rc:rc, 1:9))]
         CS.add_constraint!(com, CS.all_different([variables...]))
@@ -39,49 +39,53 @@ function add_sudoku_constr!(com, grid)
         CS.add_constraint!(com, CS.all_different([variables...]))
     end
 
-    for br = 0:2
-        for bc = 0:2
-            variables = grid[CartesianIndices((br*3+1:(br+1)*3, bc*3+1:(bc+1)*3))]
+    for br in 0:2
+        for bc in 0:2
+            variables = grid[CartesianIndices((
+                (br * 3 + 1):((br + 1) * 3),
+                (bc * 3 + 1):((bc + 1) * 3),
+            ))]
             CS.add_constraint!(com, CS.all_different([variables...]))
         end
     end
 end
 
 function jump_add_sudoku_constr!(m, x)
-    for rc = 1:9
+    for rc in 1:9
         @constraint(m, x[rc, :] in CS.AllDifferentSet())
         @constraint(m, x[:, rc] in CS.AllDifferentSet())
     end
-    for br = 0:2
-        for bc = 0:2
+    for br in 0:2
+        for bc in 0:2
             @constraint(
                 m,
-                vec(x[br*3+1:(br+1)*3, bc*3+1:(bc+1)*3]) in CS.AllDifferentSet()
+                vec(x[(br * 3 + 1):((br + 1) * 3), (bc * 3 + 1):((bc + 1) * 3)]) in
+                CS.AllDifferentSet()
             )
         end
     end
 end
 
 function moi_add_sudoku_constr!(m, x)
-    for r = 1:9
+    for r in 1:9
         MOI.add_constraint(
             m,
-            MOI.VectorOfVariables([x[r][c][1] for c = 1:9]),
+            MOI.VectorOfVariables([x[r][c][1] for c in 1:9]),
             CS.AllDifferentSetInternal(9),
         )
     end
-    for c = 1:9
+    for c in 1:9
         MOI.add_constraint(
             m,
-            MOI.VectorOfVariables([x[r][c][1] for r = 1:9]),
+            MOI.VectorOfVariables([x[r][c][1] for r in 1:9]),
             CS.AllDifferentSetInternal(9),
         )
     end
-    variables = [MOI.VariableIndex(0) for _ = 1:9]
-    for br = 0:2
-        for bc = 0:2
+    variables = [MOI.VariableIndex(0) for _ in 1:9]
+    for br in 0:2
+        for bc in 0:2
             variables_i = 1
-            for i = br*3+1:(br+1)*3, j = bc*3+1:(bc+1)*3
+            for i in (br * 3 + 1):((br + 1) * 3), j in (bc * 3 + 1):((bc + 1) * 3)
                 variables[variables_i] = x[i][j][1]
                 variables_i += 1
             end
@@ -91,21 +95,24 @@ function moi_add_sudoku_constr!(m, x)
 end
 
 function jump_fulfills_sudoku_constr(vals)
-    for r = 1:9
-        if !allunique(vals[r, :]) 
+    for r in 1:9
+        if !allunique(vals[r, :])
             println("row $r not unique")
             return false
         end
     end
-    for c = 1:9
-        if !allunique(vals[:, c]) 
+    for c in 1:9
+        if !allunique(vals[:, c])
             println("col $c not unique")
             return false
         end
     end
-    for br = 0:2
-        for bc = 0:2
-            if !allunique(vec(vals[br*3+1:(br+1)*3, bc*3+1:(bc+1)*3])) 
+    for br in 0:2
+        for bc in 0:2
+            if !allunique(vec(vals[
+                (br * 3 + 1):((br + 1) * 3),
+                (bc * 3 + 1):((bc + 1) * 3),
+            ]))
                 println("block $br, $bc not unique")
                 return false
             end
@@ -116,7 +123,7 @@ end
 
 function fulfills_sudoku_constr(com_grid)
     correct = true
-    for rc = 1:9
+    for rc in 1:9
         row = com_grid[CartesianIndices((rc:rc, 1:9))]
         if any(v -> !CS.isfixed(v), row)
             return false
@@ -132,9 +139,12 @@ function fulfills_sudoku_constr(com_grid)
         correct = length(vals) != 9 ? false : correct
     end
 
-    for br = 0:2
-        for bc = 0:2
-            box = com_grid[CartesianIndices((br*3+1:(br+1)*3, bc*3+1:(bc+1)*3))]
+    for br in 0:2
+        for bc in 0:2
+            box = com_grid[CartesianIndices((
+                (br * 3 + 1):((br + 1) * 3),
+                (bc * 3 + 1):((bc + 1) * 3),
+            ))]
             if any(v -> !CS.isfixed(v), box)
                 return false
             end
@@ -154,9 +164,9 @@ function print_search_space(com_grid; max_length = :default)
         end
     end
 
-    for y = 1:size(com_grid)[1]
+    for y in 1:size(com_grid)[1]
         line = ""
-        for x = 1:size(com_grid)[2]
+        for x in 1:size(com_grid)[2]
             if !CS.isfixed(com_grid[y, x])
                 possible = sort(values(com_grid[y, x]))
                 pstr = join(possible, ",")
