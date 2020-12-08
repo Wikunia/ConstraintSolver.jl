@@ -18,7 +18,10 @@ mutable struct SolverOptions
     simplify::Bool
 end
 
-function get_traverse_strategy(;options=SolverOptions())
+function get_traverse_strategy(com; options=SolverOptions())
+    if options.traverse_strategy == :DBFS
+        return isempty(com.solutions) ? Val(:DFS) : Val(:BFS)
+    end
     return Val(options.traverse_strategy)
 end
 

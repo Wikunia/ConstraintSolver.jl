@@ -30,7 +30,6 @@ function general_tree_test(com::CS.CoM)
             next_idx = rand(2:n_backtracks)
             status = com.logs[next_idx].status
         end
-        
         CS.checkout_from_to!(com, c_backtrack_idx, next_idx)
 
         if com.backtrack_vec[next_idx].parent_idx != 0
@@ -73,7 +72,6 @@ function general_tree_test(com::CS.CoM)
                 constraints = com.constraints[com.subscription[var_idx]]
                 feasible, further_pruning = CS.update_best_bound!(com.backtrack_vec[c_backtrack_idx], com, constraints)
                 @assert feasible
-                @assert further_pruning
             end
             
             @assert CS.prune!(com)

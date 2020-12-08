@@ -100,10 +100,11 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         Vector{Int}(), # bt_infeasible
         1, # c_backtrack_idx
         Vector{BacktrackObj{T}}(), # backtrack_vec
+        PriorityQueue{Int, Priority}(Base.Order.Reverse), # priority queue for `get_next_node`
         MOI.FEASIBILITY_SENSE, #
         NoObjective(), #
         Vector{Bool}(), # var_in_obj
-        get_traverse_strategy(),
+        Val(:DFS),
         get_branch_split(),
         zero(T), # best_sol,
         zero(T), # best_bound

@@ -1,5 +1,9 @@
 # ConstrainSolver.jl - Changelog
 
+## v0.5.0
+- Using a priority queue for faster `get_next_node`
+- Removed `further_pruning`
+
 ## v0.4.1 (8th of December 2020)
 - Using faster version of strongly connected components with lower memory footprint
 - Bugfix in reified constraint:

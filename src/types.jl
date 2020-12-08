@@ -93,6 +93,54 @@ end
 Base.copy(N::NotEqualTo) = NotEqualTo(N.value)
 
 #====================================================================================
+====================== TYPES FOR TRAVERSING ========================================
+====================================================================================#
+
+abstract type Priority end
+
+struct PriorityDFS{T<:Real} <: Priority
+    depth::Int
+    bound::T
+    neg_idx::Int # the negative backtrack index (negative because of maximizing)
+end
+
+function Base.isless(p1::PriorityDFS, p2::PriorityDFS)
+    if p1.depth < p2.depth
+        return true
+    elseif p1.depth == p2.depth
+        if p1.bound < p2.bound
+            return true
+        elseif p1.bound == p2.bound
+            return p1.neg_idx < p2.neg_idx
+        else
+            return false
+        end
+    end
+    return false
+end
+
+struct PriorityBFS{T<:Real} <: Priority
+    bound::T
+    depth::Int
+    neg_idx::Int # the negative backtrack index (negative because of maximizing)
+end
+
+function Base.isless(p1::PriorityBFS, p2::PriorityBFS)
+    if p1.bound < p2.bound
+        return true
+    elseif p1.bound == p2.bound
+        if p1.depth < p2.depth
+            return true
+        elseif p1.depth == p2.depth
+            return p1.neg_idx < p2.neg_idx
+        else
+            return false
+        end
+    end
+    return false
+end
+
+#====================================================================================
 ====================== TYPES FOR CONSTRAINTS ========================================
 ====================================================================================#
 
@@ -379,6 +427,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     bt_infeasible::Vector{Int}
     c_backtrack_idx::Int
     backtrack_vec::Vector{BacktrackObj{T}}
+    backtrack_pq::PriorityQueue
     sense::MOI.OptimizationSense
     objective::ObjectiveFunction
     var_in_obj::Vector{Bool} # saves whether a variable is part of the objective function
