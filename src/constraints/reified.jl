@@ -43,7 +43,12 @@ function prune_constraint!(
     activate_on = Int(constraint.activate_on)
 
     # 1
-    if is_constraint_solved(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
+    if is_constraint_solved(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set,
+    )
         !fix!(com, variables[rei_vidx], activate_on) && return false
         # 2
     elseif all(isfixed(variables[vidx]) for vidx in inner_constraint.indices)
@@ -86,8 +91,16 @@ function still_feasible(
     # if inner constraint can't be activated it shouldn't be solved
     if !has(variables[rei_vidx], activate_on)
         if all(i == vidx || isfixed(com.search_space[i]) for i in inner_constraint.indices)
-            values = [i == vidx ? val : value(com.search_space[i]) for i in inner_constraint.indices]
-            return !is_constraint_solved(inner_constraint, inner_constraint.fct, inner_constraint.set, values)
+            values = [
+                i == vidx ? val : value(com.search_space[i])
+                for i in inner_constraint.indices
+            ]
+            return !is_constraint_solved(
+                inner_constraint,
+                inner_constraint.fct,
+                inner_constraint.set,
+                values,
+            )
         end
     end
     return true
@@ -101,7 +114,12 @@ function is_constraint_solved(
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     activate_on = Int(constraint.activate_on)
     inner_constraint = constraint.inner_constraint
-    return is_constraint_solved(inner_constraint, inner_constraint.fct, inner_constraint.set, values[2:end]) == (values[1] == activate_on)
+    return is_constraint_solved(
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set,
+        values[2:end],
+    ) == (values[1] == activate_on)
 end
 
 function update_best_bound_constraint!(

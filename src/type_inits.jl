@@ -16,7 +16,7 @@ Variable(vidx) = Variable(
     false,
     false,
     false,
-    0.0
+    0.0,
 )
 
 MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[], Bool[])
@@ -143,7 +143,7 @@ function new_BacktrackObj(com::CS.CoM, parent_idx, vidx, lb, ub)
     return BacktrackObj{parametric_type(com)}(
         length(com.backtrack_vec) + 1, # idx
         parent_idx,
-        parent.depth+1,
+        parent.depth + 1,
         :Open, # status
         vidx,
         lb, # lb and ub only take effect if vidx != 0

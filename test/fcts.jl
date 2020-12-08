@@ -6,9 +6,34 @@
         var_changes = Dict{Int,Vector{Tuple{Symbol,Int,Int,Int}}}()
         activity = Dict{Int,Float64}()
         children = CS.TreeLogNode{Int}[]
-        l1 = CS.TreeLogNode(0, :Open, true, 0, 0, 0, 0, 0, var_states, var_changes, activity, children)
-        l2 =
-            CS.TreeLogNode(0, :Closed, true, 0, 0, 0, 0, 0, var_states, var_changes, activity, children)
+        l1 = CS.TreeLogNode(
+            0,
+            :Open,
+            true,
+            0,
+            0,
+            0,
+            0,
+            0,
+            var_states,
+            var_changes,
+            activity,
+            children,
+        )
+        l2 = CS.TreeLogNode(
+            0,
+            :Closed,
+            true,
+            0,
+            0,
+            0,
+            0,
+            0,
+            var_states,
+            var_changes,
+            activity,
+            children,
+        )
         @test !CS.same_logs(l1, l2)
 
         # different children order
@@ -151,8 +176,20 @@
             activity,
             CS.TreeLogNode{Int}[],
         )
-        tln11 =
-            CS.TreeLogNode(0, :Open, true, 0, 1, 0, 0, 0, var_states, var_changes, activity, [tln13])
+        tln11 = CS.TreeLogNode(
+            0,
+            :Open,
+            true,
+            0,
+            1,
+            0,
+            0,
+            0,
+            var_states,
+            var_changes,
+            activity,
+            [tln13],
+        )
         tln12 = CS.TreeLogNode(
             0,
             :Open,
@@ -198,8 +235,20 @@
             activity,
             CS.TreeLogNode{Int}[],
         )
-        tln22 =
-            CS.TreeLogNode(0, :Open, true, 0, 2, 0, 0, 0, var_states, var_changes, activity, [tln23])
+        tln22 = CS.TreeLogNode(
+            0,
+            :Open,
+            true,
+            0,
+            2,
+            0,
+            0,
+            0,
+            var_states,
+            var_changes,
+            activity,
+            [tln23],
+        )
         push!(children2, tln21)
         push!(children2, tln22)
         l1 = CS.TreeLogNode(

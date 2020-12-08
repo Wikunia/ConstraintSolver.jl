@@ -12,7 +12,7 @@
             "logging" => [],
             "time_limit" => time_limit,
             "simplify" => simplify,
-            "seed" => 1
+            "seed" => 1,
         ))
         num_colors = 20
 

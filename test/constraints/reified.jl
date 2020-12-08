@@ -154,41 +154,62 @@
         @test is_solved(com)
     end
 
-@testset "TableConstraint where inactive" begin
-    m = Model(optimizer_with_attributes(CS.Optimizer, "keep_logs"=>true, "logging"=>[]))
-    @variable(m, x, CS.Integers([1,2,4]))
-    @variable(m, y, CS.Integers([2,4]))
-    @variable(m, b, Bin)
-    @constraint(m, !b := {[x,y] in CS.TableSet([
-        1 2;
-        2 4;
-        3 4;
-        4 4;
-    ])})
-    @objective(m, Max, 5b+x+y)
-    optimize!(m)
-    @test JuMP.termination_status(m) == MOI.OPTIMAL
-    @test JuMP.objective_value(m) ≈ 5+4+2
-    @test JuMP.value(b) ≈ 1.0
-    @test JuMP.value(x) ≈ 4
-    @test JuMP.value(y) ≈ 2
-    com = JuMP.backend(m).optimizer.model.inner
-    @test is_solved(com)
-end
+    @testset "TableConstraint where inactive" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "keep_logs" => true,
+            "logging" => [],
+        ))
+        @variable(m, x, CS.Integers([1, 2, 4]))
+        @variable(m, y, CS.Integers([2, 4]))
+        @variable(m, b, Bin)
+        @constraint(m, !b := {[x, y] in CS.TableSet([
+            1 2
+            2 4
+            3 4
+            4 4
+        ])})
+        @objective(m, Max, 5b + x + y)
+        optimize!(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 5 + 4 + 2
+        @test JuMP.value(b) ≈ 1.0
+        @test JuMP.value(x) ≈ 4
+        @test JuMP.value(y) ≈ 2
+        com = JuMP.backend(m).optimizer.model.inner
+        @test is_solved(com)
+    end
 
-@testset "TableConstraint with optimization" begin
-    cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
-    m = Model(optimizer_with_attributes(CS.Optimizer, "logging"=>[], "lp_optimizer"=>cbc_optimizer, "keep_logs"=>true))
-    @variable(m, 1 <= a <= 100, Int)
-    @variable(m, 1 <= b <= 100, Int)
-    @variable(m, 1 <= c <= 100, Int)
-    @variable(m, reified, Bin)
-    table = zeros(Int, (52, 3))
-    r = 1
-    for i=1:100, j=i:100, k=j:100
-        if i^2+j^2 == k^2
-            table[r,:] .= [i,j,k]
-            r += 1
+    @testset "TableConstraint with optimization" begin
+        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => [],
+            "lp_optimizer" => cbc_optimizer,
+            "keep_logs" => true,
+        ))
+        @variable(m, 1 <= a <= 100, Int)
+        @variable(m, 1 <= b <= 100, Int)
+        @variable(m, 1 <= c <= 100, Int)
+        @variable(m, reified, Bin)
+        table = zeros(Int, (52, 3))
+        r = 1
+        for i in 1:100, j in i:100, k in j:100
+            if i^2 + j^2 == k^2
+                table[r, :] .= [i, j, k]
+                r += 1
+            end
+            @constraint(m, reified := {[a, b, c] in CS.TableSet(table)})
+            @objective(m, Max, 5 * reified + b + c)
+            optimize!(m)
+            @test JuMP.termination_status(m) == MOI.OPTIMAL
+            @test JuMP.objective_value(m) ≈ 5 + 96 + 100
+            @test JuMP.value(a) ≈ 28
+            @test JuMP.value(b) ≈ 96
+            @test JuMP.value(c) ≈ 100
+            @test JuMP.value(reified) ≈ 1
+            com = JuMP.backend(m).optimizer.model.inner
+            @test is_solved(com)
         end
         @constraint(m, reified := {[a, b, c] in CS.TableSet(table)})
         @objective(m, Max, 5 * reified + b + c)
@@ -201,20 +222,8 @@ end
         @test JuMP.value(reified) ≈ 1
         com = JuMP.backend(m).optimizer.model.inner
         @test is_solved(com)
+        # @test general_tree_test(com) not working as we have less than 10 logs
     end
-    @constraint(m, reified := {[a,b,c] in CS.TableSet(table)})
-    @objective(m, Max, 5*reified+b+c)
-    optimize!(m)
-    @test JuMP.termination_status(m) == MOI.OPTIMAL
-    @test JuMP.objective_value(m) ≈ 5+96+100
-    @test JuMP.value(a) ≈ 28
-    @test JuMP.value(b) ≈ 96
-    @test JuMP.value(c) ≈ 100
-    @test JuMP.value(reified) ≈ 1
-    com = JuMP.backend(m).optimizer.model.inner
-    @test is_solved(com)
-    # @test general_tree_test(com) not working as we have less than 10 logs
-end
 
     @testset "all different != 0 (Issue 202)" begin
         n = 2

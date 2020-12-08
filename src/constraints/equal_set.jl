@@ -3,7 +3,7 @@ function init_constraint!(
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
     set::CS.EqualSetInternal;
-    active = true
+    active = true,
 )
     indices = constraint.indices
     search_space = com.search_space
@@ -69,14 +69,15 @@ function prune_constraint!(
             return false
         elseif length(fixed_vals_set) == 0
             # sync the changes in each variable
-            for i=1:length(indices)
+            for i in 1:length(indices)
                 v1 = search_space[indices[i]]
                 v1_changes = v1.changes[com.c_backtrack_idx]
                 isempty(v1_changes) && continue
                 for j in 1:length(indices)
                     i == j && continue
                     v2 = search_space[indices[j]]
-                    !apply_changes!(com, v2, v1_changes, constraint.first_ptrs[i]) && return false
+                    !apply_changes!(com, v2, v1_changes, constraint.first_ptrs[i]) &&
+                        return false
                 end
                 constraint.first_ptrs[i] = length(v1_changes) + 1
             end
@@ -162,9 +163,9 @@ function still_feasible(
     vidx::Int,
     value::Int,
 )
-   variables = com.search_space
-   was_inside = false
-   for cvidx in constraint.indices
+    variables = com.search_space
+    was_inside = false
+    for cvidx in constraint.indices
         if cvidx == vidx
             was_inside = true
             continue
@@ -184,7 +185,7 @@ function is_constraint_solved(
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
     set::EqualSetInternal,
-    values::Vector{Int}
+    values::Vector{Int},
 )
-    return all(v->v == values[1], values)
+    return all(v -> v == values[1], values)
 end

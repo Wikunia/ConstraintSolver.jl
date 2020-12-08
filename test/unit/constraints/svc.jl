@@ -10,9 +10,9 @@
     @test constraint isa CS.SingleVariableConstraint
 
     # doesn't check the length
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [3,2])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [2,2])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1,2])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [3, 2])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [2, 2])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2])
 
     constr_indices = constraint.indices
     @test CS.still_feasible(

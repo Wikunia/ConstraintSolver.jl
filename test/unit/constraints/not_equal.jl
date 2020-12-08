@@ -8,8 +8,8 @@
 
     # doesn't check the length
     # 1+2+1 + constant (1) == 5
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1,2,1])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1,2,2])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 1])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 2])
 
     constr_indices = constraint.indices
     @test CS.still_feasible(
@@ -66,5 +66,5 @@
     CS.fix!(com, com.search_space[constr_indices[1]], 2)
     CS.fix!(com, com.search_space[constr_indices[2]], 1)
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
-    @test sort(CS.values(com.search_space[constr_indices[3]])) == [-3,2,3]
+    @test sort(CS.values(com.search_space[constr_indices[3]])) == [-3, 2, 3]
 end

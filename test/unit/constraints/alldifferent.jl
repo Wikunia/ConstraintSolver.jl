@@ -8,8 +8,8 @@
     constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
 
     # doesn't check the length
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1,2,3])
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [2,2,3])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 3])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [2, 2, 3])
 
     sorted_min = [1, 1, 2, 2, 3]
     sorted_max = [5, 5, 4, 4, 2]
@@ -107,7 +107,12 @@ end
     com = JuMP.backend(m).optimizer.model.inner
 
     constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [-2, 0, 7, -5])
+    @test CS.is_constraint_solved(
+        constraint,
+        constraint.fct,
+        constraint.set,
+        [-2, 0, 7, -5],
+    )
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 
     constr_indices = constraint.indices

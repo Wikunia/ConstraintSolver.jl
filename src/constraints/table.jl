@@ -299,7 +299,8 @@ function finished_pruning_constraint!(
     com::CS.CoM,
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
-    set::TableSetInternal)
+    set::TableSetInternal,
+)
 
     @assert com.c_backtrack_idx > 0
 
@@ -334,7 +335,7 @@ function still_feasible(
     indices = constraint.indices
     full_mask(current)
     was_inside = false
-    for i = 1:length(indices)
+    for i in 1:length(indices)
         if indices[i] == vidx
             was_inside = true
             support = get_view(supports, com, vidx, i, value)
@@ -551,5 +552,5 @@ function is_constraint_solved(
 )
 
     table = set.table
-    return findfirst(ri->table[ri,:] == values, 1:size(table)[1]) !== nothing
+    return findfirst(ri -> table[ri, :] == values, 1:size(table)[1]) !== nothing
 end

@@ -5,7 +5,7 @@ function solve_lp()
         CS.Optimizer,
         "lp_optimizer" => glpk_optimizer,
         "logging" => [],
-        "seed"=>1
+        "seed" => 1,
     ))
 
     # Variables
@@ -24,8 +24,11 @@ function solve_lp()
     # every h must be allocated at most one a
     @constraint(model, must_visit[h = 1:3], sum(allocations[h, a] for a in 1:3) <= 1)
     # every allocated h must have fewer than 5 days of visits per week
-    @constraint(model, max_visits[h = 1:3], sum(days[h, a] for a in 1:3) <= 5 *
-                                                                            inclusion[h])
+    @constraint(
+        model,
+        max_visits[h = 1:3],
+        sum(days[h, a] for a in 1:3) <= 5 * inclusion[h]
+    )
 
     @objective(model, Max, sum(days[h, a] * 5 for h in 1:3, a in 1:3))
     optimize!(model)

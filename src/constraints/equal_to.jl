@@ -347,8 +347,11 @@ function still_feasible(
         return false
     end
     if num_not_fixed == 1
-        if isapprox_divisible(com, rhs-csum, fct.terms[not_fixed_i].coefficient)
-            return has(search_space[not_fixed_idx], get_approx_discrete((rhs-csum)/fct.terms[not_fixed_i].coefficient))
+        if isapprox_divisible(com, rhs - csum, fct.terms[not_fixed_i].coefficient)
+            return has(
+                search_space[not_fixed_idx],
+                get_approx_discrete((rhs - csum) / fct.terms[not_fixed_i].coefficient),
+            )
         else
             return false
         end
@@ -377,5 +380,5 @@ function is_constraint_solved(
 
     indices = [t.variable_index.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
-    return sum(values .* coeffs)+fct.constant ≈ set.value
+    return sum(values .* coeffs) + fct.constant ≈ set.value
 end

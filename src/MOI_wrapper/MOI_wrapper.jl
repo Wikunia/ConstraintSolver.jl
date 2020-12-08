@@ -144,7 +144,7 @@ function MOI.optimize!(model::Optimizer)
         end
         com.solutions = new_solutions
         if !com.options.all_solutions
-            filter!(sol->sol.incumbent == com.best_sol, com.solutions)
+            filter!(sol -> sol.incumbent == com.best_sol, com.solutions)
         end
         sort_solutions!(com)
     end

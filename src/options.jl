@@ -13,12 +13,12 @@ function get_auto_branch_strategy(com::CS.CoM)
     return :ABS # Activity based strategy
 end
 
-function get_branch_strategy(;options=SolverOptions())
+function get_branch_strategy(; options = SolverOptions())
     strategy = options.branch_strategy
     return Val(strategy)
 end
 
-function get_branch_split(;options=SolverOptions())
+function get_branch_split(; options = SolverOptions())
     strategy = options.branch_split
     return Val(strategy)
 end
@@ -26,7 +26,7 @@ end
 const POSSIBLE_OPTIONS = Dict(
     :traverse_strategy => [:Auto, :BFS, :DFS, :DBFS],
     :branch_strategy => [:Auto, :ABS, :OLD],
-    :branch_split => [:Auto, :Smallest, :Biggest, :InHalf]
+    :branch_split => [:Auto, :Smallest, :Biggest, :InHalf],
 )
 
 function SolverOptions()
@@ -80,7 +80,7 @@ function SolverOptions()
         lp_optimizer,
         no_prune,
         activity_decay,
-        simplify
+        simplify,
     )
 end
 

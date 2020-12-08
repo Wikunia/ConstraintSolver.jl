@@ -452,7 +452,7 @@ function still_feasible(
 )
     indices = constraint.indices
     was_inside = false
-    for i = 1:length(indices)
+    for i in 1:length(indices)
         if indices[i] == vidx
             was_inside = true
             continue

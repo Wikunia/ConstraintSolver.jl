@@ -104,5 +104,5 @@ function is_constraint_solved(
 
     indices = [t.variable_index.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
-    return get_approx_discrete(sum(values .* coeffs)+fct.constant) != set.value
+    return get_approx_discrete(sum(values .* coeffs) + fct.constant) != set.value
 end

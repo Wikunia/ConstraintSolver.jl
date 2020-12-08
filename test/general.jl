@@ -22,7 +22,7 @@ function general_tree_test(com::CS.CoM)
     all_correct = true
     n_children_tests = 0
 
-    for t = 1:100
+    for t in 1:100
         status = :Open
         next_idx = 0
         while status == :Open
@@ -66,12 +66,24 @@ function general_tree_test(com::CS.CoM)
             for var in com.search_space
                 var.changes[c_backtrack_idx] = Vector{Tuple{Symbol,Int,Int,Int}}()
             end
-            @assert CS.remove_above!(com, com.search_space[vidx], com.logs[c_backtrack_idx].ub)
-            @assert CS.remove_below!(com, com.search_space[vidx], com.logs[c_backtrack_idx].lb)
+            @assert CS.remove_above!(
+                com,
+                com.search_space[vidx],
+                com.logs[c_backtrack_idx].ub,
+            )
+            @assert CS.remove_below!(
+                com,
+                com.search_space[vidx],
+                com.logs[c_backtrack_idx].lb,
+            )
 
             if com.sense != MOI.FEASIBILITY_SENSE
                 constraints = com.constraints[com.subscription[vidx]]
-                feasible, further_pruning = CS.update_best_bound!(com.backtrack_vec[c_backtrack_idx], com, constraints)
+                feasible, further_pruning = CS.update_best_bound!(
+                    com.backtrack_vec[c_backtrack_idx],
+                    com,
+                    constraints,
+                )
                 # has to be feasible as it has children
                 @assert feasible
             end
@@ -120,14 +132,15 @@ end
 
 function is_solved(com::CS.CoM)
     variables = com.search_space
-    all_fixed = all(v->CS.isfixed(v), variables)
+    all_fixed = all(v -> CS.isfixed(v), variables)
     if !all_fixed
         @error "Not all variables are fixed"
         return false
     end
     for constraint in com.constraints
         values = CS.value.(com.search_space[constraint.indices])
-        c_solved = CS.is_constraint_solved(constraint, constraint.fct, constraint.set, values)
+        c_solved =
+            CS.is_constraint_solved(constraint, constraint.fct, constraint.set, values)
         if !c_solved
             @error "Constraint $(constraint.idx) is not solved"
             @error "Info about constraint: $(typeof(constraint)), $(typeof(constraint.fct)), $(typeof(constraint.set))"

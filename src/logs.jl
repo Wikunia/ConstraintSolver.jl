@@ -42,12 +42,12 @@ function create_log_node(com)
 
 end
 
-function update_log_node!(com, back_idx; feasible=nothing)
+function update_log_node!(com, back_idx; feasible = nothing)
     tree_log_node = com.logs[back_idx]
 
-   # never set an infeasible one to feasible
-   # + infeasible nodes are closed
-   if feasible !== nothing
+    # never set an infeasible one to feasible
+    # + infeasible nodes are closed
+    if feasible !== nothing
         tree_log_node.feasible = feasible
         close_node!(com, back_idx)
     end
@@ -146,10 +146,15 @@ function same_logs(log1, log2)
             return false
         end
 
-        if node1.id != node2.id || node1.status != node2.status ||
-           node1.best_bound != node2.best_bound || node1.step_nr != node2.step_nr ||
-           node1.vidx != node2.vidx || node1.lb != node2.lb ||
-           node1.ub != node2.ub || node1.var_states != node2.var_states || node1.feasible != node2.feasible
+        if node1.id != node2.id ||
+           node1.status != node2.status ||
+           node1.best_bound != node2.best_bound ||
+           node1.step_nr != node2.step_nr ||
+           node1.vidx != node2.vidx ||
+           node1.lb != node2.lb ||
+           node1.ub != node2.ub ||
+           node1.var_states != node2.var_states ||
+           node1.feasible != node2.feasible
             println("Not identical at i=", i)
             println("node1: ")
             println(

@@ -168,8 +168,8 @@ function still_probing(n, μ, variance)
     n < 2 && return true
     for i in 1:length(μ)
         σ = sqrt(variance[i])
-        if tdistcdf(n-1, 0.05)*(σ/sqrt(n)) > 0.2*μ[i]
-            range = tdistcdf(n-1, 0.05)*(σ/sqrt(n))
+        if tdistcdf(n - 1, 0.05) * (σ / sqrt(n)) > 0.2 * μ[i]
+            range = tdistcdf(n - 1, 0.05) * (σ / sqrt(n))
             return true
         end
     end
@@ -207,14 +207,21 @@ function probe_until(com::CS.CoM)
     com.input[:logs] && update_log_node!(com, 2)
 
     n = 1
-    while n < 10 && still_probing(n, mean_activities, variance_activities) && global_feasible
+    while n < 10 &&
+              still_probing(n, mean_activities, variance_activities) &&
+              global_feasible
         n += 1
         root_feasible, feasible, activities = probe(com)
         for i in 1:length(com.search_space)
-            new_mean = mean_activities[i] + (activities[i]-mean_activities[i]) / n
+            new_mean = mean_activities[i] + (activities[i] - mean_activities[i]) / n
             # update variance: https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
             if n != 1
-                variance_activities[i] = ((n-2)*variance_activities[i]+(n-1)*(mean_activities[i]-new_mean)^2+(activities[i]-new_mean)^2)/(n-1)
+                variance_activities[i] =
+                    (
+                        (n - 2) * variance_activities[i] +
+                        (n - 1) * (mean_activities[i] - new_mean)^2 +
+                        (activities[i] - new_mean)^2
+                    ) / (n - 1)
             end
             mean_activities[i] = new_mean
         end
@@ -273,7 +280,9 @@ function probe(com::CS.CoM)
         backtrack_vec,
         com,
         parent_idx,
-        branch_var.vidx; only_one = true, compute_bound = false
+        branch_var.vidx;
+        only_one = true,
+        compute_bound = false,
     )
     last_backtrack_id = 0
     root_feasible = true
@@ -298,7 +307,7 @@ function probe(com::CS.CoM)
 
         feasible = set_bounds!(com, backtrack_obj)
         if !feasible
-            com.input[:logs] && update_log_node!(com, last_backtrack_id; feasible=false)
+            com.input[:logs] && update_log_node!(com, last_backtrack_id; feasible = false)
             if is_root == 2
                 root_feasible = false
             end
@@ -313,9 +322,9 @@ function probe(com::CS.CoM)
 
         update_probe_activity!(activities, com)
         if !feasible
-            com.input[:logs] && update_log_node!(com, last_backtrack_id; feasible=false)
+            com.input[:logs] && update_log_node!(com, last_backtrack_id; feasible = false)
             if is_root
-               root_feasible = false
+                root_feasible = false
             end
             break
         end
@@ -336,7 +345,9 @@ function probe(com::CS.CoM)
             backtrack_vec,
             com,
             last_backtrack_obj.idx,
-            branch_var.vidx; only_one = true, compute_bound = false
+            branch_var.vidx;
+            only_one = true,
+            compute_bound = false,
         )
     end
     last_backtrack_id != 0 && close_node!(com, last_backtrack_id)

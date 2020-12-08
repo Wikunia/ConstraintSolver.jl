@@ -8,9 +8,9 @@
     com = JuMP.backend(m).optimizer.model.inner
     constraint = get_constraints_by_type(com, CS.IndicatorConstraint)[1]
 
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1,2,2])
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1,2,3])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [0,2,3])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 2])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 3])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [0, 2, 3])
 
     constr_indices = constraint.indices
     @test CS.still_feasible(

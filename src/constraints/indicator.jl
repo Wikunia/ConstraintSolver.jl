@@ -154,7 +154,12 @@ function is_constraint_solved(
 }
     if values[1] == Int(constraint.activate_on)
         inner_constraint = constraint.inner_constraint
-        return is_constraint_solved(inner_constraint, inner_constraint.fct, inner_constraint.set, values[2:end])
+        return is_constraint_solved(
+            inner_constraint,
+            inner_constraint.fct,
+            inner_constraint.set,
+            values[2:end],
+        )
     end
     return true
 end
@@ -195,7 +200,15 @@ function update_best_bound_constraint!(
     indicator_var = search_space[indicator_vidx]
     if inner_constraint.impl.update_best_bound
         if CS.issetto(indicator_var, Int(constraint.activate_on))
-            return update_best_bound_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set, vidx, lb, ub)
+            return update_best_bound_constraint!(
+                com,
+                inner_constraint,
+                inner_constraint.fct,
+                inner_constraint.set,
+                vidx,
+                lb,
+                ub,
+            )
         else
             # if not activated (for example in a different subtree) we reset the bounds
             for rhs in constraint.bound_rhs

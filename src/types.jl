@@ -460,7 +460,7 @@ mutable struct TreeLogNode{T<:Real}
     ub::Int
     var_states::Dict{Int,Vector{Int}}
     var_changes::Dict{Int,Vector{Tuple{Symbol,Int,Int,Int}}}
-    activity::Dict{Int, Float64}
+    activity::Dict{Int,Float64}
     children::Vector{TreeLogNode{T}}
 end
 
@@ -470,11 +470,12 @@ mutable struct Solution{T<:Real}
     backtrack_id::Int # save where the solution was found
     hash::UInt64
 end
-Solution(incumbent, values, backtrack_id) = Solution(incumbent, values, backtrack_id, hash(values))
+Solution(incumbent, values, backtrack_id) =
+    Solution(incumbent, values, backtrack_id, hash(values))
 
 mutable struct ActivityObj
-    nprobes :: Int
-    is_free :: Vector{Bool}
+    nprobes::Int
+    is_free::Vector{Bool}
     ActivityObj() = new(0, [false]) # will be overwritten later
 end
 
@@ -484,9 +485,9 @@ end
 Determines the next branch variable and stores if still feasible and if solution was found
 """
 mutable struct BranchVarObj
-    is_feasible :: Bool
-    is_solution :: Bool
-    vidx :: Int # only relevant if is_feasible && !is_solution
+    is_feasible::Bool
+    is_solution::Bool
+    vidx::Int # only relevant if is_feasible && !is_solution
 end
 
 mutable struct ConstraintSolverModel{T<:Real}
