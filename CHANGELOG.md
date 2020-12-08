@@ -1,6 +1,6 @@
 # ConstrainSolver.jl - Changelog
 
-## Unreleased
+## v0.4.1 (8th of December 2020)
 - Using faster version of strongly connected components with lower memory footprint
 - Bugfix in reified constraint:
   - If inner constraint can't be activated it shouldn't be solved
