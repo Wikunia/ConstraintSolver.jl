@@ -195,4 +195,49 @@ end
     com = JuMP.backend(m).optimizer.model.inner
     @test is_solved(com)
 end
+
+@testset "all different != 0 (Issue 202)" begin
+    n = 2
+    model = Model(optimizer_with_attributes(CS.Optimizer,
+                                            "all_solutions"=>true,
+                                            "logging"=>[],
+                                            )
+                )
+    @variable(model, 0 <=  x[1:n] <= n, Int)
+    b_len = length([1 for i in 2:n for j in 1:i-1 for k in 1:3])
+    @variable(model, bs[1:b_len], Bin)
+    c = 1
+    for i in 2:n, j in 1:i-1
+        # b1: bs[c]
+        # b2: bs[c+1]
+        # b3: bs[c+2]
+        @constraint(model, bs[c]   := {x[i] != 0})
+        @constraint(model, bs[c+1] := {x[j] != 0})
+        @constraint(model, bs[c+2] := {bs[c] + bs[c+1] == 2})
+        @constraint(model, bs[c+2] => {x[i] != x[j]})
+        c += 3
+    end
+
+    optimize!(model)
+
+    status = JuMP.termination_status(model)
+    @test status == MOI.OPTIMAL
+    num_sols = MOI.get(model, MOI.ResultCount())
+    @test num_sols == 7
+
+    xx_set = Set()
+    for sol in 1:num_sols
+        xx = convert.(Integer,JuMP.value.(x,result=sol))
+        bss = convert.(Integer,JuMP.value.(bs,result=sol))
+        push!(xx_set, (xx[1], xx[2]))
+    end
+    @test length(xx_set) == num_sols
+    @test (0,0) in xx_set
+    @test (0,1) in xx_set
+    @test (0,2) in xx_set
+    @test (1,0) in xx_set
+    @test (1,2) in xx_set
+    @test (2,0) in xx_set
+    @test (2,1) in xx_set
+end
 end
