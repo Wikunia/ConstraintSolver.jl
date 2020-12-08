@@ -2,6 +2,9 @@
 
 ## Unreleased
 - Using faster version of strongly connected components with lower memory footprint
+- Bugfix in reified constraint:
+  - If inner constraint can't be activated it shouldn't be solved
+    - Bug found by @hakank see [Issue #202](https://github.com/Wikunia/ConstraintSolver.jl/issues/202)
 
 ## v0.4.0 (29th of November 2020)
 **Improvements for graph coloring**
