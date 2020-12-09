@@ -172,7 +172,7 @@ function is_constraint_violated(
     set::GeqSetInternal,
 )
     for var in com.search_space[constraint.indices]
-        if isfixed(var) && CS.value(var) > com.search_space[constraint.indices[1]].max
+        if var.min > com.search_space[constraint.indices[1]].max
             return true
         end
     end

@@ -121,3 +121,43 @@
         @test CS.value(com.search_space[ind]) == 4
     end
 end
+
+@testset "table is_constraint_violated test" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, 0 <= x <= 5, Int)
+    @variable(m, 0 <= y <= 3, Int)
+    @constraint(m, [x,y] in CS.TableSet([
+        1 2
+        3 4
+        2 1
+        2 3
+    ]))
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = com.constraints[1]
+
+    variables = com.search_space
+    @test CS.fix!(com, variables[constraint.indices[1]], 1; check_feasibility = false)
+    @test CS.fix!(com, variables[constraint.indices[2]], 3; check_feasibility = false)
+    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, 0 <= x <= 5, Int)
+    @variable(m, 0 <= y <= 3, Int)
+    @constraint(m, [x,y] in CS.TableSet([
+        1 2
+        3 4
+        2 1
+        2 3
+    ]))
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = com.constraints[1]
+
+    variables = com.search_space
+    @test CS.fix!(com, variables[constraint.indices[1]], 1; check_feasibility = false)
+    @test CS.fix!(com, variables[constraint.indices[2]], 2; check_feasibility = false)
+    @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+end
