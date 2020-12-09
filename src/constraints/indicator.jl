@@ -119,8 +119,23 @@ function still_feasible(
     else
         val != Int(constraint.activate_on) && return true
     end
+
     # if activating or activated check the inner constraint
     inner_constraint = constraint.inner_constraint
+    # if all fixed the inner constraint should be solved
+    if all(i == vidx || isfixed(com.search_space[i]) for i in inner_constraint.indices)
+        values = [
+            i == vidx ? val : value(com.search_space[i])
+            for i in inner_constraint.indices
+        ]
+        return is_solved_constraint(
+            inner_constraint,
+            inner_constraint.fct,
+            inner_constraint.set,
+            values,
+        )
+    end
+    # otherwise check if feasible when setting vidx to val
     return still_feasible(
         com,
         inner_constraint,
@@ -175,9 +190,9 @@ end
         ub::Int
     ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
 
-Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to 
+Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to
 the possible values the table constraint allows. `vidx`, `lb` and `ub` don't are not considered atm.
-Additionally only a rough estimated bound is used which can be computed relatively fast. 
+Additionally only a rough estimated bound is used which can be computed relatively fast.
 This method calls the inner_constraint method if it exists and the indicator is activated.
 """
 function update_best_bound_constraint!(
