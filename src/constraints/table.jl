@@ -135,7 +135,7 @@ function init_constraint!(
     end
 
     # check if a support column is completely zero
-    # that means that the variable corresponding to that column can't have the value corresponding to the column 
+    # that means that the variable corresponding to that column can't have the value corresponding to the column
     feasible = true
     if active
         for c in 1:num_supports
@@ -365,9 +365,9 @@ end
         ub::Int
     )
 
-Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to 
+Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to
 the possible values the table constraint allows. `vidx`, `lb` and `ub` don't are not considered atm.
-Additionally only a rough estimated bound is used which can be computed relatively fast. 
+Additionally only a rough estimated bound is used which can be computed relatively fast.
 """
 function update_best_bound_constraint!(
     com::CS.CoM,
@@ -408,8 +408,8 @@ end
     )
 
 It gets called after the variables returned to their state after backtracking.
-A single reverse pruning step for the TableConstraint. 
-Add the removed values to the mask and in `reverse_pruning_constraint` the corresponding table rows 
+A single reverse pruning step for the TableConstraint.
+Add the removed values to the mask and in `reverse_pruning_constraint` the corresponding table rows
 will be reactivated.
 """
 function single_reverse_pruning_constraint!(
@@ -539,7 +539,7 @@ function restore_pruning_constraint!(
     empty!(constraint.changed_vars)
 end
 
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
     set::TableSetInternal,

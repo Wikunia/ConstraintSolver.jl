@@ -462,7 +462,7 @@ function still_feasible(
     return true
 end
 
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::AllDifferentSetInternal,

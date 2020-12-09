@@ -113,7 +113,7 @@ function still_feasible(
     return min_sum <= rhs + com.options.atol
 end
 
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::MOI.LessThan{T},

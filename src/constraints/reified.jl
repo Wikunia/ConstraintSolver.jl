@@ -43,7 +43,7 @@ function prune_constraint!(
     activate_on = Int(constraint.activate_on)
 
     # 1
-    if is_solved_constraint(
+    if is_constraint_solved(
         com,
         inner_constraint,
         inner_constraint.fct,
@@ -95,7 +95,7 @@ function still_feasible(
                 i == vidx ? val : value(com.search_space[i])
                 for i in inner_constraint.indices
             ]
-            return !is_solved_constraint(
+            return !is_constraint_solved(
                 inner_constraint,
                 inner_constraint.fct,
                 inner_constraint.set,
@@ -106,7 +106,7 @@ function still_feasible(
     return true
 end
 
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::ReifiedConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
     set::RS,
@@ -114,7 +114,7 @@ function is_solved_constraint(
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     activate_on = Int(constraint.activate_on)
     inner_constraint = constraint.inner_constraint
-    return is_solved_constraint(
+    return is_constraint_solved(
         inner_constraint,
         inner_constraint.fct,
         inner_constraint.set,

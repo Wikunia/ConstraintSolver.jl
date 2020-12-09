@@ -54,7 +54,7 @@ function still_feasible(
     end
 end
 
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
     set::MOI.LessThan{T},

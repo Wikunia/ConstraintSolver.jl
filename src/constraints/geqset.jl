@@ -132,7 +132,7 @@ function still_feasible(
 end
 
 """
-    is_solved_constraint(
+    is_constraint_solved(
         constraint::GeqSetConstraint,
         fct::MOI.VectorOfVariables,
         set::GeqSetInternal,
@@ -141,7 +141,7 @@ end
 
 Return true if `values` fulfills the constraint
 """
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,
     set::GeqSetInternal,

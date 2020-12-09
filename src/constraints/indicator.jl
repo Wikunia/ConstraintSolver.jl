@@ -128,7 +128,7 @@ function still_feasible(
             i == vidx ? val : value(com.search_space[i])
             for i in inner_constraint.indices
         ]
-        return is_solved_constraint(
+        return is_constraint_solved(
             inner_constraint,
             inner_constraint.fct,
             inner_constraint.set,
@@ -147,7 +147,7 @@ function still_feasible(
 end
 
 """
-    is_solved_constraint(
+    is_constraint_solved(
         constraint::IndicatorConstraint,
         fct::Union{MOI.VectorOfVariables, VAF{T}},
         set::IS,
@@ -156,7 +156,7 @@ end
 
 Return whether given `values` the constraint is fulfilled.
 """
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
     set::IS,
@@ -169,7 +169,7 @@ function is_solved_constraint(
 }
     if values[1] == Int(constraint.activate_on)
         inner_constraint = constraint.inner_constraint
-        return is_solved_constraint(
+        return is_constraint_solved(
             inner_constraint,
             inner_constraint.fct,
             inner_constraint.set,

@@ -90,7 +90,7 @@ function still_feasible(
     return true
 end
 
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::NotEqualTo{T},
