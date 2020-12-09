@@ -128,7 +128,7 @@ function still_feasible(
             i == vidx ? val : value(com.search_space[i])
             for i in inner_constraint.indices
         ]
-        return is_constraint_solved(
+        return is_solved_constraint(
             inner_constraint,
             inner_constraint.fct,
             inner_constraint.set,
