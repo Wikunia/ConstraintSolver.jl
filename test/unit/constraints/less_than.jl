@@ -80,3 +80,30 @@
     @test CS.isfixed(com.search_space[2])
     @test CS.isfixed(com.search_space[3])
 end
+
+@testset "less than is_constraint_violated test" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, -5 <= x[1:2] <= 5, Int)
+    @constraint(m, sum(x) <= 7)
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = com.constraints[1]
+
+    variables = com.search_space
+    @test CS.fix!(com, variables[constraint.indices[1]], 5; check_feasibility = false)
+    @test CS.fix!(com, variables[constraint.indices[2]], 3; check_feasibility = false)
+    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, -5 <= x[1:2] <= 5, Int)
+    @constraint(m, sum(x) <= 7)
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = com.constraints[1]
+
+    variables = com.search_space
+    @test CS.fix!(com, variables[constraint.indices[1]], 5; check_feasibility = false)
+    @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+end

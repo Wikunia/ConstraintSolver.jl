@@ -554,3 +554,26 @@ function is_constraint_solved(
     table = set.table
     return findfirst(ri -> table[ri, :] == values, 1:size(table)[1]) !== nothing
 end
+
+"""
+    is_constraint_violated(
+        com::CoM,
+        constraint::TableConstraint,
+        fct::MOI.VectorOfVariables,
+        set::TableSetInternal,
+    )
+
+Checks if the constraint is violated as it is currently set. This can happen inside an
+inactive reified or indicator constraint.
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::TableConstraint,
+    fct::MOI.VectorOfVariables,
+    set::TableSetInternal,
+)
+    if all(isfixed(var) for var in com.search_space[constraint.indices])
+        return !is_constraint_solved(constraint, fct, set, [CS.value(var) for var in com.search_space[constraint.indices]])
+    end
+    return false
+end

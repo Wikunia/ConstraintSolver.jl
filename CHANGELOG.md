@@ -1,5 +1,10 @@
 # ConstrainSolver.jl - Changelog
 
+## v0.5.1 
+- Bugfix in indicator constraint 
+  - If inner constraint is fixed and indicator tries to get active
+    - Double check that the inner constraint is solved
+
 ## v0.5.0 (8th of December 2020)
 - Using a priority queue for faster `get_next_node`
 - Removed `further_pruning`

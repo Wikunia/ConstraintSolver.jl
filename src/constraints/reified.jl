@@ -79,6 +79,14 @@ function still_feasible(
     rei_vidx = constraint.indices[1]
     # if currently activated check if inner constraint is feasible
     if (vidx == rei_vidx && val == activate_on) || issetto(variables[rei_vidx], activate_on)
+        # check if already violated
+        violated = is_constraint_violated(
+            com,
+            inner_constraint,
+            inner_constraint.fct,
+            inner_constraint.set,
+        )
+        violated && return false
         return still_feasible(
             com,
             inner_constraint,
@@ -120,6 +128,36 @@ function is_constraint_solved(
         inner_constraint.set,
         values[2:end],
     ) == (values[1] == activate_on)
+end
+
+"""
+    is_constraint_violated(
+        com::CoM,
+        constraint::ReifiedConstraint,
+        fct::Union{MOI.VectorOfVariables,VAF{T}},
+        set::RS
+    )  where {A,T<:Real,RS<:ReifiedSet{A}}
+
+Checks if the constraint is violated as it is currently set. This can happen inside an
+inactive reified or indicator constraint.
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::ReifiedConstraint,
+    fct::Union{MOI.VectorOfVariables,VAF{T}},
+    set::RS
+)  where {A,T<:Real,RS<:ReifiedSet{A}}
+    if all(isfixed(var) for var in com.search_space[constraint.indices])
+        return !is_constraint_solved(constraint, fct, set, [CS.value(var) for var in com.search_space[constraint.indices]])
+    end
+
+    reified_vidx = constraint.indices[1]
+    reified_var = com.search_space[reified_vidx]
+    if isfixed(reified_var) && CS.value(reified_var) == Int(constraint.activate_on)
+        inner_constraint = constraint.inner_constraint
+        return is_constraint_violated(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
+    end
+    return false
 end
 
 function update_best_bound_constraint!(
