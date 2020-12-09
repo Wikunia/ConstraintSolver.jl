@@ -366,7 +366,7 @@ function still_feasible(
     return true
 end
 
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::MOI.EqualTo{T},
@@ -376,4 +376,27 @@ function is_solved_constraint(
     indices = [t.variable_index.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
     return sum(values .* coeffs) + fct.constant ≈ set.value
+end
+
+"""
+    is_constraint_violated(
+        com::CoM,
+        constraint::LinearConstraint,
+        fct::SAF{T},
+        set::MOI.EqualTo{T}
+    ) where {T<:Real}
+
+Checks if the constraint is violated as it is currently set. This can happen inside an
+inactive reified or indicator constraint.
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::MOI.EqualTo{T}
+) where {T<:Real}
+    if all(isfixed(var) for var in com.search_space[constraint.indices])
+        return !is_constraint_solved(constraint, fct, set, [CS.value(var) for var in com.search_space[constraint.indices]])
+    end
+    return false
 end

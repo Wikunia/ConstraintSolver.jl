@@ -8,8 +8,8 @@
     constraint = com.constraints[1]
 
     # doesn't check the length
-    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1, 2, 3])
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [2, 2, 2])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 3])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [2, 2, 2])
 
     constr_indices = constraint.indices
     @test CS.still_feasible(
@@ -103,4 +103,32 @@
         @test CS.value(com.search_space[ind]) == 4
         @test CS.isfixed(com.search_space[ind])
     end
+end
+
+@testset "equalset is_constraint_violated test" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, -5 <= x[1:5] <= 5, Int)
+    @constraint(m, x in CS.EqualSet())
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = com.constraints[1]
+
+    variables = com.search_space
+    @test CS.fix!(com, variables[1], 3; check_feasibility = false)
+    @test CS.fix!(com, variables[2], 5; check_feasibility = false)
+    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, -5 <= x[1:5] <= 5, Int)
+    @constraint(m, x in CS.EqualSet())
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = com.constraints[1]
+
+    variables = com.search_space
+    @test CS.fix!(com, variables[1], 5; check_feasibility = false)
+    @test CS.fix!(com, variables[2], 5; check_feasibility = false)
+    @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
 end

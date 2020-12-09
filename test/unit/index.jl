@@ -18,5 +18,6 @@ end
     include("constraints/svc.jl")
     include("constraints/table.jl")
     include("constraints/indicator.jl")
+    include("constraints/reified.jl")
     include("constraints/geqset.jl")
 end

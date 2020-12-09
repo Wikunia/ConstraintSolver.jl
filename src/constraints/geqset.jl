@@ -132,7 +132,7 @@ function still_feasible(
 end
 
 """
-    is_solved_constraint(
+    is_constraint_solved(
         constraint::GeqSetConstraint,
         fct::MOI.VectorOfVariables,
         set::GeqSetInternal,
@@ -141,7 +141,7 @@ end
 
 Return true if `values` fulfills the constraint
 """
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,
     set::GeqSetInternal,
@@ -152,4 +152,29 @@ function is_solved_constraint(
         values[i] > max_val && return false
     end
     return true
+end
+
+"""
+    is_constraint_violated(
+        com::CoM,
+        constraint::GeqSetConstraint,
+        fct::MOI.VectorOfVariables,
+        set::GeqSetInternal,
+    )
+
+Checks if the constraint is violated as it is currently set. This can happen inside an
+inactive reified or indicator constraint.
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::GeqSetConstraint,
+    fct::MOI.VectorOfVariables,
+    set::GeqSetInternal,
+)
+    for var in com.search_space[constraint.indices]
+        if var.min > com.search_space[constraint.indices[1]].max
+            return true
+        end
+    end
+    return false
 end

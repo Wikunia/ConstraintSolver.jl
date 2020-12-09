@@ -111,11 +111,11 @@ function arr2dict(arr)
     return d
 end
 
-function is_solved_constraint(com::CS.CoM, constraint::Constraint, fct, set)
+function is_constraint_solved(com::CS.CoM, constraint::Constraint, fct, set)
     variables = com.search_space
     !all(isfixed(variables[var]) for var in constraint.indices) && return false
     values = CS.value.(variables[constraint.indices])
-    return is_solved_constraint(constraint, fct, set, values)
+    return is_constraint_solved(constraint, fct, set, values)
 end
 
 #=

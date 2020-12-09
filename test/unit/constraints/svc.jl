@@ -10,9 +10,9 @@
     @test constraint isa CS.SingleVariableConstraint
 
     # doesn't check the length
-    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [3, 2])
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [2, 2])
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1, 2])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [3, 2])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [2, 2])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2])
 
     constr_indices = constraint.indices
     @test CS.still_feasible(
@@ -89,4 +89,32 @@
     for ind in constr_indices
         @test sort(CS.values(com.search_space[ind])) == -5:1
     end
+end
+
+@testset "svc is_constraint_violated test" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, 0 <= x <= 5, Int)
+    @variable(m, 0 <= y <= 3, Int)
+    @constraint(m, x <= y)
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = com.constraints[1]
+
+    variables = com.search_space
+    @test CS.fix!(com, variables[constraint.indices[1]], 5; check_feasibility = false)
+    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, 0 <= x <= 5, Int)
+    @variable(m, 0 <= y <= 3, Int)
+    @constraint(m, x <= y)
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = com.constraints[1]
+
+    variables = com.search_space
+    @test CS.fix!(com, variables[constraint.indices[1]], 3; check_feasibility = false)
+    @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
 end

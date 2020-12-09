@@ -8,8 +8,8 @@
 
     # doesn't check the length
     # 1+2+1 + constant (1) == 5
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1, 2, 1])
-    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1, 2, 2])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 1])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 2])
 
     constr_indices = constraint.indices
     @test !CS.still_feasible(
@@ -68,4 +68,32 @@
         @test CS.values(com.search_space[ind]) == [1]
     end
     CS.values(com.search_space[constr_indices[1]]) == [2]
+end
+
+@testset "eqsum is_constraint_violated test" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, -5 <= x[1:2] <= 5, Int)
+    @constraint(m, sum(x) == 10)
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = get_constraints_by_type(com, CS.LinearConstraint)[1]
+
+    variables = com.search_space
+    @test CS.fix!(com, variables[1], 1; check_feasibility = false)
+    @test CS.fix!(com, variables[2], 1; check_feasibility = false)
+    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, -5 <= x[1:2] <= 5, Int)
+    @constraint(m, sum(x) == 10)
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = get_constraints_by_type(com, CS.LinearConstraint)[1]
+
+    variables = com.search_space
+    @test CS.fix!(com, variables[1], 5; check_feasibility = false)
+    @test CS.fix!(com, variables[2], 5; check_feasibility = false)
+    @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
 end

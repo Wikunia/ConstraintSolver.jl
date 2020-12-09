@@ -122,19 +122,14 @@ function still_feasible(
 
     # if activating or activated check the inner constraint
     inner_constraint = constraint.inner_constraint
-    # if all fixed the inner constraint should be solved
-    if all(i == vidx || isfixed(com.search_space[i]) for i in inner_constraint.indices)
-        values = [
-            i == vidx ? val : value(com.search_space[i])
-            for i in inner_constraint.indices
-        ]
-        return is_solved_constraint(
-            inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
-            values,
-        )
-    end
+    # check if already violated
+    violated = is_constraint_violated(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set,
+    )
+    violated && return false
     # otherwise check if feasible when setting vidx to val
     return still_feasible(
         com,
@@ -142,12 +137,12 @@ function still_feasible(
         inner_constraint.fct,
         inner_constraint.set,
         vidx,
-        val,
+        val
     )
 end
 
 """
-    is_solved_constraint(
+    is_constraint_solved(
         constraint::IndicatorConstraint,
         fct::Union{MOI.VectorOfVariables, VAF{T}},
         set::IS,
@@ -156,7 +151,7 @@ end
 
 Return whether given `values` the constraint is fulfilled.
 """
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
     set::IS,
@@ -169,7 +164,7 @@ function is_solved_constraint(
 }
     if values[1] == Int(constraint.activate_on)
         inner_constraint = constraint.inner_constraint
-        return is_solved_constraint(
+        return is_constraint_solved(
             inner_constraint,
             inner_constraint.fct,
             inner_constraint.set,
@@ -179,6 +174,45 @@ function is_solved_constraint(
     return true
 end
 
+"""
+    is_constraint_violated(
+        com::CoM,
+        constraint::IndicatorConstraint,
+        fct::Union{MOI.VectorOfVariables,VAF{T}},
+        set::IS
+    ) where {
+        A,
+        T<:Real,
+        ASS<:MOI.AbstractScalarSet,
+        IS<:Union{IndicatorSet{A},MOI.IndicatorSet{A,ASS}},
+    }
+
+Checks if the constraint is violated as it is currently set. This can happen inside an
+inactive reified or indicator constraint.
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::IndicatorConstraint,
+    fct::Union{MOI.VectorOfVariables,VAF{T}},
+    set::IS
+) where {
+    A,
+    T<:Real,
+    ASS<:MOI.AbstractScalarSet,
+    IS<:Union{IndicatorSet{A},MOI.IndicatorSet{A,ASS}},
+}
+    if all(isfixed(var) for var in com.search_space[constraint.indices])
+        return !is_constraint_solved(constraint, fct, set, [CS.value(var) for var in com.search_space[constraint.indices]])
+    end
+
+    indicator_vidx = constraint.indices[1]
+    indicator_var = com.search_space[indicator_vidx]
+    if isfixed(indicator_var) && CS.value(indicator_var) == Int(constraint.activate_on)
+        inner_constraint = constraint.inner_constraint
+        return is_constraint_violated(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
+    end
+    return false
+end
 
 """
     update_best_bound_constraint!(com::CS.CoM,

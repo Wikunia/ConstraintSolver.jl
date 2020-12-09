@@ -54,11 +54,32 @@ function still_feasible(
     end
 end
 
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
     set::MOI.LessThan{T},
     values::Vector{Int},
 ) where {T<:Real}
     return values[1] <= values[2]
+end
+
+
+"""
+    is_constraint_violated(
+        com::CoM,
+        constraint::CS.SingleVariableConstraint,
+        fct::SAF{T},
+        set::NotEqualTo{T},
+    ) where {T<:Real}
+
+Checks if the constraint is violated as it is currently set. This can happen inside an
+inactive reified or indicator constraint.
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::CS.SingleVariableConstraint,
+    fct::SAF{T},
+    set::MOI.LessThan{T},
+) where {T<:Real}
+    return com.search_space[constraint.indices[1]].min > com.search_space[constraint.indices[2]].max
 end

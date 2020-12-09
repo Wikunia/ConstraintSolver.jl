@@ -172,11 +172,41 @@ function still_feasible(
     return true
 end
 
-function is_solved_constraint(
+function is_constraint_solved(
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
     set::EqualSetInternal,
     values::Vector{Int},
 )
     return all(v -> v == values[1], values)
+end
+
+"""
+    is_constraint_violated(
+        com::CoM,
+        constraint::EqualConstraint,
+        fct::MOI.VectorOfVariables,
+        set::EqualSetInternal
+    )
+
+Checks if the constraint is violated as it is currently set. This can happen inside an
+inactive reified or indicator constraint.
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::EqualConstraint,
+    fct::MOI.VectorOfVariables,
+    set::EqualSetInternal,
+)
+    found_first_val = false
+    first_val = 0
+    for var in com.search_space[constraint.indices]
+        if isfixed(var)
+            found_first_val = true
+            first_val = CS.value(var)
+            break
+        end
+    end
+    !found_first_val && return false
+    return !all(CS.value(var) == first_val for var in com.search_space[constraint.indices] if isfixed(var))
 end

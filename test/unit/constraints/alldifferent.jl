@@ -8,8 +8,8 @@
     constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
 
     # doesn't check the length
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1, 2, 3])
-    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [2, 2, 3])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 3])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [2, 2, 3])
 
     sorted_min = [1, 1, 2, 2, 3]
     sorted_max = [5, 5, 4, 4, 2]
@@ -107,7 +107,7 @@ end
     com = JuMP.backend(m).optimizer.model.inner
 
     constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
-    @test CS.is_solved_constraint(
+    @test CS.is_constraint_solved(
         constraint,
         constraint.fct,
         constraint.set,
@@ -139,5 +139,32 @@ end
     for ind in constr_indices[3:4]
         @test sort(CS.values(com.search_space[ind])) == [3, 7]
     end
+end
 
+@testset "all different is_constraint_violated test" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, -5 <= x[1:10] <= 5, Int)
+    @constraint(m, x in CS.AllDifferentSet())
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
+
+    variables = com.search_space
+    @test CS.fix!(com, variables[1], 1; check_feasibility = false)
+    @test CS.fix!(com, variables[2], 1; check_feasibility = false)
+    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, -5 <= x[1:10] <= 5, Int)
+    @constraint(m, x in CS.AllDifferentSet())
+    optimize!(m)
+    com = JuMP.backend(m).optimizer.model.inner
+
+    constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
+
+    variables = com.search_space
+    @test CS.fix!(com, variables[1], 1; check_feasibility = false)
+    @test CS.fix!(com, variables[2], 2; check_feasibility = false)
+    @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
 end
