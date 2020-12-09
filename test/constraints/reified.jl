@@ -19,7 +19,7 @@
     @testset "Basic >=" begin
         m = Model(CSJuMPTestOptimizer())
         @variable(m, x, CS.Integers([1, 2, 4]))
-        @variable(m, y, CS.Integers([3, 4]))
+        @variable(m, y, CS.Integers([2, 3]))
         @variable(m, b, Bin)
         @constraint(m, b := {x + y >= 6.1})
         @objective(m, Max, b)
@@ -36,7 +36,7 @@
     @testset "Basic >=" begin
         m = Model(CSJuMPTestOptimizer())
         @variable(m, x, CS.Integers([1, 2, 4]))
-        @variable(m, y, CS.Integers([3, 4]))
+        @variable(m, y, CS.Integers([2, 3]))
         @variable(m, b, Bin)
         # missing { }
         @test_macro_throws ErrorException begin
