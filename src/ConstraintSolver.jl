@@ -256,9 +256,7 @@ function addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com::CS.Co
     for v in com.search_space
         push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
     end
-    if com.input[:logs]
-        create_log_node(com)
-    end
+    create_log_node(com)
 end
 
 """
@@ -418,7 +416,7 @@ function handle_infeasible!(com::CS.CoM; finish_pruning = false)
     # Just need to be sure that we save the latest states
     finish_pruning && call_finished_pruning!(com)
     last_backtrack_id = com.c_backtrack_idx
-    com.input[:logs] && update_log_node!(com, last_backtrack_id; feasible = false)
+    update_log_node!(com, last_backtrack_id; feasible = false)
     com.info.backtrack_reverses += 1
     return true
 end
@@ -462,7 +460,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         if !started
             # close the previous backtrack object
             close_node!(com, last_backtrack_id)
-            com.input[:logs] && update_log_node!(com, last_backtrack_id)
+            update_log_node!(com, last_backtrack_id)
         end
         # run at least once so that everything is well defined
         if !started && time() - com.start_time > com.options.time_limit
@@ -488,7 +486,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
         # limit the variable bounds
         if !set_bounds!(com, backtrack_obj)
-            com.input[:logs] && update_log_node!(com, last_backtrack_id; feasible = false)
+            update_log_node!(com, last_backtrack_id; feasible = false)
             continue
         end
 
@@ -514,7 +512,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         # no index found => solution found
         if !found
             finished = add_new_solution!(com, backtrack_vec, backtrack_obj, log_table)
-            com.input[:logs] && update_log_node!(com, last_backtrack_id)
+            update_log_node!(com, last_backtrack_id)
             if finished
                 # close the previous backtrack object
                 close_node!(com, last_backtrack_id)
@@ -525,13 +523,11 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
 
         if com.info.backtrack_fixes > max_bt_steps
             close_node!(com, last_backtrack_id)
-            com.input[:logs] && update_log_node!(com, last_backtrack_id)
+            update_log_node!(com, last_backtrack_id)
             return :NotSolved
         end
 
-        if com.input[:logs]
-            update_log_node!(com, backtrack_obj.idx)
-        end
+        update_log_node!(com, backtrack_obj.idx)
 
         leafs_best_bound = get_best_bound(com, backtrack_obj)
 
@@ -547,7 +543,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
     end
 
     close_node!(com, last_backtrack_id)
-    com.input[:logs] && update_log_node!(com, last_backtrack_id)
+    update_log_node!(com, last_backtrack_id)
     if length(com.solutions) > 0
         set_state_to_best_sol!(com, last_backtrack_id)
         com.best_bound = com.best_sol

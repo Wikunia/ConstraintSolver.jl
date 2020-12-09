@@ -1,4 +1,5 @@
 function create_log_node(com)
+    com.input[:logs] || return
     back_idx = length(com.backtrack_vec)
     parent_idx = 0
     if length(com.backtrack_vec) > 0
@@ -42,6 +43,7 @@ function create_log_node(com)
 end
 
 function update_log_node!(com, back_idx; feasible = nothing)
+    com.input[:logs] || return
     tree_log_node = com.logs[back_idx]
 
     # never set an infeasible one to feasible
