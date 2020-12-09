@@ -1,10 +1,10 @@
 # This file is machine-generated - editing it directly is not advised
 
 [[ArnoldiMethod]]
-deps = ["DelimitedFiles", "LinearAlgebra", "Random", "SparseArrays", "Test"]
-git-tree-sha1 = "a5f9581eaf9371fe12b4a0b12c05690b45912e71"
+deps = ["DelimitedFiles", "LinearAlgebra", "Random", "SparseArrays", "StaticArrays", "Test"]
+git-tree-sha1 = "2b6845cea546604fb4dca4e31414a6a59d39ddcd"
 uuid = "ec485272-7323-5ecc-a04f-4719b315124d"
-version = "0.0.2"
+version = "0.0.4"
 
 [[Arpack]]
 deps = ["Arpack_jll", "Libdl", "LinearAlgebra"]
@@ -70,10 +70,10 @@ uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 version = "0.3.4+0"
 
 [[ConstraintSolver]]
-deps = ["DataStructures", "Formatting", "JSON", "JuMP", "LightGraphs", "MathOptInterface", "MatrixNetworks", "Statistics"]
+deps = ["DataStructures", "Formatting", "JSON", "JuMP", "LightGraphs", "MathOptInterface", "MatrixNetworks", "Random", "Statistics", "StatsBase", "StatsFuns"]
 path = ".."
 uuid = "e0e52ebd-5523-408d-9ca3-7641f1cd1405"
-version = "0.4.0"
+version = "0.5.0"
 
 [[DataAPI]]
 git-tree-sha1 = "ad84f52c0b8f05aa20839484dbaf01690b41ff84"
@@ -216,9 +216,9 @@ uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 
 [[LightGraphs]]
 deps = ["ArnoldiMethod", "DataStructures", "Distributed", "Inflate", "LinearAlgebra", "Random", "SharedArrays", "SimpleTraits", "SparseArrays", "Statistics"]
-git-tree-sha1 = "a0d4bcea4b9c056da143a5ded3c2b7f7740c2d41"
+git-tree-sha1 = "6f85a35d2377cb2db1bc448ed0d6340d2bb1ea64"
 uuid = "093fc24a-ae57-5d10-9952-331d41423f4d"
-version = "1.3.0"
+version = "1.3.3"
 
 [[LinearAlgebra]]
 deps = ["Libdl"]
@@ -381,9 +381,9 @@ version = "1.1.0"
 
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "9da72ed50e94dbff92036da395275ed114e04d49"
+git-tree-sha1 = "da4cf579416c81994afd6322365d00916c79b8ae"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.0.1"
+version = "0.12.5"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]

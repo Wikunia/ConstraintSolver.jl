@@ -199,17 +199,6 @@
                 table[r, :] .= [i, j, k]
                 r += 1
             end
-            @constraint(m, reified := {[a, b, c] in CS.TableSet(table)})
-            @objective(m, Max, 5 * reified + b + c)
-            optimize!(m)
-            @test JuMP.termination_status(m) == MOI.OPTIMAL
-            @test JuMP.objective_value(m) ≈ 5 + 96 + 100
-            @test JuMP.value(a) ≈ 28
-            @test JuMP.value(b) ≈ 96
-            @test JuMP.value(c) ≈ 100
-            @test JuMP.value(reified) ≈ 1
-            com = JuMP.backend(m).optimizer.model.inner
-            @test is_solved(com)
         end
         @constraint(m, reified := {[a, b, c] in CS.TableSet(table)})
         @objective(m, Max, 5 * reified + b + c)
