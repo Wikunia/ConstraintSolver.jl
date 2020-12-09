@@ -441,6 +441,7 @@ end
     still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `vidx` to `value`.
+**Attention:** This assumes that it isn't violated before.
 """
 function still_feasible(
     com::CoM,
@@ -469,4 +470,24 @@ function is_constraint_solved(
     values::Vector{Int},
 )
     return allunique(values)
+end
+
+"""
+    is_constraint_violated(
+        com::CoM,
+        constraint::AllDifferentConstraint,
+        fct::MOI.VectorOfVariables,
+        set::AllDifferentSetInternal
+    )
+
+Checks if the constraint is violated as it is currently set. This can happen inside an
+inactive reified or indicator constraint.
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::AllDifferentConstraint,
+    fct::MOI.VectorOfVariables,
+    set::AllDifferentSetInternal
+)
+    return !allunique(CS.value(var) for var in com.search_space[constraint.indices] if isfixed(var))
 end

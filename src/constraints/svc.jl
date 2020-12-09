@@ -62,3 +62,27 @@ function is_constraint_solved(
 ) where {T<:Real}
     return values[1] <= values[2]
 end
+
+
+"""
+    is_constraint_violated(
+        com::CoM,
+        constraint::CS.SingleVariableConstraint,
+        fct::SAF{T},
+        set::NotEqualTo{T},
+    ) where {T<:Real}
+
+Checks if the constraint is violated as it is currently set. This can happen inside an
+inactive reified or indicator constraint.
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::CS.SingleVariableConstraint,
+    fct::SAF{T},
+    set::MOI.LessThan{T},
+) where {T<:Real}
+    if all(isfixed(var) for var in com.search_space[constraint.indices])
+        return !is_constraint_solved(constraint, fct, set, [CS.value(var) for var in com.search_space[constraint.indices]])
+    end
+    return false
+end

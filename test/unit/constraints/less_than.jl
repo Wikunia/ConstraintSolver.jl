@@ -8,8 +8,8 @@
     com = JuMP.backend(m).optimizer.model.inner
 
     constraint = com.constraints[1]
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1, 2, 3])
-    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [3, 2, 1])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 3])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [3, 2, 1])
 
     constr_indices = constraint.indices
     @test !CS.still_feasible(

@@ -153,3 +153,28 @@ function is_constraint_solved(
     end
     return true
 end
+
+"""
+    is_constraint_violated(
+        com::CoM,
+        constraint::GeqSetConstraint,
+        fct::MOI.VectorOfVariables,
+        set::GeqSetInternal,
+    )
+
+Checks if the constraint is violated as it is currently set. This can happen inside an
+inactive reified or indicator constraint.
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::GeqSetConstraint,
+    fct::MOI.VectorOfVariables,
+    set::GeqSetInternal,
+)
+    for var in com.search_space[constraint.indices]
+        if isfixed(var) && CS.value(var) > constraint.indices[1].max
+            return true
+        end
+    end
+    return false
+end

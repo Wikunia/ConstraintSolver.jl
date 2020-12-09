@@ -26,8 +26,8 @@
         @test sort(CS.values(com.search_space[ind])) == 1:4
     end
 
-    @test !CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1, 2, 4])
-    @test CS.is_solved_constraint(constraint, constraint.fct, constraint.set, [1, 2, 3])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 4])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 3])
 
     @test CS.still_feasible(
         com,
