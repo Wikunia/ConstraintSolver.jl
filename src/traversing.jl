@@ -103,6 +103,8 @@ function get_next_node(
     sorting,
 ) where {T<:Real}
     found, backtrack_obj = get_next_node(com, com.traverse_strategy, backtrack_vec, sorting)
+    com.c_step_nr += 1
+    backtrack_obj.step_nr = com.c_step_nr
 
     # if we found the optimal solution or one feasible
     # => check whether all solutions are requested

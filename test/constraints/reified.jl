@@ -211,7 +211,8 @@
         @test JuMP.value(reified) ≈ 1
         com = JuMP.backend(m).optimizer.model.inner
         @test is_solved(com)
-        # @test general_tree_test(com) not working as we have less than 10 logs
+        logs = CS.get_logs(com)
+        @test CS.sanity_check_log(logs[:tree])
     end
 
     @testset "all different != 0 (Issue 202)" begin

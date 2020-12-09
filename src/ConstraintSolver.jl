@@ -439,6 +439,35 @@ function handle_infeasible!(com::CS.CoM; finish_pruning = false)
     return true
 end
 
+function solve_with_backtrack!(com, max_bt_steps; sorting=true)
+    com.info.backtrack_fixes = 1
+
+    log_table = false
+    if :Table in com.options.logging
+        log_table = true
+    end
+
+    status, last_backtrack_id = backtrack!(com, max_bt_steps; sorting = sorting, log_table = log_table)
+
+    status != :TBD && return status
+
+    if length(com.solutions) > 0
+        set_state_to_best_sol!(com, last_backtrack_id)
+        com.best_bound = com.best_sol
+        if time() - com.start_time > com.options.time_limit
+            return :Time
+        else
+            return :Solved
+        end
+    end
+
+    if time() - com.start_time > com.options.time_limit
+        return :Time
+    else
+        return :Infeasible
+    end
+end
+
 """
     backtrack!(com::CS.CoM, max_bt_steps; sorting=true)
 
@@ -446,39 +475,37 @@ Start backtracking and stop after `max_bt_steps`.
 If `sorting` is set to `false` the same ordering is used as when used without objective this has only an effect when an objective is used.
 Return :Solved or :Infeasible if proven or `:NotSolved` if interrupted by `max_bt_steps`.
 """
-function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
+function backtrack!(com::CS.CoM, max_bt_steps;
+        sorting = true, log_table=true, first_parent_idx = 1, single_path = false,
+        compute_bounds = true, check_bounds=true, cb_finished_pruning = ()->nothing)
+
     branch_var = get_next_branch_variable(com)
-    branch_var.is_solution && return :Solved
-    !branch_var.is_feasible && return :Infeasible
+    branch_var.is_solution && return :Solved, 0
+    !branch_var.is_feasible && return :Infeasible, 0
 
     backtrack_vec = com.backtrack_vec
 
-    com.info.backtrack_fixes = 1
     find_more_solutions = com.options.all_solutions || com.options.all_optimal_solutions
 
-    log_table = false
-    if :Table in com.options.logging
-        log_table = true
-        println(get_header(com.options.table))
-    end
+    log_table && println(get_header(com.options.table))
 
-    # the first solve (before backtrack) has idx 1
     backtrack_vec = com.backtrack_vec
 
     add2backtrack_vec!(
         backtrack_vec,
         com,
-        1, # parent_idx
-        branch_var.vidx,
+        first_parent_idx, # parent_idx
+        branch_var.vidx;
+        only_one = single_path,
+        compute_bound = compute_bounds
     )
-    last_backtrack_id = 1
+    last_backtrack_id = first_parent_idx
 
     started = true
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
 
     while length(backtrack_vec) > 0
         # get next open backtrack object
-        l = 1
         if !started
             # close the previous backtrack object
             close_node!(com, last_backtrack_id)
@@ -489,10 +516,11 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             break
         end
 
-        !started && update_best_bound!(com)
+        if !started && compute_bounds
+            update_best_bound!(com)
+        end
         found, backtrack_obj = get_next_node(com, backtrack_vec, sorting)
         !found && break
-        com.c_step_nr += 1
 
         # there is no better node => return best solution
         !find_more_solutions && found_best_node(com) && break
@@ -516,7 +544,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         com.info.backtrack_fixes += 1
 
         # first update the best bound (only constraints which have an index in the objective function)
-        if com.sense != MOI.FEASIBILITY_SENSE
+        if compute_bounds && com.sense != MOI.FEASIBILITY_SENSE
             feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
             !feasible && handle_infeasible!(com; finish_pruning = true) && continue
         end
@@ -525,6 +553,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         feasible = prune!(com)
         !feasible && handle_infeasible!(com; finish_pruning = true) && continue
         call_finished_pruning!(com)
+        cb_finished_pruning()
 
         if log_table
             last_table_row = update_table_log(com, backtrack_vec)
@@ -537,7 +566,7 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             if finished
                 # close the previous backtrack object
                 close_node!(com, last_backtrack_id)
-                return :Solved
+                return :Solved, last_backtrack_id
             end
             continue
         end
@@ -545,12 +574,10 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
         if com.info.backtrack_fixes > max_bt_steps
             close_node!(com, last_backtrack_id)
             update_log_node!(com, last_backtrack_id)
-            return :NotSolved
+            return :NotSolved, last_backtrack_id
         end
 
         update_log_node!(com, backtrack_obj.idx)
-
-        leafs_best_bound = get_best_bound(com, backtrack_obj)
 
         last_backtrack_obj = backtrack_vec[last_backtrack_id]
         add2backtrack_vec!(
@@ -558,27 +585,15 @@ function backtrack!(com::CS.CoM, max_bt_steps; sorting = true)
             com,
             last_backtrack_obj.idx,
             branch_var.vidx;
-            check_bound = true,
+            only_one = single_path,
+            compute_bound = compute_bounds,
+            check_bound = check_bounds
         )
     end
 
     close_node!(com, last_backtrack_id)
     update_log_node!(com, last_backtrack_id)
-    if length(com.solutions) > 0
-        set_state_to_best_sol!(com, last_backtrack_id)
-        com.best_bound = com.best_sol
-        if time() - com.start_time > com.options.time_limit
-            return :Time
-        else
-            return :Solved
-        end
-    end
-
-    if time() - com.start_time > com.options.time_limit
-        return :Time
-    else
-        return :Infeasible
-    end
+    return :TBD, last_backtrack_id
 end
 
 """
@@ -711,6 +726,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
 
     # root node is the first backtrack obj
     dummy_backtrack_obj = BacktrackObj(com)
+    dummy_backtrack_obj.step_nr = com.c_step_nr
     com.best_bound = get_best_bound(com, dummy_backtrack_obj)
 
     backtrack_vec = com.backtrack_vec
@@ -739,7 +755,7 @@ function solve!(com::CS.CoM, options::SolverOptions)
             return :Time
         end
         keep_logs && update_log_node!(com, 1)
-        status = backtrack!(com, max_bt_steps; sorting = backtrack_sorting)
+        status = solve_with_backtrack!(com, max_bt_steps; sorting = backtrack_sorting)
         com.solve_time = time() - com.start_time
         return status
     else

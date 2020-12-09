@@ -422,6 +422,7 @@ end
 
 mutable struct BacktrackObj{T<:Real}
     idx::Int
+    step_nr::Int
     parent_idx::Int
     depth::Int
     status::Symbol
@@ -437,6 +438,7 @@ end
 function Base.convert(::Type{B}, obj::BacktrackObj{T2}) where {T1,T2,B<:BacktrackObj{T1}}
     return BacktrackObj{T1}(
         obj.idx,
+        obj.step_nr,
         obj.parent_idx,
         obj.depth,
         obj.status,

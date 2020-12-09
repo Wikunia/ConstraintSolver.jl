@@ -142,6 +142,7 @@ function new_BacktrackObj(com::CS.CoM, parent_idx, vidx, lb, ub)
     parent = com.backtrack_vec[parent_idx]
     return BacktrackObj{parametric_type(com)}(
         length(com.backtrack_vec) + 1, # idx
+        -1, # step_nr
         parent_idx,
         parent.depth + 1,
         :Open, # status
@@ -157,6 +158,7 @@ end
 function BacktrackObj(com::CS.CoM)
     return BacktrackObj(
         1, # idx
+        -1, # step_nr
         0, # parent_idx
         0, # depth
         :Closed, # status

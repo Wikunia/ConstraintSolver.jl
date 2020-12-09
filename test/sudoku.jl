@@ -520,6 +520,8 @@
         @test JuMP.termination_status(m) == MOI.TIME_LIMIT
         com = JuMP.backend(m).optimizer.model.inner
         general_tree_test(com)
+        logs = CS.get_logs(com)
+        @test CS.sanity_check_log(logs[:tree])
     end
 
     @testset "All solutions" begin

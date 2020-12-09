@@ -201,10 +201,11 @@ function probe_until(com::CS.CoM)
     backtrack_obj.idx = length(com.backtrack_vec) + 1
     backtrack_obj.parent_idx = 1
     backtrack_obj.depth = 1
+    com.c_step_nr += 1
+    backtrack_obj.step_nr = com.c_step_nr
 
     addBacktrackObj2Backtrack_vec!(com.backtrack_vec, backtrack_obj, com)
-    com.c_step_nr += 1
-    com.input[:logs] && update_log_node!(com, 2)
+    update_log_node!(com, 2)
 
     n = 1
     while n < 10 &&
@@ -269,93 +270,20 @@ Return if feasible and the created backtrack ids along the way
 function probe(com::CS.CoM)
     activities = zeros(length(com.search_space))
 
-    backtrack_vec = com.backtrack_vec
-    branch_var = get_next_branch_variable(com)
-    if branch_var.is_solution || !branch_var.is_feasible
-        return false, branch_var.is_feasible, activities
-    end
+    first_parent_idx = 2
+    options = com.options
 
-    parent_idx = 2
-    add2backtrack_vec!(
-        backtrack_vec,
-        com,
-        parent_idx,
-        branch_var.vidx;
-        only_one = true,
-        compute_bound = false,
-    )
-    last_backtrack_id = 0
-    root_feasible = true
-    feasible = true
-    is_root = true
-    while feasible
-        # close the previous and update the log
-        if last_backtrack_id != 0
-            close_node!(com, last_backtrack_id)
-            com.input[:logs] && update_log_node!(com, last_backtrack_id)
-        end
-        com.c_step_nr += 1
-
-        found, backtrack_obj = get_next_node(com, backtrack_vec, true)
-        !found && break
-
-        vidx = backtrack_obj.vidx
-        com.c_backtrack_idx = backtrack_obj.idx
-        checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
-
-        last_backtrack_id = com.c_backtrack_idx
-
-        feasible = set_bounds!(com, backtrack_obj)
-        if !feasible
-            com.input[:logs] && update_log_node!(com, last_backtrack_id; feasible = false)
-            if is_root == 2
-                root_feasible = false
-            end
-            break
-        end
-
-
-        constraints = com.constraints[com.subscription[vidx]]
-
-        feasible = prune!(com)
-        call_finished_pruning!(com)
-
-        update_probe_activity!(activities, com)
-        if !feasible
-            com.input[:logs] && update_log_node!(com, last_backtrack_id; feasible = false)
-            if is_root
-                root_feasible = false
-            end
-            break
-        end
-        is_root = false
-
-        branch_var = get_next_branch_variable(com)
-        if com.input[:logs]
-            update_log_node!(com, backtrack_obj.idx)
-        end
-        if branch_var.is_solution
-            add_new_solution!(com, backtrack_vec, backtrack_obj, false)
-            break
-        end
-
-        last_backtrack_obj = backtrack_vec[backtrack_obj.idx]
-
-        add2backtrack_vec!(
-            backtrack_vec,
-            com,
-            last_backtrack_obj.idx,
-            branch_var.vidx;
-            only_one = true,
-            compute_bound = false,
-        )
-    end
-    last_backtrack_id != 0 && close_node!(com, last_backtrack_id)
+    status, last_backtrack_id = backtrack!(com, options.max_bt_steps;
+        sorting = options.backtrack_sorting, log_table=false, first_parent_idx = first_parent_idx,
+        single_path = true, compute_bounds = false, check_bounds=false,
+        cb_finished_pruning = ()->update_probe_activity!(activities, com))
+    root_feasible = last_backtrack_id != first_parent_idx
+    feasible = status != :Infeasible
 
     # checkout root node
-    checkout_from_to!(com, com.c_backtrack_idx, 2)
+    checkout_from_to!(com, last_backtrack_id, first_parent_idx)
     # prune the last step as checkout_from_to! excludes the to part
-    restore_prune!(com, 2)
+    restore_prune!(com, first_parent_idx)
 
     return root_feasible, feasible, activities
 end

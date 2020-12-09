@@ -59,7 +59,7 @@ function update_log_node!(com, back_idx; feasible = nothing)
     tree_log_node.lb = com.backtrack_vec[back_idx].lb
     tree_log_node.ub = com.backtrack_vec[back_idx].ub
     tree_log_node.best_bound = com.backtrack_vec[back_idx].best_bound
-    tree_log_node.step_nr = com.c_step_nr
+    tree_log_node.step_nr = com.backtrack_vec[back_idx].step_nr
 
 
     variables = com.search_space
