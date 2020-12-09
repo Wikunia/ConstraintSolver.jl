@@ -164,21 +164,14 @@ function still_feasible(
     value::Int,
 )
     variables = com.search_space
-    was_inside = false
     for cvidx in constraint.indices
         if cvidx == vidx
-            was_inside = true
             continue
         end
         v = variables[cvidx]
         !has(v, value) && return false
     end
-    if was_inside
-        return true
-    end
-    # check if all are fixed that it's actually solved
-    # can happen inside a previously deactived constraint
-    return is_constraint_feasible(com, constraint, fct, set)
+    return true
 end
 
 function is_constraint_solved(

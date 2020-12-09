@@ -61,7 +61,6 @@ function still_feasible(
     value::Int,
 ) where {T<:Real}
     indices = constraint.indices
-    was_inside = false
     # check if only one variable is variable
     nfixed = count(v -> isfixed(v), com.search_space[indices])
     if nfixed >= length(indices) - 1
@@ -73,7 +72,6 @@ function still_feasible(
                 sum += CS.value(search_space[cvidx]) * fct.terms[i].coefficient
             elseif vidx == cvidx
                 sum += value * fct.terms[i].coefficient
-                was_inside = true
             else
                 unfixed_i = i
             end
@@ -89,10 +87,7 @@ function still_feasible(
         # if not fixed there is a value which fulfills the != constraint
         return true
     end
-    was_inside && return true
-    # check if all are fixed that it's actually solved
-    # can happen inside a previously deactived constraint
-    return is_constraint_feasible(com, constraint, fct, set)
+    return true
 end
 
 function is_constraint_solved(

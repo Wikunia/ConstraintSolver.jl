@@ -334,10 +334,8 @@ function still_feasible(
     supports = constraint.supports
     indices = constraint.indices
     full_mask(current)
-    was_inside = false
     for i in 1:length(indices)
         if indices[i] == vidx
-            was_inside = true
             support = get_view(supports, com, vidx, i, value)
             intersect_mask_with_mask(current, support)
         elseif isfixed(com.search_space[indices[i]])
@@ -353,10 +351,7 @@ function still_feasible(
     end
     feasible = intersect_with_mask_feasible(current)
 
-    was_inside && return feasible
-    # check if all are fixed that it's actually solved
-    # can happen inside a previously deactived constraint
-    return is_constraint_feasible(com, constraint, fct, set)
+    return feasible
 end
 
 

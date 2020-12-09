@@ -94,10 +94,8 @@ function still_feasible(
     search_space = com.search_space
     rhs = set.upper - fct.constant
     min_sum = zero(T)
-    was_inside = false
     for (i, vidx) in enumerate(constraint.indices)
         if vidx == index
-            was_inside = true
             min_sum += val * fct.terms[i].coefficient
             continue
         end
@@ -111,10 +109,7 @@ function still_feasible(
             end
         end
     end
-    was_inside && return min_sum <= rhs + com.options.atol
-    # check if all are fixed that it's actually solved
-    # can happen inside a previously deactived constraint
-    return is_constraint_feasible(com, constraint, fct, set)
+    return min_sum <= rhs + com.options.atol
 end
 
 function is_constraint_solved(

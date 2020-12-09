@@ -320,10 +320,8 @@ function still_feasible(
     not_fixed_i = 0
     max_extra = 0
     min_extra = 0
-    was_inside = false
     for (i, cvidx) in enumerate(constraint.indices)
         if cvidx == vidx
-            was_inside = true
             csum += val * fct.terms[i].coefficient
             continue
         end
@@ -365,10 +363,7 @@ function still_feasible(
         return false
     end
 
-    was_inside && return true
-    # check if all are fixed that it's actually solved
-    # can happen inside a previously deactived constraint
-    return is_constraint_feasible(com, constraint, fct, set)
+    return true
 end
 
 function is_constraint_solved(

@@ -118,14 +118,6 @@ function is_constraint_solved(com::CS.CoM, constraint::Constraint, fct, set)
     return is_constraint_solved(constraint, fct, set, values)
 end
 
-function is_constraint_feasible(com::CS.CoM, constraint::Constraint, fct, set)
-    if all(isfixed(com.search_space[i]) for i in constraint.indices)
-        values = [value(com.search_space[i]) for i in constraint.indices]
-        return is_constraint_solved(constraint, fct, set, values)
-    end
-    return true
-end
-
 #=
     Access standard ConstraintInternals without using .std syntax
 =#
