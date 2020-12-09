@@ -58,7 +58,7 @@ function general_tree_test(com::CS.CoM)
         # if it has children
         if length(com.logs[c_backtrack_idx].children) > 0 && n_children_tests < 5
             com.c_backtrack_idx = c_backtrack_idx
-            var_idx = com.logs[c_backtrack_idx].var_idx
+            vidx = com.logs[c_backtrack_idx].vidx
             n_children_tests += 1
             # test that pruning produces the same output as before
 
@@ -67,17 +67,17 @@ function general_tree_test(com::CS.CoM)
             end
             @assert CS.remove_above!(
                 com,
-                com.search_space[var_idx],
+                com.search_space[vidx],
                 com.logs[c_backtrack_idx].ub,
             )
             @assert CS.remove_below!(
                 com,
-                com.search_space[var_idx],
+                com.search_space[vidx],
                 com.logs[c_backtrack_idx].lb,
             )
 
             if com.sense != MOI.FEASIBILITY_SENSE
-                constraints = com.constraints[com.subscription[var_idx]]
+                constraints = com.constraints[com.subscription[vidx]]
                 feasible, further_pruning = CS.update_best_bound!(
                     com.backtrack_vec[c_backtrack_idx],
                     com,
@@ -120,7 +120,7 @@ function general_tree_test(com::CS.CoM)
     end
     @assert n_children_tests == 5
 
-    # back to solved state 
+    # back to solved state
     CS.checkout_from_to!(com, c_backtrack_idx, path[1])
     # prune the last step
     CS.restore_prune!(com, path[1])

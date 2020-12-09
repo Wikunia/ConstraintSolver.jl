@@ -402,7 +402,7 @@ mutable struct TreeLogNode{T<:Real}
     feasible::Bool
     best_bound::T
     step_nr::Int
-    var_idx::Int
+    vidx::Int
     lb::Int
     ub::Int
     var_states::Dict{Int,Vector{Int}}
@@ -426,6 +426,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     constraints::Vector{Constraint}
     bt_infeasible::Vector{Int}
     c_backtrack_idx::Int
+    c_step_nr::Int
     backtrack_vec::Vector{BacktrackObj{T}}
     backtrack_pq::PriorityQueue
     sense::MOI.OptimizationSense
