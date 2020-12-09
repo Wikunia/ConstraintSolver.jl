@@ -139,7 +139,8 @@ function is_solved(com::CS.CoM)
         values = CS.value.(com.search_space[constraint.indices])
         c_solved =
             CS.is_constraint_solved(constraint, constraint.fct, constraint.set, values)
-        if !c_solved
+        c_violated = CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+        if !c_solved || c_violated
             @error "Constraint $(constraint.idx) is not solved"
             @error "Info about constraint: $(typeof(constraint)), $(typeof(constraint.fct)), $(typeof(constraint.set))"
             return false
