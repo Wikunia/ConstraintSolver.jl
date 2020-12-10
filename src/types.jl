@@ -300,6 +300,10 @@ end
 mutable struct Element1DConstConstraint <: Constraint
     std::ConstraintInternals
     zSupp::Vector{Int} # number of possibilities for setting z (in z == T[y])
+    z::Variable
+    y::Variable
+    z_changes_ptr::Int # the start pointer for checking z.changes
+    y_changes_ptr::Int # the start pointer for checking z.changes
 end
 
 # support for a <= b constraint
