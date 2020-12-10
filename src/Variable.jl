@@ -80,8 +80,8 @@ function rm!(
     v.values[vidx], v.values[v.last_ptr] = v.values[v.last_ptr], v.values[vidx]
     v.last_ptr -= 1
     if !in_remove_several
-        vals = values(v)
-        if length(vals) > 0
+        vals = view_values(v)
+        if CS.nvalues(v) > 0
             if x == v.min
                 v.min = minimum(vals)
             end
