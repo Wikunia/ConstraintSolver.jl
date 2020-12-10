@@ -477,7 +477,7 @@ Return :Solved or :Infeasible if proven or `:NotSolved` if interrupted by `max_b
 """
 function backtrack!(com::CS.CoM, max_bt_steps;
         sorting = true, log_table=true, first_parent_idx = 1, single_path = false,
-        compute_bounds = true, check_bounds=true, cb_finished_pruning = ()->nothing)
+        compute_bounds = true, check_bounds=true, cb_finished_pruning = (args...)->nothing)
 
     branch_var = get_next_branch_variable(com)
     branch_var.is_solution && return :Solved, first_parent_idx
@@ -553,7 +553,7 @@ function backtrack!(com::CS.CoM, max_bt_steps;
         feasible = prune!(com)
         !feasible && handle_infeasible!(com; finish_pruning = true) && continue
         call_finished_pruning!(com)
-        cb_finished_pruning()
+        cb_finished_pruning(com)
 
         if log_table
             last_table_row = update_table_log(com, backtrack_vec)

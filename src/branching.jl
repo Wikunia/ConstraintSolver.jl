@@ -276,7 +276,7 @@ function probe(com::CS.CoM)
     status, last_backtrack_id = backtrack!(com, options.max_bt_steps;
         sorting = options.backtrack_sorting, log_table=false, first_parent_idx = first_parent_idx,
         single_path = true, compute_bounds = false, check_bounds=false,
-        cb_finished_pruning = ()->update_probe_activity!(activities, com))
+        cb_finished_pruning = (com1)->update_probe_activity!(activities, com1))
 
     feasible = status != :Infeasible
     root_feasible = true
@@ -288,7 +288,6 @@ function probe(com::CS.CoM)
     checkout_from_to!(com, last_backtrack_id, first_parent_idx)
     # prune the last step as checkout_from_to! excludes the to part
     restore_prune!(com, first_parent_idx)
-
     return root_feasible, feasible, activities
 end
 
