@@ -7,7 +7,7 @@ function init_constraint_struct(::Type{TableSetInternal}, internals)
         internals,
         RSparseBitSet(),
         TableSupport(), # will be filled in init_constraint!
-        Int[], # will be changes later as it needs the number of words
+        Int[], # will be changed later as it needs the number of words
         TableResidues(),
         Vector{TableBacktrackInfo}(),
         Int[], # changed_vars
@@ -427,7 +427,6 @@ function single_reverse_pruning_constraint!(
     indices = constraint.indices
     loc_vidx = 1
     vidx = var.idx
-    changes = var.changes[backtrack_idx]
     while loc_vidx <= length(indices)
         if vidx == indices[loc_vidx]
             break

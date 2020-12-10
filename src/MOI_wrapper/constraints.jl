@@ -53,10 +53,17 @@ MOI.supports_constraint(
     ::Type{MOI.VectorOfVariables},
     ::Type{EqualSetInternal},
 ) = true
+
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
     ::Type{AllDifferentSetInternal},
+) = true
+
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{MOI.VectorOfVariables},
+    ::Type{Element1DConstInner},
 ) = true
 
 MOI.supports_constraint(
@@ -282,6 +289,31 @@ function MOI.add_constraint(
     com.info.n_constraint_types.alldifferent += 1
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,AllDifferentSetInternal}(length(com.constraints))
+end
+
+function MOI.add_constraint(
+    model::Optimizer,
+    vars::MOI.VectorOfVariables,
+    set::Element1DConstInner,
+)
+    com = model.inner
+
+    internals = ConstraintInternals(
+        length(com.constraints) + 1,
+        vars,
+        set,
+        Int[v.value for v in vars.variables],
+    )
+
+    constraint = init_constraint_struct(Element1DConstInner, internals)
+
+    push!(com.constraints, constraint)
+    for (i, vidx) in enumerate(constraint.indices)
+        push!(com.subscription[vidx], constraint.idx)
+    end
+    com.info.n_constraint_types.element += 1
+
+    return MOI.ConstraintIndex{MOI.VectorOfVariables,Element1DConstInner}(length(com.constraints))
 end
 
 function MOI.add_constraint(

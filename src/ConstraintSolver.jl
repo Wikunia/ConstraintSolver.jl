@@ -57,6 +57,7 @@ include("constraints/table.jl")
 include("constraints/indicator.jl")
 include("constraints/reified.jl")
 include("constraints/geqset.jl")
+include("constraints/element1Dconst.jl")
 
 include("pruning.jl")
 include("simplify.jl")

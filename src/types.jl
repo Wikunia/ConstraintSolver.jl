@@ -28,6 +28,7 @@ mutable struct NumberConstraintTypes
     inequality::Int
     notequal::Int
     alldifferent::Int
+    element::Int
     table::Int
     indicator::Int
     reified::Int
@@ -59,6 +60,17 @@ Base.copy(A::AllDifferentSetInternal) = AllDifferentSetInternal(A.dimension)
 
 struct AllDifferentSet <: JuMP.AbstractVectorSet end
 JuMP.moi_set(::AllDifferentSet, dim) = AllDifferentSetInternal(dim)
+
+struct Element1DConstInner <: MOI.AbstractVectorSet
+    dimension::Int
+    array::Vector{Int}
+end
+Base.copy(E::Element1DConstInner) = Element1DConstInner(E.dimension, E.array)
+
+struct Element1DConst <: JuMP.AbstractVectorSet 
+    array::Vector{Int}
+end
+JuMP.moi_set(E::Element1DConst, dim) = Element1DConstInner(dim, E.array)
 
 struct TableSetInternal <: MOI.AbstractVectorSet
     dimension::Int
@@ -283,6 +295,11 @@ mutable struct AllDifferentConstraint <: Constraint
     scc_init::SCCInit
     # corresponds to `in_all_different`: Saves the constraint idxs where all variables are part of this alldifferent constraint
     sub_constraint_idxs::Vector{Int}
+end
+
+mutable struct Element1DConstConstraint <: Constraint
+    std::ConstraintInternals
+    zSupp::Vector{Int} # number of possibilities for setting z (in z == T[y])
 end
 
 # support for a <= b constraint
