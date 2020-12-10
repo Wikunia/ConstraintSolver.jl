@@ -1,6 +1,6 @@
 @testset "Element1DConstConstraint" begin
 @testset "Simple" begin
-    m = Model(optimizer_with_attributes(CS.Optimizer, "all_solutions" => true))
+    m = Model(optimizer_with_attributes(CS.Optimizer, "all_solutions" => true, "logging" => []))
     c = [1,2,3,7,9,10, 12, 15]
     @variable(m, 1 <= idx <= 12, Int)
     @variable(m, -12 <= val <= 12, Int)
@@ -25,5 +25,28 @@
     @test (5,9) in possible_sols
     @test (6,10) in possible_sols
     @test (7,12) in possible_sols
+end
+
+@testset "Sorting" begin
+    m = Model(CSJuMPTestOptimizer())
+    seed = rand(1:10000)
+    println("Seed for sorting test: ", seed)
+    Random.seed!(seed)
+    c = rand(1:1000, 50)
+    @variable(m, 1 <= idx[1:length(c)] <= length(c), Int)
+    @variable(m, minimum(c) <= val[1:length(c)] <= maximum(c), Int)
+    for i in 1:length(c)-1
+        @constraint(m, val[i] <= val[i+1])
+    end
+    for i in 1:length(c)
+        @constraint(m, c[idx[i]] == val[i])
+    end
+    @constraint(m, idx in CS.AllDifferentSet())
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    vals = convert.(Int, JuMP.value.(val))
+    idxs = convert.(Int, JuMP.value.(idx))
+    @test issorted(vals)
+    @test c[idxs] == vals
 end
 end

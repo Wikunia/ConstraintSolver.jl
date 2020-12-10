@@ -129,11 +129,13 @@ function prune_constraint!(
             end
         elseif change_type == :remove_above
             for val in change_val+1:length(T)
-                zSupp[T[val]] > 0 && (zSupp[T[val]] -= 1)
+                T_val_shifted = T[val] - z.lower_bound + 1
+                zSupp[T_val_shifted] > 0 && (zSupp[T_val_shifted] -= 1)
             end
         elseif change_type == :remove_below
-            for val in 1:change_val-1
-                zSupp[T[val]] > 0 && (zSupp[T[val]] -= 1)
+            for val in 1:min(change_val-1, length(T))
+                T_val_shifted = T[val] - z.lower_bound + 1
+                zSupp[T_val_shifted] > 0 && (zSupp[T_val_shifted] -= 1)
             end
         end
     end
@@ -148,8 +150,6 @@ function prune_constraint!(
 
     return true
 end
-
-
 
 """
     still_feasible(com::CoM, constraint::Element1DConstConstraint, fct::MOI.VectorOfVariables, set::Element1DConstInner, vidx::Int, value::Int)
