@@ -497,7 +497,8 @@ function backtrack!(com::CS.CoM, max_bt_steps;
         first_parent_idx, # parent_idx
         branch_var.vidx;
         only_one = single_path,
-        compute_bound = compute_bounds
+        compute_bound = compute_bounds,
+        check_bound = check_bounds
     )
     last_backtrack_id = first_parent_idx
 

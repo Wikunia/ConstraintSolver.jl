@@ -188,9 +188,11 @@ function probe_until(com::CS.CoM)
     mean_activities = [var.activity for var in com.search_space]
     variance_activities = zeros(length(com.search_space))
     saved_traverse_strategy = com.traverse_strategy
+    saved_traverse_strategy_option = com.options.traverse_strategy
     saved_branch_strategy = com.branch_strategy
     saved_branch_split = com.branch_split
 
+    com.options.traverse_strategy = :DFS
     com.traverse_strategy = Val(:DFS)
     com.branch_split = Val(:Random)
     com.branch_strategy = Val(:Random)
@@ -248,6 +250,7 @@ function probe_until(com::CS.CoM)
     end
     com.branch_split = saved_branch_split
     com.traverse_strategy = saved_traverse_strategy
+    com.options.traverse_strategy = saved_traverse_strategy_option
     com.branch_strategy = saved_branch_strategy
     changed_traverse_strategy!(com, Val(:DFS))
 
