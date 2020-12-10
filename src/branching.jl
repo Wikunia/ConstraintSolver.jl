@@ -277,8 +277,12 @@ function probe(com::CS.CoM)
         sorting = options.backtrack_sorting, log_table=false, first_parent_idx = first_parent_idx,
         single_path = true, compute_bounds = false, check_bounds=false,
         cb_finished_pruning = ()->update_probe_activity!(activities, com))
-    root_feasible = last_backtrack_id != first_parent_idx
+
     feasible = status != :Infeasible
+    root_feasible = true
+    if last_backtrack_id == first_parent_idx || com.backtrack_vec[last_backtrack_id].parent_idx == first_parent_idx
+        root_feasible = feasible
+    end
 
     # checkout root node
     checkout_from_to!(com, last_backtrack_id, first_parent_idx)

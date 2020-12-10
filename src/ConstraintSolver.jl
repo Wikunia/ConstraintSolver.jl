@@ -480,8 +480,8 @@ function backtrack!(com::CS.CoM, max_bt_steps;
         compute_bounds = true, check_bounds=true, cb_finished_pruning = ()->nothing)
 
     branch_var = get_next_branch_variable(com)
-    branch_var.is_solution && return :Solved, 0
-    !branch_var.is_feasible && return :Infeasible, 0
+    branch_var.is_solution && return :Solved, first_parent_idx
+    !branch_var.is_feasible && return :Infeasible, first_parent_idx
 
     backtrack_vec = com.backtrack_vec
 
