@@ -456,4 +456,66 @@
         @test JuMP.objective_value(model) ≈ 3
         @test JuMP.value(b[1]) ≈ 0
     end
+
+    @testset "Infeasible all different in indicator" begin
+        model = Model(CSJuMPTestOptimizer())
+        n = 4
+        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, b, Bin)
+        @constraint(model, b => {x in CS.AllDifferentSet()})
+        @objective(model, Max, b)
+        optimize!(model)
+        status = JuMP.termination_status(model)
+        @test status == MOI.OPTIMAL
+        @test JuMP.objective_value(model) ≈ 0
+        @test JuMP.value(b) ≈ 0
+    end
+
+    @testset "Infeasible all different in reified" begin
+        model = Model(CSJuMPTestOptimizer())
+        n = 4
+        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, b, Bin)
+        @constraint(model, b := {x in CS.AllDifferentSet()})
+        @objective(model, Max, b)
+        optimize!(model)
+        status = JuMP.termination_status(model)
+        @test status == MOI.OPTIMAL
+        @test JuMP.objective_value(model) ≈ 0
+        @test JuMP.value(b) ≈ 0
+    end
+
+    @testset "Infeasible table in indicator" begin
+        model = Model(CSJuMPTestOptimizer())
+        n = 4
+        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, b, Bin)
+        @constraint(model, b => {x in CS.TableSet([
+            10 20
+            11 5
+        ])})
+        @objective(model, Max, b)
+        optimize!(model)
+        status = JuMP.termination_status(model)
+        @test status == MOI.OPTIMAL
+        @test JuMP.objective_value(model) ≈ 0
+        @test JuMP.value(b) ≈ 0
+    end
+
+    @testset "Infeasible table in reified" begin
+        model = Model(CSJuMPTestOptimizer())
+        n = 4
+        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, b, Bin)
+        @constraint(model, b := {x in CS.TableSet([
+            10 20
+            11 5
+        ])})
+        @objective(model, Max, b)
+        optimize!(model)
+        status = JuMP.termination_status(model)
+        @test status == MOI.OPTIMAL
+        @test JuMP.objective_value(model) ≈ 0
+        @test JuMP.value(b) ≈ 0
+    end
 end
