@@ -1,4 +1,23 @@
 """
+    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::MOI.EqualTo{T};
+                     active = true)
+
+Initialize the LinearConstraint by checking whether it might be an unfillable constraint
+without variable i.e x == x-1 => x -x == -1 => 0 == -1 => return false
+"""
+function init_constraint!(
+    com::CS.CoM,
+    constraint::CS.LinearConstraint,
+    fct::SAF{T},
+    set::MOI.EqualTo{T};
+    active = true,
+) where {T<:Real}
+    length(constraint.indices) > 0 && return true
+
+    return fct.constant == set.value
+end
+
+"""
     get_new_extrema_and_sum(search_space, vidx, i, terms, full_min, full_max, pre_mins, pre_maxs)
 
 Get the updated full_min, full_max as well as updated pre_mins[i] and pre_maxs[i] after values got removed from search_space[vidx]

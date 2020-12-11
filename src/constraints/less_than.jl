@@ -1,4 +1,23 @@
 """
+    init_constraint!(com::CS.CoM,   constraint::CS.LinearConstraint,fct::SAF{T}, set::MOI.LessThan{T};
+                     active = true)
+
+Initialize the LinearConstraint by checking whether it might be an unfillable constraint
+without variable i.e x <= x-1 => x -x <= -1 => 0 <= -1
+"""
+function init_constraint!(
+    com::CS.CoM,
+    constraint::CS.LinearConstraint,
+    fct::SAF{T},
+    set::MOI.LessThan{T};
+    active = true,
+) where {T<:Real}
+    length(constraint.indices) > 0 && return true
+
+    return fct.constant <= set.upper
+end
+
+"""
     prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.LessThan{T}; logs = true) where T <: Real
 
 Reduce the number of possibilities given the less than `LinearConstraint`.

@@ -6,6 +6,10 @@ function init_constraint!(
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
 
+    variables = com.search_space
+    rei_vidx = constraint.indices[1]
+    rei_var = variables[rei_vidx]
+
     # check which methods that inner constraint supports
     set_impl_functions!(com, inner_constraint)
 
@@ -19,7 +23,10 @@ function init_constraint!(
         )
         # map the bounds to the indicator constraint
         constraint.bound_rhs = inner_constraint.bound_rhs
-        return feasible
+        # the reified variable can't be activated if inner constraint is infeasible
+        if !feasible
+            !rm!(com, rei_var, Int(constraint.activate_on)) && return false
+        end
     end
     # still feasible
     return true

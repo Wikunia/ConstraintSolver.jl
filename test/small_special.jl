@@ -193,7 +193,7 @@
         @test allunique(match.match)
 
 
-        # more values than indices 
+        # more values than indices
         match = CS.bipartite_cardinality_matching(
             [1, 2, 3, 4, 1, 2, 3, 3, 2, 1, 2],
             [1, 1, 2, 2, 2, 2, 3, 4, 5, 5, 6],
@@ -344,7 +344,7 @@
         @variable(m, 2 <= a <= 9, Int)
         @variable(m, 6 <= b <= 10, Int)
         @constraint(m, x == y)
-        # should not result in linking to x -> y -> x ... 
+        # should not result in linking to x -> y -> x ...
         @constraint(m, y == x)
         @constraint(m, x == y)
 
@@ -367,5 +367,93 @@
         @test JuMP.value(x) == 6 || JuMP.value(x) == 7
         @test JuMP.value(x; result = 2) == 6 || JuMP.value(x; result = 2) == 7
         @test JuMP.value(x) != JuMP.value(x; result = 2)
+    end
+
+    @testset "x[1] <= x[1]" begin
+        model = Model(CSJuMPTestOptimizer())
+        n = 4
+        @variable(model, 1 <= x[1:n] <= n, Int)
+        for i in 1:n
+            @constraint(model, x[1] <= x[i])
+        end
+
+        optimize!(model)
+        status = JuMP.termination_status(model)
+        @test status == MOI.OPTIMAL
+        com = JuMP.backend(model).optimizer.model.inner
+        @test is_solved(com)
+    end
+
+    @testset "x[1] <= x[1] - 1 " begin
+        model = Model(CSJuMPTestOptimizer())
+        n = 4
+        @variable(model, 1 <= x[1:n] <= n, Int)
+        for i in 1:n
+            @constraint(model, x[1] <= x[i] - 1)
+        end
+
+        optimize!(model)
+        status = JuMP.termination_status(model)
+        @test status == MOI.INFEASIBLE
+    end
+
+    @testset "x[1] == x[1]" begin
+        model = Model(CSJuMPTestOptimizer())
+        n = 4
+        @variable(model, 1 <= x[1:n] <= n, Int)
+        for i in 1:n
+            @constraint(model, x[1] == x[i])
+        end
+
+        optimize!(model)
+        status = JuMP.termination_status(model)
+        @test status == MOI.OPTIMAL
+        com = JuMP.backend(model).optimizer.model.inner
+        @test is_solved(com)
+    end
+
+    @testset "x[1] == x[1] - 1 " begin
+        model = Model(CSJuMPTestOptimizer())
+        n = 4
+        @variable(model, 1 <= x[1:n] <= n, Int)
+        for i in 1:n
+            @constraint(model, x[1] == x[i] - 1)
+        end
+
+        optimize!(model)
+        status = JuMP.termination_status(model)
+        @test status == MOI.INFEASIBLE
+    end
+
+    @testset "x[1] == x[1] - 1 in reified" begin
+        model = Model(CSJuMPTestOptimizer())
+        n = 4
+        @variable(model, 1 <= x[1:n] <= n, Int)
+        @variable(model, b[1:n], Bin)
+        for i in 1:n
+            @constraint(model, b[i] := {x[1] == x[i] - 1})
+        end
+        @objective(model, Max, sum(b))
+        optimize!(model)
+        status = JuMP.termination_status(model)
+        @test status == MOI.OPTIMAL
+        @test JuMP.objective_value(model) ≈ 3
+        @test JuMP.value(b[1]) ≈ 0
+    end
+
+    @testset "x[1] == x[1] - 1 in indicator" begin
+        model = Model(CSJuMPTestOptimizer())
+        n = 4
+        @variable(model, 1 <= x[1:n] <= n, Int)
+        @variable(model, b[1:n], Bin)
+        for i in 1:n
+            @constraint(model, b[i] => {x[1] == x[i] - 1})
+        end
+        @objective(model, Max, sum(b))
+        optimize!(model)
+        status = JuMP.termination_status(model)
+        @test status == MOI.OPTIMAL
+        @test JuMP.objective_value(model) ≈ 3
+        @test JuMP.value(b[1]) ≈ 0
     end
 end
