@@ -1,5 +1,9 @@
 # ConstrainSolver.jl - Changelog
 
+## v0.5.2 (11th of December 2020)
+- Bugfix for `x == x` constraints
+- Bugfix for directly infeasible constraint inside reified and indicator 
+
 ## v0.5.1 (10th of December 2020)
 - Bugfix in indicator constraint 
   - If inner constraint is fixed and indicator tries to get active

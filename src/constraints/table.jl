@@ -31,6 +31,7 @@ function init_constraint!(
 )
     table = set.table
     num_pos_rows = size(table, 1)
+    constraint.last_sizes = zeros(Int, length(constraint.indices))
 
     possible_rows = trues(num_pos_rows)
     search_space = com.search_space
