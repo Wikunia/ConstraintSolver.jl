@@ -192,7 +192,7 @@ mutable struct RSparseBitSet
     indices::Vector{Int}
     last_ptr::Int
     mask::Vector{UInt64}
-    RSparseBitSet() = new()
+    RSparseBitSet() = new([], [], 1, [])
 end
 
 mutable struct TableSupport
@@ -200,7 +200,7 @@ mutable struct TableSupport
     # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
     var_start::Vector{Int}
     values::Array{UInt64,2}
-    TableSupport() = new()
+    TableSupport() = new([], Array{UInt64,2}(undef, (0,0)))
 end
 
 mutable struct TableResidues
@@ -208,7 +208,7 @@ mutable struct TableResidues
     # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
     var_start::Vector{Int}
     values::Vector{Int}
-    TableResidues() = new()
+    TableResidues() = new([], [])
 end
 
 mutable struct TableBacktrackInfo

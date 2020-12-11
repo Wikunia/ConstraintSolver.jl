@@ -11,7 +11,7 @@ end
 @testset "Unit Tests" begin
     include("constraints/alldifferent.jl")
     include("constraints/scc.jl")
-    include("constraints/eq_sum.jl")
+    include("constraints/equal_to.jl")
     include("constraints/equal.jl")
     include("constraints/less_than.jl")
     include("constraints/not_equal.jl")
