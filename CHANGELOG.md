@@ -1,5 +1,9 @@
 # ConstrainSolver.jl - Changelog
 
+## Unreleased
+- Bugfix for optimization with reified and indicator constraints
+  - If inner constraint does not define bound variables
+
 ## v0.5.2 (11th of December 2020)
 - Bugfix for `x == x` constraints
 - Bugfix for directly infeasible constraint inside reified and indicator 
