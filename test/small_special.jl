@@ -426,7 +426,7 @@
     end
 
     @testset "x[1] == x[1] - 1 in reified" begin
-        model = Model(CSJuMPTestOptimizer())
+        model = Model(CSCbcJuMPTestOptimizer())
         n = 4
         @variable(model, 1 <= x[1:n] <= n, Int)
         @variable(model, b[1:n], Bin)
@@ -442,7 +442,7 @@
     end
 
     @testset "x[1] == x[1] - 1 in indicator" begin
-        model = Model(CSJuMPTestOptimizer())
+        model = Model(CSCbcJuMPTestOptimizer())
         n = 4
         @variable(model, 1 <= x[1:n] <= n, Int)
         @variable(model, b[1:n], Bin)
@@ -458,7 +458,7 @@
     end
 
     @testset "Infeasible all different in indicator" begin
-        model = Model(CSJuMPTestOptimizer())
+        model = Model(CSCbcJuMPTestOptimizer())
         n = 4
         @variable(model, 1 <= x[1:n] <= n-1, Int)
         @variable(model, b, Bin)
