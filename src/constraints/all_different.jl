@@ -183,7 +183,7 @@ function update_best_bound_constraint!(
     lb::Int,
     ub::Int,
 )
-    constraint.bound_rhs === nothing && return
+    isempty(constraint.bound_rhs) && return
     search_space = com.search_space
 
     # compute bounds

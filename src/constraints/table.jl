@@ -379,7 +379,7 @@ function update_best_bound_constraint!(
     lb::Int,
     ub::Int,
 )
-    constraint.bound_rhs === nothing && return
+    isempty(constraint.bound_rhs) && return
     sum_min = constraint.sum_min
     sum_max = constraint.sum_max
     bitset = constraint.current

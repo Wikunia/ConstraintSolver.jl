@@ -309,7 +309,7 @@ mutable struct ConstraintInternals{
     impl::ImplementedConstraintFunctions
     is_initialized::Bool
     is_deactivated::Bool # can be deactivated if it's absorbed by other constraints
-    bound_rhs::Union{Nothing,Vector{BoundRhsVariable}} # should be set if `update_best_bound` is true
+    bound_rhs::Vector{BoundRhsVariable}# should be set if `update_best_bound` is true
 end
 
 #====================================================================================
