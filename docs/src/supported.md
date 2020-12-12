@@ -36,7 +36,7 @@ Additionally you can specify a set of allowed integers:
 
 ## Supported constraints
 
-It's a bit more but still not as fully featured as I would like it to be.
+The following list shows constraints that are implemented and those which are planned.
 
 - [X] Linear constraints
   - At the moment this is kind of partially supported as they are not really good at giving bounds yet
@@ -47,14 +47,22 @@ It's a bit more but still not as fully featured as I would like it to be.
 - [X] All different
   - `@constraint(m, [x,y,z] in CS.AllDifferentSet())`
 - [X] `TableSet` constraint [#130](https://github.com/Wikunia/ConstraintSolver.jl/pull/130)
-- [X] Indicator constraints [#167](https://github.com/Wikunia/ConstraintSolver.jl/pull/167)
+- Indicator constraints [#167](https://github.com/Wikunia/ConstraintSolver.jl/pull/167)
   - i.e `@constraint(m, b => {x + y >= 12})`
   - [X] for affine inner constraints
   - [X] for all types of inner constraints
-- [X] Reified constraints [#171](https://github.com/Wikunia/ConstraintSolver.jl/pull/171)
+- Reified constraints [#171](https://github.com/Wikunia/ConstraintSolver.jl/pull/171)
   - i.e `@constraint(m, b := {x + y >= 12})`
   - [X] for affine inner constraints
   - [X] for all types of inner constraints
+- Element constraints
+  - [ ] 1D array with constant values 
+    - i.e `T = [12,87,42,1337]` `T[y] == z` with `y` and `z` being variables [#213](https://github.com/Wikunia/ConstraintSolver.jl/pull/213)
+  - [ ] 2D array with constant values 
+    - where T is an array
+  - [ ] 1D array with variables
+    - where T is a vector of variables 
+- [ ] Allowing `&&` and `||` in indicator and reified constraints
 - [ ] Scheduling constraints
 - [ ] Cycle constraints
 
