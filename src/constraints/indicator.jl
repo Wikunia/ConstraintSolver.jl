@@ -19,6 +19,9 @@ function init_constraint!(
     ASS<:MOI.AbstractScalarSet,
     IS<:Union{IndicatorSet{A},MOI.IndicatorSet{A,ASS}},
 }
+    indicator_vidx = constraint.indices[1]
+    search_space = com.search_space
+    indicator_var = search_space[indicator_vidx]
     inner_constraint = constraint.inner_constraint
 
     # check which methods that inner constraint supports
@@ -34,7 +37,10 @@ function init_constraint!(
         )
         # map the bounds to the indicator constraint
         constraint.bound_rhs = inner_constraint.bound_rhs
-        return feasible
+        # the indicator can't be activated if inner constraint is infeasible
+        if !feasible
+            !rm!(com, indicator_var, Int(constraint.activate_on)) && return false
+        end
     end
     # still feasible
     return true

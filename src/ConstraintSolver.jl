@@ -96,6 +96,8 @@ Compute the possible values inside this constraint and set it as constraint.pval
 """
 function set_pvals!(com::CS.CoM, constraint::Constraint)
     indices = constraint.indices
+    # nothing to do i.e x <= x will be x-x <= 0 => 0 <= 0 without variables
+    length(indices) == 0 && return
     variables = Variable[v for v in com.search_space[indices]]
     pvals_intervals = Vector{NamedTuple}()
     push!(pvals_intervals, (from = variables[1].lower_bound, to = variables[1].upper_bound))
@@ -608,6 +610,7 @@ function set_in_all_different!(com::CS.CoM; constraints = com.constraints)
             if !constraint.in_all_different
                 subscriptions_idxs =
                     [[i for i in com.subscription[v]] for v in constraint.indices]
+                length(subscriptions_idxs) == 0 && continue
                 intersects = intersect(subscriptions_idxs...)
 
                 for i in intersects
