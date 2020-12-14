@@ -2,6 +2,7 @@
 
 ## Unreleased 
 - Throw error if there is a dimension mismatch in a `TableSet`
+- Dropped support for Julia v1.0 and v1.1
 
 ## v0.5.3 (12th of December 2020)
 - Bugfix for optimization with reified and indicator constraints
