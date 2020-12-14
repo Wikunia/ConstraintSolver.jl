@@ -1,6 +1,7 @@
 test/current/
 gif
 /Manifest.toml
+test/Manifest.toml
 visualizations/images/
 visualizations/videos/
 literature/
