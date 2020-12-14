@@ -485,9 +485,20 @@
         @test JuMP.value(b) ≈ 0
     end
 
-    @testset "Infeasible table in indicator" begin
+    @testset "Table dim not matching" begin
         model = Model(CSJuMPTestOptimizer())
         n = 4
+        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, b, Bin)
+        @test_throws ArgumentError @constraint(model, b => {x in CS.TableSet([
+            10 20
+            11 5
+        ])})
+    end
+
+    @testset "Infeasible table in indicator" begin
+        model = Model(CSJuMPTestOptimizer())
+        n = 2
         @variable(model, 1 <= x[1:n] <= n-1, Int)
         @variable(model, b, Bin)
         @constraint(model, b => {x in CS.TableSet([
@@ -502,9 +513,10 @@
         @test JuMP.value(b) ≈ 0
     end
 
+
     @testset "Infeasible table in reified" begin
         model = Model(CSJuMPTestOptimizer())
-        n = 4
+        n = 2
         @variable(model, 1 <= x[1:n] <= n-1, Int)
         @variable(model, b, Bin)
         @constraint(model, b := {x in CS.TableSet([
@@ -518,4 +530,5 @@
         @test JuMP.objective_value(model) ≈ 0
         @test JuMP.value(b) ≈ 0
     end
+
 end
