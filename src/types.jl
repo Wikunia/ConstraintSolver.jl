@@ -69,7 +69,12 @@ Base.copy(T::TableSetInternal) = TableSetInternal(T.dimension, T.table)
 struct TableSet <: JuMP.AbstractVectorSet
     table::Array{Int,2}
 end
-JuMP.moi_set(ts::TableSet, dim) = TableSetInternal(dim, ts.table)
+function JuMP.moi_set(ts::TableSet, dim)
+    if size(ts.table,2) != dim
+        throw(ArgumentError("The table provided has $(size(ts.table,2)) columns but the variable vector has $dim elements"))
+    end
+    TableSetInternal(dim, ts.table)
+end
 
 struct GeqSetInternal <: MOI.AbstractVectorSet
     dimension::Int
