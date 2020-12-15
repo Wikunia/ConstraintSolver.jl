@@ -1,6 +1,62 @@
+# TableLogger
+
+mutable struct TableCol
+    id::Symbol
+    name::String
+    type::DataType
+    width::Int
+    alignment::Symbol # :left, :center, :right
+    b_format::Bool
+end
+
+mutable struct TableEntry{T}
+    col_id::Symbol
+    value::T
+end
+
+mutable struct TableSetup
+    cols::Vector{TableCol}
+    col_idx::Dict{Symbol,Int}
+    new_row_criteria::Bool
+    diff_criteria::Dict{Symbol,Any}
+    last_row::Vector{TableEntry}
+end
+
+# SolverOptions
+mutable struct ActivityOptions
+    decay::Float64
+    max_probes::Int
+    max_confidence_deviation::Float64
+end
+
+mutable struct SolverOptions
+    logging::Vector{Symbol}
+    table::TableSetup
+    time_limit::Float64 # time limit in backtracking in seconds
+    seed::Int
+    traverse_strategy::Symbol
+    branch_strategy::Symbol
+    branch_split::Symbol # defines splitting in the middle, or takes smallest, biggest value
+    backtrack::Bool
+    max_bt_steps::Int
+    backtrack_sorting::Bool
+    keep_logs::Bool
+    rtol::Float64
+    atol::Float64
+    solution_type::Type
+    all_solutions::Bool
+    all_optimal_solutions::Bool
+    lp_optimizer::Any
+    no_prune::Bool
+    activity::ActivityOptions
+    simplify::Bool
+end
+
+# General
+
 mutable struct Variable
     idx::Int
-    lower_bound::Int # inital lower and
+    lower_bound::Int # initial lower and
     upper_bound::Int # upper bound of the variable see min, max otherwise
     first_ptr::Int
     last_ptr::Int
@@ -21,6 +77,8 @@ mutable struct Variable
     has_lower_bound::Bool # must be true to work
     is_fixed::Bool
     is_integer::Bool # must be true to work
+    # branching strategies
+    activity::Float64 #  + 1 if variable was used in node, * activity.decay if it wasn't
 end
 
 mutable struct NumberConstraintTypes
@@ -374,9 +432,11 @@ end
 
 mutable struct BacktrackObj{T<:Real}
     idx::Int
+    step_nr::Int
     parent_idx::Int
     depth::Int
     status::Symbol
+    is_feasible::Bool
     vidx::Int
     lb::Int # lb <= var[vidx] <= ub
     ub::Int
@@ -389,9 +449,11 @@ end
 function Base.convert(::Type{B}, obj::BacktrackObj{T2}) where {T1,T2,B<:BacktrackObj{T1}}
     return BacktrackObj{T1}(
         obj.idx,
+        obj.step_nr,
         obj.parent_idx,
         obj.depth,
         obj.status,
+        obj.is_feasible,
         obj.vidx,
         obj.lb,
         obj.ub,
@@ -412,6 +474,7 @@ mutable struct TreeLogNode{T<:Real}
     ub::Int
     var_states::Dict{Int,Vector{Int}}
     var_changes::Dict{Int,Vector{Tuple{Symbol,Int,Int,Int}}}
+    activity::Dict{Int,Float64}
     children::Vector{TreeLogNode{T}}
 end
 
@@ -419,6 +482,32 @@ mutable struct Solution{T<:Real}
     incumbent::T
     values::Vector{Int}
     backtrack_id::Int # save where the solution was found
+    hash::UInt64
+end
+Solution(incumbent, values, backtrack_id) =
+    Solution(incumbent, values, backtrack_id, hash(values))
+
+mutable struct ActivityObj
+    nprobes::Int
+    is_free::Vector{Bool}
+    ActivityObj() = new(0, [false]) # will be overwritten later
+end
+
+"""
+    BranchVarObj
+
+Determines the next branch variable and stores if still feasible and if solution was found
+"""
+mutable struct BranchVarObj
+    is_feasible::Bool
+    is_solution::Bool
+    vidx::Int # only relevant if is_feasible && !is_solution
+end
+
+struct VarAndVal
+    vidx :: Int
+    lb   :: Int
+    ub   :: Int
 end
 
 mutable struct ConstraintSolverModel{T<:Real}
@@ -429,6 +518,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     init_fixes::Vector{Tuple{Int,Int}}
     subscription::Vector{Vector{Int}}
     constraints::Vector{Constraint}
+    root_infeasible_vars::Vector{VarAndVal}
     bt_infeasible::Vector{Int}
     c_backtrack_idx::Int
     c_step_nr::Int
@@ -438,7 +528,10 @@ mutable struct ConstraintSolverModel{T<:Real}
     objective::ObjectiveFunction
     var_in_obj::Vector{Bool} # saves whether a variable is part of the objective function
     traverse_strategy::Val
+    branch_strategy::Val
     branch_split::Val
+    in_probing_phase::Bool
+    activity_vars::ActivityObj
     best_sol::T # Objective of the best solution
     best_bound::T # Overall best bound
     solutions::Vector{Solution}

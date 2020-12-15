@@ -1,25 +1,3 @@
-mutable struct TableCol
-    id::Symbol
-    name::String
-    type::DataType
-    width::Int
-    alignment::Symbol # :left, :center, :right
-    b_format::Bool
-end
-
-mutable struct TableEntry{T}
-    col_id::Symbol
-    value::T
-end
-
-mutable struct TableSetup
-    cols::Vector{TableCol}
-    col_idx::Dict{Symbol,Int}
-    new_row_criteria::Bool
-    diff_criteria::Dict{Symbol,Any}
-    last_row::Vector{TableEntry}
-end
-
 function TableCol(name::String, type::DataType)
     width = length(name) <= 8 ? 10 : length(name) + 2
     return TableCol(name, type, width)

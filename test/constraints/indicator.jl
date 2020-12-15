@@ -46,7 +46,7 @@
     end
 
     @testset "Basic !=" begin
-        m = Model(CSJuMPTestOptimizer())
+        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
         @variable(m, x, CS.Integers([1, 2, 4]))
         @variable(m, y, CS.Integers([3, 4]))
         @variable(m, b, Bin)
@@ -107,7 +107,7 @@
         @test JuMP.value(x) ≈ 4
         @test JuMP.value(y) ≈ 4
 
-        m = Model(CSJuMPTestOptimizer())
+        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
         @variable(m, x, CS.Integers([1, 2, 4]))
         @variable(m, y, CS.Integers([3, 4]))
         @variable(m, b, Bin)

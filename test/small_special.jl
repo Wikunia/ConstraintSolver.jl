@@ -22,7 +22,7 @@
     end
 
     @testset "LessThan constraints JuMP" begin
-        m = Model(CSJuMPTestOptimizer())
+        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         @constraint(m, sum(x) >= 20)
@@ -48,7 +48,7 @@
         @test JuMP.objective_value(m) == 37
 
         # minimize with negative and positive real weights
-        m = Model(CSJuMPTestOptimizer())
+        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         weights = [-0.1, 0.2, -0.3, 0.4, 0.5]
@@ -303,6 +303,9 @@
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "all_solutions" => true,
+            "branch_strategy" => :ABS,
+            "activity.decay" => 0.999,
+            "activity.max_probes" => 20,
             "logging" => [],
         ))
         @variable(m, x[1:3], CS.Integers([i^2 for i in 1:50]))
@@ -458,8 +461,8 @@
     end
 
     @testset "Infeasible all different in indicator" begin
-        model = Model(CSCbcJuMPTestOptimizer())
-        n = 4
+        model = Model(CSCbcJuMPTestOptimizer(; branch_strategy = :ABS))
+        n = 2
         @variable(model, 1 <= x[1:n] <= n-1, Int)
         @variable(model, b, Bin)
         @constraint(model, b => {x in CS.AllDifferentSet()})

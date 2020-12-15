@@ -30,6 +30,7 @@ function general_tree_test(com::CS.CoM)
             next_idx = rand(2:n_backtracks)
             status = com.logs[next_idx].status
         end
+
         CS.checkout_from_to!(com, c_backtrack_idx, next_idx)
 
         if com.backtrack_vec[next_idx].parent_idx != 0
@@ -75,16 +76,6 @@ function general_tree_test(com::CS.CoM)
                 com.search_space[vidx],
                 com.logs[c_backtrack_idx].lb,
             )
-
-            if com.sense != MOI.FEASIBILITY_SENSE
-                constraints = com.constraints[com.subscription[vidx]]
-                feasible, further_pruning = CS.update_best_bound!(
-                    com.backtrack_vec[c_backtrack_idx],
-                    com,
-                    constraints,
-                )
-                @assert feasible
-            end
 
             @assert CS.prune!(com)
             CS.call_finished_pruning!(com)
@@ -137,8 +128,7 @@ function is_solved(com::CS.CoM)
     end
     for constraint in com.constraints
         values = CS.value.(com.search_space[constraint.indices])
-        c_solved =
-            CS.is_constraint_solved(constraint, constraint.fct, constraint.set, values)
+        c_solved = CS.is_constraint_solved(constraint, constraint.fct, constraint.set, values)
         c_violated = CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
         if !c_solved || c_violated
             @error "Constraint $(constraint.idx) is not solved"

@@ -1,6 +1,6 @@
 @testset "MOI Tests" begin
     @testset "Supports and SolverName" begin
-        optimizer = CSTestOptimizer()
+        optimizer = CSTestOptimizer(;branch_strategy=:ABS)
         @test MOI.get(optimizer, MOI.SolverName()) == "ConstraintSolver"
         @test MOI.supports_constraint(
             optimizer,

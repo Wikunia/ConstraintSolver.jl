@@ -121,7 +121,7 @@
             0 0 0 0 0 0 8 0 6
         ]
 
-        m = Model(CSJuMPTestOptimizer())
+        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
         for r in 1:9, c in 1:9
@@ -520,6 +520,8 @@
         @test JuMP.termination_status(m) == MOI.TIME_LIMIT
         com = JuMP.backend(m).optimizer.model.inner
         general_tree_test(com)
+        logs = CS.get_logs(com)
+        @test CS.sanity_check_log(logs[:tree])
     end
 
     @testset "All solutions" begin

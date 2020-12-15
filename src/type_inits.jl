@@ -16,6 +16,7 @@ Variable(vidx) = Variable(
     false,
     false,
     false,
+    0.0,
 )
 
 MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[], Bool[])
@@ -106,6 +107,7 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         Vector{Tuple{Int,Int}}(), # init_fixes
         Vector{Vector{Int}}(), # subscription
         Vector{Constraint}(), # constraints
+        Vector{VarAndVal}(), # root_infeasible_vars
         Vector{Int}(), # bt_infeasible
         1, # c_backtrack_idx
         1, # c_step_nr
@@ -115,7 +117,10 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         NoObjective(), #
         Vector{Bool}(), # var_in_obj
         Val(:DFS),
+        get_branch_strategy(),
         get_branch_split(),
+        true,
+        ActivityObj(),
         zero(T), # best_sol,
         zero(T), # best_bound
         Vector{Solution}(), # all solution objects
@@ -138,9 +143,11 @@ function new_BacktrackObj(com::CS.CoM, parent_idx, vidx, lb, ub)
     parent = com.backtrack_vec[parent_idx]
     return BacktrackObj{parametric_type(com)}(
         length(com.backtrack_vec) + 1, # idx
+        -1, # step_nr
         parent_idx,
         parent.depth + 1,
         :Open, # status
+        true, # is feasible
         vidx,
         lb, # lb and ub only take effect if vidx != 0
         ub, # ub
@@ -153,9 +160,11 @@ end
 function BacktrackObj(com::CS.CoM)
     return BacktrackObj(
         1, # idx
+        -1, # step_nr
         0, # parent_idx
         0, # depth
         :Closed, # status
+        true, # is feasible until proven otherwise
         0, # vidx
         0, # lb and ub only take effect if vidx != 0
         0, # ub

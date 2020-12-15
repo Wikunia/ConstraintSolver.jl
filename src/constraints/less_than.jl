@@ -113,7 +113,6 @@ function still_feasible(
     search_space = com.search_space
     rhs = set.upper - fct.constant
     min_sum = zero(T)
-
     for (i, vidx) in enumerate(constraint.indices)
         if vidx == index
             min_sum += val * fct.terms[i].coefficient

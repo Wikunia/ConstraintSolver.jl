@@ -1,5 +1,10 @@
 function solve_us_graph_coloring(; num_colors = 8, equality = false)
-    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
+    m = Model(optimizer_with_attributes(
+        CS.Optimizer,
+        "logging" => [],
+        "branch_strategy" => :IMPS,
+        "seed" => 1,
+    ))
     @variable(m, 1 <= max_color <= num_colors, Int)
 
     @variable(m, 1 <= states[1:50] <= num_colors, Int)

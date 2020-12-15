@@ -165,7 +165,9 @@ function still_feasible(
 )
     variables = com.search_space
     for cvidx in constraint.indices
-        cvidx == vidx && continue
+        if cvidx == vidx
+            continue
+        end
         v = variables[cvidx]
         !has(v, value) && return false
     end
