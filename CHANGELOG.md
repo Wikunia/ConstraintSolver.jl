@@ -1,10 +1,11 @@
 # ConstrainSolver.jl - Changelog
 
-## Unreleased 
-- Throw error if there is a dimension mismatch in a `TableSet`
-- Dropped support for Julia v1.0 and v1.1
+## v0.6.0 (15th of December 2020) 
+- **Dropped support for Julia v1.0 and v1.1**
 - Implementation of Activity Based Search
   - `"branch_strategy" => :ABS`
+- Throw error if there is a dimension mismatch in a `TableSet`
+- Bugfix in `simplify!` check that one inner index isn't used more than once
 
 ## v0.5.3 (12th of December 2020)
 - Bugfix for optimization with reified and indicator constraints
