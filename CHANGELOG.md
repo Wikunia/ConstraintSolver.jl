@@ -1,8 +1,9 @@
 # ConstrainSolver.jl - Changelog
 
 ## Unreleased 
+- **Dropped support for Julia v1.0 and v1.1**
 - Throw error if there is a dimension mismatch in a `TableSet`
-- Dropped support for Julia v1.0 and v1.1
+- Bugfix in `simplify!` check that one inner index isn't used more than once
 
 ## v0.5.3 (12th of December 2020)
 - Bugfix for optimization with reified and indicator constraints
