@@ -502,6 +502,12 @@ mutable struct BranchVarObj
     vidx::Int # only relevant if is_feasible && !is_solution
 end
 
+struct VarAndVal
+    vidx :: Int
+    lb   :: Int
+    ub   :: Int
+end
+
 mutable struct ConstraintSolverModel{T<:Real}
     lp_model::Union{Nothing,Model} # only used if lp_optimizer is set
     lp_x::Vector{VariableRef}
@@ -510,6 +516,7 @@ mutable struct ConstraintSolverModel{T<:Real}
     init_fixes::Vector{Tuple{Int,Int}}
     subscription::Vector{Vector{Int}}
     constraints::Vector{Constraint}
+    root_infeasible_vars::Vector{VarAndVal}
     bt_infeasible::Vector{Int}
     c_backtrack_idx::Int
     c_step_nr::Int

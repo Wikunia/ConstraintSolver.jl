@@ -534,6 +534,22 @@ function backtrack!(com::CS.CoM, max_bt_steps;
 
         checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
 
+        # if backtracking was started
+        # => remove all values which are root infeasible
+        # this is done here instead of at the root node to avoid removing variables
+        # in nodes which already have children
+        if started
+            for root_infeasible in com.root_infeasible_vars
+                for val in root_infeasible.lb:root_infeasible.ub
+                    if has(com.search_space[root_infeasible.vidx], val)
+                        if !rm!(com, com.search_space[root_infeasible.vidx], val)
+                            return :Infeasible, last_backtrack_id
+                        end
+                    end
+                end
+            end
+        end
+
         started = false
         last_backtrack_id = backtrack_obj.idx
 

@@ -227,7 +227,7 @@ function probe_until(com::CS.CoM)
               still_probing(n, mean_activities, variance_activities, max_deviation) &&
               global_feasible
         n += 1
-        root_feasible, feasible, activities = probe(com)
+        root_feasible, feasible, activities, last_backtrack_id = probe(com)
         for i in 1:length(com.search_space)
             new_mean = mean_activities[i] + (activities[i] - mean_activities[i]) / n
             # update variance: https://math.stackexchange.com/questions/102978/incremental-computation-of-standard-deviation
@@ -243,19 +243,14 @@ function probe_until(com::CS.CoM)
         end
         # if root infeasible we can remove that setting completely
         if !root_feasible
-            backtrack_obj = com.backtrack_vec[com.c_backtrack_idx]
+            backtrack_obj = com.backtrack_vec[last_backtrack_id]
             vidx = backtrack_obj.vidx
             vidx == 0 && break # all variables are fixed already
             # use the variable from com not ccom to remove it from the actual model
             variable = com.search_space[vidx]
             lb = backtrack_obj.lb
             ub = backtrack_obj.ub
-            for val in lb:ub
-                if has(variable, val)
-                    global_feasible = rm!(com, variable, val)
-                    !global_feasible && break
-                end
-            end
+            push!(com.root_infeasible_vars, VarAndVal(vidx, lb, ub))
         end
     end
     for i in 1:length(com.search_space)
@@ -303,7 +298,7 @@ function probe(com::CS.CoM)
     checkout_from_to!(com, last_backtrack_id, first_parent_idx)
     # prune the last step as checkout_from_to! excludes the to part
     restore_prune!(com, first_parent_idx)
-    return root_feasible, feasible, activities
+    return root_feasible, feasible, activities, last_backtrack_id
 end
 
 function update_activity!(com)
@@ -345,13 +340,6 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:ABS})
         end
     end
 
-    #=
-    for variable in com.search_space
-        if variable.idx == 12
-            println("vidx: $(variable.idx) -> $(variable.activity)")
-        end
-    end
-    =#
 
     # activity based search
     is_in_objective = false

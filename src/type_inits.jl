@@ -107,6 +107,7 @@ function ConstraintSolverModel(::Type{T} = Float64) where {T<:Real}
         Vector{Tuple{Int,Int}}(), # init_fixes
         Vector{Vector{Int}}(), # subscription
         Vector{Constraint}(), # constraints
+        Vector{VarAndVal}(), # root_infeasible_vars
         Vector{Int}(), # bt_infeasible
         1, # c_backtrack_idx
         1, # c_step_nr
