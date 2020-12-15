@@ -83,20 +83,36 @@ MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
 Set a RawParameter to `value`
 """
 function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
-    p_symbol = Symbol(p.name)
-    if in(p_symbol, fieldnames(SolverOptions))
-        type_of_param = fieldtype(SolverOptions, p_symbol)
-        if hasmethod(convert, (Type{type_of_param}, typeof(value)))
-            if is_possible_option_value(p, value)
-                setfield!(model.options, p_symbol, convert(type_of_param, value))
+    current_options_type = SolverOptions
+    current_options_obj = model.options
+
+    num_subcat = 0
+    parts = split(p.name, ".")
+    for pname in parts
+        num_subcat += 1
+        cp_symbol = Symbol(pname)
+        if in(cp_symbol, fieldnames(current_options_type))
+            type_of_param = fieldtype(current_options_type, cp_symbol)
+            if num_subcat == length(parts)
+                if hasmethod(convert, (Type{type_of_param}, typeof(value)))
+                    if is_possible_option_value(p, value)
+                        setfield!(current_options_obj, cp_symbol, convert(type_of_param, value))
+                    else
+                        @error "The option $(cp_symbol) doesn't have $(value) as a possible value. Possible values are: $(POSSIBLE_OPTIONS[p_symbol])"
+                        break
+                    end
+                else
+                    @error "The option $(p.name) has a different type ($(type_of_param))"
+                    break
+                end
             else
-                @error "The option $(p_symbol) doesn't have $(value) as a possible value. Possible values are: $(POSSIBLE_OPTIONS[p_symbol])"
+                current_options_type = type_of_param
+                current_options_obj = getfield(current_options_obj, cp_symbol)
             end
         else
-            @error "The option $(p.name) has a different type ($(type_of_param))"
+            @error "The option $(p.name) doesn't exist."
+            break
         end
-    else
-        @error "The option $(p.name) doesn't exist."
     end
     return
 end
