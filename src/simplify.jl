@@ -241,7 +241,7 @@ function simplify_all_different_inner_equal_to(com, constraint::AllDifferentCons
     @assert length(constraint.indices) == length(constraint.pvals)
     added_constraint_idxs = Int[]
     # make sure that we don't use an index more than once
-    used_indices = falses(maximum(constraint.indices))
+    used_indices = falses(length(com.search_space))
     # we don't try to maximize the sum here so one might be able to use
     # a different constraint to start with to get a better sum.
     all_diff_sum = sum(constraint.pvals)
@@ -257,8 +257,8 @@ function simplify_all_different_inner_equal_to(com, constraint::AllDifferentCons
             if all(t.coefficient == 1 for t in sub_constraint.fct.terms)
                 # only use constraint if none of the indices was already used for
                 # computing the inner sum
-                if !any(used_indices[constraint.indices])
-                    used_indices[constraint.indices] .= true
+                if !any(used_indices[sub_constraint.indices])
+                    used_indices[sub_constraint.indices] .= true
                     # compute sum inside all sum constraints
                     found_possible_constraint = true
                     in_sum += sub_constraint.set.value - sub_constraint.fct.constant
