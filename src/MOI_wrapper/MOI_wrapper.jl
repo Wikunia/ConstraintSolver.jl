@@ -85,7 +85,10 @@ Set a RawParameter to `value`
 function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
     current_options_type = SolverOptions
     current_options_obj = model.options
+    p_symbol = Symbol(p.name)
 
+    # being able to parse simple options like "traverse_strategy"
+    # as well as sub category options like "activity.decay"
     num_subcat = 0
     parts = split(p.name, ".")
     for pname in parts
