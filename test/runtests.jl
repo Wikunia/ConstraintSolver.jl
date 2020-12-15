@@ -20,12 +20,15 @@ function CSJuMPTestOptimizer(; branch_strategy=:Auto)
     )
 end
 cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
-CSCbcJuMPTestOptimizer() = JuMP.optimizer_with_attributes(
-    CS.Optimizer,
-    "logging" => [],
-    "lp_optimizer" => cbc_optimizer,
-    "seed" => 1,
-)
+function CSCbcJuMPTestOptimizer(; branch_strategy=:Auto)
+    JuMP.optimizer_with_attributes(
+        CS.Optimizer,
+        "logging" => [],
+        "lp_optimizer" => cbc_optimizer,
+        "seed" => 1,
+        "branch_strategy" => branch_strategy
+    )
+end
 
 macro test_macro_throws(errortype, m)
     # See https://discourse.julialang.org/t/test-throws-with-macros-after-pr-23533/5878

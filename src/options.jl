@@ -41,7 +41,7 @@ function SolverOptions()
         ],
         Dict(:min_diff_duration => 5.0),
     )
-    seed = rand(1:10000)
+    seed = 1
     traverse_strategy = :Auto
     branch_strategy = :Auto
     branch_split = :Auto

@@ -291,9 +291,8 @@ function probe(com::CS.CoM)
 
     status, last_backtrack_id = backtrack!(com, options.max_bt_steps;
         sorting = options.backtrack_sorting, log_table=false, first_parent_idx = first_parent_idx,
-        single_path = true, compute_bounds = false, check_bounds=false,
+        single_path = true, compute_bounds = false, check_bounds=false, end_status = :Infeasible,
         cb_finished_pruning = (com1)->update_probe_activity!(activities, com1))
-
     feasible = status != :Infeasible
     root_feasible = true
     if last_backtrack_id == first_parent_idx || com.backtrack_vec[last_backtrack_id].parent_idx == first_parent_idx

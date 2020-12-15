@@ -303,6 +303,9 @@
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "all_solutions" => true,
+            "branch_strategy" => :ABS,
+            "activity.decay" => 0.999,
+            "activity.max_probes" => 20,
             "logging" => [],
         ))
         @variable(m, x[1:3], CS.Integers([i^2 for i in 1:50]))
@@ -458,8 +461,8 @@
     end
 
     @testset "Infeasible all different in indicator" begin
-        model = Model(CSCbcJuMPTestOptimizer())
-        n = 4
+        model = Model(CSCbcJuMPTestOptimizer(; branch_strategy = :ABS))
+        n = 2
         @variable(model, 1 <= x[1:n] <= n-1, Int)
         @variable(model, b, Bin)
         @constraint(model, b => {x in CS.AllDifferentSet()})
