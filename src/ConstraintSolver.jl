@@ -546,12 +546,6 @@ function backtrack!(com::CS.CoM, max_bt_steps;
         constraints = com.constraints[com.subscription[vidx]]
         com.info.backtrack_fixes += 1
 
-        # first update the best bound (only constraints which have an index in the objective function)
-        if compute_bounds && com.sense != MOI.FEASIBILITY_SENSE
-            feasible, further_pruning = update_best_bound!(backtrack_obj, com, constraints)
-            !feasible && handle_infeasible!(com; finish_pruning = true) && continue
-        end
-
         # prune completely start with all that changed by the fix or by updating best bound
         feasible = prune!(com)
         !feasible && handle_infeasible!(com; finish_pruning = true) && continue
