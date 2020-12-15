@@ -147,6 +147,7 @@ function new_BacktrackObj(com::CS.CoM, parent_idx, vidx, lb, ub)
         parent_idx,
         parent.depth + 1,
         :Open, # status
+        true, # is feasible
         vidx,
         lb, # lb and ub only take effect if vidx != 0
         ub, # ub
@@ -163,6 +164,7 @@ function BacktrackObj(com::CS.CoM)
         0, # parent_idx
         0, # depth
         :Closed, # status
+        true, # is feasible until proven otherwise
         0, # vidx
         0, # lb and ub only take effect if vidx != 0
         0, # ub

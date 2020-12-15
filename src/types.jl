@@ -436,6 +436,7 @@ mutable struct BacktrackObj{T<:Real}
     parent_idx::Int
     depth::Int
     status::Symbol
+    is_feasible::Bool
     vidx::Int
     lb::Int # lb <= var[vidx] <= ub
     ub::Int
@@ -452,6 +453,7 @@ function Base.convert(::Type{B}, obj::BacktrackObj{T2}) where {T1,T2,B<:Backtrac
         obj.parent_idx,
         obj.depth,
         obj.status,
+        obj.is_feasible,
         obj.vidx,
         obj.lb,
         obj.ub,

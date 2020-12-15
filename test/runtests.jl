@@ -25,7 +25,7 @@ function CSCbcJuMPTestOptimizer(; branch_strategy=:Auto)
         CS.Optimizer,
         "logging" => [],
         "lp_optimizer" => cbc_optimizer,
-        "seed" => 1,
+        "seed" => 2,
         "branch_strategy" => branch_strategy
     )
 end
