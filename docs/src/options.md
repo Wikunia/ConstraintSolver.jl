@@ -77,13 +77,24 @@ Other options:
 
 ## `branch_strategy` (`:Auto`)
 
-You can chose a branch strategy for you model with this option. Currently the only one is [Activity Based Search](https://arxiv.org/pdf/1105.6314.pdf)
-It is based on that paper but currently does not fully implement all the details. For further options see `activity_decay`
+You can chose a branch strategy for you model with this option.
 
-Other options:
-- `:ABS` => Activity based search
+**Options:**
+- `:IMPS` => Infeasible and Minimum Possibility Search
+  - This is currently the automatic default
+  - Chooses the next variable based on 
+    - whether the variable is part of the objective function
+    - an infeasibility counter for each variable
+    - the number of open possibilities
+- `:ABS` => [Activity Based Search](https://arxiv.org/pdf/1105.6314.pdf)
+  - It is based on that paper but doesn't implement value selection. For further options see `activity`
 
-## `activity_decay` (0.999)
+
+## `activity` 
+
+The following options can be set with `activity.` i.e `"activity.decay" => 0.9`. These options are only taken into consideration when the `branch_strategy` option is set to `:ABS`
+
+### `decay` (0.999)
 
 The activity of variables decays when they are not used in the current node. In the following it is written as $\gamma$.
 
@@ -96,6 +107,23 @@ $$
 \forall x \in X^{\prime} &: A(x)=A(x)+1
 \end{aligned}
 $$
+
+### `max_probes` (`10`)
+
+When activity based search is selected the search space gets probed by using a random variable selection strategy to initialize the activity of each variable.
+
+The probing can be stopped by either hitting `max_probes` or when one can be confident to a certain degree that the approximated activity is good enough. (see `max_confidence_deviation`)
+
+### `max_confidence_deviation` (`20`)
+
+Probing as explained in `max_probes` can be stopped when each variable has an approximated activity when is in a specified bound. The bound can be changed using this option.
+
+More precisely probing is stopped when this range
+$$
+\left[\tilde{\mu_{A}}(x)-t_{0.05, n-1} \cdot \frac{\tilde{\sigma_{A}}(x)}{\sqrt{n}}, \tilde{\mu_{A}}(x)+t_{0.05, n-1} \cdot \frac{\tilde{\sigma_{A}}(x)}{\sqrt{n}}\right]
+$$
+
+is within $\pm$ `max_confidence_deviation` % of the empirical mean.
 
 ## `branch_split` (`:Auto`)
 

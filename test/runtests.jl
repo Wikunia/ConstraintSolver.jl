@@ -9,8 +9,16 @@ const MOI = MathOptInterface
 const CS = ConstraintSolver
 const MOIU = MOI.Utilities
 
-CSTestOptimizer() = CS.Optimizer(logging = [], seed=1)
-CSJuMPTestOptimizer() = JuMP.optimizer_with_attributes(CS.Optimizer, "logging" => [], "seed"=>4)
+function CSTestOptimizer(; branch_strategy=:Auto)
+    CS.Optimizer(logging = [], seed=1, branch_strategy=branch_strategy)
+end
+function CSJuMPTestOptimizer(; branch_strategy=:Auto)
+    JuMP.optimizer_with_attributes(CS.Optimizer,
+        "logging" => [],
+        "seed"=>4,
+        "branch_strategy"=>branch_strategy
+    )
+end
 cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
 CSCbcJuMPTestOptimizer() = JuMP.optimizer_with_attributes(
     CS.Optimizer,

@@ -106,7 +106,7 @@ function get_next_branch_variable(com::CS.CoM)
     return branch_var
 end
 
-function get_next_branch_variable(com::CS.CoM, ::Val{:OLD})
+function get_next_branch_variable(com::CS.CoM, ::Val{:IMPS})
     lowest_num_pvals = typemax(Int)
     biggest_inf = -1
     best_vidx = -1
@@ -164,11 +164,21 @@ function get_next_branch_variable(com::CS.CoM, ::Val{:Random})
     return BranchVarObj(true, is_solution, vidx)
 end
 
-function still_probing(n, μ, variance)
+"""
+    still_probing(n, μ, variance, max_deviation)
+
+Determine whether probing should be continued.
+This depends on
+- the number of probes (at least 2)
+- the variance and standard deviation
+- whether the 95% confidence interval is in µ ± max_deviation * µ
+- max_deviation should be options.activity.max_confidence_deviation / 100
+"""
+function still_probing(n, μ, variance, max_deviation)
     n < 2 && return true
     for i in 1:length(μ)
         σ = sqrt(variance[i])
-        if tdistcdf(n - 1, 0.05) * (σ / sqrt(n)) > 0.2 * μ[i]
+        if tdistcdf(n - 1, 0.05) * (σ / sqrt(n)) > max_deviation * μ[i]
             range = tdistcdf(n - 1, 0.05) * (σ / sqrt(n))
             return true
         end
@@ -192,6 +202,7 @@ function probe_until(com::CS.CoM)
     saved_branch_strategy = com.branch_strategy
     saved_branch_split = com.branch_split
 
+    # options for probing
     com.options.traverse_strategy = :DFS
     com.traverse_strategy = Val(:DFS)
     com.branch_split = Val(:Random)
@@ -208,10 +219,12 @@ function probe_until(com::CS.CoM)
 
     addBacktrackObj2Backtrack_vec!(com.backtrack_vec, backtrack_obj, com)
     update_log_node!(com, 2)
+    # the option itself is in percentage
+    max_deviation = com.options.activity.max_confidence_deviation / 100
 
     n = 1
-    while n < 10 &&
-              still_probing(n, mean_activities, variance_activities) &&
+    while n <= com.options.activity.max_num_probes &&
+              still_probing(n, mean_activities, variance_activities, max_deviation) &&
               global_feasible
         n += 1
         root_feasible, feasible, activities = probe(com)
@@ -298,7 +311,7 @@ function update_activity!(com)
     c_backtrack_idx = com.c_backtrack_idx
     backtrack_obj = com.backtrack_vec[c_backtrack_idx]
     branch_vidx = backtrack_obj.vidx
-    γ = com.options.activity_decay
+    γ = com.options.activity.decay
     for variable in com.search_space
         variable.idx == branch_vidx && continue
         if nvalues(variable) > 1

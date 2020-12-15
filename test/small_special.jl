@@ -22,7 +22,7 @@
     end
 
     @testset "LessThan constraints JuMP" begin
-        m = Model(CSJuMPTestOptimizer())
+        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         @constraint(m, sum(x) >= 20)
@@ -48,7 +48,7 @@
         @test JuMP.objective_value(m) == 37
 
         # minimize with negative and positive real weights
-        m = Model(CSJuMPTestOptimizer())
+        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         weights = [-0.1, 0.2, -0.3, 0.4, 0.5]

@@ -23,6 +23,11 @@ mutable struct TableSetup
 end
 
 # SolverOptions
+mutable struct ActivityOptions
+    decay::Float64
+    max_num_probes::Int
+    max_confidence_deviation::Float64
+end
 
 mutable struct SolverOptions
     logging::Vector{Symbol}
@@ -43,7 +48,7 @@ mutable struct SolverOptions
     all_optimal_solutions::Bool
     lp_optimizer::Any
     no_prune::Bool
-    activity_decay::Float64
+    activity::ActivityOptions
     simplify::Bool
 end
 
@@ -73,7 +78,7 @@ mutable struct Variable
     is_fixed::Bool
     is_integer::Bool # must be true to work
     # branching strategies
-    activity::Float64 #  + 1 if variable was used in node, * activity_decay if it wasn't
+    activity::Float64 #  + 1 if variable was used in node, * activity.decay if it wasn't
 end
 
 mutable struct NumberConstraintTypes

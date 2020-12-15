@@ -10,7 +10,7 @@ function get_traverse_strategy(com; options = SolverOptions())
 end
 
 function get_auto_branch_strategy(com::CS.CoM)
-    return :ABS # Activity based strategy
+    return :IMPS # Infeasible and Minimum Possiblity Search
 end
 
 function get_branch_strategy(; options = SolverOptions())
@@ -25,7 +25,7 @@ end
 
 const POSSIBLE_OPTIONS = Dict(
     :traverse_strategy => [:Auto, :BFS, :DFS, :DBFS],
-    :branch_strategy => [:Auto, :ABS, :OLD],
+    :branch_strategy => [:Auto, :ABS, :IMPS],
     :branch_split => [:Auto, :Smallest, :Biggest, :InHalf],
 )
 
@@ -57,7 +57,9 @@ function SolverOptions()
     lp_optimizer = nothing
     time_limit = Inf
     no_prune = false
-    activity_decay = 0.999
+    decay = 0.999
+    max_num_probes = 10
+    max_confidence_deviation = 20
     simplify = true
 
     return SolverOptions(
@@ -79,7 +81,11 @@ function SolverOptions()
         all_optimal_solutions,
         lp_optimizer,
         no_prune,
-        activity_decay,
+        ActivityOptions(
+            decay,
+            max_num_probes,
+            max_confidence_deviation
+        ),
         simplify,
     )
 end
