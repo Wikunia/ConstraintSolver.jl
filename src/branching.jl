@@ -223,7 +223,7 @@ function probe_until(com::CS.CoM)
     max_deviation = com.options.activity.max_confidence_deviation / 100
 
     n = 1
-    while n <= com.options.activity.max_num_probes &&
+    while n <= com.options.activity.max_probes &&
               still_probing(n, mean_activities, variance_activities, max_deviation) &&
               global_feasible
         n += 1

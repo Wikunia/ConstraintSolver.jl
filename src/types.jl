@@ -25,7 +25,7 @@ end
 # SolverOptions
 mutable struct ActivityOptions
     decay::Float64
-    max_num_probes::Int
+    max_probes::Int
     max_confidence_deviation::Float64
 end
 

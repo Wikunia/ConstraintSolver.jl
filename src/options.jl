@@ -58,7 +58,7 @@ function SolverOptions()
     time_limit = Inf
     no_prune = false
     decay = 0.999
-    max_num_probes = 10
+    max_probes = 10
     max_confidence_deviation = 20
     simplify = true
 
@@ -83,7 +83,7 @@ function SolverOptions()
         no_prune,
         ActivityOptions(
             decay,
-            max_num_probes,
+            max_probes,
             max_confidence_deviation
         ),
         simplify,
