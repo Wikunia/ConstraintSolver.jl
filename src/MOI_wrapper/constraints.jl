@@ -119,6 +119,20 @@ function add_constraint!(model::Optimizer, constraint::Constraint)
     add_constraint!(model.inner, constraint; set_pvals=false)
 end
 
+"""
+    new_linear_constraint(model::Optimizer, func::SAF{T}, set) where {T<:Real}
+
+Create a new linear constraint and return a `LinearConstraint` with already a correct index
+such that it can be simply added with [`add_constraint!`](@ref)
+"""
+function new_linear_constraint(model::Optimizer, func::SAF{T}, set) where {T<:Real}
+    indices = [v.variable_index.value for v in func.terms]
+
+    lc_idx = length(model.inner.constraints) + 1
+    lc = LinearConstraint(lc_idx, func, set, indices)
+    return lc
+end
+
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},
@@ -153,10 +167,7 @@ function MOI.add_constraint(
         end
     end
 
-    indices = [v.variable_index.value for v in func.terms]
-
-    lc_idx = length(model.inner.constraints) + 1
-    lc = LinearConstraint(lc_idx, func, set, indices)
+    lc = new_linear_constraint(model, func, set)
 
     add_constraint!(model, lc)
     model.inner.info.n_constraint_types.equality += 1
@@ -219,11 +230,7 @@ function MOI.add_constraint(
         return add_variable_less_than_variable_constraint(model, func, set)
     end
 
-    # for normal <= constraints
-    indices = [v.variable_index.value for v in func.terms]
-
-    lc_idx = length(model.inner.constraints) + 1
-    lc = LinearConstraint(lc_idx, func, set, indices)
+    lc = new_linear_constraint(model, func, set)
 
     add_constraint!(model, lc)
     model.inner.info.n_constraint_types.inequality += 1
@@ -341,10 +348,7 @@ function MOI.add_constraint(
         return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(0)
     end
 
-    indices = [v.variable_index.value for v in func.terms]
-
-    lc_idx = length(model.inner.constraints) + 1
-    lc = LinearConstraint(lc_idx, func, set, indices)
+    lc = new_linear_constraint(model, func, set)
 
     add_constraint!(model, lc)
 
