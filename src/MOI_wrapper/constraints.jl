@@ -147,6 +147,37 @@ function create_interals(com::CoM, vars::MOI.VectorOfVariables, set)
     )
 end
 
+"""
+    MOI.add_constraint(
+        model::Optimizer,
+        vars::MOI.VectorOfVariables,
+        set::MOI.AbstractVectorSet,
+    )
+
+Add all kinds of vector of variables constraints like:
+TableConstraint and AllDifferentConstraint
+"""
+function MOI.add_constraint(
+    model::Optimizer,
+    vars::MOI.VectorOfVariables,
+    set::MOI.AbstractVectorSet,
+)
+    com = model.inner
+
+    internals = create_interals(com, vars, set)
+
+    constraint = init_constraint_struct(typeof(set), internals)
+
+    add_constraint!(model, constraint)
+    if set isa AllDifferentSetInternal
+        com.info.n_constraint_types.alldifferent += 1
+    elseif set isa TableSetInternal
+        com.info.n_constraint_types.table += 1
+    end
+
+    return MOI.ConstraintIndex{MOI.VectorOfVariables,typeof(set)}(length(com.constraints))
+end
+
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},
@@ -266,56 +297,6 @@ function MOI.add_constraint(
     com.info.n_constraint_types.equality += 1
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,EqualSetInternal}(length(com.constraints))
-end
-
-function MOI.add_constraint(
-    model::Optimizer,
-    vars::MOI.VectorOfVariables,
-    set::AllDifferentSetInternal,
-)
-    com = model.inner
-
-    internals = create_interals(com, vars, set)
-
-    constraint = init_constraint_struct(AllDifferentSetInternal, internals)
-
-    add_constraint!(model, constraint)
-    com.info.n_constraint_types.alldifferent += 1
-
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,AllDifferentSetInternal}(length(com.constraints))
-end
-
-function MOI.add_constraint(
-    model::Optimizer,
-    vars::MOI.VectorOfVariables,
-    set::TableSetInternal,
-)
-    com = model.inner
-
-    internals = create_interals(com, vars, set)
-
-    constraint = init_constraint_struct(TableSetInternal, internals)
-
-    add_constraint!(model, constraint)
-    com.info.n_constraint_types.table += 1
-
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,TableSetInternal}(length(com.constraints))
-end
-
-function MOI.add_constraint(
-    model::Optimizer,
-    vars::MOI.VectorOfVariables,
-    set::GeqSetInternal,
-)
-    com = model.inner
-
-    internals = create_interals(com, vars, set)
-
-    constraint = init_constraint_struct(GeqSetInternal, internals)
-
-    add_constraint!(model, constraint)
-
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,GeqSetInternal}(length(com.constraints))
 end
 
 function MOI.add_constraint(
@@ -461,8 +442,8 @@ end
 function MOI.add_constraint(
     model::Optimizer,
     vars::MOI.VectorOfVariables,
-    set::IS,
-) where {A,IS<:CS.ReifiedSet{A}}
+    set::RS,
+) where {A,RS<:CS.ReifiedSet{A}}
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
