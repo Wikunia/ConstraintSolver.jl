@@ -131,14 +131,15 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
 end
 
 """
-    add_constraint!(com::CS.CoM, constraint::Constraint)
+    add_constraint!(com::CS.CoM, constraint::Constraint; set_pvals=true)
 
-Add a constraint to the model i.e `add_constraint!(com, a != b)`
+Add a constraint to the model and set pvals if `set_pvals=true` as well.
+Pushes the new constraint to the subscription vector of the involved variables.
 """
-function add_constraint!(com::CS.CoM, constraint::Constraint)
-    @assert constraint.idx != 0
+function add_constraint!(com::CS.CoM, constraint::Constraint; set_pvals=true)
+    @assert constraint.idx == length(com.constraints)+1
     push!(com.constraints, constraint)
-    set_pvals!(com, constraint)
+    set_pvals && set_pvals!(com, constraint)
     for vidx in constraint.indices
         push!(com.subscription[vidx], constraint.idx)
     end

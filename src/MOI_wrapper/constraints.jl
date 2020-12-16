@@ -109,6 +109,16 @@ function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
     return
 end
 
+"""
+    add_constraint!(model::Optimizer, constraint::Constraint)
+
+Calls `add_constraint!` on the `CoM` without setting pvals.
+The variable bounds might not be ready at this stage.
+"""
+function add_constraint!(model::Optimizer, constraint::Constraint)
+    add_constraint!(model.inner, constraint; set_pvals=false)
+end
+
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},
@@ -137,10 +147,7 @@ function MOI.add_constraint(
             )
             constraint = EqualConstraint(internals, ones(Int, 2))
 
-            push!(com.constraints, constraint)
-            for (i, vidx) in enumerate(constraint.indices)
-                push!(com.subscription[vidx], constraint.idx)
-            end
+            add_constraint!(model, constraint)
             com.info.n_constraint_types.equality += 1
             return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(length(model.inner.constraints))
         end
@@ -151,11 +158,7 @@ function MOI.add_constraint(
     lc_idx = length(model.inner.constraints) + 1
     lc = LinearConstraint(lc_idx, func, set, indices)
 
-    push!(model.inner.constraints, lc)
-
-    for (i, vidx) in enumerate(lc.indices)
-        push!(model.inner.subscription[vidx], lc.idx)
-    end
+    add_constraint!(model, lc)
     model.inner.info.n_constraint_types.equality += 1
 
     return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(length(model.inner.constraints))
@@ -192,10 +195,7 @@ function add_variable_less_than_variable_constraint(
     )
     svc = SingleVariableConstraint(internals, lhs, rhs)
 
-    push!(model.inner.constraints, svc)
-
-    push!(model.inner.subscription[svc.lhs], svc.idx)
-    push!(model.inner.subscription[svc.rhs], svc.idx)
+    add_constraint!(model, svc)
     com.info.n_constraint_types.inequality += 1
 
     return MOI.ConstraintIndex{SAF{T},MOI.LessThan{T}}(length(model.inner.constraints))
@@ -225,11 +225,7 @@ function MOI.add_constraint(
     lc_idx = length(model.inner.constraints) + 1
     lc = LinearConstraint(lc_idx, func, set, indices)
 
-    push!(model.inner.constraints, lc)
-
-    for (i, vidx) in enumerate(lc.indices)
-        push!(model.inner.subscription[vidx], lc.idx)
-    end
+    add_constraint!(model, lc)
     model.inner.info.n_constraint_types.inequality += 1
 
     return MOI.ConstraintIndex{SAF{T},MOI.LessThan{T}}(length(model.inner.constraints))
@@ -250,10 +246,7 @@ function MOI.add_constraint(
     )
     constraint = EqualConstraint(internals, ones(Int, length(vars.variables)))
 
-    push!(com.constraints, constraint)
-    for (i, vidx) in enumerate(constraint.indices)
-        push!(com.subscription[vidx], constraint.idx)
-    end
+    add_constraint!(model, constraint)
     com.info.n_constraint_types.equality += 1
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,EqualSetInternal}(length(com.constraints))
@@ -275,10 +268,7 @@ function MOI.add_constraint(
 
     constraint = init_constraint_struct(AllDifferentSetInternal, internals)
 
-    push!(com.constraints, constraint)
-    for (i, vidx) in enumerate(constraint.indices)
-        push!(com.subscription[vidx], constraint.idx)
-    end
+    add_constraint!(model, constraint)
     com.info.n_constraint_types.alldifferent += 1
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,AllDifferentSetInternal}(length(com.constraints))
@@ -300,10 +290,7 @@ function MOI.add_constraint(
 
     constraint = init_constraint_struct(TableSetInternal, internals)
 
-    push!(com.constraints, constraint)
-    for (i, vidx) in enumerate(constraint.indices)
-        push!(com.subscription[vidx], constraint.idx)
-    end
+    add_constraint!(model, constraint)
     com.info.n_constraint_types.table += 1
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,TableSetInternal}(length(com.constraints))
@@ -325,10 +312,7 @@ function MOI.add_constraint(
 
     constraint = init_constraint_struct(GeqSetInternal, internals)
 
-    push!(com.constraints, constraint)
-    for (i, vidx) in enumerate(constraint.indices)
-        push!(com.subscription[vidx], constraint.idx)
-    end
+    add_constraint!(model, constraint)
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,GeqSetInternal}(length(com.constraints))
 end
@@ -362,10 +346,7 @@ function MOI.add_constraint(
     lc_idx = length(model.inner.constraints) + 1
     lc = LinearConstraint(lc_idx, func, set, indices)
 
-    push!(com.constraints, lc)
-    for (i, vidx) in enumerate(lc.indices)
-        push!(com.subscription[vidx], lc.idx)
-    end
+    add_constraint!(model, lc)
 
     return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(length(com.constraints))
 end
@@ -404,12 +385,9 @@ function MOI.add_constraint(
 
     lc = LinearConstraint(0, inner_func, inner_set, inner_indices)
 
-    con = IndicatorConstraint(internals, A, lc, indices[1] in indices[2:end])
+    constraint = IndicatorConstraint(internals, A, lc, indices[1] in indices[2:end])
 
-    push!(com.constraints, con)
-    for (i, vidx) in enumerate(con.indices)
-        push!(com.subscription[vidx], con.idx)
-    end
+    add_constraint!(model, constraint)
 
     return MOI.ConstraintIndex{VAF{T},MOI.IndicatorSet{A,ASS}}(length(com.constraints))
 end
@@ -433,12 +411,9 @@ function MOI.add_constraint(
     )
     inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
 
-    con = IndicatorConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
+    constraint = IndicatorConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
 
-    push!(com.constraints, con)
-    for (i, vidx) in enumerate(con.indices)
-        push!(com.subscription[vidx], con.idx)
-    end
+    add_constraint!(model, constraint)
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.IndicatorSet{A}}(length(com.constraints))
 end
@@ -478,12 +453,9 @@ function MOI.add_constraint(
 
     lc = LinearConstraint(0, inner_func, inner_set, inner_indices)
 
-    con = ReifiedConstraint(internals, A, lc, indices[1] in indices[2:end])
+    constraint = ReifiedConstraint(internals, A, lc, indices[1] in indices[2:end])
 
-    push!(com.constraints, con)
-    for (i, vidx) in enumerate(con.indices)
-        push!(com.subscription[vidx], con.idx)
-    end
+    add_constraint!(model, constraint)
 
     return MOI.ConstraintIndex{VAF{T},CS.ReifiedSet{A}}(length(com.constraints))
 end
@@ -507,16 +479,18 @@ function MOI.add_constraint(
     )
     inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
 
-    con = ReifiedConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
+    constraint = ReifiedConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
 
-    push!(com.constraints, con)
-    for (i, vidx) in enumerate(con.indices)
-        push!(com.subscription[vidx], con.idx)
-    end
+    add_constraint!(model, constraint)
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.ReifiedSet{A}}(length(com.constraints))
 end
 
+"""
+    set_pvals!(model::CS.Optimizer)
+
+Set the possible values for each constraint.
+"""
 function set_pvals!(model::CS.Optimizer)
     com = model.inner
     for constraint in com.constraints
