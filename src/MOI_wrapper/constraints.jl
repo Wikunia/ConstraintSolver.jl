@@ -109,6 +109,13 @@ function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
     return
 end
 
+function check_inbounds(model::Optimizer, vov::MOI.VectorOfVariables)
+    for var in vov.variables
+        check_inbounds(model, var)
+    end
+    return
+end
+
 """
     add_constraint!(model::Optimizer, constraint::Constraint)
 
@@ -162,6 +169,7 @@ function MOI.add_constraint(
     vars::MOI.VectorOfVariables,
     set::MOI.AbstractVectorSet,
 )
+    check_inbounds(model, vars)
     com = model.inner
 
     internals = create_interals(com, vars, set)
@@ -173,6 +181,8 @@ function MOI.add_constraint(
         com.info.n_constraint_types.alldifferent += 1
     elseif set isa TableSetInternal
         com.info.n_constraint_types.table += 1
+    elseif set isa EqualSetInternal
+        com.info.n_constraint_types.equality += 1
     end
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,typeof(set)}(length(com.constraints))
@@ -281,22 +291,6 @@ function MOI.add_constraint(
     model.inner.info.n_constraint_types.inequality += 1
 
     return MOI.ConstraintIndex{SAF{T},MOI.LessThan{T}}(length(model.inner.constraints))
-end
-
-function MOI.add_constraint(
-    model::Optimizer,
-    vars::MOI.VectorOfVariables,
-    set::EqualSetInternal,
-)
-    com = model.inner
-
-    internals = create_interals(com, vars, set)
-    constraint = EqualConstraint(internals, ones(Int, length(vars.variables)))
-
-    add_constraint!(model, constraint)
-    com.info.n_constraint_types.equality += 1
-
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,EqualSetInternal}(length(com.constraints))
 end
 
 function MOI.add_constraint(
