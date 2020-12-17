@@ -1,3 +1,10 @@
+function init_constraint_struct(::Type{EqualSetInternal}, internals)
+    EqualConstraint(
+        internals,
+        ones(Int, length(internals.indices))
+    )
+end
+
 function init_constraint!(
     com::CS.CoM,
     constraint::EqualConstraint,
