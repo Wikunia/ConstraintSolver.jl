@@ -20,7 +20,8 @@ end
 """
     get_new_extrema_and_sum(search_space, vidx, i, terms, full_min, full_max, pre_mins, pre_maxs)
 
-Get the updated full_min, full_max as well as updated pre_mins[i] and pre_maxs[i] after values got removed from search_space[vidx]
+Get the updated full_min, full_max as well as updated pre_mins[i] and pre_maxs[i]
+after values got removed from search_space[vidx]
 Return full_min, full_max, pre_mins[i], pre_maxs[i]
 """
 function get_new_extrema_and_sum(
@@ -71,23 +72,11 @@ function prune_constraint!(
     rhs = set.value - fct.constant
 
     # compute max and min values for each index
+    recompute_lc_extrema!(com, constraint, fct)
     maxs = constraint.maxs
     mins = constraint.mins
     pre_maxs = constraint.pre_maxs
     pre_mins = constraint.pre_mins
-    for (i, vidx) in enumerate(indices)
-        if fct.terms[i].coefficient >= 0
-            max_val = search_space[vidx].max * fct.terms[i].coefficient
-            min_val = search_space[vidx].min * fct.terms[i].coefficient
-        else
-            min_val = search_space[vidx].max * fct.terms[i].coefficient
-            max_val = search_space[vidx].min * fct.terms[i].coefficient
-        end
-        maxs[i] = max_val
-        mins[i] = min_val
-        pre_maxs[i] = max_val
-        pre_mins[i] = min_val
-    end
 
     # for each index compute the maximum and minimum value possible
     # to fulfill the constraint

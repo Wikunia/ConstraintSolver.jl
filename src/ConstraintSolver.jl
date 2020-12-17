@@ -52,6 +52,8 @@ include("logs.jl")
 include("Variable.jl")
 include("objective.jl")
 
+include("constraints/linear_constraints/util.jl")
+
 include("constraints/all_different.jl")
 include("constraints/equal_to.jl")
 include("constraints/less_than.jl")
