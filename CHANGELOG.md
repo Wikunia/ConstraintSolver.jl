@@ -1,5 +1,16 @@
 # ConstrainSolver.jl - Changelog
 
+## v0.6.0 (15th of December 2020) 
+- **Dropped support for Julia v1.0 and v1.1**
+- Implementation of Activity Based Search
+  - `"branch_strategy" => :ABS`
+- Throw error if there is a dimension mismatch in a `TableSet`
+- Bugfix in `simplify!` check that one inner index isn't used more than once
+
+## v0.5.3 (12th of December 2020)
+- Bugfix for optimization with reified and indicator constraints
+  - If inner constraint does not define bound variables
+
 ## v0.5.2 (11th of December 2020)
 - Bugfix for `x == x` constraints
 - Bugfix for directly infeasible constraint inside reified and indicator 
@@ -66,7 +77,7 @@
   - Call `call_finished_pruning!(com)` after second `prune!` before backtracking
 
 ## v0.1.4 (6th of May 2020)
-- Added `is_solved_constraint` functions to check whether problem gets actually solved
+- Added `is_constraint_solved` functions to check whether problem gets actually solved
 - **Bugfixes:**
   - Correct incremental update in table constraint
   - Fixed `restore_pruning_constraint!` in table

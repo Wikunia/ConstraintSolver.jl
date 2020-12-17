@@ -99,6 +99,7 @@ end
             CS.Optimizer,
             "keep_logs" => true,
             "logging" => [],
+            "seed" => 1,
         ))
 
         @variable(m, -9 <= com_grid[1:9, 1:9] <= -1, Int)
@@ -123,6 +124,9 @@ end
         end
         com = JuMP.backend(m).optimizer.model.inner
         @test general_tree_test(com)
+
+        logs = CS.get_logs(com)
+        @test CS.sanity_check_log(logs[:tree])
 
         return com
     end

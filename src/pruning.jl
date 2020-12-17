@@ -15,11 +15,9 @@ function get_next_prune_constraint(com::CS.CoM, constraint_idxs_vec)
     best_ci = 0
     best_open = typemax(Int)
     for ci in 1:length(constraint_idxs_vec)
-        if constraint_idxs_vec[ci] <= best_open
-            if constraint_idxs_vec[ci] < best_open
-                best_ci = ci
-                best_open = constraint_idxs_vec[ci]
-            end
+        if constraint_idxs_vec[ci] < best_open
+            best_ci = ci
+            best_open = constraint_idxs_vec[ci]
         end
     end
     return best_open, best_ci

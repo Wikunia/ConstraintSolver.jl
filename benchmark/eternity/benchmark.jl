@@ -35,6 +35,7 @@ function solve_eternity(
     optimize = false,
     indicator = false,
     reified = false,
+    branch_strategy = :Auto,
 )
     puzzle = read_puzzle(fname)
     rotations = get_rotations(puzzle)
@@ -47,6 +48,8 @@ function solve_eternity(
         CS.Optimizer,
         "logging" => [],
         "all_solutions" => all_solutions,
+        "seed" => 1,
+        "branch_strategy" => branch_strategy,
     ))
     if optimize
         cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
@@ -55,6 +58,7 @@ function solve_eternity(
             "logging" => [],
             "all_solutions" => all_solutions,
             "lp_optimizer" => cbc_optimizer,
+            "seed" => 1,
         ))
     end
 

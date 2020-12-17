@@ -1,21 +1,5 @@
-mutable struct SolverOptions
-    logging::Vector{Symbol}
-    table::TableSetup
-    time_limit::Float64 # time limit in backtracking in seconds
-    traverse_strategy::Symbol
-    branch_split::Symbol # defines splitting in the middle, or takes smallest, biggest value
-    backtrack::Bool
-    max_bt_steps::Int
-    backtrack_sorting::Bool
-    keep_logs::Bool
-    rtol::Float64
-    atol::Float64
-    solution_type::Type
-    all_solutions::Bool
-    all_optimal_solutions::Bool
-    lp_optimizer::Any
-    no_prune::Bool
-    simplify::Bool
+function get_auto_traverse_strategy(com::CS.CoM)
+    return com.sense == MOI.FEASIBILITY_SENSE ? :DFS : :BFS
 end
 
 function get_traverse_strategy(com; options = SolverOptions())
@@ -25,6 +9,15 @@ function get_traverse_strategy(com; options = SolverOptions())
     return Val(options.traverse_strategy)
 end
 
+function get_auto_branch_strategy(com::CS.CoM)
+    return :IMPS # Infeasible and Minimum Possiblity Search
+end
+
+function get_branch_strategy(; options = SolverOptions())
+    strategy = options.branch_strategy
+    return Val(strategy)
+end
+
 function get_branch_split(; options = SolverOptions())
     strategy = options.branch_split
     return Val(strategy)
@@ -32,6 +25,7 @@ end
 
 const POSSIBLE_OPTIONS = Dict(
     :traverse_strategy => [:Auto, :BFS, :DFS, :DBFS],
+    :branch_strategy => [:Auto, :ABS, :IMPS],
     :branch_split => [:Auto, :Smallest, :Biggest, :InHalf],
 )
 
@@ -47,7 +41,9 @@ function SolverOptions()
         ],
         Dict(:min_diff_duration => 5.0),
     )
+    seed = 1
     traverse_strategy = :Auto
+    branch_strategy = :Auto
     branch_split = :Auto
     backtrack = true
     max_bt_steps = typemax(Int)
@@ -61,13 +57,18 @@ function SolverOptions()
     lp_optimizer = nothing
     time_limit = Inf
     no_prune = false
+    decay = 0.999
+    max_probes = 10
+    max_confidence_deviation = 20
     simplify = true
 
     return SolverOptions(
         logging,
         table,
         time_limit,
+        seed,
         traverse_strategy,
+        branch_strategy,
         branch_split,
         backtrack,
         max_bt_steps,
@@ -80,6 +81,11 @@ function SolverOptions()
         all_optimal_solutions,
         lp_optimizer,
         no_prune,
+        ActivityOptions(
+            decay,
+            max_probes,
+            max_confidence_deviation
+        ),
         simplify,
     )
 end

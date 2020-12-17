@@ -1,3 +1,10 @@
+function init_constraint_struct(::Type{EqualSetInternal}, internals)
+    EqualConstraint(
+        internals,
+        ones(Int, length(internals.indices))
+    )
+end
+
 function init_constraint!(
     com::CS.CoM,
     constraint::EqualConstraint,
@@ -165,7 +172,9 @@ function still_feasible(
 )
     variables = com.search_space
     for cvidx in constraint.indices
-        cvidx == vidx && continue
+        if cvidx == vidx
+            continue
+        end
         v = variables[cvidx]
         !has(v, value) && return false
     end

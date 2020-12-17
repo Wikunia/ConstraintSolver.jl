@@ -22,7 +22,7 @@
     end
 
     @testset "LessThan constraints JuMP" begin
-        m = Model(CSJuMPTestOptimizer())
+        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         @constraint(m, sum(x) >= 20)
@@ -48,7 +48,7 @@
         @test JuMP.objective_value(m) == 37
 
         # minimize with negative and positive real weights
-        m = Model(CSJuMPTestOptimizer())
+        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         weights = [-0.1, 0.2, -0.3, 0.4, 0.5]
@@ -303,6 +303,9 @@
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "all_solutions" => true,
+            "branch_strategy" => :ABS,
+            "activity.decay" => 0.999,
+            "activity.max_probes" => 20,
             "logging" => [],
         ))
         @variable(m, x[1:3], CS.Integers([i^2 for i in 1:50]))
@@ -426,7 +429,7 @@
     end
 
     @testset "x[1] == x[1] - 1 in reified" begin
-        model = Model(CSJuMPTestOptimizer())
+        model = Model(CSCbcJuMPTestOptimizer())
         n = 4
         @variable(model, 1 <= x[1:n] <= n, Int)
         @variable(model, b[1:n], Bin)
@@ -442,7 +445,7 @@
     end
 
     @testset "x[1] == x[1] - 1 in indicator" begin
-        model = Model(CSJuMPTestOptimizer())
+        model = Model(CSCbcJuMPTestOptimizer())
         n = 4
         @variable(model, 1 <= x[1:n] <= n, Int)
         @variable(model, b[1:n], Bin)
@@ -458,8 +461,8 @@
     end
 
     @testset "Infeasible all different in indicator" begin
-        model = Model(CSJuMPTestOptimizer())
-        n = 4
+        model = Model(CSCbcJuMPTestOptimizer(; branch_strategy = :ABS))
+        n = 2
         @variable(model, 1 <= x[1:n] <= n-1, Int)
         @variable(model, b, Bin)
         @constraint(model, b => {x in CS.AllDifferentSet()})
@@ -485,9 +488,20 @@
         @test JuMP.value(b) ≈ 0
     end
 
-    @testset "Infeasible table in indicator" begin
+    @testset "Table dim not matching" begin
         model = Model(CSJuMPTestOptimizer())
         n = 4
+        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, b, Bin)
+        @test_throws ArgumentError @constraint(model, b => {x in CS.TableSet([
+            10 20
+            11 5
+        ])})
+    end
+
+    @testset "Infeasible table in indicator" begin
+        model = Model(CSJuMPTestOptimizer())
+        n = 2
         @variable(model, 1 <= x[1:n] <= n-1, Int)
         @variable(model, b, Bin)
         @constraint(model, b => {x in CS.TableSet([
@@ -502,9 +516,10 @@
         @test JuMP.value(b) ≈ 0
     end
 
+
     @testset "Infeasible table in reified" begin
         model = Model(CSJuMPTestOptimizer())
-        n = 4
+        n = 2
         @variable(model, 1 <= x[1:n] <= n-1, Int)
         @variable(model, b, Bin)
         @constraint(model, b := {x in CS.TableSet([
@@ -517,5 +532,46 @@
         @test status == MOI.OPTIMAL
         @test JuMP.objective_value(model) ≈ 0
         @test JuMP.value(b) ≈ 0
+    end
+
+    @testset "Magic Square 5x5" begin
+        n = 5
+        model = Model(optimizer_with_attributes(CS.Optimizer,
+                "traverse_strategy"=>:BFS,
+                "logging" => [],
+                "branch_split"=>:InHalf,
+                "time_limit"=>3,
+            )
+        )
+
+
+        # The total for each row, column, and the two main diaginals
+        s = round(Int,n*(n^2 + 1) / 2)
+        @variable(model, 1 <= x[1:n,1:n] <= n^2, Int)
+        @constraint(model, x[:] in CS.AllDifferentSet())
+
+        for i in 1:n
+            # Rows
+            @constraint(model, sum(x[i,:]) == s)
+
+            # Columns
+            @constraint(model, sum(x[:,i]) == s)
+        end
+
+        # diagonals
+        @constraint(model, sum([x[i,i] for i in 1:n]) == s)
+        @constraint(model, s == sum([x[i,n-i+1] for i in 1:n]))
+
+        optimize!(model)
+        status = JuMP.termination_status(model)
+        @test status == MOI.OPTIMAL
+        sol = convert.(Int,JuMP.value.(x))
+        for i=1:n
+            @test sum(sol[i,:]) == 65
+            @test sum(sol[:,i]) == 65
+        end
+        @test sum([sol[i,i] for i in 1:n]) == 65
+        @test sum([sol[i,n-i+1] for i in 1:n]) == 65
+        @test allunique(sol)
     end
 end

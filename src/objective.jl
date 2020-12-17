@@ -20,49 +20,6 @@ function update_best_bound!(com::CS.CoM)
 end
 
 """
-    update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraints)
-
-Check all constraints which change the objective and update the best bound of the backtrack_obj accordingly.
-Pruning should not be continued if the new best bound has changed.
-Return feasible and if pruning should be continued.
-"""
-function update_best_bound!(backtrack_obj::BacktrackObj, com::CS.CoM, constraints)
-    further_pruning = true
-    feasible = true
-    for constraint in constraints
-        relevant = any(com.var_in_obj[i] for i in constraint.indices)
-        if relevant
-            feasible = prune_constraint!(
-                com,
-                constraint,
-                constraint.fct,
-                constraint.set;
-                logs = false,
-            )
-            if !feasible
-                return false, false
-            end
-        end
-    end
-
-    # check best_bound again
-    # if best bound unchanged => continue pruning
-    # otherwise try another path but don't close the current
-    # -> means open new paths from here even if not pruned til the end
-    new_bb = get_best_bound(com, backtrack_obj)
-    if backtrack_obj.best_bound != new_bb
-        further_pruning = false
-    end
-    if backtrack_obj.best_bound == com.best_bound
-        backtrack_obj.best_bound = new_bb
-        update_best_bound!(com)
-    else
-        backtrack_obj.best_bound = new_bb
-    end
-    return true, further_pruning
-end
-
-"""
     get_best_bound(com::CS.CoM, backtrack_obj::CS.BacktrackObj, obj_fct::SingleVariableObjective, vidx::Int, lb::Int, ub::Int)
 
 Compute the best bound if we have a `SingleVariableObjective` and limit `vidx` using

@@ -19,7 +19,7 @@
     @testset "Basic >=" begin
         m = Model(CSJuMPTestOptimizer())
         @variable(m, x, CS.Integers([1, 2, 4]))
-        @variable(m, y, CS.Integers([3, 4]))
+        @variable(m, y, CS.Integers([2, 3]))
         @variable(m, b, Bin)
         @constraint(m, b := {x + y >= 6.1})
         @objective(m, Max, b)
@@ -34,9 +34,9 @@
     end
 
     @testset "Basic >=" begin
-        m = Model(CSJuMPTestOptimizer())
+        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
         @variable(m, x, CS.Integers([1, 2, 4]))
-        @variable(m, y, CS.Integers([3, 4]))
+        @variable(m, y, CS.Integers([2, 3]))
         @variable(m, b, Bin)
         # missing { }
         @test_macro_throws ErrorException begin
@@ -178,7 +178,6 @@
         @test JuMP.value(y) ≈ 2
         com = JuMP.backend(m).optimizer.model.inner
         @test is_solved(com)
-        @test general_tree_test(com)
     end
 
     @testset "TableConstraint with optimization" begin
@@ -187,6 +186,7 @@
             CS.Optimizer,
             "logging" => [],
             "lp_optimizer" => cbc_optimizer,
+            "keep_logs" => true,
         ))
         @variable(m, 1 <= a <= 100, Int)
         @variable(m, 1 <= b <= 100, Int)
@@ -211,6 +211,8 @@
         @test JuMP.value(reified) ≈ 1
         com = JuMP.backend(m).optimizer.model.inner
         @test is_solved(com)
+        logs = CS.get_logs(com)
+        @test CS.sanity_check_log(logs[:tree])
     end
 
     @testset "all different != 0 (Issue 202)" begin

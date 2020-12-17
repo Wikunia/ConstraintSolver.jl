@@ -29,6 +29,7 @@ function create_log_node(com)
         ub,
         Dict{Int,Vector{Int}}(), # var_states
         Dict{Int,Vector{Tuple{Symbol,Int,Int,Int}}}(), # var_changes
+        Dict{Int,Float64}(), # activity
         Vector{TreeLogNode{typeof(best_bound)}}(), # children
     )
 
@@ -58,7 +59,7 @@ function update_log_node!(com, back_idx; feasible = nothing)
     tree_log_node.lb = com.backtrack_vec[back_idx].lb
     tree_log_node.ub = com.backtrack_vec[back_idx].ub
     tree_log_node.best_bound = com.backtrack_vec[back_idx].best_bound
-    tree_log_node.step_nr = com.c_step_nr
+    tree_log_node.step_nr = com.backtrack_vec[back_idx].step_nr
 
 
     variables = com.search_space
@@ -71,6 +72,7 @@ function update_log_node!(com, back_idx; feasible = nothing)
             if length(var.changes[back_idx]) > 0
                 tree_log_node.var_changes[var.idx] = var.changes[back_idx]
             end
+            tree_log_node.activity[var.idx] = var.activity
         end
     end
 end

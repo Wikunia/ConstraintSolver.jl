@@ -70,7 +70,7 @@ grid = convert.(Int, JuMP.value.(x))
 ```
 
 ## Supported variables and constraints
-You can see a list of currently supported constraints [in the docs](https://wikunia.github.io/ConstraintSolver.jl/dev/supported.html).
+You can see a list of currently supported constraints [in the docs](https://wikunia.github.io/ConstraintSolver.jl/stable/supported/).
 This constraint solver works only with bounded discrete variables.
 
 
