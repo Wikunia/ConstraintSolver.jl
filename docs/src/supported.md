@@ -31,6 +31,23 @@ Additionally you can specify a set of allowed integers:
 @variable(m, x, CS.Integers([1,3,5,7]))
 ```
 
+### Anonymous variables
+
+Besides the named way of defining variables it's also possible to have anonymous variables as provided by [JuMP.jl](https://github.com/jump-dev/JuMP.jl). 
+
+This can be useful when one needs to create temporary variables for reformulations of the problem. The values of these variables can't be easily accessed later on but they avoid the problem of needing a new name for all temporary variables.
+
+The general usage is described in the [JuMP docs](https://jump.dev/JuMP.jl/stable/variables/#Anonymous-JuMP-variables-1) but the following gives an idea on how to use them for the most common use-cases in combination with ConstraintSolver.jl .
+
+```julia
+# create an anonymous array of 5 integer variables with the domain [0,2,3,4,5]
+x = @variable(model, [1:5], variable_type=CS.Integers([0,2,3,4,5]))
+# create a single anonymous binary variable 
+b = @variable(model, binary=true)
+# create a single anonymous integer variable **Important:** Needs bounds
+y = @variable(model, integer=true, lower_bound=0, upper_bound=10)
+```
+
 ### Missing
 - Interval variables for scheduling
 
