@@ -2,6 +2,8 @@
 JuMP constraints
 """
 sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
+sense_to_set(::Function, ::Val{:<}) = MOI.LessThan(-0.0001)
+sense_to_set(::Function, ::Val{:>}) = MOI.GreaterThan(0.0001)
 
 """
     Support for indicator constraints with a set constraint as the right hand side
