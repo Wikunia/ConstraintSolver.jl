@@ -35,7 +35,16 @@ Additionally you can specify a set of allowed integers:
 
 Besides the named way of defining variables it's also possible to have anonymous variables as provided by [JuMP.jl](https://github.com/jump-dev/JuMP.jl). 
 
-This can be useful when one needs to create temporary variables for reformulations of the problem. The values of these variables can't be easily accessed later on but they avoid the problem of needing a new name for all temporary variables.
+This can be useful when one needs to create temporary variables for reformulations of the problem. The values of these variables can be accessed by the name as well as named variables under the condition that the given name is not overwritten and available in the current scope. Anonymous variables are mostly needed to avoid the problem of needing a new name for each temporary variables.
+
+An example:
+```julia
+function does_equal(model, a, b)
+    b = @variable(model, binary=true)
+    @constraint(model, b := { a == b })
+    return b
+end
+```
 
 The general usage is described in the [JuMP docs](https://jump.dev/JuMP.jl/stable/variables/#Anonymous-JuMP-variables-1) but the following gives an idea on how to use them for the most common use-cases in combination with ConstraintSolver.jl .
 
