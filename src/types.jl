@@ -155,6 +155,18 @@ struct NotEqualTo{T} <: MOI.AbstractScalarSet
 end
 Base.copy(N::NotEqualTo) = NotEqualTo(N.value)
 
+struct LessThan{T} <: MOI.AbstractScalarSet
+    upper::T
+    strict::Bool
+end
+Base.copy(LT::LessThan) = LessThan(LT.upper, LT.strict)
+
+struct GreaterThan{T} <: MOI.AbstractScalarSet
+    lower::T
+    strict::Bool
+end
+Base.copy(GT::GreaterThan) = GreaterThan(GT.lower,GT.strict)
+
 #====================================================================================
 ====================== TYPES FOR TRAVERSING ========================================
 ====================================================================================#

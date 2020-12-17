@@ -33,6 +33,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 end
 
 include("variables.jl")
+include("bridges.jl")
 include("constraints.jl")
 include("objective.jl")
 include("results.jl")

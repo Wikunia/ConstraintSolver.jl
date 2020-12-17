@@ -2,8 +2,12 @@
 JuMP constraints
 """
 sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
-sense_to_set(::Function, ::Val{:<}) = MOI.LessThan(-0.0001)
-sense_to_set(::Function, ::Val{:>}) = MOI.GreaterThan(0.0001)
+sense_to_set(::Function, ::Val{:<=}) = CS.LessThan(0.0, false)
+sense_to_set(::Function, ::Val{:>=}) = CS.GreaterThan(0.0, false)
+
+MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
+MOIU.shift_constant(set::LessThan, value) = LessThan(set.upper + value, set.strict)
+MOIU.shift_constant(set::GreaterThan, value) = GreaterThan(set.lower + value, set.strict)
 
 """
     Support for indicator constraints with a set constraint as the right hand side
@@ -27,9 +31,7 @@ end
 
 include("reified.jl")
 
-### !=
 
-MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 
 """
 MOI constraints
@@ -47,7 +49,7 @@ MOI.supports_constraint(
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{SAF{T}},
-    ::Type{MOI.LessThan{T}},
+    ::Type{LessThan{T}},
 ) where {T<:Real} = true
 
 MOI.supports_constraint(
@@ -235,7 +237,7 @@ end
 function add_variable_less_than_variable_constraint(
     model::Optimizer,
     func::SAF{T},
-    set::MOI.LessThan{T},
+    set::LessThan{T},
 ) where {T<:Real}
     reverse_order = false
     if func.terms[1].coefficient != 1.0 || func.terms[2].coefficient != -1.0
@@ -266,14 +268,14 @@ function add_variable_less_than_variable_constraint(
     add_constraint!(model, svc)
     com.info.n_constraint_types.inequality += 1
 
-    return MOI.ConstraintIndex{SAF{T},MOI.LessThan{T}}(length(model.inner.constraints))
+    return MOI.ConstraintIndex{SAF{T},LessThan{T}}(length(model.inner.constraints))
 end
 
 
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},
-    set::MOI.LessThan{T},
+    set::LessThan{T},
 ) where {T<:Real}
     check_inbounds(model, func)
 
@@ -292,7 +294,7 @@ function MOI.add_constraint(
     add_constraint!(model, lc)
     model.inner.info.n_constraint_types.inequality += 1
 
-    return MOI.ConstraintIndex{SAF{T},MOI.LessThan{T}}(length(model.inner.constraints))
+    return MOI.ConstraintIndex{SAF{T},LessThan{T}}(length(model.inner.constraints))
 end
 
 function MOI.add_constraint(
@@ -347,7 +349,7 @@ function MOI.add_constraint(
             MOI.ScalarAffineTerm(-v.scalar_term.coefficient, v.scalar_term.variable_index) for v in func.terms if v.output_index == 2
         ]
         inner_constant = -inner_constant
-        inner_set = MOI.LessThan{T}(-set.set.lower)
+        inner_set = LessThan{T}(-set.set.lower, false)
     end
     inner_func = MOI.ScalarAffineFunction{T}(inner_terms, inner_constant)
 
@@ -415,7 +417,7 @@ function MOI.add_constraint(
             MOI.ScalarAffineTerm(-v.scalar_term.coefficient, v.scalar_term.variable_index) for v in func.terms if v.output_index == 2
         ]
         inner_constant = -inner_constant
-        inner_set = MOI.LessThan{T}(-set.set.lower)
+        inner_set = LessThan{T}(-set.set.lower, false)
     end
     inner_func = MOI.ScalarAffineFunction{T}(inner_terms, inner_constant)
 

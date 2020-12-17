@@ -1,5 +1,5 @@
 """
-    init_constraint!(com::CS.CoM,   constraint::CS.LinearConstraint,fct::SAF{T}, set::MOI.LessThan{T};
+    init_constraint!(com::CS.CoM,   constraint::CS.LinearConstraint,fct::SAF{T}, set::CS.LessThan{T};
                      active = true)
 
 Initialize the LinearConstraint by checking whether it might be an unfillable constraint
@@ -9,7 +9,7 @@ function init_constraint!(
     com::CS.CoM,
     constraint::CS.LinearConstraint,
     fct::SAF{T},
-    set::MOI.LessThan{T};
+    set::CS.LessThan{T};
     active = true,
 ) where {T<:Real}
     length(constraint.indices) > 0 && return true
@@ -18,7 +18,7 @@ function init_constraint!(
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.LessThan{T}; logs = true) where T <: Real
+    prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::CS.LessThan{T}; logs = true) where T <: Real
 
 Reduce the number of possibilities given the less than `LinearConstraint`.
 Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
@@ -27,7 +27,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::MOI.LessThan{T};
+    set::CS.LessThan{T};
     logs = true,
 ) where {T<:Real}
     indices = constraint.indices
@@ -89,7 +89,7 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.LessThan{T}, index::Int, val::Int) where T <: Real
+    still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set::CS.LessThan{T}, index::Int, val::Int) where T <: Real
 
 Return whether setting `search_space[index]` to `val` is still feasible given `constraint`.
 """
@@ -97,7 +97,7 @@ function still_feasible(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::MOI.LessThan{T},
+    set::CS.LessThan{T},
     index::Int,
     val::Int,
 ) where {T<:Real}
@@ -125,7 +125,7 @@ end
 function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::MOI.LessThan{T},
+    set::CS.LessThan{T},
     values::Vector{Int},
 ) where {T<:Real}
 
@@ -139,7 +139,7 @@ end
         com::CoM,
         constraint::LinearConstraint,
         fct::SAF{T},
-        set::MOI.LessThan{T}
+        set::CS.LessThan{T}
     ) where {T<:Real}
 
 Checks if the constraint is violated as it is currently set. This can happen inside an
@@ -149,7 +149,7 @@ function is_constraint_violated(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::MOI.LessThan{T}
+    set::CS.LessThan{T}
 ) where {T<:Real}
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(constraint, fct, set, [CS.value(var) for var in com.search_space[constraint.indices]])
