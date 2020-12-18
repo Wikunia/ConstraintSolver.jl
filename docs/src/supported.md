@@ -37,13 +37,21 @@ Besides the named way of defining variables it's also possible to have anonymous
 
 This can be useful when one needs to create temporary variables for reformulations of the problem. The values of these variables can be accessed by the name as well as named variables under the condition that the given name is not overwritten and available in the current scope. Anonymous variables are mostly needed to avoid the problem of needing a new name for each temporary variables.
 
-An example:
+**An example:**
 ```julia
-function does_equal(model, a, b)
+function does_equal(x, y)
+    model = owner_model(x)
     b = @variable(model, binary=true)
-    @constraint(model, b := { a == b })
+    @constraint(model, b := { x == y })
     return b
 end
+model = Model(optimizer_with_attributes(CS.Optimizer))
+@variable(model, x[1:4], CS.Integers([0,2,3,4,5]))
+first_equal = does_equal(x[1], x[2])
+@objective(model, Max, sum(x)+5*first_equal)
+optimize!(model)
+@show JuMP.value.(x)
+@show JuMP.value(first_equal)
 ```
 
 The general usage is described in the [JuMP docs](https://jump.dev/JuMP.jl/stable/variables/#Anonymous-JuMP-variables-1) but the following gives an idea on how to use them for the most common use-cases in combination with ConstraintSolver.jl .
