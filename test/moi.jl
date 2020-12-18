@@ -29,7 +29,7 @@
         @test MOI.supports_constraint(
             optimizer,
             MOI.ScalarAffineFunction{Float64},
-            MOI.LessThan{Float64},
+            CS.LessThan{Float64},
         )
         @test MOI.supports_constraint(
             optimizer,

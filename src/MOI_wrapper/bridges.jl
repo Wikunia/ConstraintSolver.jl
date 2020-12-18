@@ -1,6 +1,6 @@
 """
     GreaterToLessBridge{T, F<:MOI.AbstractScalarFunction, G<:MOI.AbstractScalarFunction} <:
-        FlipSignBridge{T, MOI.GreaterThan{T}, MOI.LessThan{T}, F, G}
+        FlipSignBridge{T, CS.GreaterThan{T}, CS.LessThan{T}, F, G}
 Transforms a `G`-in-`GreaterThan{T}` constraint into an `F`-in-`LessThan{T}`
 constraint.
 """
