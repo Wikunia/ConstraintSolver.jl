@@ -3,7 +3,7 @@
 =#
 
 """
-prune_constraint!(com::CS.CoM, constraint::CS.SingleVariableConstraint, fct::MOI.ScalarAffineFunction{T}, set::MOI.LessThan{T}; logs = true) where T <: Real
+prune_constraint!(com::CS.CoM, constraint::CS.SingleVariableConstraint, fct::MOI.ScalarAffineFunction{T}, set::LessThan{T}; logs = true) where T <: Real
 
 Support for constraints of the form a <= b where a and b are single variables.
 This function removes values which aren't possible based on this constraint.
@@ -12,7 +12,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
-    set::MOI.LessThan{T};
+    set::LessThan{T};
     logs = true,
 ) where {T<:Real}
     lhs = constraint.lhs
@@ -32,7 +32,7 @@ function still_feasible(
     com::CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
-    set::MOI.LessThan{T},
+    set::LessThan{T},
     vidx::Int,
     val::Int,
 ) where {T<:Real}
@@ -57,7 +57,7 @@ end
 function is_constraint_solved(
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
-    set::MOI.LessThan{T},
+    set::LessThan{T},
     values::Vector{Int},
 ) where {T<:Real}
     return values[1] <= values[2]
@@ -79,7 +79,7 @@ function is_constraint_violated(
     com::CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
-    set::MOI.LessThan{T},
+    set::LessThan{T},
 ) where {T<:Real}
     return com.search_space[constraint.indices[1]].min > com.search_space[constraint.indices[2]].max
 end
