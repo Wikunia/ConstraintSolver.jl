@@ -4,6 +4,8 @@ JuMP constraints
 sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
 sense_to_set(::Function, ::Val{:<=}) = CS.LessThan(0.0, false)
 sense_to_set(::Function, ::Val{:>=}) = CS.GreaterThan(0.0, false)
+sense_to_set(::Function, ::Val{:<}) = CS.LessThan(0.0, true)
+sense_to_set(::Function, ::Val{:>}) = CS.GreaterThan(0.0, true)
 
 MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 MOIU.shift_constant(set::LessThan, value) = LessThan(set.upper + value, set.strict)
