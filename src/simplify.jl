@@ -62,7 +62,7 @@ function simplify_svc_less_than(com)
     rhs_cons = Dict{Int,Vector{Int}}()
     for constraint_idx in 1:length(com.constraints)
         constraint = com.constraints[constraint_idx]
-        if isa(constraint, SingleVariableConstraint) && isa(constraint.set, CS.LessThan)
+        if isa(constraint, SingleVariableConstraint) && isa(constraint.set, Union{MOI.LessThan, CS.LessThan})
             if haskey(lhs_vars, constraint.lhs)
                 push!(lhs_vars[constraint.lhs], constraint.rhs)
                 push!(lhs_cons[constraint.lhs], constraint.idx)

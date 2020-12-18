@@ -70,7 +70,7 @@ function LinearConstraint(
     rhs = -fct.constant
     if isa(set, Union{MOI.EqualTo,CS.NotEqualTo})
         rhs += set.value
-    elseif isa(set, CS.LessThan)
+    elseif isa(set, Union{MOI.LessThan, CS.LessThan})
         rhs += set.upper
     end
     coeffs = [t.coefficient for t in fct.terms]
