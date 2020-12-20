@@ -26,7 +26,7 @@ function simplify!(com)
         elseif isa(constraint.fct, SAF) && isa(constraint.set, CS.NotEqualTo)
             b_not_equal_to = true
         elseif isa(constraint, SingleVariableConstraint) &&
-               isa(constraint.set, LessThan)
+               isa(constraint.set, Union{MOI.LessThan, CS.LessThan})
             b_svc_less_than = true
         end
     end
