@@ -50,12 +50,6 @@ MOI.supports_constraint(
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{SAF{T}},
-    ::Type{LessThan{T}},
-) where {T<:Real} = true
-
-MOI.supports_constraint(
-    ::Optimizer,
-    ::Type{SAF{T}},
     ::Type{MOI.LessThan{T}},
 ) where {T<:Real} = true
 
@@ -244,7 +238,7 @@ end
 function add_variable_less_than_variable_constraint(
     model::Optimizer,
     func::SAF{T},
-    set::Union{MOI.LessThan{T}, CS.LessThan{T}}
+    set::MOI.LessThan{T}
 ) where {T<:Real}
     reverse_order = false
     if func.terms[1].coefficient != 1.0 || func.terms[2].coefficient != -1.0
@@ -278,11 +272,10 @@ function add_variable_less_than_variable_constraint(
     return MOI.ConstraintIndex{SAF{T},typeof(set)}(length(model.inner.constraints))
 end
 
-
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},
-    set::Union{MOI.LessThan{T}, CS.LessThan{T}}
+    set::MOI.LessThan{T}
 ) where {T<:Real}
     check_inbounds(model, func)
 
@@ -356,7 +349,7 @@ function MOI.add_constraint(
             MOI.ScalarAffineTerm(-v.scalar_term.coefficient, v.scalar_term.variable_index) for v in func.terms if v.output_index == 2
         ]
         inner_constant = -inner_constant
-        inner_set = LessThan{T}(-set.set.lower, false)
+        inner_set = MOI.LessThan{T}(-set.set.lower)
     end
     inner_func = MOI.ScalarAffineFunction{T}(inner_terms, inner_constant)
 
@@ -424,7 +417,7 @@ function MOI.add_constraint(
             MOI.ScalarAffineTerm(-v.scalar_term.coefficient, v.scalar_term.variable_index) for v in func.terms if v.output_index == 2
         ]
         inner_constant = -inner_constant
-        inner_set = LessThan{T}(-set.set.lower, false)
+        inner_set = MOI.LessThan{T}(-set.set.lower)
     end
     inner_func = MOI.ScalarAffineFunction{T}(inner_terms, inner_constant)
 

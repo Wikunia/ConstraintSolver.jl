@@ -370,6 +370,9 @@ end
 mutable struct LinearConstraint{T<:Real} <: Constraint
     std::ConstraintInternals
     in_all_different::Bool
+    is_strict::Bool # for differentiate between < and <=
+    is_equal::Bool # for ==
+    rhs::T # combines value - constant
     mins::Vector{T}
     maxs::Vector{T}
     pre_mins::Vector{T}

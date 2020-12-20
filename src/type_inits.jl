@@ -88,8 +88,11 @@ function LinearConstraint(
     # this can be changed later in `set_in_all_different!` but needs to be initialized with false
     in_all_different = false
 
+    is_strict = !(isa(set, MOI.LessThan) || isa(set, MOI.EqualTo))
+    is_equal  = isa(set, MOI.EqualTo)
     internals = ConstraintInternals(cidx, fct, set, indices)
-    lc = LinearConstraint(internals, in_all_different, mins, maxs, pre_mins, pre_maxs)
+    # the rhs is filled in init_constraint
+    lc = LinearConstraint(internals, in_all_different, is_strict, is_equal, zero(promote_T), mins, maxs, pre_mins, pre_maxs)
     return lc
 end
 

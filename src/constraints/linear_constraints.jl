@@ -9,9 +9,23 @@ function init_constraint!(
     com::CS.CoM,
     constraint::CS.LinearConstraint,
     fct::SAF{T},
-    set::MOI.EqualTo{T};
+    set::MOI.LessThan{T};
     active = true,
 ) where {T<:Real}
+    constraint.rhs = set.upper - fct.constant
+    length(constraint.indices) > 0 && return true
+
+    return fct.constant <= set.upper + com.options.atol
+end
+
+function init_constraint!(
+    com::CS.CoM,
+    constraint::CS.LinearConstraint,
+    fct::SAF{T},
+    set::Union{MOI.LessThan{T},MOI.EqualTo{T}};
+    active = true,
+) where {T<:Real}
+    constraint.rhs = set.value - fct.constant
     length(constraint.indices) > 0 && return true
 
     return fct.constant == set.value
@@ -64,12 +78,12 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::MOI.EqualTo{T};
+    set::Union{MOI.LessThan{T},MOI.EqualTo{T}};
     logs = true,
 ) where {T<:Real}
     indices = constraint.indices
     search_space = com.search_space
-    rhs = set.value - fct.constant
+    rhs = constraint.rhs
 
     # compute max and min values for each index
     recompute_lc_extrema!(com, constraint, fct)
@@ -86,7 +100,11 @@ function prune_constraint!(
     # if the maximum is smaller than 0 (and not even near zero)
     # or if the minimum is bigger than 0 (and not even near zero)
     # the equation can't sum to 0 => infeasible
-    if full_max < -com.options.atol || full_min > com.options.atol
+    if full_min > com.options.atol
+        com.bt_infeasible[indices] .+= 1
+        return false
+    end
+    if full_max < -com.options.atol && constraint.is_equal
         com.bt_infeasible[indices] .+= 1
         return false
     end
@@ -109,9 +127,11 @@ function prune_constraint!(
                 maxs[i] = p_max
             end
 
-            p_min = -c_max
-            if p_min > mins[i]
-                mins[i] = p_min
+            if constraint.is_equal
+                p_min = -c_max
+                if p_min > mins[i]
+                    mins[i] = p_min
+                end
             end
         end
 
@@ -193,6 +213,7 @@ function prune_constraint!(
         end
     end
 
+    #=
     # if there are at most two unfixed variables left check all options
     n_unfixed = 0
     unfixed_vidx_1, unfixed_vidx_2 = 0, 0
@@ -303,6 +324,7 @@ function prune_constraint!(
             end
         end
     end
+    =#
 
     return true
 end
@@ -316,12 +338,12 @@ function still_feasible(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::MOI.EqualTo{T},
+    set::Union{MOI.LessThan{T},MOI.EqualTo{T}},
     vidx::Int,
     val::Int,
 ) where {T<:Real}
     search_space = com.search_space
-    rhs = set.value - fct.constant
+    rhs = constraint.rhs
     csum = 0
     num_not_fixed = 0
     not_fixed_idx = 0
@@ -348,11 +370,14 @@ function still_feasible(
             end
         end
     end
-    if num_not_fixed == 0 &&
-       !isapprox(csum, rhs; atol = com.options.atol, rtol = com.options.rtol)
-        return false
+    if num_not_fixed == 0
+        if constraint.is_equal
+            return isapprox(csum, rhs; atol = com.options.atol, rtol = com.options.rtol)
+        else
+            return csum <= rhs
+        end
     end
-    if num_not_fixed == 1
+    if num_not_fixed == 1 && constraint.is_equal
         if isapprox_divisible(com, rhs - csum, fct.terms[not_fixed_i].coefficient)
             return has(
                 search_space[not_fixed_idx],
@@ -367,7 +392,7 @@ function still_feasible(
         return false
     end
 
-    if csum + max_extra < rhs - com.options.atol
+    if constraint.is_equal && csum + max_extra < rhs - com.options.atol
         return false
     end
 
@@ -386,6 +411,19 @@ function is_constraint_solved(
     return sum(values .* coeffs) + fct.constant ≈ set.value
 end
 
+function is_constraint_solved(
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::MOI.LessThan{T},
+    values::Vector{Int},
+) where {T<:Real}
+
+    indices = [t.variable_index.value for t in fct.terms]
+    coeffs = [t.coefficient for t in fct.terms]
+    return sum(values .* coeffs) + fct.constant <= set.upper + 1e-6
+end
+
+
 """
     is_constraint_violated(
         com::CoM,
@@ -401,7 +439,7 @@ function is_constraint_violated(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::MOI.EqualTo{T}
+    set::Union{MOI.LessThan{T},MOI.EqualTo{T}}
 ) where {T<:Real}
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(constraint, fct, set, [CS.value(var) for var in com.search_space[constraint.indices]])
