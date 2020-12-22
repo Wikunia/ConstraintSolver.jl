@@ -1,9 +1,3 @@
-"""
-    GreaterToLessBridge{T, F<:MOI.AbstractScalarFunction, G<:MOI.AbstractScalarFunction} <:
-        FlipSignBridge{T, CS.GreaterThan{T}, CS.LessThan{T}, F, G}
-Transforms a `G`-in-`GreaterThan{T}` constraint into an `F`-in-`LessThan{T}`
-constraint.
-"""
 struct GreaterToLessBridge{
     T,
     F<:MOI.AbstractScalarFunction,
@@ -26,13 +20,34 @@ function MOI.Bridges.Constraint.concrete_bridge_type(
     return GreaterToLessBridge{T,F,G}
 end
 
+
+
 function MOI.supports_constraint(::Type{GreaterToLessBridge},
                 ::Type{JuMP.GenericAffExpr}, ::Type{GreaterThan})
     return true
 end
 
+
+
 function JuMP.build_constraint(_error::Function, func::JuMP.GenericAffExpr,
     set::GreaterThan)
     constraint = JuMP.ScalarConstraint(func, set)
     return JuMP.BridgeableConstraint(constraint, GreaterToLessBridge)
+end
+
+function JuMP._build_indicator_constraint(_error::Function,
+    variable::JuMP.AbstractVariableRef,
+    constraint::JuMP.ScalarConstraint, I::Type{MOI.IndicatorSet{A,MOI.GreaterThan}}) where A
+    println("123")
+    constraint = JuMP.ScalarConstraint(func, set)
+    return JuMP.BridgeableConstraint(constraint, GreaterToLessBridge)
+end
+
+function JuMP._build_indicator_constraint(
+    _error::Function, variable::JuMP.AbstractVariableRef,
+    constraint::JuMP.BridgeableConstraint, I::Type{MOI.IndicatorSet{A}}) where A
+    return BridgeableConstraint(
+        _build_indicator_constraint(_error, variable, constraint.constraint, I),
+        constraint.bridge_type
+    )
 end

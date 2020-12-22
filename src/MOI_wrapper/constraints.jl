@@ -81,6 +81,9 @@ function MOI.supports_constraint(
     func::Type{VAF{T}},
     set::Type{IS},
 ) where {A,T<:Real,ASS<:MOI.AbstractScalarSet,IS<:MOI.IndicatorSet{A,ASS}}
+    if ASS <: MOI.GreaterThan
+        return false
+    end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
 
@@ -344,13 +347,7 @@ function MOI.add_constraint(
     inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
     inner_constant = func.constants[2]
     inner_set = set.set
-    if ASS isa Type{MOI.GreaterThan{T}}
-        inner_terms = [
-            MOI.ScalarAffineTerm(-v.scalar_term.coefficient, v.scalar_term.variable_index) for v in func.terms if v.output_index == 2
-        ]
-        inner_constant = -inner_constant
-        inner_set = MOI.LessThan{T}(-set.set.lower)
-    end
+
     inner_func = MOI.ScalarAffineFunction{T}(inner_terms, inner_constant)
 
     internals = ConstraintInternals(

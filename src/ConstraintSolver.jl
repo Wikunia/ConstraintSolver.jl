@@ -31,6 +31,8 @@ using StatsFuns
 const CS = ConstraintSolver
 const CS_RNG = MersenneTwister(1)
 const MOI = MathOptInterface
+const MOIB = MathOptInterface.Bridges
+const MOIBC = MathOptInterface.Bridges.Constraint
 const MOIU = MOI.Utilities
 
 include("types.jl")

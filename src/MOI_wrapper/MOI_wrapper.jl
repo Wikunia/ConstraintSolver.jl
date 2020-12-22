@@ -33,7 +33,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 end
 
 include("variables.jl")
-include("bridges.jl")
+include("Bridges/indicator_greater_than.jl")
 include("constraints.jl")
 include("objective.jl")
 include("results.jl")
@@ -46,7 +46,8 @@ Optimizer struct constructor
 function Optimizer(; options...)
     options = combine_options(options)
     com = CS.ConstraintSolverModel(options.solution_type)
-    return Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
+    optimizer = Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
+    return optimizer
 end
 
 """
@@ -72,6 +73,7 @@ Copy constructor for the optimizer
 """
 MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = !copy_names
 function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; kws...)
+    println("here? 123")
     return MOIU.automatic_copy_to(model, src; kws...)
 end
 
