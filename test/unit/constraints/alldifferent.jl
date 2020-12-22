@@ -3,7 +3,7 @@
     @variable(m, -5 <= x[1:10] <= 5, Int)
     @constraint(m, x in CS.AllDifferentSet())
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
 
@@ -104,7 +104,7 @@ end
     @variable(m, x[1:4], CS.Integers([-5, -2, 3, 0, 7]))
     @constraint(m, x in CS.AllDifferentSet())
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
     @test CS.is_constraint_solved(
@@ -146,7 +146,7 @@ end
     @variable(m, -5 <= x[1:10] <= 5, Int)
     @constraint(m, x in CS.AllDifferentSet())
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
 
@@ -159,7 +159,7 @@ end
     @variable(m, -5 <= x[1:10] <= 5, Int)
     @constraint(m, x in CS.AllDifferentSet())
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
 

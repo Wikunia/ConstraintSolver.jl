@@ -188,7 +188,7 @@
 
         status = JuMP.termination_status(m)
 
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
 
         CS.save_logs(
             com,
@@ -415,7 +415,7 @@
 
         status = JuMP.termination_status(m)
 
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test com.info.n_constraint_types.equality == 1
         @test com.info.n_constraint_types.inequality == length(states)
 
@@ -769,7 +769,7 @@
 
         status = JuMP.termination_status(m)
 
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
 
         @test status == MOI.OPTIMAL
         @test com.best_sol == 17

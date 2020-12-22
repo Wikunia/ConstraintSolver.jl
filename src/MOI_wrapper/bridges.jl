@@ -27,8 +27,6 @@ function MOI.supports_constraint(::Type{GreaterToLessBridge},
     return true
 end
 
-
-
 function JuMP.build_constraint(_error::Function, func::JuMP.GenericAffExpr,
     set::GreaterThan)
     constraint = JuMP.ScalarConstraint(func, set)

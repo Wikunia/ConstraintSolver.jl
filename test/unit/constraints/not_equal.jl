@@ -3,7 +3,7 @@
     @variable(m, y[1:3], CS.Integers([-3, 1, 2, 3]))
     @constraint(m, sum(y) + 1 != 5)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     constraint = get_constraints_by_type(com, CS.LinearConstraint)[1]
 
     # doesn't check the length
@@ -60,7 +60,7 @@
     @constraint(m, sum(y) + 1 != 5)
     optimize!(m)
 
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     constraint = get_constraints_by_type(com, CS.LinearConstraint)[1]
 
     CS.fix!(com, com.search_space[constr_indices[1]], 2)
@@ -74,7 +74,7 @@ end
     @variable(m, -5 <= x[1:2] <= 5, Int)
     @constraint(m, sum(x) != 7)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -87,7 +87,7 @@ end
     @variable(m, -5 <= x[1:2] <= 5, Int)
     @constraint(m, sum(x) != 7)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 

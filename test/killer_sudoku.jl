@@ -45,7 +45,7 @@ end
 
         optimize!(m)
 
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test com.info.n_constraint_types.alldifferent == 27
         @test com.info.n_constraint_types.equality == length(sums)
         @test length(com.search_space) == 81
@@ -122,7 +122,7 @@ end
         for s in sums
             -s.result != sum([JuMP.value(com_grid[i...]) for i in s.indices])
         end
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test general_tree_test(com)
 
         logs = CS.get_logs(com)

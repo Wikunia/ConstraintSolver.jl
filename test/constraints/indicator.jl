@@ -12,7 +12,7 @@
         @test JuMP.value(b) ≈ 1.0
         @test JuMP.value(x) ≈ 4
         @test JuMP.value(y) ≈ 3
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test !com.constraints[1].indicator_in_inner
         @test is_solved(com)
     end
@@ -28,7 +28,7 @@
         @test JuMP.termination_status(m) == MOI.OPTIMAL
         @test JuMP.objective_value(m) ≈ 1.0
         @test JuMP.value(b) ≈ 1.0
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -41,7 +41,7 @@
         @constraint(m, b => {x + y == 6})
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.INFEASIBLE
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test !is_solved(com)
     end
 
@@ -58,7 +58,7 @@
         @test JuMP.value(b) ≈ 0.0
         @test JuMP.value(x) ≈ 4
         @test JuMP.value(y) ≈ 4
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -89,7 +89,7 @@
         @test JuMP.value(b) ≈ 1.0
         @test JuMP.value(x) ≈ 2
         @test JuMP.value(y) ≈ 4
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -120,7 +120,7 @@
         @test JuMP.value(b) ≈ 1.0
         @test JuMP.value(x) ≈ 1
         @test JuMP.value(y) ≈ 3
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -137,7 +137,7 @@
         @test JuMP.termination_status(m) == MOI.OPTIMAL
         @test JuMP.objective_value(m) ≈ 0.0
         @test JuMP.value(a) ≈ 0.0
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         num_indicator = 0
         for i in 1:length(com.constraints)
             if com.constraints[i] isa CS.IndicatorConstraint
@@ -164,7 +164,7 @@
         @test JuMP.value(a) ≈ 1.0
         @test JuMP.value(y) ≈ 1.0
         @test JuMP.value(x) ≈ 0.0
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -183,7 +183,7 @@
         @test JuMP.value(a) ≈ 0.0
         @test JuMP.value(y) ≈ 0.0
         @test JuMP.value(x) ≈ 1.0
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -208,7 +208,7 @@
         @test JuMP.value(a) ≈ 1.0
         @test JuMP.value(x) ≈ 3.0
         @test JuMP.value(y) ≈ 2.0
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -267,7 +267,7 @@
         @test JuMP.value(a) ≈ 0.0
         @test JuMP.value(x) ≈ 9.0
         @test JuMP.value(y) ≈ 9.0
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 end

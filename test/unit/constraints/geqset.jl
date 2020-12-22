@@ -4,7 +4,7 @@
     @variable(m, -5 <= x[1:2] <= 5, Int)
     @constraint(m, [y, x...] in CS.GeqSet())
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -61,7 +61,7 @@
     @variable(m, -5 <= x[1:2] <= 5, Int)
     @constraint(m, [y, x...] in CS.GeqSet())
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     constraint = com.constraints[1]
     constr_indices = constraint.indices
 
@@ -80,7 +80,7 @@
     @variable(m, -5 <= x[1:2] <= 5, Int)
     @constraint(m, [y, x...] in CS.GeqSet())
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
     constr_indices = constraint.indices
@@ -101,7 +101,7 @@ end
     @variable(m, -5 <= x[1:5] <= 5, Int)
     @constraint(m, x in CS.GeqSet())
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -114,7 +114,7 @@ end
     @variable(m, -5 <= x[1:5] <= 5, Int)
     @constraint(m, x in CS.GeqSet())
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 

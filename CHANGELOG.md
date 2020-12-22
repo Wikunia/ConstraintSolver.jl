@@ -1,5 +1,9 @@
 # ConstrainSolver.jl - Changelog
 
+## Unreleased
+- Use `CS.get_inner_model` to get the `ConstraintSolverModel`
+  - Usage of `JuMP.backend` as before will fail
+
 ## v0.6.0 (15th of December 2020) 
 - **Dropped support for Julia v1.0 and v1.1**
 - Implementation of Activity Based Search

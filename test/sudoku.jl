@@ -50,7 +50,7 @@
             solution[r, :] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c in 1:9]
         end
         @test jump_fulfills_sudoku_constr(solution)
-        @test m.options.time_limit == 10.0
+        @test CS.get_inner_model(m).options.time_limit == 10.0
     end
 
     @testset "Hard sudoku with table constraint" begin
@@ -168,7 +168,7 @@
         optimize!(m)
 
         @test JuMP.termination_status(m) == MOI.OPTIMAL
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test_reference "refs/hard_fsudoku" test_string([
             constraint.indices for constraint in com.constraints
         ])
@@ -237,7 +237,7 @@
             @objective(m, Min, x[1, 1])
 
             optimize!(m)
-            com = JuMP.backend(m).optimizer.model.inner
+            com = CS.get_inner_model(m)
 
             @test typeof(com.best_sol) == Int8
             @test JuMP.objective_value(m) == JuMP.value(x[1, 1]) == com.best_sol
@@ -283,7 +283,7 @@
 
         optimize!(m)
 
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test JuMP.termination_status(m) == MOI.OTHER_LIMIT
 
         @test !com.info.backtracked
@@ -324,7 +324,7 @@
 
         optimize!(m)
 
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
 
         @test JuMP.result_count(m) == 2
         @test JuMP.value.(x) != JuMP.value.(x, result = 2)
@@ -370,7 +370,7 @@
 
         optimize!(m)
 
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
 
         @test JuMP.result_count(m) == 2
         @test JuMP.value.(x) != JuMP.value.(x, result = 2)
@@ -418,7 +418,7 @@
 
         optimize!(m)
 
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
 
         @test JuMP.result_count(m) == 1
         # the better one should be solution 1 of course
@@ -461,7 +461,7 @@
 
         optimize!(m)
 
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test com.info.n_constraint_types.alldifferent == 27
         @test length(com.constraints) == 27
         @test length(com.search_space) == 81
@@ -518,7 +518,7 @@
         # at least more than 1 but in that time frame it should find a lot ;)
         @test MOI.get(m, MOI.ResultCount()) >= 10
         @test JuMP.termination_status(m) == MOI.TIME_LIMIT
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         general_tree_test(com)
         logs = CS.get_logs(com)
         @test CS.sanity_check_log(logs[:tree])

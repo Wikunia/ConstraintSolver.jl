@@ -274,14 +274,14 @@
         m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack" => false))
         @variable(m, x, CS.Integers([1, 2, 4]))
         optimize!(m)
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test !CS.has(com.search_space[1], 3)
         @test sort(CS.values(com.search_space[1])) == [1, 2, 4]
 
         m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack" => false))
         @variable(m, y, CS.Integers([2, 5, 6, 3]))
         optimize!(m)
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test !CS.has(com.search_space[1], 1)
         @test !CS.has(com.search_space[1], 4)
         @test sort(CS.values(com.search_space[1])) == [2, 3, 5, 6]
@@ -312,7 +312,7 @@
         @constraint(m, x[1] + x[2] == x[3])
         @constraint(m, x[1] <= x[2])
         optimize!(m)
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
         @test MOI.get(m, MOI.ResultCount()) == 20
     end
@@ -383,7 +383,7 @@
         optimize!(model)
         status = JuMP.termination_status(model)
         @test status == MOI.OPTIMAL
-        com = JuMP.backend(model).optimizer.model.inner
+        com = CS.get_inner_model(model)
         @test is_solved(com)
     end
 
@@ -411,7 +411,7 @@
         optimize!(model)
         status = JuMP.termination_status(model)
         @test status == MOI.OPTIMAL
-        com = JuMP.backend(model).optimizer.model.inner
+        com = CS.get_inner_model(model)
         @test is_solved(com)
     end
 

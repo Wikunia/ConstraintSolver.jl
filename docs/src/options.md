@@ -176,7 +176,7 @@ To save the logs as a json file you need to run:
 ```
 m = Model()
 ...
-com = JuMP.backend(m).optimizer.model.inner
+com = CS.get_inner_model(m)
 
 CS.save_logs(com, "FILENAME.json")
 ```

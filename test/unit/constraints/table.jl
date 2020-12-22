@@ -16,7 +16,7 @@
 
     @constraint(m, [x, y, z] in CS.TableSet(tab))
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -81,7 +81,7 @@
 
     @constraint(m, [x, y, z] in CS.TableSet(tab))
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
     constr_indices = constraint.indices
@@ -109,7 +109,7 @@
 
     @constraint(m, [x, y, z] in CS.TableSet(tab))
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
     constr_indices = constraint.indices
@@ -133,7 +133,7 @@ end
         2 3
     ]))
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -152,7 +152,7 @@ end
         2 3
     ]))
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 

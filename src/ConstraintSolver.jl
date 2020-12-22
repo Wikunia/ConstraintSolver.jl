@@ -70,6 +70,19 @@ include("pruning.jl")
 include("simplify.jl")
 
 """
+    get_inner_model(::Model) or get_inner_model(::MOIB.LazyBridgeOptimizer{Optimizer})
+
+Return the ConstraintSolverModel for the Model or Optimizer
+"""
+function get_inner_model(m::Model)
+    JuMP.backend(m).optimizer.model.model.inner
+end
+
+function get_inner_model(o::MOIB.LazyBridgeOptimizer{Optimizer})
+    o.model.inner
+end
+
+"""
     fulfills_constraints(com::CS.CoM, vidx, value)
 
 Return whether the model is still feasible after setting the variable at position `vidx` to `value`.

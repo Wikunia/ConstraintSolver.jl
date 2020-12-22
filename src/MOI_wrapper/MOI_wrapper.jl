@@ -47,7 +47,9 @@ function Optimizer(; options...)
     options = combine_options(options)
     com = CS.ConstraintSolverModel(options.solution_type)
     optimizer = Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
-    return optimizer
+    lbo = MOIB.full_bridge_optimizer(optimizer, options.solution_type)
+    MOIB.add_bridge(lbo, CS.IndRei_GreaterToLessThanBridge{options.solution_type})
+    return lbo
 end
 
 """

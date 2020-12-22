@@ -5,7 +5,7 @@
     @variable(m, b, Bin)
     @constraint(m, b => {x + y + 1 == 5})
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     constraint = get_constraints_by_type(com, CS.IndicatorConstraint)[1]
 
     @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 2])
@@ -77,7 +77,7 @@ end
     @variable(m, -5 <= x[1:5] <= 5, Int)
     @constraint(m, b => {x in CS.GeqSet()})
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -92,7 +92,7 @@ end
     @variable(m, -5 <= x[1:5] <= 5, Int)
     @constraint(m, b => {x in CS.GeqSet()})
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -107,7 +107,7 @@ end
     @variable(m, -5 <= x[1:5] <= 5, Int)
     @constraint(m, b => {x in CS.GeqSet()})
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
