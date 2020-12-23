@@ -2,13 +2,8 @@
 JuMP constraints
 """
 sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
-#sense_to_set(::Function, ::Val{:<}) = CS.LessThan(0.0, true)
-#sense_to_set(::Function, ::Val{:>}) = CS.GreaterThan(0.0, true)
-
 
 MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
-MOIU.shift_constant(set::LessThan, value) = LessThan(set.upper + value, set.strict)
-MOIU.shift_constant(set::GreaterThan, value) = GreaterThan(set.lower + value, set.strict)
 
 """
     Support for indicator constraints with a set constraint as the right hand side
