@@ -99,8 +99,8 @@ function MOI.supports_constraint(
     ::Optimizer,
     func::Union{Type{VAF{T}},Type{MOI.VectorOfVariables}},
     set::Type{RS},
-) where {A,T<:Real,ASS<:MOI.AbstractScalarSet,RS<:CS.ReifiedSet{A,ASS}}
-    if ASS <: MOI.GreaterThan
+) where {A,T<:Real,IS,RS<:CS.ReifiedSet{A,IS}}
+    if IS <: MOI.GreaterThan
         return false
     end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
@@ -434,7 +434,7 @@ function MOI.add_constraint(
     model::Optimizer,
     vars::MOI.VectorOfVariables,
     set::RS,
-) where {A,RS<:CS.ReifiedSet{A}}
+) where {A,S,RS<:CS.ReifiedSet{A,S}}
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
@@ -453,7 +453,7 @@ function MOI.add_constraint(
 
     add_constraint!(model, constraint)
 
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.ReifiedSet{A}}(length(com.constraints))
+    return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.ReifiedSet{A,S}}(length(com.constraints))
 end
 
 """
