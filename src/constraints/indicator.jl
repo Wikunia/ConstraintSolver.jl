@@ -143,7 +143,7 @@ function still_feasible(
         inner_constraint.fct,
         inner_constraint.set,
         vidx,
-        val
+        val,
     )
 end
 
@@ -200,7 +200,7 @@ function is_constraint_violated(
     com::CoM,
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
-    set::IS
+    set::IS,
 ) where {
     A,
     T<:Real,
@@ -208,14 +208,24 @@ function is_constraint_violated(
     IS<:Union{IndicatorSet{A},MOI.IndicatorSet{A,ASS}},
 }
     if all(isfixed(var) for var in com.search_space[constraint.indices])
-        return !is_constraint_solved(constraint, fct, set, [CS.value(var) for var in com.search_space[constraint.indices]])
+        return !is_constraint_solved(
+            constraint,
+            fct,
+            set,
+            [CS.value(var) for var in com.search_space[constraint.indices]],
+        )
     end
 
     indicator_vidx = constraint.indices[1]
     indicator_var = com.search_space[indicator_vidx]
     if isfixed(indicator_var) && CS.value(indicator_var) == Int(constraint.activate_on)
         inner_constraint = constraint.inner_constraint
-        return is_constraint_violated(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
+        return is_constraint_violated(
+            com,
+            inner_constraint,
+            inner_constraint.fct,
+            inner_constraint.set,
+        )
     end
     return false
 end

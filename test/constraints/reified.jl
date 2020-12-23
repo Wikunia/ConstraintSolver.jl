@@ -34,7 +34,7 @@
     end
 
     @testset "Basic >=" begin
-        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
+        m = Model(CSJuMPTestOptimizer(; branch_strategy = :ABS))
         @variable(m, x, CS.Integers([1, 2, 4]))
         @variable(m, y, CS.Integers([2, 3]))
         @variable(m, b, Bin)

@@ -70,7 +70,7 @@ function LinearConstraint(
     rhs = -fct.constant
     if isa(set, Union{MOI.EqualTo,CS.NotEqualTo})
         rhs += set.value
-    elseif isa(set, Union{MOI.LessThan, CS.LessThan})
+    elseif isa(set, Union{MOI.LessThan,CS.LessThan})
         rhs += set.upper
     end
     coeffs = [t.coefficient for t in fct.terms]
@@ -89,10 +89,20 @@ function LinearConstraint(
     in_all_different = false
 
     is_strict = !(isa(set, MOI.LessThan) || isa(set, MOI.EqualTo))
-    is_equal  = isa(set, MOI.EqualTo)
+    is_equal = isa(set, MOI.EqualTo)
     internals = ConstraintInternals(cidx, fct, set, indices)
     # the rhs is filled in init_constraint
-    lc = LinearConstraint(internals, in_all_different, is_strict, is_equal, zero(promote_T), mins, maxs, pre_mins, pre_maxs)
+    lc = LinearConstraint(
+        internals,
+        in_all_different,
+        is_strict,
+        is_equal,
+        zero(promote_T),
+        mins,
+        maxs,
+        pre_mins,
+        pre_maxs,
+    )
     return lc
 end
 

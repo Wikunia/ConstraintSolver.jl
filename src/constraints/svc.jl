@@ -12,7 +12,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T}, CS.LessThan{T}};
+    set::Union{MOI.LessThan{T},CS.LessThan{T}};
     logs = true,
 ) where {T<:Real}
     lhs = constraint.lhs
@@ -32,7 +32,7 @@ function still_feasible(
     com::CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T}, CS.LessThan{T}},
+    set::Union{MOI.LessThan{T},CS.LessThan{T}},
     vidx::Int,
     val::Int,
 ) where {T<:Real}
@@ -57,7 +57,7 @@ end
 function is_constraint_solved(
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T}, CS.LessThan{T}},
+    set::Union{MOI.LessThan{T},CS.LessThan{T}},
     values::Vector{Int},
 ) where {T<:Real}
     return values[1] <= values[2]
@@ -79,7 +79,8 @@ function is_constraint_violated(
     com::CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T}, CS.LessThan{T}},
+    set::Union{MOI.LessThan{T},CS.LessThan{T}},
 ) where {T<:Real}
-    return com.search_space[constraint.indices[1]].min > com.search_space[constraint.indices[2]].max
+    return com.search_space[constraint.indices[1]].min >
+           com.search_space[constraint.indices[2]].max
 end

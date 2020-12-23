@@ -1,4 +1,8 @@
-function recompute_lc_extrema!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}) where {T<:Real}
+function recompute_lc_extrema!(
+    com::CS.CoM,
+    constraint::LinearConstraint,
+    fct::SAF{T},
+) where {T<:Real}
     indices = constraint.indices
     search_space = com.search_space
     maxs = constraint.maxs

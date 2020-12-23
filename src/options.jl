@@ -81,11 +81,7 @@ function SolverOptions()
         all_optimal_solutions,
         lp_optimizer,
         no_prune,
-        ActivityOptions(
-            decay,
-            max_probes,
-            max_confidence_deviation
-        ),
+        ActivityOptions(decay, max_probes, max_confidence_deviation),
         simplify,
     )
 end

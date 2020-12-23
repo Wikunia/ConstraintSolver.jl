@@ -105,7 +105,11 @@ function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
             if num_subcat == length(parts)
                 if hasmethod(convert, (Type{type_of_param}, typeof(value)))
                     if is_possible_option_value(p, value)
-                        setfield!(current_options_obj, cp_symbol, convert(type_of_param, value))
+                        setfield!(
+                            current_options_obj,
+                            cp_symbol,
+                            convert(type_of_param, value),
+                        )
                     else
                         @error "The option $(cp_symbol) doesn't have $(value) as a possible value. Possible values are: $(POSSIBLE_OPTIONS[p_symbol])"
                         break
@@ -156,7 +160,7 @@ function MOI.optimize!(model::Optimizer)
 
     if status == :Solved
         com = model.inner
-        com.solutions = unique!(sol->sol.hash, com.solutions)
+        com.solutions = unique!(sol -> sol.hash, com.solutions)
         if !com.options.all_solutions
             filter!(sol -> sol.incumbent == com.best_sol, com.solutions)
         end

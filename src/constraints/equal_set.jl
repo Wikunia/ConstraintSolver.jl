@@ -1,8 +1,5 @@
 function init_constraint_struct(::Type{EqualSetInternal}, internals)
-    EqualConstraint(
-        internals,
-        ones(Int, length(internals.indices))
-    )
+    EqualConstraint(internals, ones(Int, length(internals.indices)))
 end
 
 function init_constraint!(
@@ -217,5 +214,8 @@ function is_constraint_violated(
         end
     end
     !found_first_val && return false
-    return !all(CS.value(var) == first_val for var in com.search_space[constraint.indices] if isfixed(var))
+    return !all(
+        CS.value(var) == first_val
+        for var in com.search_space[constraint.indices] if isfixed(var)
+    )
 end

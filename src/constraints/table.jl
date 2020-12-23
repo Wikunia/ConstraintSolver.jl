@@ -569,7 +569,12 @@ function is_constraint_violated(
     set::TableSetInternal,
 )
     if all(isfixed(var) for var in com.search_space[constraint.indices])
-        return !is_constraint_solved(constraint, fct, set, [CS.value(var) for var in com.search_space[constraint.indices]])
+        return !is_constraint_solved(
+            constraint,
+            fct,
+            set,
+            [CS.value(var) for var in com.search_space[constraint.indices]],
+        )
     end
     return false
 end

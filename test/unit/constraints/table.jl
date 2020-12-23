@@ -126,7 +126,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, 0 <= x <= 5, Int)
     @variable(m, 0 <= y <= 3, Int)
-    @constraint(m, [x,y] in CS.TableSet([
+    @constraint(m, [x, y] in CS.TableSet([
         1 2
         3 4
         2 1
@@ -145,7 +145,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, 0 <= x <= 5, Int)
     @variable(m, 0 <= y <= 3, Int)
-    @constraint(m, [x,y] in CS.TableSet([
+    @constraint(m, [x, y] in CS.TableSet([
         1 2
         3 4
         2 1

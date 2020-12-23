@@ -128,7 +128,7 @@ struct TableSet <: JuMP.AbstractVectorSet
     table::Array{Int,2}
 end
 function JuMP.moi_set(ts::TableSet, dim)
-    if size(ts.table,2) != dim
+    if size(ts.table, 2) != dim
         throw(ArgumentError("The table provided has $(size(ts.table,2)) columns but the variable vector has $dim elements"))
     end
     TableSetInternal(dim, ts.table)
@@ -165,7 +165,7 @@ struct GreaterThan{T} <: MOI.AbstractScalarSet
     lower::T
     strict::Bool
 end
-Base.copy(GT::GreaterThan) = GreaterThan(GT.lower,GT.strict)
+Base.copy(GT::GreaterThan) = GreaterThan(GT.lower, GT.strict)
 
 #====================================================================================
 ====================== TYPES FOR TRAVERSING ========================================
@@ -275,7 +275,7 @@ mutable struct TableSupport
     # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
     var_start::Vector{Int}
     values::Array{UInt64,2}
-    TableSupport() = new([], Array{UInt64,2}(undef, (0,0)))
+    TableSupport() = new([], Array{UInt64,2}(undef, (0, 0)))
 end
 
 mutable struct TableResidues
@@ -298,7 +298,8 @@ struct IndicatorSet{A} <: MOI.AbstractVectorSet
 end
 Base.copy(I::IndicatorSet{A}) where {A} = IndicatorSet{A}(I.set, I.dimension)
 
-struct ReifiedSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
+struct ReifiedSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
+       MOI.AbstractVectorSet
     set::S
     dimension::Int
 end
@@ -518,9 +519,9 @@ mutable struct BranchVarObj
 end
 
 struct VarAndVal
-    vidx :: Int
-    lb   :: Int
-    ub   :: Int
+    vidx::Int
+    lb::Int
+    ub::Int
 end
 
 mutable struct ConstraintSolverModel{T<:Real}

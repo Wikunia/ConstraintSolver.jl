@@ -121,7 +121,7 @@
             0 0 0 0 0 0 8 0 6
         ]
 
-        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
+        m = Model(CSJuMPTestOptimizer(; branch_strategy = :ABS))
         @variable(m, 1 <= x[1:9, 1:9] <= 9, Int)
         # set variables
         for r in 1:9, c in 1:9

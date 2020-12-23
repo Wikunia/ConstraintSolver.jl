@@ -1,6 +1,6 @@
 @testset "Real coefficients" begin
     @testset "Basic all true" begin
-        m = Model(CSJuMPTestOptimizer(;branch_strategy=:ABS))
+        m = Model(CSJuMPTestOptimizer(; branch_strategy = :ABS))
         @variable(m, x[1:4], Bin)
         weights = [1.7, 0.7, 0.3, 1.3]
         @variable(m, 0 <= max_val <= 10, Int)

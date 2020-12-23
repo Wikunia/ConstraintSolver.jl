@@ -16,10 +16,7 @@ function _build_reified_constraint(
     ::Type{<:CS.ReifiedSet{A}},
 ) where {A}
     S = typeof(jump_constraint.set)
-    set = CS.ReifiedSet{A,S}(
-        jump_constraint.set,
-        1 + length(jump_constraint.func),
-    )
+    set = CS.ReifiedSet{A,S}(jump_constraint.set, 1 + length(jump_constraint.func))
     vov = VariableRef[variable]
     append!(vov, jump_constraint.func)
     return JuMP.VectorConstraint(vov, set)

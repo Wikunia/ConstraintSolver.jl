@@ -69,6 +69,24 @@ function get_new_extrema_and_sum(
 end
 
 """
+    get_fixed_rhs(com::CS.CoM, constraint::Constraint)
+
+Compute the fixed rhs based on all already fixed variables
+"""
+function get_fixed_rhs(com::CS.CoM, constraint::Constraint)
+    rhs = constraint.rhs
+    fct = constraint.fct
+    search_space = com.search_space
+    for li in 1:length(constraint.indices)
+        vidx = constraint.indices[li]
+        var = search_space[vidx]
+        !isfixed(var) && continue
+        rhs -= CS.value(var) * fct.terms[li].coefficient
+    end
+    return rhs
+end
+
+"""
     prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}; logs = true) where T <: Real
 
 Reduce the number of possibilities given the equality `LinearConstraint` .
@@ -213,115 +231,80 @@ function prune_constraint!(
         end
     end
 
-    #=
-    # if there are at most two unfixed variables left check all options
-    n_unfixed = 0
-    unfixed_vidx_1, unfixed_vidx_2 = 0, 0
-    unfixed_local_vidx_1, unfixed_local_vidx_2 = 0, 0
-    unfixed_rhs = rhs
-    li = 0
-    for i in indices
-        li += 1
-        if !isfixed(search_space[i])
-            n_unfixed += 1
-            if n_unfixed <= 2
-                if n_unfixed == 1
-                    unfixed_vidx_1 = i
-                    unfixed_local_vidx_1 = li
-                else
-                    unfixed_vidx_2 = i
-                    unfixed_local_vidx_2 = li
+    # the following is only for an equal constraint
+    !constraint.is_equal && return true
+    n_unfixed = count_unfixed(com, constraint)
+    n_unfixed != 2 && return true
+
+    fixed_rhs = get_fixed_rhs(com, constraint)
+
+    local_vidx_1, vidx_1, local_vidx_2, vidx_2 = get_two_unfixed(com, constraint)
+    for ((this_local_vidx, this_vidx), (other_local_vidx, other_vidx)) in zip(
+        ((local_vidx_1, vidx_1), (local_vidx_2, vidx_2)),
+        ((local_vidx_2, vidx_2), (local_vidx_1, vidx_1))
+    )
+        this_var = search_space[this_vidx]
+        other_var = search_space[other_vidx]
+        for val in values(this_var)
+            # if we choose this value but the other wouldn't be an integer => remove this value
+            if !isapprox_divisible(
+                com,
+                (fixed_rhs - val * fct.terms[this_local_vidx].coefficient),
+                fct.terms[other_local_vidx].coefficient,
+            )
+                if !rm!(com, this_var, val)
+                    return false
                 end
+                continue
             end
-        else
-            unfixed_rhs -= CS.value(search_space[i]) * fct.terms[li].coefficient
+
+            remainder = fixed_rhs - val * fct.terms[this_local_vidx].coefficient
+            remainder /= fct.terms[other_local_vidx].coefficient
+            remainder_int = get_approx_discrete(remainder)
+            if !has(other_var, remainder_int)
+                !rm!(com, this_var, val) && return false
+            end
         end
     end
 
-    # only a single one left
+    # if only one is unfixed => fix it
+    var_1 = search_space[vidx_1]
+    var_2 = search_space[vidx_2]
+    if isfixed(var_1) || isfixed(var_2)
+        if isfixed(var_1)
+            unfixed_var = var_2
+            unfixed_local_idx = local_vidx_2
+            fixed_local_idx = local_vidx_1
+        else
+            unfixed_var = var_1
+            unfixed_local_idx = local_vidx_1
+            fixed_local_idx = local_vidx_2
+        end
+        fixed_coeff = fct.terms[fixed_local_idx].coefficient
+        unfixed_coeff = fct.terms[unfixed_local_idx].coefficient
+        if isfixed(var_1)
+            fixed_rhs -= fixed_coeff*value(var_1)
+        else
+            fixed_rhs -= fixed_coeff*value(var_2)
+        end
+        !isapprox_divisible(com, fixed_rhs, unfixed_coeff) && return false
+        remainder = fixed_rhs
+        remainder /= unfixed_coeff
+        remainder_int = get_approx_discrete(remainder)
+        !has(unfixed_var, remainder_int) && return false
+        !fix!(com, unfixed_var, remainder_int) && return false
+    end
+
+    #=
     if n_unfixed == 1
-        if !isapprox_discrete(
-            com,
-            unfixed_rhs / fct.terms[unfixed_local_vidx_1].coefficient,
-        )
-            com.bt_infeasible[unfixed_vidx_1] += 1
-            return false
-        else
-            # divide rhs such that it is comparable with the variable directly without coefficient
-            unfixed_rhs = get_approx_discrete(
-                unfixed_rhs / fct.terms[unfixed_local_vidx_1].coefficient,
-            )
-        end
-        if !has(search_space[unfixed_vidx_1], unfixed_rhs)
-            com.bt_infeasible[unfixed_vidx_1] += 1
-            return false
-        else
-            still_feasible = fix!(com, search_space[unfixed_vidx_1], unfixed_rhs)
-            if !still_feasible
-                return false
-            end
-        end
-    elseif n_unfixed == 2
-        is_all_different = constraint.in_all_different
-        if !is_all_different
-            intersect_cons = intersect(
-                com.subscription[unfixed_vidx_1],
-                com.subscription[unfixed_vidx_2],
-            )
-            for constraint_idx in intersect_cons
-                if isa(com.constraints[constraint_idx].set, AllDifferentSetInternal)
-                    is_all_different = true
-                    break
-                end
-            end
-        end
-
-        for v in 1:2
-            if v == 1
-                this, local_this = unfixed_vidx_1, unfixed_local_vidx_1
-                other, local_other = unfixed_vidx_2, unfixed_local_vidx_2
-            else
-                other, local_other = unfixed_vidx_1, unfixed_local_vidx_1
-                this, local_this = unfixed_vidx_2, unfixed_local_vidx_2
-            end
-
-            for val in values(search_space[this])
-                # if we choose this value but the other wouldn't be an integer => remove this value
-                if !isapprox_divisible(
-                    com,
-                    (unfixed_rhs - val * fct.terms[local_this].coefficient),
-                    fct.terms[local_other].coefficient,
-                )
-                    if !rm!(com, search_space[this], val)
-                        return false
-                    end
-                    continue
-                end
-
-                # get discrete other value
-                check_other_val_float =
-                    (unfixed_rhs - val * fct.terms[local_this].coefficient) /
-                    fct.terms[local_other].coefficient
-                check_other_val = get_approx_discrete(check_other_val_float)
-
-                # if all different but those two are the same
-                if is_all_different && check_other_val == val
-                    if !rm!(com, search_space[this], val)
-                        return false
-                    end
-                    if has(search_space[other], check_other_val)
-                        if !rm!(com, search_space[other], check_other_val)
-                            return false
-                        end
-                    end
-                else
-                    if !has(search_space[other], check_other_val)
-                        if !rm!(com, search_space[this], val)
-                            return false
-                        end
-                    end
-                end
-            end
+        for li in 1:length(constraint.indices)
+            var = search_space[li]
+            isfixed(var) && continue
+            !isapprox_divisible(com, rhs, fct.terms[li].coefficient) && return false
+            remainder = rhs
+            remainder /= fct.terms[li].coefficient
+            remainder_int = get_approx_discrete(remainder)
+            !fix!(com, var, remainder_int) && return false
         end
     end
     =#
@@ -439,10 +422,15 @@ function is_constraint_violated(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},MOI.EqualTo{T}}
+    set::Union{MOI.LessThan{T},MOI.EqualTo{T}},
 ) where {T<:Real}
     if all(isfixed(var) for var in com.search_space[constraint.indices])
-        return !is_constraint_solved(constraint, fct, set, [CS.value(var) for var in com.search_space[constraint.indices]])
+        return !is_constraint_solved(
+            constraint,
+            fct,
+            set,
+            [CS.value(var) for var in com.search_space[constraint.indices]],
+        )
     end
     return false
 end
