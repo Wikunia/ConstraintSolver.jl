@@ -77,7 +77,6 @@ Copy constructor for the optimizer
 """
 MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = !copy_names
 function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; kws...)
-    println("here? 123")
     return MOIU.automatic_copy_to(model, src; kws...)
 end
 
