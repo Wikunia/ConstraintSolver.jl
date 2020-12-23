@@ -1,9 +1,9 @@
-struct IndRei_GreaterToLessThanBridge{T,A} <: MOIBC.AbstractBridge
+struct IndicatorGreaterToLessThanBridge{T,A} <: MOIBC.AbstractBridge
     constraint::CI{MOI.VectorAffineFunction{T}, MOI.IndicatorSet{A,MOI.LessThan{T}}}
 end
 
 function MOIBC.bridge_constraint(
-    bridge::Type{<:IndRei_GreaterToLessThanBridge{T}},
+    bridge::Type{<:IndicatorGreaterToLessThanBridge{T}},
     model::MOI.ModelLike,
     f::MOI.VectorAffineFunction,
     s::MOI.IndicatorSet{A, MOI.GreaterThan{T}}
@@ -14,16 +14,16 @@ function MOIBC.bridge_constraint(
     ci = MOI.add_constraint(model,
         flipped_f,flipped_s
     )
-    return IndRei_GreaterToLessThanBridge{T,A}(ci)
+    return IndicatorGreaterToLessThanBridge{T,A}(ci)
 end
 
 function MOIB.added_constrained_variable_types(
-    ::Type{<:IndRei_GreaterToLessThanBridge},
+    ::Type{<:IndicatorGreaterToLessThanBridge},
 )
     return []
 end
 function MOIB.added_constraint_types(
-    ::Type{IndRei_GreaterToLessThanBridge{T,A}},
+    ::Type{IndicatorGreaterToLessThanBridge{T,A}},
 ) where {T,A}
     return [
         (MOI.VectorAffineFunction{T}, MOI.IndicatorSet{A,MOI.LessThan{T}})
@@ -31,15 +31,15 @@ function MOIB.added_constraint_types(
 end
 
 function MOI.Bridges.Constraint.concrete_bridge_type(
-    ::Type{<:IndRei_GreaterToLessThanBridge{T}},
+    ::Type{<:IndicatorGreaterToLessThanBridge{T}},
     G::Type{<:MOI.VectorAffineFunction},
     ::Type{IS},
 ) where {T,A,IT<:MOI.GreaterThan{T}, IS<:MOI.IndicatorSet{A,IT}}
     F = MOIU.promote_operation(-, T, MOI.ScalarAffineFunction{T})
-    return IndRei_GreaterToLessThanBridge{T,A}
+    return IndicatorGreaterToLessThanBridge{T,A}
 end
 
-function MOI.supports_constraint(::Type{<:IndRei_GreaterToLessThanBridge{T}},
+function MOI.supports_constraint(::Type{<:IndicatorGreaterToLessThanBridge{T}},
     ::Type{<:MOI.VectorAffineFunction}, ::Type{IS}) where {T, A,IS<:MOI.IndicatorSet{A, MOI.GreaterThan{T}}}
     return true
 end

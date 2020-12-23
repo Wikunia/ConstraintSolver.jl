@@ -99,7 +99,10 @@ function MOI.supports_constraint(
     ::Optimizer,
     func::Union{Type{VAF{T}},Type{MOI.VectorOfVariables}},
     set::Type{RS},
-) where {A,T<:Real,RS<:CS.ReifiedSet{A}}
+) where {A,T<:Real,ASS<:MOI.AbstractScalarSet,RS<:CS.ReifiedSet{A,ASS}}
+    if ASS <: MOI.GreaterThan
+        return false
+    end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
 
@@ -396,7 +399,7 @@ function MOI.add_constraint(
     model::Optimizer,
     func::VAF{T},
     set::RS,
-) where {A,T<:Real,RS<:ReifiedSet{A}}
+) where {A,S,T<:Real,RS<:ReifiedSet{A,S}}
     com = model.inner
     com.info.n_constraint_types.reified += 1
 
@@ -409,19 +412,12 @@ function MOI.add_constraint(
     inner_constant = func.constants[2]
     inner_set = set.set
 
-    if typeof(set.set) isa Type{MOI.GreaterThan{T}}
-        inner_terms = [
-            MOI.ScalarAffineTerm(-v.scalar_term.coefficient, v.scalar_term.variable_index) for v in func.terms if v.output_index == 2
-        ]
-        inner_constant = -inner_constant
-        inner_set = MOI.LessThan{T}(-set.set.lower)
-    end
     inner_func = MOI.ScalarAffineFunction{T}(inner_terms, inner_constant)
 
     internals = ConstraintInternals(
         length(com.constraints) + 1,
         func,
-        ReifiedSet{A}(set.func, inner_set, set.dimension),
+        ReifiedSet{A,S}(set.func, inner_set, set.dimension),
         indices,
     )
 
@@ -431,7 +427,7 @@ function MOI.add_constraint(
 
     add_constraint!(model, constraint)
 
-    return MOI.ConstraintIndex{VAF{T},CS.ReifiedSet{A}}(length(com.constraints))
+    return MOI.ConstraintIndex{VAF{T},CS.ReifiedSet{A,S}}(length(com.constraints))
 end
 
 function MOI.add_constraint(

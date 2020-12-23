@@ -299,12 +299,12 @@ struct IndicatorSet{A} <: MOI.AbstractVectorSet
 end
 Base.copy(I::IndicatorSet{A}) where {A} = IndicatorSet{A}(I.func, I.set, I.dimension)
 
-struct ReifiedSet{A} <: MOI.AbstractVectorSet
+struct ReifiedSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
     func::Union{JuMP.GenericAffExpr,MOI.VectorOfVariables}
-    set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
+    set::S
     dimension::Int
 end
-Base.copy(R::ReifiedSet{A}) where {A} = ReifiedSet{A}(R.func, R.set, R.dimension)
+Base.copy(R::ReifiedSet{A,S}) where {A,S} = ReifiedSet{A,S}(R.func, R.set, R.dimension)
 
 #====================================================================================
 ====================================================================================#

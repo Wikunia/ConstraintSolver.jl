@@ -2,10 +2,10 @@ function _build_reified_constraint(
     _error::Function,
     variable::JuMP.AbstractVariableRef,
     constraint::JuMP.ScalarConstraint,
-    ::Type{CS.ReifiedSet{A}},
+    ::Type{<:CS.ReifiedSet{A}},
 ) where {A}
-
-    set = ReifiedSet{A}(JuMP.jump_function(constraint), JuMP.moi_set(constraint), 2)
+    S = typeof(JuMP.moi_set(constraint))
+    set = ReifiedSet{A,S}(JuMP.jump_function(constraint), JuMP.moi_set(constraint), 2)
     return JuMP.VectorConstraint([variable, JuMP.jump_function(constraint)], set)
 end
 
@@ -13,10 +13,10 @@ function _build_reified_constraint(
     _error::Function,
     variable::JuMP.AbstractVariableRef,
     jump_constraint::JuMP.VectorConstraint,
-    ::Type{CS.ReifiedSet{A}},
+    ::Type{<:CS.ReifiedSet{A}},
 ) where {A}
-
-    set = CS.ReifiedSet{A}(
+    S = typeof(jump_constraint.set)
+    set = CS.ReifiedSet{A,S}(
         MOI.VectorOfVariables(jump_constraint.func),
         jump_constraint.set,
         1 + length(jump_constraint.func),
