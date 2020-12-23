@@ -293,18 +293,16 @@ mutable struct TableBacktrackInfo
 end
 
 struct IndicatorSet{A} <: MOI.AbstractVectorSet
-    func::MOI.VectorOfVariables
     set::MOI.AbstractVectorSet
     dimension::Int
 end
-Base.copy(I::IndicatorSet{A}) where {A} = IndicatorSet{A}(I.func, I.set, I.dimension)
+Base.copy(I::IndicatorSet{A}) where {A} = IndicatorSet{A}(I.set, I.dimension)
 
 struct ReifiedSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
-    func::Union{JuMP.GenericAffExpr,MOI.VectorOfVariables}
     set::S
     dimension::Int
 end
-Base.copy(R::ReifiedSet{A,S}) where {A,S} = ReifiedSet{A,S}(R.func, R.set, R.dimension)
+Base.copy(R::ReifiedSet{A,S}) where {A,S} = ReifiedSet{A,S}(R.set, R.dimension)
 
 #====================================================================================
 ====================================================================================#

@@ -10,8 +10,7 @@ function MOIBC.bridge_constraint(
 ) where {T,A}
     flipped_f = MOIU.operate(-, T, f)
     flipped_inner_s = MOIBC.map_set(MOIBC.GreaterToLessBridge{T}, s.set)
-    # flipped_inner_f = MOIU.operate(-, T, s.func)
-    flipped_s = ReifiedSet{A,MOI.LessThan{T}}(s.func, flipped_inner_s, 2)
+    flipped_s = ReifiedSet{A,MOI.LessThan{T}}(flipped_inner_s, 2)
     ci = MOI.add_constraint(model,
         flipped_f,flipped_s
     )

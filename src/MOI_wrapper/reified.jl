@@ -5,7 +5,7 @@ function _build_reified_constraint(
     ::Type{<:CS.ReifiedSet{A}},
 ) where {A}
     S = typeof(JuMP.moi_set(constraint))
-    set = ReifiedSet{A,S}(JuMP.jump_function(constraint), JuMP.moi_set(constraint), 2)
+    set = ReifiedSet{A,S}(JuMP.moi_set(constraint), 2)
     return JuMP.VectorConstraint([variable, JuMP.jump_function(constraint)], set)
 end
 
@@ -17,7 +17,6 @@ function _build_reified_constraint(
 ) where {A}
     S = typeof(jump_constraint.set)
     set = CS.ReifiedSet{A,S}(
-        MOI.VectorOfVariables(jump_constraint.func),
         jump_constraint.set,
         1 + length(jump_constraint.func),
     )

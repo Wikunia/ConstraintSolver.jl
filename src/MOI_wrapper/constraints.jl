@@ -21,7 +21,6 @@ function JuMP._build_indicator_constraint(
 ) where {A}
 
     set = CS.IndicatorSet{A}(
-        MOI.VectorOfVariables(jump_constraint.func),
         jump_constraint.set,
         1 + length(jump_constraint.func),
     )
@@ -417,7 +416,7 @@ function MOI.add_constraint(
     internals = ConstraintInternals(
         length(com.constraints) + 1,
         func,
-        ReifiedSet{A,S}(set.func, inner_set, set.dimension),
+        ReifiedSet{A,S}(inner_set, set.dimension),
         indices,
     )
 
