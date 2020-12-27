@@ -79,6 +79,8 @@ mutable struct Variable
     is_integer::Bool # must be true to work
     # branching strategies
     activity::Float64 #  + 1 if variable was used in node, * activity.decay if it wasn't
+    in_all_different::Vector{Bool} # saves in which all different constraint this variable is used
+                                   # can be used to check if two or more variables are in the same alldifferent constraint
 end
 
 mutable struct NumberConstraintTypes

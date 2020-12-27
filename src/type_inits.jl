@@ -17,6 +17,7 @@ Variable(vidx) = Variable(
     false,
     false,
     0.0,
+    Vector{Bool}()
 )
 
 MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[], Bool[])

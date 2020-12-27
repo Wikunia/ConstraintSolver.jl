@@ -152,6 +152,7 @@ function MOI.optimize!(model::Optimizer)
     check_var_bounds(model)
 
     set_pvals!(model)
+    set_var_in_all_different!(model)
 
     create_lp_model!(model)
 

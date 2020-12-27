@@ -262,6 +262,9 @@ function prune_is_equal_two_var!(com::CS.CoM,
     fixed_rhs = get_fixed_rhs(com, constraint)
 
     local_vidx_1, vidx_1, local_vidx_2, vidx_2 = get_two_unfixed(com, constraint)
+    var1 = com.search_space[vidx_1]
+    var2 = com.search_space[vidx_2]
+    both_in_same_all_different = any(var1.in_all_different .& var2.in_all_different)
     for ((this_local_vidx, this_vidx), (other_local_vidx, other_vidx)) in zip(
         ((local_vidx_1, vidx_1), (local_vidx_2, vidx_2)),
         ((local_vidx_2, vidx_2), (local_vidx_1, vidx_1))
@@ -287,6 +290,13 @@ function prune_is_equal_two_var!(com::CS.CoM,
             remainder_int = get_approx_discrete(remainder)
             if !has(other_var, remainder_int)
                 !rm!(com, this_var, val) && return false
+                continue
+            end
+            # if in same all different and the remainder equals the value
+            # like x+y = 2x
+            if both_in_same_all_different && remainder_int == val
+                !rm!(com, this_var, val) && return false
+                !rm!(com, other_var, val) && return false
             end
         end
     end

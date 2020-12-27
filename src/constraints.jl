@@ -1,3 +1,37 @@
+"""
+set_pvals!(model::CS.Optimizer)
+
+Set the possible values for each constraint.
+"""
+function set_pvals!(model::CS.Optimizer)
+    com = model.inner
+    for constraint in com.constraints
+        set_pvals!(com, constraint)
+    end
+end
+
+"""
+    set_var_in_all_different!(model::CS.Optimizer)
+
+Set the vector `in_all_different` for each variable
+"""
+function set_var_in_all_different!(model::CS.Optimizer)
+    com = model.inner
+    n_all_different = com.info.n_constraint_types.alldifferent
+    for var in com.search_space
+        var.in_all_different = zeros(Bool, n_all_different)
+    end
+    ci = 1
+    for constraint in com.constraints
+        if constraint isa AllDifferentConstraint
+            for vidx in constraint.indices
+                com.search_space[vidx].in_all_different[ci] = true
+            end
+            ci += 1
+        end
+    end
+end
+
 
 """
 set_pvals!(model::CS.Optimizer)
