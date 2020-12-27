@@ -3,6 +3,9 @@
 ## Unreleased
 - Use `CS.get_inner_model` to get the `ConstraintSolverModel`
   - Usage of `JuMP.backend` as before will fail
+- Refactoring
+  - Using bridges for `>=` in indicator and reified constraint
+  - Combining `==` and `<=` into `src/constraints/linear_constraints.jl`
 
 ## v0.6.0 (15th of December 2020) 
 - **Dropped support for Julia v1.0 and v1.1**
