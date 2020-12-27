@@ -87,6 +87,25 @@ function get_fixed_rhs(com::CS.CoM, constraint::Constraint)
 end
 
 """
+    set_new_extrema(i, pre_mins, pre_maxs, new_min, new_max)
+
+Update pre_mins and pre_maxs if new_min or new_max is smaller or bigger.
+Return wheter a value was updated
+"""
+function set_new_extrema(i, pre_mins, pre_maxs, new_min, new_max)
+    changed = false
+    if new_min != pre_mins[i]
+        changed = true
+        pre_mins[i] = new_min
+    end
+    if new_max != pre_maxs[i]
+        changed = true
+        pre_maxs[i] = new_max
+    end
+    return changed
+end
+
+"""
     prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}; logs = true) where T <: Real
 
 Reduce the number of possibilities given the equality `LinearConstraint` .
@@ -177,19 +196,10 @@ function prune_constraint!(
                     pre_mins,
                     pre_maxs,
                 )
-                if new_min != pre_mins[i]
-                    changed = true
-                    pre_mins[i] = new_min
-                end
-                if new_max != pre_maxs[i]
-                    changed = true
-                    pre_maxs[i] = new_max
-                end
+                changed = set_new_extrema(i, pre_mins, pre_maxs, new_min, new_max)
                 mins[i] = pre_mins[i]
                 maxs[i] = pre_maxs[i]
-                if !still_feasible
-                    return false
-                end
+                !still_feasible && return false
             end
             # same if a better minimum value could be achieved
             if mins[i] > pre_mins[i]
@@ -214,19 +224,11 @@ function prune_constraint!(
                     pre_mins,
                     pre_maxs,
                 )
-                if new_min != pre_mins[i]
-                    changed = true
-                    pre_mins[i] = new_min
-                end
-                if new_max != pre_maxs[i]
-                    changed = true
-                    pre_maxs[i] = new_max
-                end
+                changed = set_new_extrema(i, pre_mins, pre_maxs, new_min, new_max)
                 mins[i] = pre_mins[i]
                 maxs[i] = pre_maxs[i]
-                if !still_feasible
-                    return false
-                end
+
+                !still_feasible && return false
             end
         end
     end
@@ -235,6 +237,27 @@ function prune_constraint!(
     !constraint.is_equal && return true
     n_unfixed = count_unfixed(com, constraint)
     n_unfixed != 2 && return true
+
+    return prune_is_equal_two_var!(com, constraint, fct)
+end
+
+"""
+    prune_is_equal_two_var!(com::CS.CoM,
+        constraint::CS.LinearConstraint,
+        fct::SAF{T}) where T
+
+Prune something like ax+by+cz == d with a,b,c,d constants and x,y,z variables
+where only two variables aren't fixed yet. One should make sure with [`count_unfixed`](@ref)
+that this is the case.
+Return whether feasible
+x + y <= 7
+[1,2]
+"""
+function prune_is_equal_two_var!(com::CS.CoM,
+    constraint::CS.LinearConstraint,
+    fct::SAF{T}) where T
+
+    search_space = com.search_space
 
     fixed_rhs = get_fixed_rhs(com, constraint)
 
@@ -246,7 +269,8 @@ function prune_constraint!(
         this_var = search_space[this_vidx]
         other_var = search_space[other_vidx]
         for val in values(this_var)
-            # if we choose this value but the other wouldn't be an integer => remove this value
+            # if we choose this value but the other wouldn't be an integer
+            # => remove this value
             if !isapprox_divisible(
                 com,
                 (fixed_rhs - val * fct.terms[this_local_vidx].coefficient),
@@ -294,26 +318,12 @@ function prune_constraint!(
         !has(unfixed_var, remainder_int) && return false
         !fix!(com, unfixed_var, remainder_int) && return false
     end
-
-    #=
-    if n_unfixed == 1
-        for li in 1:length(constraint.indices)
-            var = search_space[li]
-            isfixed(var) && continue
-            !isapprox_divisible(com, rhs, fct.terms[li].coefficient) && return false
-            remainder = rhs
-            remainder /= fct.terms[li].coefficient
-            remainder_int = get_approx_discrete(remainder)
-            !fix!(com, var, remainder_int) && return false
-        end
-    end
-    =#
-
     return true
 end
 
 """
-    still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}, vidx::Int, val::Int) where T <: Real
+    still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T},
+                   set::MOI.EqualTo{T}, vidx::Int, val::Int) where T <: Real
 
 Return whether setting `search_space[vidx]` to `val` is still feasible given `constraint`.
 """
