@@ -32,19 +32,6 @@ function set_var_in_all_different!(model::CS.Optimizer)
     end
 end
 
-
-"""
-set_pvals!(model::CS.Optimizer)
-
-Set the possible values for each constraint.
-"""
-function set_pvals!(model::CS.Optimizer)
-    com = model.inner
-    for constraint in com.constraints
-        set_pvals!(com, constraint)
-    end
-end
-
 """
 init_constraints!(com::CS.CoM; constraints=com.constraints)
 

@@ -12,7 +12,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},CS.LessThan{T}};
+    set::MOI.LessThan;
     logs = true,
 ) where {T<:Real}
     lhs = constraint.lhs
@@ -32,7 +32,7 @@ function still_feasible(
     com::CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},CS.LessThan{T}},
+    set::MOI.LessThan,
     vidx::Int,
     val::Int,
 ) where {T<:Real}
@@ -57,7 +57,7 @@ end
 function is_constraint_solved(
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},CS.LessThan{T}},
+    set::MOI.LessThan,
     values::Vector{Int},
 ) where {T<:Real}
     return values[1] <= values[2]
@@ -69,7 +69,7 @@ end
         com::CoM,
         constraint::CS.SingleVariableConstraint,
         fct::SAF{T},
-        set::Union{MOI.LessThan{T}, CS.LessThan{T}},
+        set::Union{MOI.LessThan{T}, Union{MOI.LessThan{T},MOI.LessThan{T}}{T}},
     ) where {T<:Real}
 
 Checks if the constraint is violated as it is currently set. This can happen inside an
@@ -79,7 +79,7 @@ function is_constraint_violated(
     com::CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},CS.LessThan{T}},
+    set::MOI.LessThan,
 ) where {T<:Real}
     return com.search_space[constraint.indices[1]].min >
            com.search_space[constraint.indices[2]].max

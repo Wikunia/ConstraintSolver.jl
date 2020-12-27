@@ -26,7 +26,7 @@ function simplify!(com)
         elseif isa(constraint.fct, SAF) && isa(constraint.set, CS.NotEqualTo)
             b_not_equal_to = true
         elseif isa(constraint, SingleVariableConstraint) &&
-               isa(constraint.set, Union{MOI.LessThan,CS.LessThan})
+               isa(constraint.set, MOI.LessThan)
             b_svc_less_than = true
         end
     end
@@ -63,7 +63,7 @@ function simplify_svc_less_than(com)
     for constraint_idx in 1:length(com.constraints)
         constraint = com.constraints[constraint_idx]
         if isa(constraint, SingleVariableConstraint) &&
-           isa(constraint.set, Union{MOI.LessThan,CS.LessThan})
+           isa(constraint.set, MOI.LessThan)
             if haskey(lhs_vars, constraint.lhs)
                 push!(lhs_vars[constraint.lhs], constraint.rhs)
                 push!(lhs_cons[constraint.lhs], constraint.idx)
