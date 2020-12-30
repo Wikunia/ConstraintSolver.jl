@@ -55,8 +55,6 @@ include("Variable.jl")
 include("objective.jl")
 include("constraints.jl")
 
-include("constraints/linear_constraints/util.jl")
-
 include("constraints/all_different.jl")
 include("constraints/linear_constraints.jl")
 include("constraints/svc.jl")
