@@ -6,7 +6,7 @@ end
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 include("../../test/sudoku_fcts.jl")
-include("../../visualizations/plot_search_space.jl")
+# include("../../visualizations/plot_search_space.jl")
 
 function parseJSON(json_sums)
     sums = []
@@ -29,7 +29,7 @@ function solve_all(filenames; benchmark = false, single_times = true)
         # plot_killer(zeros(Int, (9,9)), sums, filename; fill=false)
         # continue
 
-        m = CS.Optimizer(logging = [], keep_logs = true, time_limit = 20)
+        m = CS.Optimizer(logging = [], time_limit = 20)
 
         x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i in 1:9] for j in 1:9]
         for r in 1:9, c in 1:9
@@ -64,12 +64,10 @@ function solve_all(filenames; benchmark = false, single_times = true)
         end
         if !benchmark
             println("Status: ", status)
-            @show m.inner.info
             var_x = fill(MOI.VariableIndex(0), (9, 9))
             for r in 1:9
                 var_x[r, :] = [x[r][c][1] for c in 1:9]
             end
-            # CS.save_logs(m.inner, "/srv/http/ConstraintVisual/data/json/killer_$filename.json", :x => var_x)
             if status == MOI.OPTIMAL
                 solution = zeros(Int, 9, 9)
                 for r in 1:9
@@ -94,11 +92,11 @@ function main(; benchmark = false, single_times = true)
     solve_all(
         [
             "niallsudoku_5500",
-            "niallsudoku_5501",
-            "niallsudoku_5502",
-            "niallsudoku_5503",
-            "niallsudoku_6417",
-            "niallsudoku_6249",
+            # "niallsudoku_5501",
+            # "niallsudoku_5502",
+            # "niallsudoku_5503",
+            # "niallsudoku_6417",
+            # "niallsudoku_6249",
         ];
         benchmark = benchmark,
         single_times = single_times,

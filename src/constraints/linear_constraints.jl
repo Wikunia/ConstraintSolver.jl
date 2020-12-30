@@ -104,7 +104,7 @@ function get_fixed_rhs(com::CS.CoM, constraint::Constraint)
     rhs = constraint.rhs
     fct = constraint.fct
     search_space = com.search_space
-    for li in 1:length(constraint.indices)
+    @inbounds for li in 1:length(constraint.indices)
         vidx = constraint.indices[li]
         var = search_space[vidx]
         !isfixed(var) && continue

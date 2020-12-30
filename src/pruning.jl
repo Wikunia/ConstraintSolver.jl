@@ -214,7 +214,7 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
     for var in search_space
         length(var.changes[backtrack_idx]) == 0 && continue
         var.idx > length(com.subscription) && continue
-        for ci in com.subscription[var.idx]
+        @inbounds for ci in com.subscription[var.idx]
             constraint = com.constraints[ci]
             if constraint.impl.single_reverse_pruning
                 single_reverse_pruning_constraint!(
