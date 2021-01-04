@@ -26,7 +26,7 @@
             CS.TableSetInternal(3, table),
         )
 
-        com = m.inner
+        com = CS.get_inner_model(m)
         constraint = com.constraints[1]
 
         feasible = CS.init_constraint!(
@@ -45,7 +45,7 @@
         # 0x4d00000000000000 == 0x0100110100000000000000000000000000000000000000000000000000000000
         @test CS.get_view(constraint.supports, com, z.value, z.value, 2) ==
               [0x4d00000000000000]
-        @test constraint.residues[com, y.value, y.value, 4] == 0 # no support 
+        @test constraint.residues[com, y.value, y.value, 4] == 0 # no support
         @test constraint.residues[com, x.value, x.value, 1] == 1
 
         ############### NOT FEASIBLE IN INIT
@@ -75,7 +75,7 @@
             CS.TableSetInternal(3, table),
         )
 
-        com = m.inner
+        com = CS.get_inner_model(m)
         constraint = com.constraints[1]
 
         feasible = CS.init_constraint!(
@@ -142,7 +142,7 @@
             CS.TableSetInternal(3, table),
         )
 
-        com = m.inner
+        com = CS.get_inner_model(m)
         constraint = com.constraints[1]
 
         feasible = CS.init_constraint!(
@@ -187,7 +187,7 @@
             CS.TableSetInternal(3, table),
         )
 
-        com = m.inner
+        com = CS.get_inner_model(m)
         constraint = com.constraints[1]
 
         feasible = CS.init_constraint!(
@@ -244,7 +244,7 @@
             CS.TableSetInternal(3, table),
         )
 
-        com = m.inner
+        com = CS.get_inner_model(m)
         constraint = com.constraints[1]
 
         feasible = CS.init_constraint!(
@@ -284,7 +284,7 @@
         CS.reverse_pruning_constraint!(com, constraint, constraint.fct, constraint.set, 1)
 
         words_after_rev_prune = copy(constraint.current.words)
-        # before init 
+        # before init
         @test words_after_rev_prune == fill(~zero(UInt64), 1)
 
         # the 3 should be possible again
@@ -329,7 +329,7 @@
             CS.TableSetInternal(3, table2),
         )
 
-        com = m.inner
+        com = CS.get_inner_model(m)
         constraint = com.constraints[1]
         constraint2 = com.constraints[2]
 
@@ -433,7 +433,7 @@
             CS.TableSetInternal(3, table3),
         )
 
-        com = m.inner
+        com = CS.get_inner_model(m)
         constraint = com.constraints[1]
         constraint2 = com.constraints[2]
         constraint3 = com.constraints[3]

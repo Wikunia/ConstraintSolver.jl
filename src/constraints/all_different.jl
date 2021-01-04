@@ -487,7 +487,9 @@ function is_constraint_violated(
     com::CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSetInternal
+    set::AllDifferentSetInternal,
 )
-    return !allunique(CS.value(var) for var in com.search_space[constraint.indices] if isfixed(var))
+    return !allunique(
+        CS.value(var) for var in com.search_space[constraint.indices] if isfixed(var)
+    )
 end

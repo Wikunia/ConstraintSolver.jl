@@ -1,6 +1,6 @@
 @testset "MOI Tests" begin
     @testset "Supports and SolverName" begin
-        optimizer = CSTestOptimizer(;branch_strategy=:ABS)
+        optimizer = CSTestOptimizer(; branch_strategy = :ABS)
         @test MOI.get(optimizer, MOI.SolverName()) == "ConstraintSolver"
         @test MOI.supports_constraint(
             optimizer,
@@ -60,13 +60,13 @@
         @test MOI.supports_constraint(
             optimizer,
             typeof(f),
-            CS.ReifiedSet{MOI.ACTIVATE_ON_ONE},
+            CS.ReifiedSet{MOI.ACTIVATE_ON_ONE,MOI.LessThan},
         )
 
         @test MOI.supports_constraint(
             optimizer,
             MOI.VectorOfVariables,
-            CS.ReifiedSet{MOI.ACTIVATE_ON_ZERO},
+            CS.ReifiedSet{MOI.ACTIVATE_ON_ZERO,CS.AllDifferentSetInternal},
         )
 
         # TimeLimit

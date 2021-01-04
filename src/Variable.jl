@@ -17,7 +17,7 @@ Can be used if the status is :Solved as then all variables are fixed.
 Return all possible values for the variable. (Only one if solved to optimality)
 """
 function values(m::Model, v::VariableRef)
-    com = backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     return values(com.search_space[v.index.value])
 end
 

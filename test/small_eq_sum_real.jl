@@ -1,13 +1,13 @@
 @testset "Real coefficients" begin
     @testset "Basic all true" begin
-        m = Model(CSJuMPTestOptimizer(;branch_strategy=:ABS))
+        m = Model(CSJuMPTestOptimizer(; branch_strategy = :ABS))
         @variable(m, x[1:4], Bin)
         weights = [1.7, 0.7, 0.3, 1.3]
         @variable(m, 0 <= max_val <= 10, Int)
         @constraint(m, sum(weights .* x) == max_val)
         @objective(m, Max, max_val)
         optimize!(m)
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
         @test JuMP.termination_status(m) == MOI.OPTIMAL
         @test JuMP.objective_value(m) == 4

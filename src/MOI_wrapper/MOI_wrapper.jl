@@ -33,6 +33,8 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 end
 
 include("variables.jl")
+include("Bridges/indicator_greater_than.jl")
+include("Bridges/reified_greater_than.jl")
 include("constraints.jl")
 include("objective.jl")
 include("results.jl")
@@ -45,7 +47,11 @@ Optimizer struct constructor
 function Optimizer(; options...)
     options = combine_options(options)
     com = CS.ConstraintSolverModel(options.solution_type)
-    return Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
+    optimizer = Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
+    lbo = MOIB.full_bridge_optimizer(optimizer, options.solution_type)
+    MOIB.add_bridge(lbo, CS.ReifiedGreaterToLessThanBridge{options.solution_type})
+    MOIB.add_bridge(lbo, CS.IndicatorGreaterToLessThanBridge{options.solution_type})
+    return lbo
 end
 
 """
@@ -99,7 +105,11 @@ function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
             if num_subcat == length(parts)
                 if hasmethod(convert, (Type{type_of_param}, typeof(value)))
                     if is_possible_option_value(p, value)
-                        setfield!(current_options_obj, cp_symbol, convert(type_of_param, value))
+                        setfield!(
+                            current_options_obj,
+                            cp_symbol,
+                            convert(type_of_param, value),
+                        )
                     else
                         @error "The option $(cp_symbol) doesn't have $(value) as a possible value. Possible values are: $(POSSIBLE_OPTIONS[p_symbol])"
                         break
@@ -142,6 +152,7 @@ function MOI.optimize!(model::Optimizer)
     check_var_bounds(model)
 
     set_pvals!(model)
+    set_var_in_all_different!(model)
 
     create_lp_model!(model)
 
@@ -150,7 +161,7 @@ function MOI.optimize!(model::Optimizer)
 
     if status == :Solved
         com = model.inner
-        com.solutions = unique!(sol->sol.hash, com.solutions)
+        com.solutions = unique!(sol -> sol.hash, com.solutions)
         if !com.options.all_solutions
             filter!(sol -> sol.incumbent == com.best_sol, com.solutions)
         end

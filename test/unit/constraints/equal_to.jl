@@ -1,9 +1,72 @@
+@testset "equal_to_prune_two" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, -5 <= x[1:4] <= 5, Int)
+    @constraint(m, sum(x) == 10)
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    constraint = get_constraints_by_type(com, CS.LinearConstraint)[1]
+    @test constraint.is_equal
+    @test CS.count_unfixed(com, constraint) == 4
+    x_var = com.search_space[constraint.indices]
+    # fix two and test that it is still feasible
+    @test CS.fix!(com, x_var[1], 3)
+    @test CS.fix!(com, x_var[2], -3)
+
+    # here 3 and 4 must be equal to 5 and we can prune with
+    # prune_is_equal_two_var!
+    @test CS.prune_is_equal_two_var!(com, constraint, constraint.fct)
+    @test CS.values(x_var[3]) == [5]
+    @test CS.values(x_var[4]) == [5]
+end
+
+@testset "equal_to_prune_two in all different" begin
+    # test if 3 and 4 are also in all different constraint
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, -5 <= x[1:4] <= 5, Int)
+    @constraint(m, sum(x) == 10)
+    @constraint(m, x[3:4] in CS.AllDifferentSet())
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    constraint = get_constraints_by_type(com, CS.LinearConstraint)[1]
+    x_var = com.search_space[constraint.indices]
+    # fix two and test that it is still feasible
+    @test CS.fix!(com, x_var[1], 3)
+    @test CS.fix!(com, x_var[2], -3)
+    @test CS.count_unfixed(com, constraint) == 2
+    # not feasible as 3 and 4 would need to be 5 but there is an all different constraint
+    @test !CS.prune_is_equal_two_var!(com, constraint, constraint.fct)
+end
+
+@testset "equal_to_prune_two not in same all different" begin
+    # test if 3 and 4 are also in all different constraint
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, -5 <= x[1:4] <= 5, Int)
+    @constraint(m, sum(x) == 10)
+    @constraint(m, x[1:3] in CS.AllDifferentSet())
+    @constraint(m, [x[2], x[4]] in CS.AllDifferentSet())
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    constraint = get_constraints_by_type(com, CS.LinearConstraint)[1]
+    x_var = com.search_space[constraint.indices]
+    # fix two and test that it is still feasible
+    @test CS.fix!(com, x_var[1], 3)
+    @test CS.fix!(com, x_var[2], -3)
+    @test CS.count_unfixed(com, constraint) == 2
+    # feasible as 3 and 4 can be 5
+    @test CS.prune_is_equal_two_var!(com, constraint, constraint.fct)
+    @test CS.values(x_var[3]) == [5]
+    @test CS.values(x_var[4]) == [5]
+end
+
 @testset "equal_to" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, y[1:3], CS.Integers([-3, 1, 2, 3]))
     @constraint(m, sum(y) + 1 == 5)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     constraint = get_constraints_by_type(com, CS.LinearConstraint)[1]
 
     # doesn't check the length
@@ -75,7 +138,7 @@ end
     @variable(m, -5 <= x[1:2] <= 5, Int)
     @constraint(m, sum(x) == 10)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = get_constraints_by_type(com, CS.LinearConstraint)[1]
 
@@ -88,7 +151,7 @@ end
     @variable(m, -5 <= x[1:2] <= 5, Int)
     @constraint(m, sum(x) == 10)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = get_constraints_by_type(com, CS.LinearConstraint)[1]
 

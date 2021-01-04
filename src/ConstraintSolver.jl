@@ -31,6 +31,8 @@ using StatsFuns
 const CS = ConstraintSolver
 const CS_RNG = MersenneTwister(1)
 const MOI = MathOptInterface
+const MOIB = MathOptInterface.Bridges
+const MOIBC = MathOptInterface.Bridges.Constraint
 const MOIU = MOI.Utilities
 
 include("types.jl")
@@ -51,12 +53,10 @@ include("printing.jl")
 include("logs.jl")
 include("Variable.jl")
 include("objective.jl")
-
-include("constraints/linear_constraints/util.jl")
+include("constraints.jl")
 
 include("constraints/all_different.jl")
-include("constraints/equal_to.jl")
-include("constraints/less_than.jl")
+include("constraints/linear_constraints.jl")
 include("constraints/svc.jl")
 include("constraints/equal_set.jl")
 include("constraints/not_equal.jl")
@@ -67,6 +67,19 @@ include("constraints/geqset.jl")
 
 include("pruning.jl")
 include("simplify.jl")
+
+"""
+    get_inner_model(::Model) or get_inner_model(::MOIB.LazyBridgeOptimizer{Optimizer})
+
+Return the ConstraintSolverModel for the Model or Optimizer
+"""
+function get_inner_model(m::Model)
+    JuMP.backend(m).optimizer.model.model.inner
+end
+
+function get_inner_model(o::MOIB.LazyBridgeOptimizer{Optimizer})
+    o.model.inner
+end
 
 """
     fulfills_constraints(com::CS.CoM, vidx, value)
@@ -138,8 +151,8 @@ end
 Add a constraint to the model and set pvals if `set_pvals=true` as well.
 Pushes the new constraint to the subscription vector of the involved variables.
 """
-function add_constraint!(com::CS.CoM, constraint::Constraint; set_pvals=true)
-    @assert constraint.idx == length(com.constraints)+1
+function add_constraint!(com::CS.CoM, constraint::Constraint; set_pvals = true)
+    @assert constraint.idx == length(com.constraints) + 1
     push!(com.constraints, constraint)
     set_pvals && set_pvals!(com, constraint)
     for vidx in constraint.indices
@@ -445,7 +458,7 @@ function handle_infeasible!(com::CS.CoM; finish_pruning = false)
     return true
 end
 
-function solve_with_backtrack!(com, max_bt_steps; sorting=true)
+function solve_with_backtrack!(com, max_bt_steps; sorting = true)
     com.info.backtrack_fixes = 1
 
     log_table = false
@@ -453,7 +466,8 @@ function solve_with_backtrack!(com, max_bt_steps; sorting=true)
         log_table = true
     end
 
-    status, last_backtrack_id = backtrack!(com, max_bt_steps; sorting = sorting, log_table = log_table)
+    status, last_backtrack_id =
+        backtrack!(com, max_bt_steps; sorting = sorting, log_table = log_table)
 
     status != :TBD && return status
 
@@ -481,9 +495,17 @@ Start backtracking and stop after `max_bt_steps`.
 If `sorting` is set to `false` the same ordering is used as when used without objective this has only an effect when an objective is used.
 Return :Solved or :Infeasible if proven or `:NotSolved` if interrupted by `max_bt_steps`.
 """
-function backtrack!(com::CS.CoM, max_bt_steps;
-        sorting = true, log_table=true, first_parent_idx = 1, single_path = false,
-        compute_bounds = true, check_bounds=true, cb_finished_pruning = (args...)->nothing)
+function backtrack!(
+    com::CS.CoM,
+    max_bt_steps;
+    sorting = true,
+    log_table = true,
+    first_parent_idx = 1,
+    single_path = false,
+    compute_bounds = true,
+    check_bounds = true,
+    cb_finished_pruning = (args...) -> nothing,
+)
 
     branch_var = get_next_branch_variable(com)
     branch_var.is_solution && return :Solved, first_parent_idx
@@ -504,7 +526,7 @@ function backtrack!(com::CS.CoM, max_bt_steps;
         branch_var.vidx;
         only_one = single_path,
         compute_bound = compute_bounds,
-        check_bound = check_bounds
+        check_bound = check_bounds,
     )
     last_backtrack_id = first_parent_idx
 
@@ -544,7 +566,7 @@ function backtrack!(com::CS.CoM, max_bt_steps;
         # in nodes which already have children
         if started
             for root_infeasible in com.root_infeasible_vars
-                for val in root_infeasible.lb:root_infeasible.ub
+                for val in (root_infeasible.lb):(root_infeasible.ub)
                     if has(com.search_space[root_infeasible.vidx], val)
                         if !rm!(com, com.search_space[root_infeasible.vidx], val)
                             return :Infeasible, last_backtrack_id
@@ -604,7 +626,7 @@ function backtrack!(com::CS.CoM, max_bt_steps;
             branch_var.vidx;
             only_one = single_path,
             compute_bound = compute_bounds,
-            check_bound = check_bounds
+            check_bound = check_bounds,
         )
     end
 

@@ -4,7 +4,7 @@
     @variable(m, -5 <= x[1:5] <= 5, Int)
     @constraint(m, b := {x in CS.AllDifferentSet()})
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -19,7 +19,7 @@
     @variable(m, -5 <= x[1:5] <= 5, Int)
     @constraint(m, b := {x in CS.AllDifferentSet()})
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -34,7 +34,7 @@
     @variable(m, -5 <= x[1:5] <= 5, Int)
     @constraint(m, b := {x in CS.AllDifferentSet()})
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 

@@ -84,7 +84,7 @@ end
     end
 
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     @test is_solved(com)
 
     status = JuMP.termination_status(m)
@@ -156,7 +156,7 @@ end
     @objective(m, Max, indicator)
 
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     # check that indicator is set to 1
     @test JuMP.objective_value(m) ≈ 1.0
     @test is_solved(com)
@@ -230,7 +230,7 @@ end
     @objective(m, Max, sum(reified))
 
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     # check that all reified variables are set to 1
     @test JuMP.objective_value(m) ≈ width * height
     @test is_solved(com)

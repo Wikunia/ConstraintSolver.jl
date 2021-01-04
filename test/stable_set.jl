@@ -42,7 +42,7 @@ using LinearAlgebra: dot
         MOI.set(model, MOI.ObjectiveSense(), MOI.MAX_SENSE)
         MOI.optimize!(model)
         var_x = [x[i][1] for i in 1:4]
-        CS.save_logs(model.inner, "stable_set.json", :x => var_x)
+        CS.save_logs(CS.get_inner_model(model), "stable_set.json", :x => var_x)
         rm("stable_set.json")
 
         @test MOI.get(model, MOI.VariablePrimal(), x[4][1]) == 1
@@ -102,7 +102,7 @@ using LinearAlgebra: dot
         w = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         @objective(m, Max, dot(w, x))
         optimize!(m)
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
         @test com.info.n_constraint_types.inequality == length(com.constraints)
         @test com.info.n_constraint_types.inequality == nconstraints
@@ -141,7 +141,7 @@ using LinearAlgebra: dot
         w = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         @objective(m, Max, dot(w, x))
         optimize!(m)
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test com.info.n_constraint_types.inequality == length(com.constraints)
         @test com.info.n_constraint_types.inequality == nconstraints
 

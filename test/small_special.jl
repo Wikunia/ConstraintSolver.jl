@@ -22,7 +22,7 @@
     end
 
     @testset "LessThan constraints JuMP" begin
-        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
+        m = Model(CSJuMPTestOptimizer(; branch_strategy = :ABS))
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         @constraint(m, sum(x) >= 20)
@@ -48,7 +48,7 @@
         @test JuMP.objective_value(m) == 37
 
         # minimize with negative and positive real weights
-        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
+        m = Model(CSJuMPTestOptimizer(; branch_strategy = :ABS))
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         weights = [-0.1, 0.2, -0.3, 0.4, 0.5]
@@ -274,14 +274,14 @@
         m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack" => false))
         @variable(m, x, CS.Integers([1, 2, 4]))
         optimize!(m)
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test !CS.has(com.search_space[1], 3)
         @test sort(CS.values(com.search_space[1])) == [1, 2, 4]
 
         m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack" => false))
         @variable(m, y, CS.Integers([2, 5, 6, 3]))
         optimize!(m)
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test !CS.has(com.search_space[1], 1)
         @test !CS.has(com.search_space[1], 4)
         @test sort(CS.values(com.search_space[1])) == [2, 3, 5, 6]
@@ -312,7 +312,7 @@
         @constraint(m, x[1] + x[2] == x[3])
         @constraint(m, x[1] <= x[2])
         optimize!(m)
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
         @test MOI.get(m, MOI.ResultCount()) == 20
     end
@@ -383,7 +383,7 @@
         optimize!(model)
         status = JuMP.termination_status(model)
         @test status == MOI.OPTIMAL
-        com = JuMP.backend(model).optimizer.model.inner
+        com = CS.get_inner_model(model)
         @test is_solved(com)
     end
 
@@ -411,7 +411,7 @@
         optimize!(model)
         status = JuMP.termination_status(model)
         @test status == MOI.OPTIMAL
-        com = JuMP.backend(model).optimizer.model.inner
+        com = CS.get_inner_model(model)
         @test is_solved(com)
     end
 
@@ -463,7 +463,7 @@
     @testset "Infeasible all different in indicator" begin
         model = Model(CSCbcJuMPTestOptimizer(; branch_strategy = :ABS))
         n = 2
-        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, 1 <= x[1:n] <= n - 1, Int)
         @variable(model, b, Bin)
         @constraint(model, b => {x in CS.AllDifferentSet()})
         @objective(model, Max, b)
@@ -477,7 +477,7 @@
     @testset "Infeasible all different in reified" begin
         model = Model(CSJuMPTestOptimizer())
         n = 4
-        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, 1 <= x[1:n] <= n - 1, Int)
         @variable(model, b, Bin)
         @constraint(model, b := {x in CS.AllDifferentSet()})
         @objective(model, Max, b)
@@ -491,7 +491,7 @@
     @testset "Table dim not matching" begin
         model = Model(CSJuMPTestOptimizer())
         n = 4
-        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, 1 <= x[1:n] <= n - 1, Int)
         @variable(model, b, Bin)
         @test_throws ArgumentError @constraint(model, b => {x in CS.TableSet([
             10 20
@@ -502,7 +502,7 @@
     @testset "Infeasible table in indicator" begin
         model = Model(CSJuMPTestOptimizer())
         n = 2
-        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, 1 <= x[1:n] <= n - 1, Int)
         @variable(model, b, Bin)
         @constraint(model, b => {x in CS.TableSet([
             10 20
@@ -520,7 +520,7 @@
     @testset "Infeasible table in reified" begin
         model = Model(CSJuMPTestOptimizer())
         n = 2
-        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, 1 <= x[1:n] <= n - 1, Int)
         @variable(model, b, Bin)
         @constraint(model, b := {x in CS.TableSet([
             10 20
@@ -536,42 +536,42 @@
 
     @testset "Magic Square 5x5" begin
         n = 5
-        model = Model(optimizer_with_attributes(CS.Optimizer,
-                "traverse_strategy"=>:BFS,
-                "logging" => [],
-                "branch_split"=>:InHalf,
-                "time_limit"=>3,
-            )
-        )
+        model = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "traverse_strategy" => :BFS,
+            "logging" => [],
+            "branch_split" => :InHalf,
+            "time_limit" => 3,
+        ))
 
 
         # The total for each row, column, and the two main diaginals
-        s = round(Int,n*(n^2 + 1) / 2)
-        @variable(model, 1 <= x[1:n,1:n] <= n^2, Int)
+        s = round(Int, n * (n^2 + 1) / 2)
+        @variable(model, 1 <= x[1:n, 1:n] <= n^2, Int)
         @constraint(model, x[:] in CS.AllDifferentSet())
 
         for i in 1:n
             # Rows
-            @constraint(model, sum(x[i,:]) == s)
+            @constraint(model, sum(x[i, :]) == s)
 
             # Columns
-            @constraint(model, sum(x[:,i]) == s)
+            @constraint(model, sum(x[:, i]) == s)
         end
 
         # diagonals
-        @constraint(model, sum([x[i,i] for i in 1:n]) == s)
-        @constraint(model, s == sum([x[i,n-i+1] for i in 1:n]))
+        @constraint(model, sum([x[i, i] for i in 1:n]) == s)
+        @constraint(model, s == sum([x[i, n - i + 1] for i in 1:n]))
 
         optimize!(model)
         status = JuMP.termination_status(model)
         @test status == MOI.OPTIMAL
-        sol = convert.(Int,JuMP.value.(x))
-        for i=1:n
-            @test sum(sol[i,:]) == 65
-            @test sum(sol[:,i]) == 65
+        sol = convert.(Int, JuMP.value.(x))
+        for i in 1:n
+            @test sum(sol[i, :]) == 65
+            @test sum(sol[:, i]) == 65
         end
-        @test sum([sol[i,i] for i in 1:n]) == 65
-        @test sum([sol[i,n-i+1] for i in 1:n]) == 65
+        @test sum([sol[i, i] for i in 1:n]) == 65
+        @test sum([sol[i, n - i + 1] for i in 1:n]) == 65
         @test allunique(sol)
     end
 end

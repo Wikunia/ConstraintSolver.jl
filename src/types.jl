@@ -79,6 +79,8 @@ mutable struct Variable
     is_integer::Bool # must be true to work
     # branching strategies
     activity::Float64 #  + 1 if variable was used in node, * activity.decay if it wasn't
+    in_all_different::Vector{Bool} # saves in which all different constraint this variable is used
+                                   # can be used to check if two or more variables are in the same alldifferent constraint
 end
 
 mutable struct NumberConstraintTypes
@@ -128,7 +130,7 @@ struct TableSet <: JuMP.AbstractVectorSet
     table::Array{Int,2}
 end
 function JuMP.moi_set(ts::TableSet, dim)
-    if size(ts.table,2) != dim
+    if size(ts.table, 2) != dim
         throw(ArgumentError("The table provided has $(size(ts.table,2)) columns but the variable vector has $dim elements"))
     end
     TableSetInternal(dim, ts.table)
@@ -263,7 +265,7 @@ mutable struct TableSupport
     # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
     var_start::Vector{Int}
     values::Array{UInt64,2}
-    TableSupport() = new([], Array{UInt64,2}(undef, (0,0)))
+    TableSupport() = new([], Array{UInt64,2}(undef, (0, 0)))
 end
 
 mutable struct TableResidues
@@ -281,18 +283,17 @@ mutable struct TableBacktrackInfo
 end
 
 struct IndicatorSet{A} <: MOI.AbstractVectorSet
-    func::MOI.VectorOfVariables
     set::MOI.AbstractVectorSet
     dimension::Int
 end
-Base.copy(I::IndicatorSet{A}) where {A} = IndicatorSet{A}(I.func, I.set, I.dimension)
+Base.copy(I::IndicatorSet{A}) where {A} = IndicatorSet{A}(I.set, I.dimension)
 
-struct ReifiedSet{A} <: MOI.AbstractVectorSet
-    func::Union{JuMP.GenericAffExpr,MOI.VectorOfVariables}
-    set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
+struct ReifiedSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
+       MOI.AbstractVectorSet
+    set::S
     dimension::Int
 end
-Base.copy(R::ReifiedSet{A}) where {A} = ReifiedSet{A}(R.func, R.set, R.dimension)
+Base.copy(R::ReifiedSet{A,S}) where {A,S} = ReifiedSet{A,S}(R.set, R.dimension)
 
 #====================================================================================
 ====================================================================================#
@@ -358,6 +359,9 @@ end
 mutable struct LinearConstraint{T<:Real} <: Constraint
     std::ConstraintInternals
     in_all_different::Bool
+    is_strict::Bool # for differentiate between < and <=
+    is_equal::Bool # for ==
+    rhs::T # combines value - constant
     mins::Vector{T}
     maxs::Vector{T}
     pre_mins::Vector{T}
@@ -505,9 +509,9 @@ mutable struct BranchVarObj
 end
 
 struct VarAndVal
-    vidx :: Int
-    lb   :: Int
-    ub   :: Int
+    vidx::Int
+    lb::Int
+    ub::Int
 end
 
 mutable struct ConstraintSolverModel{T<:Real}
