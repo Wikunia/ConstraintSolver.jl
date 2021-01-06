@@ -6,6 +6,12 @@ struct IndicatorGreaterToLessBridge{
 } <: MOIBC.FlipSignBridge{T,MOI.IndicatorSet{A},MOI.IndicatorSet{A},F,G}
     constraint::CI{F,MOI.IndicatorSet{A,MOI.LessThan{T}}}
 end
+
+function MOIBC.map_function(::Type{<:IndicatorGreaterToLessBridge{T}}, func) where {T}
+    # apply the operator only for the inner constraint part (here the second part)
+    operate_vector_affine_function_part(-, T, func, 2)
+end
+
 function MOIBC.map_set(::Type{<:IndicatorGreaterToLessBridge}, set::MOI.IndicatorSet{A,<:MOI.GreaterThan}) where A
     inner_set = set.set
     return MOI.IndicatorSet{A}(MOI.LessThan(-inner_set.lower))

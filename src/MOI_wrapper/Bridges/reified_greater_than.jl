@@ -6,6 +6,12 @@ struct ReifiedGreaterToLessBridge{
 } <: MOIBC.FlipSignBridge{T,CS.ReifiedSet{A},CS.ReifiedSet{A},F,G}
     constraint::CI{F,CS.ReifiedSet{A,MOI.LessThan{T}}}
 end
+
+function MOIBC.map_function(::Type{<:ReifiedGreaterToLessBridge{T}}, func) where {T}
+    # apply the operator only for the inner constraint part (here the second part)
+    operate_vector_affine_function_part(-, T, func, 2)
+end
+
 function MOIBC.map_set(::Type{<:ReifiedGreaterToLessBridge}, set::CS.ReifiedSet{A,<:MOI.GreaterThan{T}}) where {A,T}
     inner_set = set.set
     return CS.ReifiedSet{A, MOI.LessThan{T}}(MOI.LessThan(-inner_set.lower), set.dimension)
