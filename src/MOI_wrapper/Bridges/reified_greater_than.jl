@@ -1,42 +1,47 @@
-struct ReifiedGreaterToLessThanBridge{T,A} <: MOIBC.AbstractBridge
-    constraint::CI{MOI.VectorAffineFunction{T},ReifiedSet{A,MOI.LessThan{T}}}
+struct ReifiedGreaterToLessBridge{
+    T,
+    F<:MOI.VectorAffineFunction,
+    G<:MOI.VectorAffineFunction,
+    A
+} <: MOIBC.FlipSignBridge{T,CS.ReifiedSet{A},CS.ReifiedSet{A},F,G}
+    constraint::CI{F,CS.ReifiedSet{A,MOI.LessThan{T}}}
 end
 
-function MOIBC.bridge_constraint(
-    bridge::Type{<:ReifiedGreaterToLessThanBridge{T}},
-    model::MOI.ModelLike,
-    f::MOI.VectorAffineFunction,
-    s::ReifiedSet{A,MOI.GreaterThan{T}},
-) where {T,A}
-    flipped_f = MOIU.operate(-, T, f)
-    flipped_inner_s = MOIBC.map_set(MOIBC.GreaterToLessBridge{T}, s.set)
-    flipped_s = ReifiedSet{A,MOI.LessThan{T}}(flipped_inner_s, 2)
-    ci = MOI.add_constraint(model, flipped_f, flipped_s)
-    return ReifiedGreaterToLessThanBridge{T,A}(ci)
+function MOIBC.map_function(::Type{<:ReifiedGreaterToLessBridge{T}}, func) where {T}
+    # apply the operator only for the inner constraint part (here the second part)
+    operate_vector_affine_function_part(-, T, func, 2)
 end
 
-function MOIB.added_constrained_variable_types(::Type{<:ReifiedGreaterToLessThanBridge})
+function MOIBC.map_set(::Type{<:ReifiedGreaterToLessBridge}, set::CS.ReifiedSet{A,<:MOI.GreaterThan{T}}) where {A,T}
+    inner_set = set.set
+    return CS.ReifiedSet{A, MOI.LessThan{T}}(MOI.LessThan(-inner_set.lower), set.dimension)
+end
+function MOIBC.inverse_map_set(::Type{<:ReifiedGreaterToLessBridge}, set::CS.ReifiedSet{A,<:MOI.LessThan{T}}) where {A,T}
+    inner_set = set.set
+    return CS.ReifiedSet{A, MOI.GreaterThan{T}}(MOI.GreaterThan(-inner_set.upper), set.dimension)
+end
+
+function MOIB.added_constrained_variable_types(::Type{<:ReifiedGreaterToLessBridge})
     return []
 end
 function MOIB.added_constraint_types(
-    ::Type{ReifiedGreaterToLessThanBridge{T,A}},
-) where {T,A}
-    return [(MOI.VectorAffineFunction{T}, ReifiedSet{A,MOI.LessThan{T}})]
+    ::Type{<:ReifiedGreaterToLessBridge{T,F,G,A}},
+) where {T,F,G,A}
+    return [(F, CS.ReifiedSet{A,MOI.LessThan{T}})]
 end
 
-function MOI.Bridges.Constraint.concrete_bridge_type(
-    ::Type{<:ReifiedGreaterToLessThanBridge{T}},
-    G::Type{<:MOI.VectorAffineFunction},
-    ::Type{RS},
-) where {T,A,IT<:MOI.GreaterThan{T},RS<:ReifiedSet{A,IT}}
-    F = MOIU.promote_operation(-, T, MOI.ScalarAffineFunction{T})
-    return ReifiedGreaterToLessThanBridge{T,A}
+function MOIBC.concrete_bridge_type(
+    ::Type{<:ReifiedGreaterToLessBridge{T}},
+    ::Type{<:MOI.VectorAffineFunction},
+    ::Type{IS},
+) where {T,A,IS<:CS.ReifiedSet{A,MOI.GreaterThan{T}}}
+    return ReifiedGreaterToLessBridge{T,MOI.VectorAffineFunction{T},MOI.VectorAffineFunction{T},A}
 end
 
 function MOI.supports_constraint(
-    ::Type{<:ReifiedGreaterToLessThanBridge{T}},
+    ::Type{<:ReifiedGreaterToLessBridge{T}},
     ::Type{<:MOI.VectorAffineFunction},
-    ::Type{RS},
-) where {T,A,RS<:ReifiedSet{A,MOI.GreaterThan{T}}}
+    ::Type{IS},
+) where {T,A,IS<:CS.ReifiedSet{A,MOI.GreaterThan{T}}}
     return true
 end

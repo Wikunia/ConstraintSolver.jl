@@ -1,40 +1,45 @@
-struct IndicatorGreaterToLessThanBridge{T,A} <: MOIBC.AbstractBridge
-    constraint::CI{MOI.VectorAffineFunction{T},MOI.IndicatorSet{A,MOI.LessThan{T}}}
+struct IndicatorGreaterToLessBridge{
+    T,
+    F<:MOI.VectorAffineFunction,
+    G<:MOI.VectorAffineFunction,
+    A
+} <: MOIBC.FlipSignBridge{T,MOI.IndicatorSet{A},MOI.IndicatorSet{A},F,G}
+    constraint::CI{F,MOI.IndicatorSet{A,MOI.LessThan{T}}}
 end
 
-function MOIBC.bridge_constraint(
-    bridge::Type{<:IndicatorGreaterToLessThanBridge{T}},
-    model::MOI.ModelLike,
-    f::MOI.VectorAffineFunction,
-    s::MOI.IndicatorSet{A,MOI.GreaterThan{T}},
-) where {T,A}
-    flipped_f = MOIU.operate(-, T, f)
-    flipped_inner_s = MOIBC.map_set(MOIBC.GreaterToLessBridge{T}, s.set)
-    flipped_s = MOI.IndicatorSet{A}(flipped_inner_s)
-    ci = MOI.add_constraint(model, flipped_f, flipped_s)
-    return IndicatorGreaterToLessThanBridge{T,A}(ci)
+function MOIBC.map_function(::Type{<:IndicatorGreaterToLessBridge{T}}, func) where {T}
+    # apply the operator only for the inner constraint part (here the second part)
+    operate_vector_affine_function_part(-, T, func, 2)
 end
 
-function MOIB.added_constrained_variable_types(::Type{<:IndicatorGreaterToLessThanBridge})
+function MOIBC.map_set(::Type{<:IndicatorGreaterToLessBridge}, set::MOI.IndicatorSet{A,<:MOI.GreaterThan}) where A
+    inner_set = set.set
+    return MOI.IndicatorSet{A}(MOI.LessThan(-inner_set.lower))
+end
+function MOIBC.inverse_map_set(::Type{<:IndicatorGreaterToLessBridge}, set::MOI.IndicatorSet{A,<:MOI.LessThan}) where A
+    inner_set = set.set
+    return MOI.IndicatorSet{A}(MOI.GreaterThan(-inner_set.upper))
+end
+
+function MOIB.added_constrained_variable_types(::Type{<:IndicatorGreaterToLessBridge})
     return []
 end
 function MOIB.added_constraint_types(
-    ::Type{IndicatorGreaterToLessThanBridge{T,A}},
-) where {T,A}
-    return [(MOI.VectorAffineFunction{T}, MOI.IndicatorSet{A,MOI.LessThan{T}})]
+    ::Type{<:IndicatorGreaterToLessBridge{T,F,G,A}},
+) where {T,F,G,A}
+    return [(F, MOI.IndicatorSet{A,MOI.LessThan{T}})]
 end
 
-function MOI.Bridges.Constraint.concrete_bridge_type(
-    ::Type{<:IndicatorGreaterToLessThanBridge{T}},
-    G::Type{<:MOI.VectorAffineFunction},
+function MOIBC.concrete_bridge_type(
+    ::Type{<:IndicatorGreaterToLessBridge{T}},
+    ::Type{<:MOI.VectorAffineFunction},
     ::Type{IS},
-) where {T,A,IT<:MOI.GreaterThan{T},IS<:MOI.IndicatorSet{A,IT}}
-    F = MOIU.promote_operation(-, T, MOI.ScalarAffineFunction{T})
-    return IndicatorGreaterToLessThanBridge{T,A}
+) where {T,A,IS<:MOI.IndicatorSet{A,MOI.GreaterThan{T}}}
+    return IndicatorGreaterToLessBridge{T,MOI.VectorAffineFunction{T},MOI.VectorAffineFunction{T},A}
 end
 
 function MOI.supports_constraint(
-    ::Type{<:IndicatorGreaterToLessThanBridge{T}},
+    ::Type{<:IndicatorGreaterToLessBridge{T}},
     ::Type{<:MOI.VectorAffineFunction},
     ::Type{IS},
 ) where {T,A,IS<:MOI.IndicatorSet{A,MOI.GreaterThan{T}}}
