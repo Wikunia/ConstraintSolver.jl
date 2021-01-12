@@ -124,17 +124,17 @@ end
 
 @testset "StrictlyGreaterThan (bridged)" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
-    @variable(m, -1 <= x <= 5, Int)
+    @variable(m, -5 <= x <= 1, Int)
     @variable(m, -1 <= y <= 5, Int)
     @variable(m, -6 <= z <= 6, Int)
-    @constraint(m, x + y + z > 4)
+    @constraint(m, -x + y + z > 4)
     optimize!(m)
     com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 1])
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 2])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 2])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [-1, 1, 1])
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [-1, 1, 2])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [-1, 2, 2])
 
     constr_indices = constraint.indices
     @test !CS.still_feasible(
@@ -182,23 +182,23 @@ end
     )
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
-    @variable(m, -1 <= x <= 5, Int)
+    @variable(m, -5 <= x <= 1, Int)
     @variable(m, -1 <= y <= 5, Int)
     @variable(m, -6 <= z <= 6, Int)
-    @constraint(m, x + y + z > 4)
+    @constraint(m, -x + y + z > 4)
     optimize!(m)
     com = CS.get_inner_model(m)
     constraint = com.constraints[1]
     constr_indices = constraint.indices
 
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
-    @test sort(CS.values(com.search_space[1])) == -1:5
+    @test sort(CS.values(com.search_space[1])) == -5:1
     @test sort(CS.values(com.search_space[2])) == -1:5
     @test sort(CS.values(com.search_space[3])) == -5:6 # -6 not possible
 
     @test CS.fix!(com, com.search_space[constr_indices[3]], -5)
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
-    @test CS.value(com.search_space[1]) == 5
+    @test CS.value(com.search_space[1]) == -5
     @test CS.value(com.search_space[2]) == 5
     @test CS.value(com.search_space[3]) == -5
     @test CS.isfixed(com.search_space[1])
