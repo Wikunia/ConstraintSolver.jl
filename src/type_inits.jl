@@ -99,6 +99,7 @@ function LinearConstraint(
         is_strict,
         is_equal,
         zero(promote_T),
+        zero(promote_T),
         mins,
         maxs,
         pre_mins,

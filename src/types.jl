@@ -157,6 +157,16 @@ struct NotEqualTo{T} <: MOI.AbstractScalarSet
 end
 Base.copy(N::NotEqualTo) = NotEqualTo(N.value)
 
+struct StrictlyLessThan{T} <: MOI.AbstractScalarSet
+    upper::T
+end
+Base.copy(N::StrictlyLessThan) = StrictlyLessThan(N.upper)
+
+struct StrictlyGreaterThan{T} <: MOI.AbstractScalarSet
+    lower::T
+end
+Base.copy(N::StrictlyGreaterThan) = StrictlyGreaterThan(N.lower)
+
 #====================================================================================
 ====================== TYPES FOR TRAVERSING ========================================
 ====================================================================================#
@@ -362,6 +372,9 @@ mutable struct LinearConstraint{T<:Real} <: Constraint
     is_strict::Bool # for differentiate between < and <=
     is_equal::Bool # for ==
     rhs::T # combines value - constant
+    # same as rhs but for `<` it saves the original value - constant
+    # (rhs is then computed to be usable as <=)
+    strict_rhs::T
     mins::Vector{T}
     maxs::Vector{T}
     pre_mins::Vector{T}

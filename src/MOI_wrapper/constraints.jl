@@ -2,8 +2,12 @@
 JuMP constraints
 """
 sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
+sense_to_set(::Function, ::Val{:<}) = StrictlyLessThan(0.0)
+sense_to_set(::Function, ::Val{:>}) = StrictlyGreaterThan(0.0)
 
 MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
+MOIU.shift_constant(set::StrictlyLessThan, value) = StrictlyLessThan(set.upper + value)
+MOIU.shift_constant(set::StrictlyGreaterThan, value) = StrictlyGreaterThan(set.lower + value)
 
 """
     Support for indicator constraints with a set constraint as the right hand side
@@ -67,6 +71,13 @@ MOI.supports_constraint(
     ::Type{NotEqualTo{T}},
 ) where {T<:Real} = true
 
+# Don't directly support StrictlyGreaterThan => use a bridge
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{SAF{T}},
+    ::Type{StrictlyLessThan{T}},
+) where {T<:Real} = true
+
 function MOI.supports_constraint(
     ::Optimizer,
     func::Type{VAF{T}},
@@ -102,7 +113,6 @@ MOI.supports_constraint(
     ::Type{MOI.VectorOfVariables},
     ::Type{GeqSetInternal},
 ) = true
-
 
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
     for term in aff.terms
@@ -323,6 +333,20 @@ function MOI.add_constraint(
     add_constraint!(model, lc)
 
     return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(length(com.constraints))
+end
+function MOI.add_constraint(
+    model::Optimizer,
+    func::SAF{T},
+    set::StrictlyLessThan{T},
+) where {T<:Real}
+    check_inbounds(model, func)
+
+    lc = new_linear_constraint(model, func, set)
+
+    add_constraint!(model, lc)
+    model.inner.info.n_constraint_types.inequality += 1
+
+    return MOI.ConstraintIndex{SAF{T},typeof(set)}(length(model.inner.constraints))
 end
 
 function MOI.add_constraint(

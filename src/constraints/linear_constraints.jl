@@ -1,5 +1,43 @@
+const EQLT_SETS = Union{MOI.LessThan, MOI.EqualTo, StrictlyLessThan}
+
 """
-    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::MOI.EqualTo{T};
+    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::StrictlyLessThan{T};
+                     active = true)
+
+Initialize the LinearConstraint by checking whether it might be an unfillable constraint
+without variable i.e x == x-1 => x -x == -1 => 0 == -1 => return false
+"""
+function init_constraint!(
+    com::CS.CoM,
+    constraint::CS.LinearConstraint,
+    fct::SAF{T},
+    set::StrictlyLessThan{T};
+    active = true,
+) where {T<:Real}
+    # rhs will be changed to use as <=
+    constraint.rhs = set.upper - fct.constant
+    constraint.strict_rhs = set.upper - fct.constant
+    constraint.is_strict = true
+    length(constraint.indices) == 0 && return fct.constant < set.upper
+
+    # change the rhs in such a way that <= can be used
+    # if all coefficients are 1 or -1
+    if all(abs(term.coefficient) == 1 for term in fct.terms)
+        # => just subtract one from the rhs if rhs is discrete
+        if isapprox_discrete(com, constraint.rhs)
+            constraint.rhs -= 1
+        else # otherwise round down so 9.5 => 9
+            constraint.rhs = floor(constraint.rhs)
+        end
+    else
+        constraint.rhs -= com.atol
+    end
+
+    return true
+end
+
+"""
+    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::MOI.LessThan{T};
                      active = true)
 
 Initialize the LinearConstraint by checking whether it might be an unfillable constraint
@@ -15,14 +53,14 @@ function init_constraint!(
     constraint.rhs = set.upper - fct.constant
     length(constraint.indices) > 0 && return true
 
-    return fct.constant <= set.upper + com.options.atol
+    return fct.constant <= set.upper
 end
 
 function init_constraint!(
     com::CS.CoM,
     constraint::CS.LinearConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},MOI.EqualTo{T}};
+    set::MOI.EqualTo{T};
     active = true,
 ) where {T<:Real}
     constraint.rhs = set.value - fct.constant
@@ -142,7 +180,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},MOI.EqualTo{T}};
+    set::EQLT_SETS;
     logs = true,
 ) where {T<:Real}
     indices = constraint.indices
@@ -366,7 +404,7 @@ function still_feasible(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},MOI.EqualTo{T}},
+    set::EQLT_SETS,
     vidx::Int,
     val::Int,
 ) where {T<:Real}
@@ -402,7 +440,11 @@ function still_feasible(
         if constraint.is_equal
             return isapprox(csum, rhs; atol = com.options.atol, rtol = com.options.rtol)
         else
-            return csum <= rhs
+            if constraint.is_strict
+                return csum < constraint.strict_rhs
+            else
+                return csum <= rhs
+            end
         end
     end
     if num_not_fixed == 1 && constraint.is_equal
@@ -452,6 +494,19 @@ function is_constraint_solved(
 end
 
 
+function is_constraint_solved(
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::StrictlyLessThan{T},
+    values::Vector{Int},
+) where {T<:Real}
+
+    indices = [t.variable_index.value for t in fct.terms]
+    coeffs = [t.coefficient for t in fct.terms]
+    return sum(values .* coeffs) + fct.constant < set.upper + 1e-6
+end
+
+
 """
     is_constraint_violated(
         com::CoM,
@@ -467,7 +522,7 @@ function is_constraint_violated(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},MOI.EqualTo{T}},
+    set::EQLT_SETS,
 ) where {T<:Real}
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(
