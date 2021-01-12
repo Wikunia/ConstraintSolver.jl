@@ -3,6 +3,7 @@ JuMP constraints
 """
 sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
 sense_to_set(::Function, ::Val{:<}) = Strictly(MOI.LessThan(0.0))
+sense_to_set(::Function, ::Val{:>}) = Strictly(MOI.GreaterThan(0.0))
 
 MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 

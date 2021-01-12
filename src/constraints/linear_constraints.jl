@@ -28,7 +28,7 @@ function init_constraint!(
             constraint.rhs = floor(constraint.rhs)
         end
     else
-        constraint.rhs -= com.atol
+        constraint.rhs -= com.options.atol
     end
 
     return true

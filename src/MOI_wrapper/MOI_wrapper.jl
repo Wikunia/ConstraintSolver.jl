@@ -36,6 +36,7 @@ include("variables.jl")
 include("Bridges/util.jl")
 include("Bridges/indicator_greater_than.jl")
 include("Bridges/reified_greater_than.jl")
+include("Bridges/strictly_greater_than.jl")
 include("constraints.jl")
 include("objective.jl")
 include("results.jl")
@@ -52,6 +53,7 @@ function Optimizer(; options...)
     lbo = MOIB.full_bridge_optimizer(optimizer, options.solution_type)
     MOIB.add_bridge(lbo, CS.ReifiedGreaterToLessBridge{options.solution_type})
     MOIB.add_bridge(lbo, CS.IndicatorGreaterToLessBridge{options.solution_type})
+    MOIB.add_bridge(lbo, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type})
     return lbo
 end
 
