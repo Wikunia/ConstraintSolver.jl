@@ -132,7 +132,7 @@
 
         # Constraints
         @constraint(model, sum(x[1:5]) >= 10)
-        @constraint(model, sum(x[6:10]) <= 15)
+        @constraint(model, sum(x[6:10]) < 16)
 
         table_left = [
             1 2 3 4 5 # sum 16
@@ -170,7 +170,7 @@
         @variable(model, 1 <= x[1:10] <= 15, Int)
 
         # Constraints
-        @constraint(model, sum(x[1:4]) >= 10)
+        @constraint(model, sum(x[1:4]) > 9)
         @constraint(model, sum(x[5:10]) <= 15)
 
 

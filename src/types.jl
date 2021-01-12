@@ -380,6 +380,7 @@ mutable struct LinearConstraint{T<:Real} <: Constraint
     in_all_different::Bool
     is_strict::Bool # for differentiate between < and <=
     is_equal::Bool # for ==
+    is_rhs_strong::Bool # saves whether the rhs is already a strong rhs
     rhs::T # combines value - constant
     # same as rhs but for `<` it saves the original value - constant
     # (rhs is then computed to be usable as <=)

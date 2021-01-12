@@ -1,4 +1,30 @@
 """
+    Get the rhs for a strictly less than set such that it cna be used as a <= constraint.
+
+"""
+function get_rhs_from_strictly(com::CS.CoM, constraint::LinearConstraint,
+        fct, set::Strictly{T, MOI.LessThan{T}}) where {T<:Real}
+
+    constraint.is_rhs_strong && return constraint.rhs
+
+    constraint.is_rhs_strong = true
+    constraint.rhs = set.set.upper - fct.constant
+
+    # change the rhs in such a way that <= can be used
+    # if all coefficients are 1 or -1
+    if all(abs(term.coefficient) == 1 for term in fct.terms)
+        # => just subtract one from the rhs if rhs is discrete
+        if isapprox_discrete(com, constraint.rhs)
+            return constraint.rhs - 1
+        else # otherwise round down so 9.5 => 9
+            return  floor(constraint.rhs)
+        end
+    else
+        return constraint.rhs - com.options.atol
+    end
+end
+
+"""
     init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::Strictly{MOI.LessThan{T}};
                      active = true)
 
@@ -13,23 +39,10 @@ function init_constraint!(
     active = true,
 ) where {T<:Real}
     # rhs will be changed to use as <=
-    constraint.rhs = set.set.upper - fct.constant
+    constraint.rhs = get_rhs_from_strictly(com, constraint, fct, set)
     constraint.strict_rhs = set.set.upper - fct.constant
     constraint.is_strict = true
     length(constraint.indices) == 0 && return fct.constant < set.set.upper
-
-    # change the rhs in such a way that <= can be used
-    # if all coefficients are 1 or -1
-    if all(abs(term.coefficient) == 1 for term in fct.terms)
-        # => just subtract one from the rhs if rhs is discrete
-        if isapprox_discrete(com, constraint.rhs)
-            constraint.rhs -= 1
-        else # otherwise round down so 9.5 => 9
-            constraint.rhs = floor(constraint.rhs)
-        end
-    else
-        constraint.rhs -= com.options.atol
-    end
 
     return true
 end
