@@ -17,10 +17,51 @@ function get_rhs_from_strictly(com::CS.CoM, constraint::LinearConstraint,
         if isapprox_discrete(com, constraint.rhs)
             return constraint.rhs - 1
         else # otherwise round down so 9.5 => 9
-            return  floor(constraint.rhs)
+            return floor(constraint.rhs)
         end
     else
-        return constraint.rhs - com.options.atol
+        # use lp solver if it exists and if it supports MIP
+        fallback_rhs = constraint.rhs - com.options.atol
+        com.options.lp_optimizer === nothing && return fallback_rhs
+
+        if !MOI.supports_constraint(
+            com.options.lp_optimizer.optimizer_constructor(),
+            SVF, MOI.Integer
+        ) || !MOI.supports_constraint(
+            com.options.lp_optimizer.optimizer_constructor(),
+            typeof(constraint.fct),
+            typeof(constraint.set.set),
+        ) || !MOI.supports(com.options.lp_optimizer.optimizer_constructor(),
+              MOI.ObjectiveFunction{typeof(constraint.fct)}()
+        ) || !MOI.supports(com.options.lp_optimizer.optimizer_constructor(), MOI.ObjectiveSense())
+            return fallback_rhs
+        end
+
+        # supports MIP and <=
+        mip_model = Model()
+        mip_backend = backend(mip_model)
+
+        set_optimizer(mip_model, com.options.lp_optimizer)
+        lp_x = Vector{VariableRef}(undef, length(com.search_space))
+        for variable in com.search_space
+            lp_x[variable.idx] = @variable(
+                mip_model,
+                lower_bound = variable.lower_bound,
+                upper_bound = variable.upper_bound,
+                integer = true
+            )
+        end
+        MOI.add_constraint(mip_backend, constraint.fct, typeof(constraint.set.set)(set.set.upper - com.options.atol))
+        MOI.set(mip_backend, MOI.ObjectiveFunction{typeof(constraint.fct)}(), constraint.fct)
+        MOI.set(mip_backend, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+        optimize!(mip_model)
+
+        if termination_status(mip_model) == MOI.OPTIMAL
+            return objective_value(mip_model)
+        else
+            # TODO: return that it's not feasible
+            return fallback_rhs
+        end
     end
 end
 

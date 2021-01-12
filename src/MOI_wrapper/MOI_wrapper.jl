@@ -151,6 +151,7 @@ end
     MOI.optimize!(model::Optimizer)
 """
 function MOI.optimize!(model::Optimizer)
+    model.inner.options = model.options
     # check if every variable has bounds and is an Integer
     check_var_bounds(model)
 
@@ -159,7 +160,7 @@ function MOI.optimize!(model::Optimizer)
 
     create_lp_model!(model)
 
-    status = solve!(model)
+    status = solve!(model.inner)
     set_status!(model, status)
 
     if status == :Solved

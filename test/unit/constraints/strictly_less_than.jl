@@ -248,6 +248,25 @@ end
     @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 3])
 end
 
+@testset "StrictlyGreaterThan with LP solver" begin
+    cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true,
+                "logging" => [], "lp_optimizer" => cbc_optimizer,))
+    @variable(m, -1 <= x <= 5, Int)
+    @variable(m, -1 <= y <= 5, Int)
+    @variable(m, -5 <= z <= 6, Int)
+    @constraint(m, x + 0.9y + 1.1z > 4.1)
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    constraint = com.constraints[1]
+    @test constraint.rhs ≈ -4.2
+    @test constraint.strict_rhs ≈ -4.1
+    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 1])
+    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 3])
+end
+
 @testset "strictly less than is_constraint_violated test" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:2] <= 5, Int)
