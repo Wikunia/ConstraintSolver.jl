@@ -1,7 +1,5 @@
-const EQLT_SETS = Union{MOI.LessThan, MOI.EqualTo, StrictlyLessThan}
-
 """
-    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::StrictlyLessThan{T};
+    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::Strictly{MOI.LessThan{T}};
                      active = true)
 
 Initialize the LinearConstraint by checking whether it might be an unfillable constraint
@@ -11,14 +9,14 @@ function init_constraint!(
     com::CS.CoM,
     constraint::CS.LinearConstraint,
     fct::SAF{T},
-    set::StrictlyLessThan{T};
+    set::Strictly{T, MOI.LessThan{T}};
     active = true,
 ) where {T<:Real}
     # rhs will be changed to use as <=
-    constraint.rhs = set.upper - fct.constant
-    constraint.strict_rhs = set.upper - fct.constant
+    constraint.rhs = set.set.upper - fct.constant
+    constraint.strict_rhs = set.set.upper - fct.constant
     constraint.is_strict = true
-    length(constraint.indices) == 0 && return fct.constant < set.upper
+    length(constraint.indices) == 0 && return fct.constant < set.set.upper
 
     # change the rhs in such a way that <= can be used
     # if all coefficients are 1 or -1
@@ -180,7 +178,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::EQLT_SETS;
+    set::Union{MOI.LessThan, MOI.EqualTo, Strictly{T, MOI.LessThan{T}}};
     logs = true,
 ) where {T<:Real}
     indices = constraint.indices
@@ -404,7 +402,7 @@ function still_feasible(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::EQLT_SETS,
+    set::Union{MOI.LessThan, MOI.EqualTo, Strictly{T, MOI.LessThan{T}}},
     vidx::Int,
     val::Int,
 ) where {T<:Real}
@@ -490,20 +488,20 @@ function is_constraint_solved(
 
     indices = [t.variable_index.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
-    return sum(values .* coeffs) + fct.constant <= set.upper + 1e-6
+    return sum(values .* coeffs) + fct.constant <= set.upper
 end
 
 
 function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::StrictlyLessThan{T},
+    set::Strictly{T, MOI.LessThan{T}},
     values::Vector{Int},
 ) where {T<:Real}
 
     indices = [t.variable_index.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
-    return sum(values .* coeffs) + fct.constant < set.upper + 1e-6
+    return sum(values .* coeffs) + fct.constant < set.set.upper
 end
 
 
@@ -522,7 +520,7 @@ function is_constraint_violated(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::EQLT_SETS,
+    set::Union{MOI.LessThan, MOI.EqualTo, Strictly{T, MOI.LessThan{T}}},
 ) where {T<:Real}
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(

@@ -2,12 +2,9 @@
 JuMP constraints
 """
 sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
-sense_to_set(::Function, ::Val{:<}) = StrictlyLessThan(0.0)
-sense_to_set(::Function, ::Val{:>}) = StrictlyGreaterThan(0.0)
+sense_to_set(::Function, ::Val{:<}) = Strictly(MOI.LessThan(0.0))
 
 MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
-MOIU.shift_constant(set::StrictlyLessThan, value) = StrictlyLessThan(set.upper + value)
-MOIU.shift_constant(set::StrictlyGreaterThan, value) = StrictlyGreaterThan(set.lower + value)
 
 """
     Support for indicator constraints with a set constraint as the right hand side
@@ -75,7 +72,7 @@ MOI.supports_constraint(
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{SAF{T}},
-    ::Type{StrictlyLessThan{T}},
+    ::Type{Strictly{T, MOI.LessThan{T}}},
 ) where {T<:Real} = true
 
 function MOI.supports_constraint(
@@ -337,7 +334,7 @@ end
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},
-    set::StrictlyLessThan{T},
+    set::Strictly{T, MOI.LessThan{T}},
 ) where {T<:Real}
     check_inbounds(model, func)
 

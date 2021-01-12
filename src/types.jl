@@ -157,15 +157,24 @@ struct NotEqualTo{T} <: MOI.AbstractScalarSet
 end
 Base.copy(N::NotEqualTo) = NotEqualTo(N.value)
 
-struct StrictlyLessThan{T} <: MOI.AbstractScalarSet
-    upper::T
-end
-Base.copy(N::StrictlyLessThan) = StrictlyLessThan(N.upper)
 
-struct StrictlyGreaterThan{T} <: MOI.AbstractScalarSet
-    lower::T
+"""
+    Strictly{S <: Union{LessThan{T}, GreaterThan{T}}}
+
+Converts an inequality set to a set with the same inequality made strict.
+For example, while `LessThan(1)` corresponds to the inequality `x <= 1`,
+`Strictly(LessThan(1))` corresponds to the inequality `x < 1`.
+## Example
+    x in Strictly(LessThan(1))
+"""
+struct Strictly{T, S <: Union{MOI.LessThan{T}, MOI.GreaterThan{T}}} <: MOI.AbstractScalarSet
+    set::S
 end
-Base.copy(N::StrictlyGreaterThan) = StrictlyGreaterThan(N.lower)
+
+Base.copy(set::Strictly{T,S}) where {T,S} = Strictly{T,S}(copy(set.set))
+MOI.constant(set::Strictly{S}) where S = MOI.constant(set.set)
+MOIU.shift_constant(set::Strictly{S}, offset::T) where {S, T} =
+    typeof(set)(MOIU.shift_constant(set.set, offset))
 
 #====================================================================================
 ====================== TYPES FOR TRAVERSING ========================================
