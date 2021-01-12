@@ -73,11 +73,13 @@ y = @variable(model, integer=true, lower_bound=0, upper_bound=10)
 The following list shows constraints that are implemented and those which are planned.
 
 - [X] Linear constraints
-  - At the moment this is kind of partially supported as they are not really good at giving bounds yet
+  - At the moment this is kind of partially supported as they are not really good at giving bounds yet (See [better bound computation](tutorial.md#Bound-computation-1))
   - [X] `==`
   - [X] `<=`
   - [X] `>=`
   - [X] `!=`
+  - [X] `<`
+  - [X] `>`
 - [X] All different
   - `@constraint(m, [x,y,z] in CS.AllDifferentSet())`
 - [X] `TableSet` constraint [#130](https://github.com/Wikunia/ConstraintSolver.jl/pull/130)
