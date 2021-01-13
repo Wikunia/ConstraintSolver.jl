@@ -1,9 +1,3 @@
-#=
-    Support for Indicator with >= or >
-=#
-
-const UnionGT{T} = Union{Strictly{T, MOI.GreaterThan{T}}, MOI.GreaterThan{T}}
-
 """
     General FlipSignBridge for both strict and unstrict
 """
@@ -57,15 +51,17 @@ function MOIBC.inverse_map_set(::Type{<:IndicatorGreaterToLessUnstrictBridge}, s
     return MOI.IndicatorSet{A}(MOI.GreaterThan(-inner_set.upper))
 end
 
+function MOIBC.concrete_bridge_type(
+    ::Type{<:IndicatorGreaterToLessBridge{T}},
+    ::Type{<:MOI.VectorAffineFunction},
+    ::Type{IS},
+) where {T,A,IS<:MOI.IndicatorSet{A,MOI.GreaterThan{T}}}
+    return IndicatorGreaterToLessUnstrictBridge{T,MOI.VectorAffineFunction{T},MOI.VectorAffineFunction{T},A}
+end
 function MOIB.added_constraint_types(
     ::Type{<:IndicatorGreaterToLessUnstrictBridge{T,F,G,A}},
 ) where {T,F,G,A}
     return [(F, MOI.IndicatorSet{A,MOI.LessThan{T}})]
-end
-function MOIB.added_constraint_types(
-    ::Type{<:IndicatorGreaterToLessStrictBridge{T,F,G,A}},
-) where {T,F,G,A}
-    return [(F, MOI.IndicatorSet{A,Strictly{T, MOI.LessThan{T}}})]
 end
 
 #=
@@ -89,12 +85,11 @@ function MOIBC.inverse_map_set(::Type{<:IndicatorGreaterToLessStrictBridge}, set
     return MOI.IndicatorSet{A}(Strictly(MOI.GreaterThan(-inner_set.upper)))
 end
 
-function MOIBC.concrete_bridge_type(
-    ::Type{<:IndicatorGreaterToLessBridge{T}},
-    ::Type{<:MOI.VectorAffineFunction},
-    ::Type{IS},
-) where {T,A,IS<:MOI.IndicatorSet{A,MOI.GreaterThan{T}}}
-    return IndicatorGreaterToLessUnstrictBridge{T,MOI.VectorAffineFunction{T},MOI.VectorAffineFunction{T},A}
+
+function MOIB.added_constraint_types(
+    ::Type{<:IndicatorGreaterToLessStrictBridge{T,F,G,A}},
+) where {T,F,G,A}
+    return [(F, MOI.IndicatorSet{A,Strictly{T, MOI.LessThan{T}}})]
 end
 function MOIBC.concrete_bridge_type(
     ::Type{<:IndicatorGreaterToLessBridge{T}},

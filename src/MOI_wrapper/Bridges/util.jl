@@ -1,3 +1,9 @@
+#=
+    Support for Indicator with >= or >
+=#
+
+const UnionGT{T} = Union{Strictly{T, MOI.GreaterThan{T}}, MOI.GreaterThan{T}}
+
 function operate_vector_affine_function_part(operator, T, func::MOI.VectorAffineFunction, part::Int)
     unchanged_terms = [term for term in func.terms if term.output_index != part]
     unchanged_constants_before = [func.constants[i] for i in 1:part-1]
