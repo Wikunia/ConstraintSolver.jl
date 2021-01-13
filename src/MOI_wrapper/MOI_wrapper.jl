@@ -52,8 +52,9 @@ function Optimizer(; options...)
     optimizer = Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
     lbo = MOIB.full_bridge_optimizer(optimizer, options.solution_type)
     MOIB.add_bridge(lbo, CS.ReifiedGreaterToLessBridge{options.solution_type})
-    MOIB.add_bridge(lbo, CS.IndicatorGreaterToLessBridge{options.solution_type})
     MOIB.add_bridge(lbo, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type})
+    MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, MOIBC.GreaterToLessBridge{options.solution_type}})
+    MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}})
     return lbo
 end
 
