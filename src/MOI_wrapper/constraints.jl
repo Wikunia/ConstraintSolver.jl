@@ -81,7 +81,7 @@ function MOI.supports_constraint(
     func::Type{VAF{T}},
     set::Type{IS},
 ) where {A,T<:Real,ASS<:MOI.AbstractScalarSet,IS<:MOI.IndicatorSet{A,ASS}}
-    if ASS <: MOI.GreaterThan
+    if ASS <: MOI.GreaterThan || ASS <: Strictly{T, MOI.GreaterThan{T}}
         return false
     end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO

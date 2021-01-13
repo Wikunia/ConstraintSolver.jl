@@ -1,6 +1,7 @@
 # ConstrainSolver.jl - Changelog
 
 ## Unreleased
+- Bugfix if binary variable is constrained directly in `@variable`
 - Use `CS.get_inner_model` to get the `ConstraintSolverModel`
   - Usage of `JuMP.backend` as before will fail
 - Refactoring

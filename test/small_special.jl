@@ -574,4 +574,25 @@
         @test sum([sol[i, n - i + 1] for i in 1:n]) == 65
         @test allunique(sol)
     end
+
+    @testset "Indicator with > and active" begin
+        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        model = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "lp_optimizer" => cbc_optimizer,
+            "logging" => []
+        ))
+        @variable(model, b >= 1, Bin)
+        @variable(model, 0 <= x[1:4] <= 5, Int)
+        @constraint(model, b => {sum([0.4,0.5,0.7,0.8] .* x) > 9})
+        @objective(model, Min, sum([0.4,0.5,0.7,0.8] .* x))
+        optimize!(model)
+        CS.get_inner_model(model)
+        @test JuMP.termination_status(model) == MOI.OPTIMAL
+        @test JuMP.objective_value(model) ≈ 9.1
+        @test JuMP.value(x[1]) ≈ 2.0
+        @test JuMP.value(x[2]) ≈ 3.0
+        @test JuMP.value(x[3]) ≈ 4.0
+        @test JuMP.value(x[4]) ≈ 5.0
+    end
 end
