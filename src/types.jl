@@ -157,15 +157,13 @@ struct NotEqualTo{T} <: MOI.AbstractScalarSet
 end
 Base.copy(N::NotEqualTo) = NotEqualTo(N.value)
 
-
+# From https://github.com/dourouc05/ConstraintProgrammingExtensions.jl
 """
     Strictly{S <: Union{LessThan{T}, GreaterThan{T}}}
 
 Converts an inequality set to a set with the same inequality made strict.
 For example, while `LessThan(1)` corresponds to the inequality `x <= 1`,
 `Strictly(LessThan(1))` corresponds to the inequality `x < 1`.
-## Example
-    x in Strictly(LessThan(1))
 """
 struct Strictly{T, S <: Union{MOI.LessThan{T}, MOI.GreaterThan{T}}} <: MOI.AbstractScalarSet
     set::S
