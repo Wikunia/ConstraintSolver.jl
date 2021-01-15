@@ -293,3 +293,32 @@ end
     @test CS.fix!(com, variables[constraint.indices[1]], 5; check_feasibility = false)
     @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
 end
+
+@testset "constraint without variables" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
+    @variable(m, -5 <= x[1:2] <= 5, Int)
+    @constraint(m, sum(0 .* x) > 10)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.INFEASIBLE
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
+    @variable(m, -5 <= x[1:2] <= 5, Int)
+    @constraint(m, sum(0 .* x) < 0.001)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+end
+
+@testset "constraint where one variable has coefficient 0" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
+    @variable(m, -5 <= x[1:2] <= 5, Int)
+    @constraint(m, dot([0,1.2], x) > 5)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.value(x[2]) ≈ 5
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
+    @variable(m, -5 <= x[1:2] <= 5, Int)
+    @constraint(m, dot([0,1.2], x) > 6)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.INFEASIBLE
+end

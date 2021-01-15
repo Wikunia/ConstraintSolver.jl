@@ -83,7 +83,7 @@ function init_constraint!(
     constraint.rhs = get_rhs_from_strictly(com, constraint, fct, set)
     constraint.strict_rhs = set.set.upper - fct.constant
     constraint.is_strict = true
-    length(constraint.indices) == 0 && return fct.constant < set.set.upper
+    is_no_variable_constraint(constraint) && return fct.constant < set.set.upper
 
     return true
 end
@@ -103,9 +103,9 @@ function init_constraint!(
     active = true,
 ) where {T<:Real}
     constraint.rhs = set.upper - fct.constant
-    length(constraint.indices) > 0 && return true
+    is_no_variable_constraint(constraint) && return fct.constant <= set.upper
 
-    return fct.constant <= set.upper
+    return true
 end
 
 function init_constraint!(
@@ -116,9 +116,9 @@ function init_constraint!(
     active = true,
 ) where {T<:Real}
     constraint.rhs = set.value - fct.constant
-    length(constraint.indices) > 0 && return true
+    is_no_variable_constraint(constraint) && return fct.constant == set.value
 
-    return fct.constant == set.value
+    return true
 end
 
 """

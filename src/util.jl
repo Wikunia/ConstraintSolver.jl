@@ -156,3 +156,9 @@ end
         Core.setproperty!(c, s, v)
     end
 end
+
+
+function is_no_variable_constraint(constraint::LinearConstraint)
+    length(constraint.indices) == 0 && return true
+    return all(term.coefficient == 0 for term in constraint.fct.terms)
+end

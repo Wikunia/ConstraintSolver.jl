@@ -1,5 +1,8 @@
 # ConstrainSolver.jl - Changelog
 
+## Unreleased
+- Bugfix when linear constraint has only variables with coefficient 0 like `x <= x` => `0x <= 0`
+
 ## v0.6.1 (15th of January 2021)
 - Bugfix if binary variable is constrained directly in `@variable`
 - Use `CS.get_inner_model` to get the `ConstraintSolverModel`
