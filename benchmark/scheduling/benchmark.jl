@@ -130,8 +130,8 @@ function organize_day(problem,all_solutions=true)
 
     status = JuMP.termination_status(model)
     # println("status:$status")
-    @test status == MOI.OPTIMAL
+    @assert status == MOI.OPTIMAL
     if all_solutions
-        @test MOI.get(model, MOI.ResultCount()) == 5
+        @assert MOI.get(model, MOI.ResultCount()) == 5
     end
 end
