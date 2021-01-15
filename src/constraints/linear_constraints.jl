@@ -1,5 +1,95 @@
 """
-    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::MOI.EqualTo{T};
+    Get the rhs for a strictly less than set such that it cna be used as a <= constraint.
+
+"""
+function get_rhs_from_strictly(com::CS.CoM, constraint::LinearConstraint,
+        fct, set::Strictly{T, MOI.LessThan{T}}) where {T<:Real}
+
+    constraint.is_rhs_strong && return constraint.rhs
+
+    constraint.is_rhs_strong = true
+    constraint.rhs = set.set.upper - fct.constant
+
+    # change the rhs in such a way that <= can be used
+    # if all coefficients are 1 or -1
+    if all(abs(term.coefficient) == 1 for term in fct.terms)
+        # => just subtract one from the rhs if rhs is discrete
+        if isapprox_discrete(com, constraint.rhs)
+            return constraint.rhs - 1
+        else # otherwise round down so 9.5 => 9
+            return floor(constraint.rhs)
+        end
+    else
+        # use lp solver if it exists and if it supports MIP
+        fallback_rhs = constraint.rhs - com.options.atol
+        com.options.lp_optimizer === nothing && return fallback_rhs
+
+        if !MOI.supports_constraint(
+            com.options.lp_optimizer.optimizer_constructor(),
+            SVF, MOI.Integer
+        ) || !MOI.supports_constraint(
+            com.options.lp_optimizer.optimizer_constructor(),
+            typeof(constraint.fct),
+            typeof(constraint.set.set),
+        ) || !MOI.supports(com.options.lp_optimizer.optimizer_constructor(),
+              MOI.ObjectiveFunction{typeof(constraint.fct)}()
+        ) || !MOI.supports(com.options.lp_optimizer.optimizer_constructor(), MOI.ObjectiveSense())
+            return fallback_rhs
+        end
+
+        # supports MIP and <=
+        mip_model = Model()
+        mip_backend = backend(mip_model)
+
+        set_optimizer(mip_model, com.options.lp_optimizer)
+        lp_x = Vector{VariableRef}(undef, length(com.search_space))
+        for variable in com.search_space
+            lp_x[variable.idx] = @variable(
+                mip_model,
+                lower_bound = variable.lower_bound,
+                upper_bound = variable.upper_bound,
+                integer = true
+            )
+        end
+        MOI.add_constraint(mip_backend, constraint.fct, typeof(constraint.set.set)(set.set.upper - com.options.atol))
+        MOI.set(mip_backend, MOI.ObjectiveFunction{typeof(constraint.fct)}(), constraint.fct)
+        MOI.set(mip_backend, MOI.ObjectiveSense(), MOI.MAX_SENSE)
+        optimize!(mip_model)
+
+        if termination_status(mip_model) == MOI.OPTIMAL
+            return objective_value(mip_model)
+        else
+            # TODO: return that it's not feasible
+            return fallback_rhs
+        end
+    end
+end
+
+"""
+    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::Strictly{MOI.LessThan{T}};
+                     active = true)
+
+Initialize the LinearConstraint by checking whether it might be an unfillable constraint
+without variable i.e x == x-1 => x -x == -1 => 0 == -1 => return false
+"""
+function init_constraint!(
+    com::CS.CoM,
+    constraint::CS.LinearConstraint,
+    fct::SAF{T},
+    set::Strictly{T, MOI.LessThan{T}};
+    active = true,
+) where {T<:Real}
+    # rhs will be changed to use as <=
+    constraint.rhs = get_rhs_from_strictly(com, constraint, fct, set)
+    constraint.strict_rhs = set.set.upper - fct.constant
+    constraint.is_strict = true
+    length(constraint.indices) == 0 && return fct.constant < set.set.upper
+
+    return true
+end
+
+"""
+    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::MOI.LessThan{T};
                      active = true)
 
 Initialize the LinearConstraint by checking whether it might be an unfillable constraint
@@ -15,14 +105,14 @@ function init_constraint!(
     constraint.rhs = set.upper - fct.constant
     length(constraint.indices) > 0 && return true
 
-    return fct.constant <= set.upper + com.options.atol
+    return fct.constant <= set.upper
 end
 
 function init_constraint!(
     com::CS.CoM,
     constraint::CS.LinearConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},MOI.EqualTo{T}};
+    set::MOI.EqualTo{T};
     active = true,
 ) where {T<:Real}
     constraint.rhs = set.value - fct.constant
@@ -142,7 +232,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},MOI.EqualTo{T}};
+    set::Union{MOI.LessThan, MOI.EqualTo, Strictly{T, MOI.LessThan{T}}};
     logs = true,
 ) where {T<:Real}
     indices = constraint.indices
@@ -366,7 +456,7 @@ function still_feasible(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},MOI.EqualTo{T}},
+    set::Union{MOI.LessThan, MOI.EqualTo, Strictly{T, MOI.LessThan{T}}},
     vidx::Int,
     val::Int,
 ) where {T<:Real}
@@ -402,7 +492,11 @@ function still_feasible(
         if constraint.is_equal
             return isapprox(csum, rhs; atol = com.options.atol, rtol = com.options.rtol)
         else
-            return csum <= rhs
+            if constraint.is_strict
+                return csum < constraint.strict_rhs
+            else
+                return csum <= rhs
+            end
         end
     end
     if num_not_fixed == 1 && constraint.is_equal
@@ -448,7 +542,20 @@ function is_constraint_solved(
 
     indices = [t.variable_index.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
-    return sum(values .* coeffs) + fct.constant <= set.upper + 1e-6
+    return sum(values .* coeffs) + fct.constant <= set.upper
+end
+
+
+function is_constraint_solved(
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::Strictly{T, MOI.LessThan{T}},
+    values::Vector{Int},
+) where {T<:Real}
+
+    indices = [t.variable_index.value for t in fct.terms]
+    coeffs = [t.coefficient for t in fct.terms]
+    return sum(values .* coeffs) + fct.constant < set.set.upper
 end
 
 
@@ -467,7 +574,7 @@ function is_constraint_violated(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan{T},MOI.EqualTo{T}},
+    set::Union{MOI.LessThan, MOI.EqualTo, Strictly{T, MOI.LessThan{T}}},
 ) where {T<:Real}
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(

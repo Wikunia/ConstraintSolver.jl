@@ -2,6 +2,8 @@
 JuMP constraints
 """
 sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
+sense_to_set(::Function, ::Val{:<}) = Strictly(MOI.LessThan(0.0))
+sense_to_set(::Function, ::Val{:>}) = Strictly(MOI.GreaterThan(0.0))
 
 MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 
@@ -67,12 +69,19 @@ MOI.supports_constraint(
     ::Type{NotEqualTo{T}},
 ) where {T<:Real} = true
 
+# Don't directly support StrictlyGreaterThan => use a bridge
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{SAF{T}},
+    ::Type{Strictly{T, MOI.LessThan{T}}},
+) where {T<:Real} = true
+
 function MOI.supports_constraint(
     ::Optimizer,
     func::Type{VAF{T}},
     set::Type{IS},
 ) where {A,T<:Real,ASS<:MOI.AbstractScalarSet,IS<:MOI.IndicatorSet{A,ASS}}
-    if ASS <: MOI.GreaterThan
+    if ASS <: MOI.GreaterThan || ASS <: Strictly{T, MOI.GreaterThan{T}}
         return false
     end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
@@ -88,10 +97,18 @@ end
 
 function MOI.supports_constraint(
     ::Optimizer,
-    func::Union{Type{VAF{T}},Type{MOI.VectorOfVariables}},
+    func::Type{MOI.VectorOfVariables},
+    set::Type{RS}
+) where {A,IS,RS<:CS.ReifiedSet{A,IS}}
+    return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
+end
+
+function MOI.supports_constraint(
+    ::Optimizer,
+    func::Type{VAF{T}},
     set::Type{RS},
 ) where {A,T<:Real,IS,RS<:CS.ReifiedSet{A,IS}}
-    if IS <: MOI.GreaterThan
+    if IS <: MOI.GreaterThan || IS <: Strictly{T, MOI.GreaterThan{T}}
         return false
     end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
@@ -102,7 +119,6 @@ MOI.supports_constraint(
     ::Type{MOI.VectorOfVariables},
     ::Type{GeqSetInternal},
 ) = true
-
 
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
     for term in aff.terms
@@ -323,6 +339,20 @@ function MOI.add_constraint(
     add_constraint!(model, lc)
 
     return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(length(com.constraints))
+end
+function MOI.add_constraint(
+    model::Optimizer,
+    func::SAF{T},
+    set::Strictly{T, MOI.LessThan{T}},
+) where {T<:Real}
+    check_inbounds(model, func)
+
+    lc = new_linear_constraint(model, func, set)
+
+    add_constraint!(model, lc)
+    model.inner.info.n_constraint_types.inequality += 1
+
+    return MOI.ConstraintIndex{SAF{T},typeof(set)}(length(model.inner.constraints))
 end
 
 function MOI.add_constraint(

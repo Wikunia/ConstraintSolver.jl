@@ -14,6 +14,7 @@ end
     include("constraints/equal_to.jl")
     include("constraints/equal.jl")
     include("constraints/less_than.jl")
+    include("constraints/strictly_less_than.jl")
     include("constraints/not_equal.jl")
     include("constraints/svc.jl")
     include("constraints/table.jl")

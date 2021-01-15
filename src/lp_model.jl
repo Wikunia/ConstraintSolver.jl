@@ -22,6 +22,16 @@ function create_lp_model!(model)
             typeof(constraint.set),
         )
             MOI.add_constraint(lp_backend, constraint.fct, constraint.set)
+        elseif constraint.set isa Strictly # transform a < into a <= by changing the rhs
+            if MOI.supports_constraint(
+                model.options.lp_optimizer.optimizer_constructor(),
+                typeof(constraint.fct),
+                typeof(constraint.set.set),
+            )
+                rhs = get_rhs_from_strictly(model.inner, constraint, constraint.fct, constraint.set)
+                computed_set = typeof(constraint.set.set)(rhs)
+                MOI.add_constraint(lp_backend, constraint.fct, computed_set)
+            end
         end
     end
     # add objective

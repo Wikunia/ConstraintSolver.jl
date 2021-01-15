@@ -98,6 +98,8 @@ function LinearConstraint(
         in_all_different,
         is_strict,
         is_equal,
+        false, # the rhs is not a strong rhs yet
+        zero(promote_T),
         zero(promote_T),
         mins,
         maxs,

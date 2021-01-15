@@ -34,8 +34,9 @@ end
 
 include("variables.jl")
 include("Bridges/util.jl")
-include("Bridges/indicator_greater_than.jl")
-include("Bridges/reified_greater_than.jl")
+include("Bridges/indicator.jl")
+include("Bridges/reified.jl")
+include("Bridges/strictly_greater_than.jl")
 include("constraints.jl")
 include("objective.jl")
 include("results.jl")
@@ -50,8 +51,11 @@ function Optimizer(; options...)
     com = CS.ConstraintSolverModel(options.solution_type)
     optimizer = Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
     lbo = MOIB.full_bridge_optimizer(optimizer, options.solution_type)
-    MOIB.add_bridge(lbo, CS.ReifiedGreaterToLessBridge{options.solution_type})
-    MOIB.add_bridge(lbo, CS.IndicatorGreaterToLessBridge{options.solution_type})
+    MOIB.add_bridge(lbo, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type})
+    MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, MOIBC.GreaterToLessBridge{options.solution_type}})
+    MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}})
+    MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, MOIBC.GreaterToLessBridge{options.solution_type}})
+    MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}})
     return lbo
 end
 
@@ -149,6 +153,7 @@ end
     MOI.optimize!(model::Optimizer)
 """
 function MOI.optimize!(model::Optimizer)
+    model.inner.options = model.options
     # check if every variable has bounds and is an Integer
     check_var_bounds(model)
 
@@ -157,7 +162,7 @@ function MOI.optimize!(model::Optimizer)
 
     create_lp_model!(model)
 
-    status = solve!(model)
+    status = solve!(model.inner)
     set_status!(model, status)
 
     if status == :Solved

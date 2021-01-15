@@ -1,10 +1,12 @@
 # ConstrainSolver.jl - Changelog
 
-## Unreleased
+## v0.6.1 (15th of January 2021)
+- Bugfix if binary variable is constrained directly in `@variable`
 - Use `CS.get_inner_model` to get the `ConstraintSolverModel`
   - Usage of `JuMP.backend` as before will fail
+- Support for strictly less than and greater than with `<` and `>`
 - Refactoring
-  - Using bridges for `>=` in indicator and reified constraint
+  - Using bridges for `>=` and `>` in indicator and reified constraint
   - Combining `==` and `<=` into `src/constraints/linear_constraints.jl`
 
 ## v0.6.0 (15th of December 2020) 

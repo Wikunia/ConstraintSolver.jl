@@ -686,8 +686,8 @@ end
 
 Solve the constraint model based on the given settings.
 """
-function solve!(com::CS.CoM, options::SolverOptions)
-    com.options = options
+function solve!(com::CS.CoM)
+    options = com.options
     Random.seed!(CS_RNG, options.seed)
     backtrack = options.backtrack
     max_bt_steps = options.max_bt_steps
@@ -803,16 +803,6 @@ function solve!(com::CS.CoM, options::SolverOptions)
         com.solve_time = time() - com.start_time
         return :NotSolved
     end
-end
-
-"""
-    solve!(com::Optimizer)
-
-Solve the constraint model based on the given settings.
-"""
-function solve!(model::Optimizer)
-    com = model.inner
-    return solve!(com, model.options)
 end
 
 end # module

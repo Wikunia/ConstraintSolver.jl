@@ -157,6 +157,23 @@ struct NotEqualTo{T} <: MOI.AbstractScalarSet
 end
 Base.copy(N::NotEqualTo) = NotEqualTo(N.value)
 
+# From https://github.com/dourouc05/ConstraintProgrammingExtensions.jl
+"""
+    Strictly{S <: Union{LessThan{T}, GreaterThan{T}}}
+
+Converts an inequality set to a set with the same inequality made strict.
+For example, while `LessThan(1)` corresponds to the inequality `x <= 1`,
+`Strictly(LessThan(1))` corresponds to the inequality `x < 1`.
+"""
+struct Strictly{T, S <: Union{MOI.LessThan{T}, MOI.GreaterThan{T}}} <: MOI.AbstractScalarSet
+    set::S
+end
+
+Base.copy(set::Strictly{T,S}) where {T,S} = Strictly{T,S}(copy(set.set))
+MOI.constant(set::Strictly{S}) where S = MOI.constant(set.set)
+MOIU.shift_constant(set::Strictly{S}, offset::T) where {S, T} =
+    typeof(set)(MOIU.shift_constant(set.set, offset))
+
 #====================================================================================
 ====================== TYPES FOR TRAVERSING ========================================
 ====================================================================================#
@@ -361,7 +378,11 @@ mutable struct LinearConstraint{T<:Real} <: Constraint
     in_all_different::Bool
     is_strict::Bool # for differentiate between < and <=
     is_equal::Bool # for ==
+    is_rhs_strong::Bool # saves whether the rhs is already a strong rhs
     rhs::T # combines value - constant
+    # same as rhs but for `<` it saves the original value - constant
+    # (rhs is then computed to be usable as <=)
+    strict_rhs::T
     mins::Vector{T}
     maxs::Vector{T}
     pre_mins::Vector{T}
