@@ -98,7 +98,7 @@ include(joinpath(dir, "benchmark/scheduling/benchmark.jl"))
 
 SUITE["scheduling"] = BenchmarkGroup(["cumulative", "equal", "less_than"])
 # compiling run
-furniture_moving1()
+furniture_moving()
 SUITE["scheduling"]["furniture_moving"] =
     @benchmarkable furniture_moving() seconds = 5
 
