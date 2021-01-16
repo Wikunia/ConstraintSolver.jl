@@ -92,3 +92,36 @@ SUITE["graph_coloring"]["queen7_7"] =
 SUITE["graph_coloring"]["le450_5d"] =
     @benchmarkable color_graph(joinpath(dir, "benchmark/graph_color/data/le450_5d.col"), 5) seconds =
         30
+
+
+include(joinpath(dir, "benchmark/scheduling/benchmark.jl"))
+
+SUITE["scheduling"] = BenchmarkGroup(["cumulative", "equal", "less_than"])
+# compiling run
+furniture_moving()
+SUITE["scheduling"]["furniture_moving"] =
+    @benchmarkable furniture_moving() seconds = 5
+
+
+# Problem instance
+organize_day_problem = Dict(
+
+    #task id     1      2      3      4
+    :tasks => ["Work","Mail","Shop","Bank"],
+
+    # duration of the four tasks
+    :durations => [4,1,2,1],
+
+    # precedences
+    # [A,B] : task A must be completed before task B
+    :precedences => [
+                        4 3;
+                        2 1
+                    ],
+    # Time limits
+    :start_time => 9,
+    :end_time => 17
+)
+
+SUITE["scheduling"]["organize_day"] =
+    @benchmarkable organize_day(organize_day_problem) seconds = 5
