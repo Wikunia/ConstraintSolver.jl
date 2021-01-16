@@ -67,7 +67,7 @@ function all_different_except_0(n=10)
     model = Model(optimizer_with_attributes(CS.Optimizer,
                                             "all_solutions"=>true,
                                             # "all_solutions"=>false,
-                                            # "logging"=>[],
+                                            "logging"=>[],
                                             )
                                             )
     @variable(model, 0 <= x[1:n] <= n, Int)
@@ -80,5 +80,5 @@ function all_different_except_0(n=10)
     status = JuMP.termination_status(model)
     @assert status == MOI.OPTIMAL
     num_sols = MOI.get(model, MOI.ResultCount())
-    @assert num_sols = 2^n
+    @assert num_sols == 2^n
 end
