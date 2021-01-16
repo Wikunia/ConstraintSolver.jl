@@ -4,6 +4,7 @@ using JSON
 using Random
 using MathOptInterface, JuMP, Cbc, GLPK, Combinatorics
 using ReferenceTests
+using LinearAlgebra
 
 const MOI = MathOptInterface
 const CS = ConstraintSolver

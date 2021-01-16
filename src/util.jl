@@ -156,3 +156,10 @@ end
         Core.setproperty!(c, s, v)
     end
 end
+
+"""
+    Return whether the given LinearConstraint doesn't contain any variables i.e for 0 <= 0
+"""
+function is_no_variable_constraint(constraint::LinearConstraint)
+    return length(constraint.indices) == 0
+end
