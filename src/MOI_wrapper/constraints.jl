@@ -179,6 +179,28 @@ function create_interals(com::CoM, vars::MOI.VectorOfVariables, set)
     )
 end
 
+function get_anti_constraint(model, constraint::LinearConstraint{T}) where T
+    anti_func = MOIU.operate(-, T, constraint.fct)
+    set = constraint.set
+    anti_set = nothing
+    if constraint.set isa MOI.LessThan
+        anti_set = Strictly(MOI.LessThan(-set.upper))
+    elseif constraint.set isa Strictly{T, MOI.LessThan{T}}
+        anti_set = MOI.LessThan(-set.set.upper)
+    elseif constraint.set isa MOI.EqualTo
+        anti_set = NotEqualTo(set.value)
+    elseif constraint.set isa NotEqualTo
+        anti_set = MOI.EqualTo(set.value)
+    end
+    anti_lc = new_linear_constraint(model, anti_func, anti_set)
+    anti_lc.idx = 0
+    return anti_lc
+end
+
+function get_anti_constraint(model, constraint::Constraint)
+    return nothing
+end
+
 """
     MOI.add_constraint(
         model::Optimizer,
@@ -373,8 +395,6 @@ function MOI.add_constraint(
     indices = [v.scalar_term.variable_index.value for v in func.terms]
 
     # for normal linear constraints
-    inner_indices =
-        [v.scalar_term.variable_index.value for v in func.terms if v.output_index == 2]
     inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
     inner_constant = func.constants[2]
     inner_set = set.set
@@ -388,7 +408,8 @@ function MOI.add_constraint(
         indices,
     )
 
-    lc = LinearConstraint(0, inner_func, inner_set, inner_indices)
+    lc = new_linear_constraint(model, inner_func, inner_set)
+    lc.idx = 0
 
     constraint = IndicatorConstraint(internals, A, lc, indices[1] in indices[2:end])
 
@@ -435,8 +456,6 @@ function MOI.add_constraint(
     indices = [v.scalar_term.variable_index.value for v in func.terms]
 
     # for normal linear constraints
-    inner_indices =
-        [v.scalar_term.variable_index.value for v in func.terms if v.output_index == 2]
     inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
     inner_constant = func.constants[2]
     inner_set = set.set
@@ -450,9 +469,9 @@ function MOI.add_constraint(
         indices,
     )
 
-    lc = LinearConstraint(0, inner_func, inner_set, inner_indices)
-
-    constraint = ReifiedConstraint(internals, A, lc, indices[1] in indices[2:end])
+    lc = new_linear_constraint(model, inner_func, inner_set)
+    anti_lc = get_anti_constraint(model, lc)
+    constraint = ReifiedConstraint(internals, A, lc, anti_lc, indices[1] in indices[2:end])
 
     add_constraint!(model, constraint)
 
@@ -476,10 +495,10 @@ function MOI.add_constraint(
         Int[v.value for v in vars.variables[2:end]],
     )
     inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
-
+    anti_constraint = get_anti_constraint(model, inner_constraint)
     indices = internals.indices
     constraint =
-        ReifiedConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
+        ReifiedConstraint(internals, A, inner_constraint, anti_constraint, indices[1] in indices[2:end])
 
     add_constraint!(model, constraint)
 
