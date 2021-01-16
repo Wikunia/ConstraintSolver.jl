@@ -158,3 +158,105 @@ end
     @test CS.fix!(com, variables[constraint.indices[3]], 3; check_feasibility = false)
     @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
 end
+
+@testset "reified anti prune" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, b, Bin)
+    @variable(m, 0 <= x[1:3] <= 15, Int)
+    @constraint(m, b := {sum(x) > 10})
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    constraint = com.constraints[1]
+    anti_constraint = constraint.anti_constraint
+    @test anti_constraint.set == MOI.LessThan(10.0)
+    @test all(term.coefficient == 1 for term in anti_constraint.fct.terms)
+    @test anti_constraint.fct.constant == 0
+
+    variables = com.search_space
+    constr_indices = constraint.indices
+    # set inactive
+    @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
+    # should anti prune
+    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+
+    for ind in constr_indices[2:4]
+        @test sort(CS.values(com.search_space[ind])) == collect(0:10)
+    end
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, b, Bin)
+    @variable(m, 0 <= x[1:3] <= 5, Int)
+    @constraint(m, b := {sum(x) <= 10})
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    constraint = com.constraints[1]
+    anti_constraint = constraint.anti_constraint
+    @test anti_constraint.set == CS.Strictly(MOI.LessThan(-10.0))
+    @test all(term.coefficient == -1 for term in anti_constraint.fct.terms)
+    @test anti_constraint.fct.constant == 0
+
+    variables = com.search_space
+    constr_indices = constraint.indices
+    # set inactive
+    @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
+    # should anti prune
+    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+
+    for ind in constr_indices[2:4]
+        @test sort(CS.values(com.search_space[ind])) == collect(1:5)
+    end
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, b, Bin)
+    @variable(m, 0 <= x[1:3] <= 5, Int)
+    @constraint(m, b := {sum(x) == 10})
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    constraint = com.constraints[1]
+    anti_constraint = constraint.anti_constraint
+    @test anti_constraint.set == CS.NotEqualTo(10.0)
+    @test all(term.coefficient == 1 for term in anti_constraint.fct.terms)
+    @test anti_constraint.fct.constant == 0
+
+    variables = com.search_space
+    constr_indices = constraint.indices
+    # set inactive
+    @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
+    @test CS.fix!(com, variables[constr_indices[2]], 0; check_feasibility = false)
+    @test CS.fix!(com, variables[constr_indices[3]], 5; check_feasibility = false)
+    # should anti prune
+    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+
+    for ind in constr_indices[4]
+        @test sort(CS.values(com.search_space[ind])) == collect(0:4)
+    end
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, b, Bin)
+    @variable(m, 0 <= x[1:3] <= 5, Int)
+    @constraint(m, b := {sum(x) != 10})
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    constraint = com.constraints[1]
+    anti_constraint = constraint.anti_constraint
+    @test anti_constraint.set == MOI.EqualTo(10.0)
+    @test all(term.coefficient == 1 for term in anti_constraint.fct.terms)
+    @test anti_constraint.fct.constant == 0
+
+    variables = com.search_space
+    constr_indices = constraint.indices
+    # set inactive
+    @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
+    @test CS.fix!(com, variables[constr_indices[2]], 0; check_feasibility = false)
+    @test CS.fix!(com, variables[constr_indices[3]], 5; check_feasibility = false)
+    # should anti prune
+    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+
+    for ind in constr_indices[4]
+        @test sort(CS.values(com.search_space[ind])) == [5]
+    end
+end

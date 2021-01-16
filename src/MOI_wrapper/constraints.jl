@@ -180,19 +180,24 @@ function create_interals(com::CoM, vars::MOI.VectorOfVariables, set)
 end
 
 function get_anti_constraint(model, constraint::LinearConstraint{T}) where T
-    anti_func = MOIU.operate(-, T, constraint.fct)
+
     set = constraint.set
+    anti_fct = nothing
     anti_set = nothing
     if constraint.set isa MOI.LessThan
+        anti_fct = MOIU.operate(-, T, constraint.fct)
         anti_set = Strictly(MOI.LessThan(-set.upper))
     elseif constraint.set isa Strictly{T, MOI.LessThan{T}}
+        anti_fct = MOIU.operate(-, T, constraint.fct)
         anti_set = MOI.LessThan(-set.set.upper)
     elseif constraint.set isa MOI.EqualTo
+        anti_fct = copy(constraint.fct)
         anti_set = NotEqualTo(set.value)
     elseif constraint.set isa NotEqualTo
+        anti_fct = copy(constraint.fct)
         anti_set = MOI.EqualTo(set.value)
     end
-    anti_lc = new_linear_constraint(model, anti_func, anti_set)
+    anti_lc = new_linear_constraint(model, anti_fct, anti_set)
     anti_lc.idx = 0
     return anti_lc
 end
