@@ -129,10 +129,10 @@ SUITE["scheduling"]["organize_day"] =
 
 include(joinpath(dir, "benchmark/small/benchmark.jl"))
 
-SUITE["small"] = BenchmarkGroup(["all_different_except", "reified", "indicator" "less_than"])
+SUITE["small"] = BenchmarkGroup(["all_different_except", "reified", "indicator", "less_than"])
 # compiling run
 all_different_except_0(5)
 SUITE["scheduling"]["all_different_except_0_len10"] =
     @benchmarkable all_different_except_0(10) seconds = 10
-    SUITE["scheduling"]["all_different_except_0_len12"] =
+SUITE["scheduling"]["all_different_except_0_len12"] =
     @benchmarkable all_different_except_0(12) seconds = 15
