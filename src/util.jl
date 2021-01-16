@@ -157,8 +157,9 @@ end
     end
 end
 
-
+"""
+    Return whether the given LinearConstraint doesn't contain any variables i.e for 0 <= 0
+"""
 function is_no_variable_constraint(constraint::LinearConstraint)
-    length(constraint.indices) == 0 && return true
-    return all(term.coefficient == 0 for term in constraint.fct.terms)
+    return length(constraint.indices) == 0
 end

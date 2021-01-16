@@ -164,13 +164,13 @@ end
 @testset "constraint without variables" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
     @variable(m, -5 <= x[1:2] <= 5, Int)
-    @constraint(m, sum(0 .* x) == 10)
+    @constraint(m, x[2] - x[1] + (-x[2]) + x[1] == 10)
     optimize!(m)
     @test JuMP.termination_status(m) == MOI.INFEASIBLE
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
     @variable(m, -5 <= x[1:2] <= 5, Int)
-    @constraint(m, sum(0 .* x) == 0)
+    @constraint(m, x[2] - x[1] + (-x[2]) + x[1] == 0)
     optimize!(m)
     @test JuMP.termination_status(m) == MOI.OPTIMAL
 end
