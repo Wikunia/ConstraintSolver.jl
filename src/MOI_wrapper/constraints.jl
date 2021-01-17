@@ -179,8 +179,22 @@ function create_interals(com::CoM, vars::MOI.VectorOfVariables, set)
     )
 end
 
-function get_anti_constraint(model, constraint::LinearConstraint{T}) where T
+"""
+    get_anti_constraint(mode, constraint)
 
+Return the anti constraint if it exists and `nothing` otherwise.
+The anti constraint is the constraint that expresses the opposite i.e
+input: 2x + 7 <= 5 => 2x + 7 > 5
+ - it will actually output only less than constraints not great than as it's not supported
+input 5x == 2 => 5x != 2
+
+Currently it's only implemented for linear constraints
+"""
+function get_anti_constraint(model, constraint::Constraint)
+    return nothing
+end
+
+function get_anti_constraint(model, constraint::LinearConstraint{T}) where T
     set = constraint.set
     anti_fct = nothing
     anti_set = nothing
@@ -202,9 +216,8 @@ function get_anti_constraint(model, constraint::LinearConstraint{T}) where T
     return anti_lc
 end
 
-function get_anti_constraint(model, constraint::Constraint)
-    return nothing
-end
+
+
 
 """
     MOI.add_constraint(
