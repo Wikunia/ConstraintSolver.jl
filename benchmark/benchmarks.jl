@@ -125,3 +125,14 @@ organize_day_problem = Dict(
 
 SUITE["scheduling"]["organize_day"] =
     @benchmarkable organize_day(organize_day_problem) seconds = 5
+
+
+include(joinpath(dir, "benchmark/small/benchmark.jl"))
+
+SUITE["small"] = BenchmarkGroup(["all_different_except", "reified", "indicator", "less_than"])
+# compiling run
+all_different_except_0(5)
+SUITE["scheduling"]["all_different_except_0_len10"] =
+    @benchmarkable all_different_except_0(10) seconds = 10
+SUITE["scheduling"]["all_different_except_0_len12"] =
+    @benchmarkable all_different_except_0(12) seconds = 15
