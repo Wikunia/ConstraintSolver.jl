@@ -1,5 +1,8 @@
 # ConstrainSolver.jl - Changelog
 
+## v0.6.3 (17th of January 2021)
+- Use anti pruning in reified constraints 
+
 ## v0.6.2 (16th of January 2021)
 - Bugfix when linear constraint has only variables with coefficient 0 like `x <= x` => `0x <= 0`
 

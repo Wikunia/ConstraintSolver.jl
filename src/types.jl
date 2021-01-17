@@ -420,10 +420,11 @@ mutable struct IndicatorConstraint{C<:Constraint} <: Constraint
     indicator_in_inner::Bool # is the indicator variable also in the inner constraint
 end
 
-mutable struct ReifiedConstraint{C<:Constraint} <: Constraint
+mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <: Constraint
     std::ConstraintInternals
     activate_on::MOI.ActivationCondition
     inner_constraint::C
+    anti_constraint::AC
     reified_in_inner::Bool # is the reified variable also in the inner constraint
 end
 

@@ -5,6 +5,7 @@ function init_constraint!(
     set::RS,
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
+    anti_constraint = constraint.anti_constraint
 
     variables = com.search_space
     rei_vidx = constraint.indices[1]
@@ -12,6 +13,7 @@ function init_constraint!(
 
     # check which methods that inner constraint supports
     set_impl_functions!(com, inner_constraint)
+    anti_constraint !== nothing && set_impl_functions!(com, anti_constraint)
 
     if inner_constraint.impl.init
         feasible = init_constraint!(
@@ -28,6 +30,16 @@ function init_constraint!(
             !rm!(com, rei_var, Int(constraint.activate_on)) && return false
         end
     end
+
+    if anti_constraint !== nothing && anti_constraint.impl.init
+        feasible = init_constraint!(
+            com,
+            anti_constraint,
+            anti_constraint.fct,
+            anti_constraint.set;
+            active = false,
+        )
+    end
     # still feasible
     return true
 end
@@ -42,12 +54,14 @@ function prune_constraint!(
     # 1. if the inner constraint is solved then the reified variable can be set to activate_on
     # 2. if the inner constraint is anti-solved (all fixed but don't fulfill) the reified variable can be set to !activate_on
     # 3. if the reified constraint is active then prune can be called for the inner constraint
-    # 4. if the reified constraint is fixed to inactive one would need to "anti" prune which is currently not possible
+    # 4. if the reified constraint is fixed to inactive one can "anti" prune
 
     variables = com.search_space
     rei_vidx = constraint.indices[1]
     inner_constraint = constraint.inner_constraint
+    anti_constraint = constraint.anti_constraint
     activate_on = Int(constraint.activate_on)
+    activate_off = activate_on == 1 ? 0 : 1
 
     # 1
     if is_constraint_solved(
@@ -67,6 +81,13 @@ function prune_constraint!(
             inner_constraint,
             inner_constraint.fct,
             inner_constraint.set,
+        )
+    elseif issetto(variables[rei_vidx], activate_off) && anti_constraint !== nothing
+        return prune_constraint!(
+            com,
+            anti_constraint,
+            anti_constraint.fct,
+            anti_constraint.set,
         )
     end
     return true
