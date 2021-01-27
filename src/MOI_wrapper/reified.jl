@@ -17,7 +17,11 @@ function _build_reified_constraint(
 ) where {A}
     S = typeof(jump_constraint.set)
     set = CS.ReifiedSet{A,S}(jump_constraint.set, 1 + length(jump_constraint.func))
-    vov = JuMP.AffExpr[variable]
+    if jump_constraint.func isa Vector{VariableRef}
+        vov = JuMP.VariableRef[variable]
+    else
+        vov = JuMP.AffExpr[variable]
+    end
     append!(vov, jump_constraint.func)
     return JuMP.VectorConstraint(vov, set)
 end
