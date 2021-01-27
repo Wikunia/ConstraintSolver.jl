@@ -17,7 +17,7 @@ function _build_reified_constraint(
 ) where {A}
     S = typeof(jump_constraint.set)
     set = CS.ReifiedSet{A,S}(jump_constraint.set, 1 + length(jump_constraint.func))
-    vov = VariableRef[variable]
+    vov = JuMP.AffExpr[variable]
     append!(vov, jump_constraint.func)
     return JuMP.VectorConstraint(vov, set)
 end
@@ -45,10 +45,11 @@ function JuMP.parse_constraint_head(_error::Function, ::Val{:(:=)}, lhs, rhs)
     rhs_con = rhs.args[1]
     rhs_vectorized, rhs_parsecode, rhs_buildcall =
         JuMP.parse_constraint_expr(_error, rhs_con)
+
     # TODO implement vectorized version
     vectorized = false
     if rhs_vectorized
-        _error("`$(rhs)` should be non vectorized. Three is currently no vectorized support for reified constraints. Please open an issue at ConstraintSolver.jl")
+        _error("`$(rhs)` should be non vectorized. There is currently no vectorized support for reified constraints. Please open an issue at ConstraintSolver.jl")
     end
 
     buildcall = :($(esc(:(CS._build_reified_constraint)))(

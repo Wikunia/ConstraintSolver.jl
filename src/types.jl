@@ -312,6 +312,16 @@ struct ReifiedSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
 end
 Base.copy(R::ReifiedSet{A,S}) where {A,S} = ReifiedSet{A,S}(R.set, R.dimension)
 
+struct AndSet{S1<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
+              S2<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
+    MOI.AbstractVectorSet
+ set1::S1
+ set2::S2
+ dimension::Int
+end
+Base.copy(A::AndSet{S1,S2}) where {S1,S2} = AndSet{S1,S2}(A.set1, A.set2, A.dimension)
+
+
 #====================================================================================
 ====================================================================================#
 

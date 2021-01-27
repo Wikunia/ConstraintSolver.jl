@@ -24,6 +24,7 @@ function JuMP._build_indicator_constraint(
 end
 
 include("reified.jl")
+include("and.jl")
 
 
 
@@ -467,7 +468,7 @@ function MOI.add_constraint(
     model::Optimizer,
     func::VAF{T},
     set::RS,
-) where {A,S,T<:Real,RS<:ReifiedSet{A,S}}
+) where {A,S<:MOI.AbstractScalarSet,T<:Real,RS<:ReifiedSet{A,S}}
     com = model.inner
     com.info.n_constraint_types.reified += 1
 
@@ -498,9 +499,9 @@ end
 
 function MOI.add_constraint(
     model::Optimizer,
-    vars::MOI.VectorOfVariables,
+    vars::Union{VAF{T}, MOI.VectorOfVariables},
     set::RS,
-) where {A,S,RS<:CS.ReifiedSet{A,S}}
+) where {T,A,S<:MOI.AbstractVectorSet,RS<:CS.ReifiedSet{A,S}}
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
