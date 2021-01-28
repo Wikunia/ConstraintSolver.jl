@@ -1,13 +1,20 @@
 function _build_and_constraint(
     _error::Function,
-    lhs::JuMP.ScalarConstraint,
-    rhs::JuMP.ScalarConstraint,
+    lhs,
+    rhs,
 )
     lhs_set = JuMP.moi_set(lhs)
     rhs_set = JuMP.moi_set(rhs)
+
+    lhs_jump_func = JuMP.jump_function(lhs)
+    rhs_jump_func = JuMP.jump_function(rhs)
+
+    lhs_func = JuMP.moi_function(lhs)
+    rhs_func = JuMP.moi_function(rhs)
+
+    vov = [lhs_jump_func..., rhs_jump_func...]
     return JuMP.VectorConstraint(
-            [JuMP.jump_function(lhs), JuMP.jump_function(rhs)],
-            AndSet(lhs_set, rhs_set, 2)
+            vov, AndSet(lhs_set, rhs_set, lhs_func, rhs_func, 2)
     )
 end
 

@@ -7,26 +7,9 @@ sense_to_set(::Function, ::Val{:>}) = Strictly(MOI.GreaterThan(0.0))
 
 MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 
-"""
-    Support for indicator constraints with a set constraint as the right hand side
-"""
-function JuMP._build_indicator_constraint(
-    _error::Function,
-    variable::JuMP.AbstractVariableRef,
-    jump_constraint::JuMP.VectorConstraint,
-    ::Type{MOI.IndicatorSet{A}},
-) where {A}
-
-    set = CS.IndicatorSet{A}(jump_constraint.set, 1 + length(jump_constraint.func))
-    vov = VariableRef[variable]
-    append!(vov, jump_constraint.func)
-    return JuMP.VectorConstraint(vov, set)
-end
-
+include("indicator.jl")
 include("reified.jl")
 include("and.jl")
-
-
 
 """
 MOI constraints
@@ -146,27 +129,6 @@ function add_constraint!(model::Optimizer, constraint::Constraint)
 end
 
 """
-    new_linear_constraint(model::Optimizer, func::SAF{T}, set) where {T<:Real}
-
-Create a new linear constraint and return a `LinearConstraint` with already a correct index
-such that it can be simply added with [`add_constraint!`](@ref)
-"""
-function new_linear_constraint(model::Optimizer, func::SAF{T}, set) where {T<:Real}
-    func = remove_zero_coeff(func)
-
-    indices = [v.variable_index.value for v in func.terms]
-
-    lc_idx = length(model.inner.constraints) + 1
-    lc = LinearConstraint(lc_idx, func, set, indices)
-    return lc
-end
-
-function remove_zero_coeff(func::MOI.ScalarAffineFunction)
-    terms = [term for term in func.terms if term.coefficient != 0]
-    return MOI.ScalarAffineFunction(terms, func.constant)
-end
-
-"""
     create_interals(com::CoM, vars::MOI.VectorOfVariables, set)
 
 Create ConstraintInternals for a vector of variables constraint
@@ -190,17 +152,8 @@ function create_interals(com::CoM, func::VAF{T}, set) where {T}
         length(com.constraints) + 1,
         func,
         set,
-        indices_from_VAF(func)
+        get_indices(func)
     )
-end
-
-"""
-    indices_from_VAF(func::VAF{T}) where {T}
-
-Get indices from the VectorAffineFunction
-"""
-function indices_from_VAF(func::VAF{T}) where {T}
-    return [v.scalar_term.variable_index.value for v in func.terms]
 end
 
 """
@@ -263,7 +216,7 @@ function MOI.add_constraint(
 
     internals = create_interals(com, vars, set)
 
-    constraint = init_constraint_struct(typeof(set), internals)
+    constraint = init_constraint_struct(set, internals)
 
     add_constraint!(model, constraint)
     if set isa AllDifferentSetInternal
@@ -434,7 +387,7 @@ function MOI.add_constraint(
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
-    indices = indices_from_VAF(func)
+    indices = get_indices(func)
 
     # for normal linear constraints
     inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
@@ -476,7 +429,7 @@ function MOI.add_constraint(
         set.set,
         Int[v.value for v in vars.variables[2:end]],
     )
-    inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
+    inner_constraint = init_constraint_struct(set.set, inner_internals)
 
     indices = internals.indices
     constraint =
@@ -495,7 +448,7 @@ function MOI.add_constraint(
     com = model.inner
     com.info.n_constraint_types.reified += 1
 
-    indices = indices_from_VAF(func)
+    indices = get_indices(func)
 
     # for normal linear constraints
     inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
@@ -536,7 +489,7 @@ function MOI.add_constraint(
         set.set,
         Int[v.value for v in vars.variables[2:end]],
     )
-    inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
+    inner_constraint = init_constraint_struct(set.set, inner_internals)
     anti_constraint = get_anti_constraint(model, inner_constraint)
     indices = internals.indices
     constraint =
@@ -562,9 +515,9 @@ function MOI.add_constraint(
         0,
         f[2:end],
         set.set,
-        indices_from_VAF(f[2:end]),
+        get_indices(f[2:end]),
     )
-    inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
+    inner_constraint = init_constraint_struct(set.set, inner_internals)
     anti_constraint = get_anti_constraint(model, inner_constraint)
     indices = internals.indices
     constraint =

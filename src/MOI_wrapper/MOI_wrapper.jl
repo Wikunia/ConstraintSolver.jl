@@ -1,13 +1,3 @@
-const SVF = MOI.SingleVariable
-const SAF = MOI.ScalarAffineFunction
-const VAF = MOI.VectorAffineFunction
-
-# indices
-const VI = MOI.VariableIndex
-const CI = MOI.ConstraintIndex
-
-const VAR_TYPES = Union{MOI.ZeroOne,MOI.Integer}
-
 var_idx(x::JuMP.VariableRef) = JuMP.optimizer_index(x).value
 var_idx(x::MOI.VariableIndex) = x.value
 # support for @variable(m, x, Set)
@@ -32,6 +22,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     options::SolverOptions
 end
 
+include("util.jl")
 include("variables.jl")
 include("Bridges/util.jl")
 include("Bridges/indicator.jl")

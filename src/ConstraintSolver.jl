@@ -35,6 +35,16 @@ const MOIB = MathOptInterface.Bridges
 const MOIBC = MathOptInterface.Bridges.Constraint
 const MOIU = MOI.Utilities
 
+const SVF = MOI.SingleVariable
+const SAF = MOI.ScalarAffineFunction
+const VAF = MOI.VectorAffineFunction
+
+# indices
+const VI = MOI.VariableIndex
+const CI = MOI.ConstraintIndex
+
+const VAR_TYPES = Union{MOI.ZeroOne,MOI.Integer}
+
 include("types.jl")
 const CoM = ConstraintSolverModel
 

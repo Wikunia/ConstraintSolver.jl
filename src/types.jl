@@ -313,13 +313,17 @@ end
 Base.copy(R::ReifiedSet{A,S}) where {A,S} = ReifiedSet{A,S}(R.set, R.dimension)
 
 struct AndSet{S1<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
-              S2<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
+              S2<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
+              F1<:Union{SAF,VAF,MOI.VectorOfVariables},
+              F2<:Union{SAF,VAF,MOI.VectorOfVariables}} <:
     MOI.AbstractVectorSet
  set1::S1
  set2::S2
+ func1::F1
+ func2::F2
  dimension::Int
 end
-Base.copy(A::AndSet{S1,S2}) where {S1,S2} = AndSet{S1,S2}(A.set1, A.set2, A.dimension)
+Base.copy(A::AndSet{S1,S2,F1,F2}) where {S1,S2,F1,F2} = AndSet{S1,S2,F1,F2}(A.set1, A.set2, A.func1, A.func2, A.dimension)
 
 
 #====================================================================================
@@ -374,6 +378,12 @@ mutable struct AllDifferentConstraint <: Constraint
     scc_init::SCCInit
     # corresponds to `in_all_different`: Saves the constraint idxs where all variables are part of this alldifferent constraint
     sub_constraint_idxs::Vector{Int}
+end
+
+mutable struct AndConstraint{C1<:Constraint,C2<:Constraint}
+    std::ConstraintInternals
+    lhs::C1
+    rhs::C2
 end
 
 # support for a <= b constraint

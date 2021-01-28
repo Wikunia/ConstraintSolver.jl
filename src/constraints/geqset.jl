@@ -1,4 +1,4 @@
-function init_constraint_struct(::Type{GeqSetInternal}, internals)
+function init_constraint_struct(::GeqSetInternal, internals)
     GeqSetConstraint(internals, internals.indices[1], internals.indices[2:end], [])
 end
 
