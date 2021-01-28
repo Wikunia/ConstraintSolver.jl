@@ -66,6 +66,7 @@ include("objective.jl")
 include("constraints.jl")
 
 include("constraints/all_different.jl")
+include("constraints/and.jl")
 include("constraints/linear_constraints.jl")
 include("constraints/svc.jl")
 include("constraints/equal_set.jl")

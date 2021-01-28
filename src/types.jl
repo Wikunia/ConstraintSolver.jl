@@ -299,11 +299,11 @@ mutable struct TableBacktrackInfo
     indices::Vector{Int}
 end
 
-struct IndicatorSet{A} <: MOI.AbstractVectorSet
-    set::MOI.AbstractVectorSet
+struct IndicatorSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
+    set::S
     dimension::Int
 end
-Base.copy(I::IndicatorSet{A}) where {A} = IndicatorSet{A}(I.set, I.dimension)
+Base.copy(I::IndicatorSet{A,S}) where {A,S} = IndicatorSet{A,S}(I.set, I.dimension)
 
 struct ReifiedSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
        MOI.AbstractVectorSet
@@ -380,7 +380,7 @@ mutable struct AllDifferentConstraint <: Constraint
     sub_constraint_idxs::Vector{Int}
 end
 
-mutable struct AndConstraint{C1<:Constraint,C2<:Constraint}
+mutable struct AndConstraint{C1<:Constraint,C2<:Constraint} <: Constraint
     std::ConstraintInternals
     lhs::C1
     rhs::C2

@@ -7,8 +7,8 @@ function JuMP._build_indicator_constraint(
     jump_constraint::JuMP.VectorConstraint,
     ::Type{MOI.IndicatorSet{A}},
 ) where {A}
-
-    set = CS.IndicatorSet{A}(jump_constraint.set, 1 + length(jump_constraint.func))
+    S = typeof(jump_constraint.set)
+    set = CS.IndicatorSet{A,S}(jump_constraint.set, 1 + length(jump_constraint.func))
     if jump_constraint.func isa Vector{VariableRef}
         vov = JuMP.VariableRef[variable]
     else
