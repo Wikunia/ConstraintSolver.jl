@@ -408,6 +408,13 @@ function MOI.add_constraint(
 
     indices = get_indices(func)
 
+    internals = ConstraintInternals(
+        length(com.constraints)+1,
+        func,
+        MOI.IndicatorSet{A}(set.set),
+        indices,
+    )
+
     lc = get_inner_constraint(func, set, set.set)
 
     constraint = IndicatorConstraint(internals, A, lc, indices[1] in indices[2:end])
@@ -469,6 +476,13 @@ function MOI.add_constraint(
 
     indices = get_indices(func)
 
+    internals = ConstraintInternals(
+        length(com.constraints)+1,
+        func,
+        typeof(set)(set.set, set.dimension),
+        indices,
+    )
+
     # for normal linear constraints
     lc = get_inner_constraint(func, set, set.set)
     anti_lc = get_anti_constraint(model, lc)
@@ -489,7 +503,7 @@ function MOI.add_constraint(
 
     internals = create_interals(com, vars, set)
 
-    inner_constraint = get_inner_constraint(func, set, set.set)
+    inner_constraint = get_inner_constraint(vars, set, set.set)
     anti_constraint = get_anti_constraint(model, inner_constraint)
     indices = internals.indices
     constraint =

@@ -48,21 +48,14 @@ function get_inner_constraint(func::VAF{T}, set::Union{ReifiedSet, IndicatorSet}
     return init_constraint_struct(set.set, inner_internals)
 end
 
-function get_inner_constraint(func::VAF{T}, set::Union{ReifiedSet, IndicatorSet}, inner_set::MOI.AbstractScalarSet) where {T<:Real}
+function get_inner_constraint(func::VAF{T}, set::Union{ReifiedSet, IndicatorSet, MOI.IndicatorSet}, inner_set::MOI.AbstractScalarSet) where {T<:Real}
     inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
     inner_constant = func.constants[2]
     inner_set = set.set
 
     inner_func = MOI.ScalarAffineFunction{T}(inner_terms, inner_constant)
 
-    internals = ConstraintInternals(
-        0,
-        func,
-        ReifiedSet{A,S}(inner_set, set.dimension),
-        indices,
-    )
-
-    return new_linear_constraint(model, inner_func, inner_set)
+    return new_linear_constraint(inner_func, inner_set)
 end
 
 function get_inner_constraint(vars::MOI.VectorOfVariables, set::Union{ReifiedSet, IndicatorSet}, inner_set)
