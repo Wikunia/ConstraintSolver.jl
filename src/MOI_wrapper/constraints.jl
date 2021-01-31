@@ -72,10 +72,13 @@ function MOI.supports_constraint(
 end
 
 function MOI.supports_constraint(
-    ::Optimizer,
+    optimizer::Optimizer,
     func::Type{VAF{T}},
     set::Type{OS},
 ) where {A,T<:Real,IS,OS<:CS.IndicatorSet{A,IS}}
+    if IS <: AndSet
+        return is_and_supported(optimizer, IS)
+    end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
 
@@ -96,12 +99,15 @@ function MOI.supports_constraint(
 end
 
 function MOI.supports_constraint(
-    ::Optimizer,
+    optimizer::Optimizer,
     func::Type{VAF{T}},
     set::Type{OS},
 ) where {A,T<:Real,IS,OS<:CS.ReifiedSet{A,IS}}
     if IS <: MOI.GreaterThan || IS <: Strictly{T, MOI.GreaterThan{T}}
         return false
+    end
+    if IS <: AndSet
+        return is_and_supported(optimizer, IS)
     end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
@@ -111,6 +117,13 @@ MOI.supports_constraint(
     ::Type{MOI.VectorOfVariables},
     ::Type{GeqSetInternal},
 ) = true
+
+"""
+    Return whether the two constraint inside the `AndSet` are supported directly by the solver
+"""
+function is_and_supported(optimizer::Optimizer, ::Type{CS.AndSet{S1,S2,F1,F2}}) where {S1, S2, F1, F2}
+    return MOI.supports_constraint(optimizer, F1, S1) && MOI.supports_constraint(optimizer, F2, S2)
+end
 
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
     for term in aff.terms
