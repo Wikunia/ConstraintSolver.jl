@@ -522,8 +522,6 @@ function MOI.add_constraint(
 ) where {A,S<:MOI.AbstractVectorSet,RS<:CS.ReifiedSet{A,S}}
     com = model.inner
     com.info.n_constraint_types.reified += 1
-    @show vars
-
     internals = create_interals(com, vars, set)
 
     inner_constraint = get_inner_constraint(vars, set, set.set)

@@ -10,6 +10,7 @@ end
 
 @testset "Unit Tests" begin
     include("constraints/alldifferent.jl")
+    include("constraints/and.jl")
     include("constraints/scc.jl")
     include("constraints/equal_to.jl")
     include("constraints/equal.jl")

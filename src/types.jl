@@ -329,7 +329,7 @@ function AndSet{F1,F2}(set1::S1, set2::S2, lhs_dimension, rhs_dimension) where {
 end
 
 function Base.copy(A::AndSet{F1,F2,S1,S2}) where {F1,F2,S1,S2} 
-    AndSet{F1,F2,S1,S2}(A.set1, A.set2, A.lhs_dimension, A.rhs_dimension, A.dimension)
+    AndSet{F1,F2,S1,S2}(A.lhs_set, A.rhs_set, A.lhs_dimension, A.rhs_dimension, A.dimension)
 end
 
 
