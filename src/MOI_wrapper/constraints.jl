@@ -112,6 +112,15 @@ function MOI.supports_constraint(
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
 
+function MOI.supports_constraint(
+    optimizer::Optimizer,
+    func::Type{VAF{T}},
+    set::Type{AS},
+) where {T,F1,F2,S1,S2,AS<:CS.AndSet{F1,F2,S1,S2}}
+    return is_and_supported(optimizer, set)
+end
+
+
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
@@ -513,6 +522,7 @@ function MOI.add_constraint(
 ) where {A,S<:MOI.AbstractVectorSet,RS<:CS.ReifiedSet{A,S}}
     com = model.inner
     com.info.n_constraint_types.reified += 1
+    @show vars
 
     internals = create_interals(com, vars, set)
 
