@@ -12,9 +12,9 @@ function _build_and_constraint(
     lhs_func = JuMP.moi_function(lhs)
     rhs_func = JuMP.moi_function(rhs)
 
-    vov = [lhs_jump_func..., rhs_jump_func...]
+    func = [lhs_jump_func..., rhs_jump_func...]
     return JuMP.VectorConstraint(
-            vov, AndSet(lhs_set, rhs_set, lhs_func, rhs_func, 2)
+            func, AndSet{typeof(lhs_func), typeof(rhs_func)}(lhs_set, rhs_set, MOI.dimension(lhs_set),  MOI.dimension(rhs_set))
     )
 end
 
