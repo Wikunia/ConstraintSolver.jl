@@ -303,6 +303,7 @@ struct IndicatorSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: 
     set::S
     dimension::Int
 end
+IndicatorSet{A}(set::S) where {A,S} = IndicatorSet{A,S}(set, 1+MOI.dimension(set))
 Base.copy(I::IndicatorSet{A,S}) where {A,S} = IndicatorSet{A,S}(I.set, I.dimension)
 
 struct ReifiedSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:

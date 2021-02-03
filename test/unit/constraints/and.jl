@@ -1,4 +1,4 @@
-@testset "reified And constraint violated or solved?" begin
+@testset "reified fixed to 1 And constraint violated or solved?" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
@@ -59,6 +59,66 @@
     @test CS.is_constraint_solved(com, constraint, constraint.fct, constraint.set)
 end
 
+@testset "Indicator fixed to 1 And constraint violated or solved?" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, b >= 1, Bin)
+    @variable(m, 0 <= x[1:2] <= 5, Int)
+    @constraint(m, b => {x in CS.AllDifferentSet() && sum(x) <= 2})
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    constraint = com.constraints[1]
+    @test CS.fix!(com, variables[constraint.indices[2]], 1; check_feasibility = false)
+    @test CS.fix!(com, variables[constraint.indices[3]], 1; check_feasibility = false)
+    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+
+    #################
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, b >= 1, Bin)
+    @variable(m, 0 <= x[1:2] <= 5, Int)
+    @constraint(m, b => {x in CS.AllDifferentSet() && sum(x) <= 2})
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    constraint = com.constraints[1]
+    @test CS.fix!(com, variables[constraint.indices[2]], 1; check_feasibility = false)
+    @test CS.fix!(com, variables[constraint.indices[3]], 2; check_feasibility = false)
+    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+
+     #################
+
+     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+     @variable(m, b >= 1, Bin)
+     @variable(m, 0 <= x[1:2] <= 5, Int)
+     @constraint(m, b => {sum(x) > 2 && x in CS.AllDifferentSet()})
+     optimize!(m)
+     com = CS.get_inner_model(m)
+ 
+     variables = com.search_space
+     constraint = com.constraints[1]
+     and_constraint = com.constraints[1].inner_constraint
+     @test CS.fix!(com, variables[and_constraint.indices[1]], 0; check_feasibility = false)
+     @test CS.fix!(com, variables[and_constraint.indices[2]], 2; check_feasibility = false)
+     @test CS.is_constraint_violated(com, and_constraint, and_constraint.fct, and_constraint.set)
+
+    ##################
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, b >= 1, Bin)
+    @variable(m, 0 <= x[1:2] <= 5, Int)
+    @constraint(m, b => {x in CS.AllDifferentSet() && sum(x) <= 2})
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    constraint = com.constraints[1]
+    @test CS.fix!(com, variables[constraint.indices[2]], 0; check_feasibility = false)
+    @test CS.fix!(com, variables[constraint.indices[3]], 1; check_feasibility = false)
+    @test CS.is_constraint_solved(com, constraint, constraint.fct, constraint.set)
+end
 
 @testset "reified And constraint prune_constraint!" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))

@@ -43,15 +43,18 @@ function Optimizer(; options...)
     com = CS.ConstraintSolverModel(options.solution_type)
     optimizer = Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
     lbo = MOIB.full_bridge_optimizer(optimizer, options.solution_type)
-    MOIB.add_bridge(lbo, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type})
-    MOIB.add_bridge(lbo, CS.AndBridge{options.solution_type, MOIBC.GreaterToLessBridge{options.solution_type}, Val{:LHS}})
-    MOIB.add_bridge(lbo, CS.AndBridge{options.solution_type, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}, Val{:LHS}})
-    MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, MOIBC.GreaterToLessBridge{options.solution_type}})
-    MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}})
-    MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, MOIBC.GreaterToLessBridge{options.solution_type}})
-    MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}})
-    MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, AndBridge{options.solution_type, MOIBC.GreaterToLessBridge{options.solution_type}, Val{:LHS}}})
-    MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, AndBridge{options.solution_type, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}, Val{:LHS}}})
+    GreaterToLessBridges = [
+        MOIBC.GreaterToLessBridge{options.solution_type},
+        CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}
+    ]
+    for gtlbridge in GreaterToLessBridges
+        MOIB.add_bridge(lbo, gtlbridge)
+        MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, gtlbridge})
+        MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, gtlbridge})
+        MOIB.add_bridge(lbo, CS.AndBridge{options.solution_type, gtlbridge, Val{:LHS}})
+        MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, AndBridge{options.solution_type, gtlbridge, Val{:LHS}}})
+        MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, AndBridge{options.solution_type, gtlbridge, Val{:LHS}}})
+    end
     return lbo
 end
 

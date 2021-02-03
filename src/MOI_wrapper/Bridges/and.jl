@@ -47,7 +47,6 @@ function MOIBC.map_function(::Type{<:AndBridge{T, B, P, F1, F2, F1dim, F2dim}}, 
         push!(rhs_terms, MOI.VectorAffineTerm{T}(term.output_index + get_value(F1dim), term.scalar_term))
     end
     rhs_fct = MOI.VectorAffineFunction(rhs_terms, rhs_fct.constants)
-
     return MOI.VectorAffineFunction([mapped_lhs_fct.terms..., rhs_fct.terms...],  [mapped_lhs_fct.constants..., rhs_fct.constants...])
 end
 
