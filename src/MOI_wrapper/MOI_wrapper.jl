@@ -51,9 +51,11 @@ function Optimizer(; options...)
         MOIB.add_bridge(lbo, gtlbridge)
         MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, gtlbridge})
         MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, gtlbridge})
-        MOIB.add_bridge(lbo, CS.AndBridge{options.solution_type, gtlbridge, Val{:LHS}})
-        MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, AndBridge{options.solution_type, gtlbridge, Val{:LHS}}})
-        MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, AndBridge{options.solution_type, gtlbridge, Val{:LHS}}})
+        for side in [:LHS, :RHS]
+            MOIB.add_bridge(lbo, CS.AndBridge{options.solution_type, gtlbridge, Val{side}})
+            MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, AndBridge{options.solution_type, gtlbridge, Val{side}}})
+            MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, AndBridge{options.solution_type, gtlbridge, Val{side}}})
+        end
     end
     return lbo
 end
