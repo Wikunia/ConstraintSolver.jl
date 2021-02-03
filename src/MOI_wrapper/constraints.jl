@@ -116,7 +116,7 @@ function MOI.supports_constraint(
     optimizer::Optimizer,
     func::Type{VAF{T}},
     set::Type{AS},
-) where {T,F1,F2,S1,S2,AS<:CS.AndSet{F1,F2,S1,S2}}
+) where {T,F1,F2,F1dim,F2dim,S1,S2,AS<:CS.AndSet{F1,F2,F1dim,F2dim,S1,S2}}
     return is_and_supported(optimizer, set)
 end
 
@@ -130,7 +130,7 @@ MOI.supports_constraint(
 """
     Return whether the two constraint inside the `AndSet` are supported directly by the solver
 """
-function is_and_supported(optimizer::Optimizer, ::Type{CS.AndSet{F1,F2,S1,S2}}) where {F1, F2, S1, S2}
+function is_and_supported(optimizer::Optimizer, ::Type{CS.AndSet{F1,F2,F1dim,F2dim,S1,S2}}) where {F1, F2, F1dim, F2dim, S1, S2}
     return MOI.supports_constraint(optimizer, F1, S1) && MOI.supports_constraint(optimizer, F2, S2)
 end
 

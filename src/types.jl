@@ -315,6 +315,8 @@ Base.copy(R::ReifiedSet{A,S}) where {A,S} = ReifiedSet{A,S}(R.set, R.dimension)
 struct AndSet{
             F1<:Union{SAF,VAF,MOI.VectorOfVariables},
             F2<:Union{SAF,VAF,MOI.VectorOfVariables},
+            F1dim<:Val,
+            F2dim<:Val,
             S1<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
             S2<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
     } <: MOI.AbstractVectorSet
@@ -324,12 +326,16 @@ struct AndSet{
  rhs_dimension::Int
  dimension::Int
 end
-function AndSet{F1,F2}(set1::S1, set2::S2, lhs_dimension, rhs_dimension) where {F1,F2,S1,S2}
-    return AndSet{F1,F2,S1,S2}(set1, set2, lhs_dimension, rhs_dimension, lhs_dimension + rhs_dimension)
+function AndSet{F1,F2}(lhs_set::S1, rhs_set::S2) where {F1,F2,S1,S2}
+    lhs_dim = MOI.dimension(lhs_set)
+    rhs_dim = MOI.dimension(rhs_set)
+    F1dim = Val{lhs_dim}
+    F2dim = Val{rhs_dim}
+    return AndSet{F1,F2,F1dim,F2dim,S1,S2}(lhs_set, rhs_set, lhs_dim, rhs_dim, lhs_dim + rhs_dim)
 end
 
-function Base.copy(A::AndSet{F1,F2,S1,S2}) where {F1,F2,S1,S2} 
-    AndSet{F1,F2,S1,S2}(A.lhs_set, A.rhs_set, A.lhs_dimension, A.rhs_dimension, A.dimension)
+function Base.copy(A::AndSet{F1,F2,F1dim,F2dim,S1,S2}) where {F1,F2,F1dim,F2dim,S1,S2} 
+    AndSet{F1,F2,F1dim,F2dim,S1,S2}(A.lhs_set, A.rhs_set, A.lhs_dimension, A.rhs_dimension, A.dimension)
 end
 
 

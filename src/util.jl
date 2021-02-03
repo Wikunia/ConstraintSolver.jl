@@ -163,3 +163,6 @@ end
 function is_no_variable_constraint(constraint::LinearConstraint)
     return length(constraint.indices) == 0
 end
+
+get_value(::Val{i}) where i = i
+get_value(::Type{Val{i}}) where i = i

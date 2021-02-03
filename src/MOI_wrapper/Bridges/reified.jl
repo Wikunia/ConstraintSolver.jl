@@ -39,8 +39,8 @@ end
 
 function MOIBC.bridge_constraint(::Type{<:ReifiedBridge{T, B, A}}, model, func, set) where {T, B, A}
     f = MOIU.eachscalar(func)
-    new_func = MOIU.operate(vcat, T, f[1], MOIBC.map_function(B, f[2]))
+    new_func = MOIU.operate(vcat, T, f[1], MOIBC.map_function(B, f[2:end]))
     new_inner_set = MOIBC.map_set(B, set.set)
-    new_set = CS.ReifiedSet{A,typeof(new_inner_set)}(new_inner_set, 2)
+    new_set = CS.ReifiedSet{A,typeof(new_inner_set)}(new_inner_set, 1+MOI.dimension(new_inner_set))
     return ReifiedBridge{T,B,A}(MOI.add_constraint(model, new_func, new_set))
 end
