@@ -43,19 +43,23 @@ function Optimizer(; options...)
     com = CS.ConstraintSolverModel(options.solution_type)
     optimizer = Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
     lbo = MOIB.full_bridge_optimizer(optimizer, options.solution_type)
-    GreaterToLessBridges = [
+    greater2less_bridges = [
         MOIBC.GreaterToLessBridge{options.solution_type},
         CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}
     ]
-    for gtlbridge in GreaterToLessBridges
-        MOIB.add_bridge(lbo, gtlbridge)
-        MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, gtlbridge})
-        MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, gtlbridge})
+    inner_bridges = greater2less_bridges
+    for i in 1:length(inner_bridges)
         for side in [:LHS, :RHS]
-            MOIB.add_bridge(lbo, CS.AndBridge{options.solution_type, gtlbridge, Val{side}})
-            MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, AndBridge{options.solution_type, gtlbridge, Val{side}}})
-            MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, AndBridge{options.solution_type, gtlbridge, Val{side}}})
+            push!(inner_bridges, CS.AndBridge{options.solution_type, inner_bridges[i], Val{side}})
+            push!(inner_bridges, CS.AndBridge{options.solution_type, CS.AndBridge{options.solution_type, inner_bridges[i], Val{:LHS}}, Val{side}})
+            push!(inner_bridges, CS.AndBridge{options.solution_type, CS.AndBridge{options.solution_type, inner_bridges[i], Val{:RHS}}, Val{side}})
         end
+    end
+
+    for inner_bridge in inner_bridges
+        MOIB.add_bridge(lbo, inner_bridge)
+        MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, inner_bridge})
+        MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, inner_bridge})
     end
     return lbo
 end

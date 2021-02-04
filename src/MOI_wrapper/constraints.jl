@@ -83,19 +83,21 @@ function MOI.supports_constraint(
 end
 
 function MOI.supports_constraint(
-    ::Optimizer,
+    optimizer::Optimizer,
     func::Type{MOI.VectorOfVariables},
-    set::Type{IS},
-) where {A,IS<:CS.IndicatorSet{A}}
-    return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
+    set::Type{OS},
+) where {A,IS,OS<:CS.IndicatorSet{A,IS}}
+    !(A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO) && return false
+    return MOI.supports_constraint(optimizer, func, IS)
 end
 
 function MOI.supports_constraint(
-    ::Optimizer,
+    optimizer::Optimizer,
     func::Type{MOI.VectorOfVariables},
-    set::Type{RS}
-) where {A,IS,RS<:CS.ReifiedSet{A,IS}}
-    return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
+    set::Type{OS}
+) where {A,IS,OS<:CS.ReifiedSet{A,IS}}
+    !(A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO) && return false
+    return MOI.supports_constraint(optimizer, func, IS)
 end
 
 function MOI.supports_constraint(
@@ -131,7 +133,8 @@ MOI.supports_constraint(
     Return whether the two constraint inside the `AndSet` are supported directly by the solver
 """
 function is_and_supported(optimizer::Optimizer, ::Type{CS.AndSet{F1,F2,F1dim,F2dim,S1,S2}}) where {F1, F2, F1dim, F2dim, S1, S2}
-    return MOI.supports_constraint(optimizer, F1, S1) && MOI.supports_constraint(optimizer, F2, S2)
+    is_supported = MOI.supports_constraint(optimizer, F1, S1) && MOI.supports_constraint(optimizer, F2, S2)
+    return is_supported
 end
 
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}

@@ -47,15 +47,6 @@ function get_safe_lower_threshold(com::CS.CoM, val, divider)
 end
 
 """
-    var_vector_to_moi(vars::Vector{Variable})
-
-Convert a vector of variables to MOI.VectorOfVariables
-"""
-function var_vector_to_moi(vars::Vector{Variable})
-    return MOI.VectorOfVariables([MOI.VariableIndex(v.idx) for v in vars])
-end
-
-"""
     fixed_vs_unfixed(search_space, indices)
 
 Return the fixed_vals as well as the unfixed_indices
@@ -164,5 +155,4 @@ function is_no_variable_constraint(constraint::LinearConstraint)
     return length(constraint.indices) == 0
 end
 
-get_value(::Val{i}) where i = i
 get_value(::Type{Val{i}}) where i = i
