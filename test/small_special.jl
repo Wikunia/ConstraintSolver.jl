@@ -595,4 +595,103 @@
         @test JuMP.value(x[3]) ≈ 4.0
         @test JuMP.value(x[4]) ≈ 5.0
     end
+
+    @testset "AllDifferent except 0" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 0 <= x[1:5] <= 3, Int)
+        len = length(x)
+        for i in 2:len, j in 1:i-1
+            b = @variable(m, binary=true)
+            @constraint(m, b := {x[i] != 0 && x[j] != 0})
+            @constraint(m, b => {x[i] != x[j]} ) 
+        end
+        
+        @objective(m, Min, sum(x))
+        optimize!(m)
+        CS.get_inner_model(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 0
+        @test JuMP.value(x[1]) ≈ 0
+        @test JuMP.value(x[2]) ≈ 0
+        @test JuMP.value(x[3]) ≈ 0
+        @test JuMP.value(x[4]) ≈ 0
+        @test JuMP.value(x[5]) ≈ 0
+
+        # maximize
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 0 <= x[1:5] <= 3, Int)
+        len = length(x)
+        for i in 2:len, j in 1:i-1
+            b = @variable(m, binary=true)
+            @constraint(m, b := {x[i] != 0 && x[j] != 0})
+            @constraint(m, b => {x[i] != x[j]} ) 
+        end
+        
+        @objective(m, Max, sum(x))
+        optimize!(m)
+        CS.get_inner_model(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 3+2+1+0+0
+    end
+
+    @testset "Try to fulfill b with several conditions" begin
+        # inner part is infeasible
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 0 <= x[1:5] <= 3, Int)
+        @variable(m, b, Bin)
+        @constraint(m, b => {x[1] > x[2] && x[2] > x[3] && x[3] > x[4] && x[4] > x[5]})
+        
+        @objective(m, Max, b)
+        optimize!(m)
+        CS.get_inner_model(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 0
+        @test JuMP.value(b) ≈ 0
+
+        # inner part is feasible
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 0 <= x[1:5] <= 4, Int)
+        @variable(m, b, Bin)
+        @constraint(m, b => {x[1] > x[2] && x[2] > x[3] && x[3] > x[4] && x[4] > x[5]})
+        
+        @objective(m, Max, b)
+        optimize!(m)
+        CS.get_inner_model(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 1
+        @test JuMP.value(b) ≈ 1
+        vx = JuMP.value.(x)
+        @test vx[1] > vx[2] && vx[2] > vx[3] && vx[3] > vx[4] && vx[4] > vx[5]
+
+
+        # inner part is feasible
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 0 <= x[1:5] <= 4, Int)
+        @variable(m, b, Bin)
+        @constraint(m, b => {x[1] >= x[2] && (x[3] <= x[2] && (x[3] >= x[4] && x[4] > x[5])) && x in CS.AllDifferentSet()})
+        
+        @objective(m, Max, b)
+        optimize!(m)
+        CS.get_inner_model(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 1
+        @test JuMP.value(b) ≈ 1
+        vx = JuMP.value.(x)
+        @test vx[1] > vx[2] && vx[2] > vx[3] && vx[3] > vx[4] && vx[4] > vx[5]
+    end
 end
