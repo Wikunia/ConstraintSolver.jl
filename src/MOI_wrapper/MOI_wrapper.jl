@@ -48,14 +48,9 @@ function Optimizer(; options...)
         CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}
     ]
     inner_bridges = greater2less_bridges
-    for i in 1:length(inner_bridges)
-        for side in [:LHS, :RHS]
-            push!(inner_bridges, CS.AndBridge{options.solution_type, inner_bridges[i], Val{side}})
-            push!(inner_bridges, CS.AndBridge{options.solution_type, CS.AndBridge{options.solution_type, inner_bridges[i], Val{:LHS}}, Val{side}})
-            push!(inner_bridges, CS.AndBridge{options.solution_type, CS.AndBridge{options.solution_type, inner_bridges[i], Val{:RHS}}, Val{side}})
-        end
-    end
-
+    # have inner them inside the AndBridge
+    push!(inner_bridges, CS.AndBridge{options.solution_type, inner_bridges...})
+  
     for inner_bridge in inner_bridges
         MOIB.add_bridge(lbo, inner_bridge)
         MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, inner_bridge})
