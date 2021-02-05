@@ -82,8 +82,10 @@ function is_constraint_solved(
     set::AndSet,
     values::Vector{Int},
 )
-    lhs_solved = is_constraint_solved(constraint.lhs, constraint.lhs.fct, constraint.lhs.set, values[1:set.lhs_dimension])
-    rhs_solved = is_constraint_solved(constraint.rhs, constraint.rhs.fct, constraint.rhs.set, values[end-set.rhs_dimension+1:end])
+    lhs_num_vars = get_num_vars(constraint.lhs.fct)
+    lhs_solved = is_constraint_solved(constraint.lhs, constraint.lhs.fct, constraint.lhs.set, values[1:lhs_num_vars])
+    rhs_num_vars = get_num_vars(constraint.rhs.fct)
+    rhs_solved = is_constraint_solved(constraint.rhs, constraint.rhs.fct, constraint.rhs.set, values[end-rhs_num_vars+1:end])
     return lhs_solved && rhs_solved
 end
 
