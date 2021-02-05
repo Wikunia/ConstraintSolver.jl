@@ -693,5 +693,23 @@
         @test JuMP.value(b) ≈ 1
         vx = JuMP.value.(x)
         @test vx[1] > vx[2] && vx[2] > vx[3] && vx[3] > vx[4] && vx[4] > vx[5]
+
+        # inner part is feasible have AndSet && AndSet 
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 0 <= x[1:5] <= 4, Int)
+        @variable(m, b, Bin)
+        @constraint(m, b => {(x[1] >= x[2] && x[3] <= x[2]) && (x[3] >= x[4] && x[4] > x[5] && x in CS.AllDifferentSet())})
+        
+        @objective(m, Max, b)
+        optimize!(m)
+        CS.get_inner_model(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 1
+        @test JuMP.value(b) ≈ 1
+        vx = JuMP.value.(x)
+        @test vx[1] > vx[2] && vx[2] > vx[3] && vx[3] > vx[4] && vx[4] > vx[5]
     end
 end
