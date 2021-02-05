@@ -12,10 +12,7 @@ function MOI.supports_constraint(
     S <: AndSet && return true
 
     concrete_B = MOIBC.concrete_bridge_type(B, MOI.ScalarAffineFunction{T}, S)
-    added_constraints = MOIB.added_constraint_types(concrete_B)
-    length(added_constraints) > 1 && return false
-    # The inner constraint should not create any variable (might have unexpected consequences)
-    return isempty(MOIB.added_constrained_variable_types(concrete_B))
+    return supports_concreteB(concrete_B)
 end
 
 function MOIBC.concrete_bridge_type(
