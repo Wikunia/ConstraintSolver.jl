@@ -67,19 +67,3 @@ function get_inner_constraint(vars::MOI.VectorOfVariables, set::Union{ReifiedSet
     )
     return init_constraint_struct(set.set, inner_internals)
 end
-
-"""
-    concat_2_VAF(vaf1::MOI.VectorAffineFunction{T}, vaf2::MOI.VectorAffineFunction{T}) where {T}
-
-Return a VectorAffineFunction which combines the two given. It shifts the output_index to make them compatible
-"""
-function concat_2_VAF(vaf1::MOI.VectorAffineFunction{T}, vaf2::MOI.VectorAffineFunction{T}) where {T}
-    # update the output indices of the rhs_fct
-    vaf2_terms = Vector{MOI.VectorAffineTerm{T}}()
-    vaf1_dim = maximum(t->t.output_index, vaf1.terms)
-    for term in vaf2.terms
-        push!(vaf2_terms, MOI.VectorAffineTerm{T}(term.output_index + vaf1_dim, term.scalar_term))
-    end
-    vaf2 = MOI.VectorAffineFunction(vaf2_terms, vaf2.constants)
-    return MOI.VectorAffineFunction([vaf1.terms..., vaf2.terms...],  [vaf1.constants..., vaf2.constants...])
-end
