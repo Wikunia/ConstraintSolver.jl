@@ -164,3 +164,20 @@ end
 function typeof_without_parmas(::OrSet)
     return OrSet
 end
+
+function get_constraint(fct, set)
+    if fct isa SAF
+        return new_linear_constraint(fct, set)
+    else
+        internals = create_interals(fct, set)
+        return init_constraint_struct(set, internals) 
+    end
+end
+
+function get_saf(fct::MOI.VectorAffineFunction)
+    MOI.ScalarAffineFunction([t.scalar_term for t in fct.terms], fct.constants[1])
+end
+
+function get_vov(fct::MOI.VectorAffineFunction)
+    return MOI.VectorOfVariables([t.scalar_term.variable_index for t in fct.terms])
+end

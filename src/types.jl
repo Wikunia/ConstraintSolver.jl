@@ -417,7 +417,15 @@ mutable struct AllDifferentConstraint <: Constraint
     sub_constraint_idxs::Vector{Int}
 end
 
-mutable struct AndConstraint{C1<:Constraint,C2<:Constraint} <: Constraint
+abstract type BoolConstraint{C1<:Constraint,C2<:Constraint} <: Constraint end
+
+struct AndConstraint{C1,C2} <: BoolConstraint{C1,C2}
+    std::ConstraintInternals
+    lhs::C1
+    rhs::C2
+end
+
+struct OrConstraint{C1,C2} <: BoolConstraint{C1,C2}
     std::ConstraintInternals
     lhs::C1
     rhs::C2
