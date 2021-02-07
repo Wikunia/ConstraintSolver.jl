@@ -54,13 +54,13 @@ function init_constraint!(
     set::AndSet;
     active = true,
 )
-    set_impl_functions!(com,  constraint.lhs)
-    set_impl_functions!(com,  constraint.rhs)
+    set_impl_functions!(com, constraint.lhs)
+    set_impl_functions!(com, constraint.rhs)
     if constraint.lhs.impl.init   
-        !init_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set) && return false
+        !init_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set; active=active) && return false
     end
     if constraint.rhs.impl.init   
-        !init_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set) && return false
+        !init_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set; active=active) && return false
     end
     return true
 end

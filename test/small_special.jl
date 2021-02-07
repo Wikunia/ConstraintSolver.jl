@@ -712,4 +712,21 @@
         vx = JuMP.value.(x)
         @test vx[1] > vx[2] && vx[2] > vx[3] && vx[3] > vx[4] && vx[4] > vx[5]
     end
+
+    @testset "Table in reified where setting activator to false" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 1 <= x[1:5] <= 4, Int)
+        @variable(m, b, Bin)
+        @constraint(m, b => {x[1] > x[2] && [x[1],x[2]] in CS.TableSet([1 2; 1 3])})
+        
+        @objective(m, Max, 10b+sum(x))
+        optimize!(m)
+
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 20
+        @test JuMP.value(b) ≈ 0
+    end
 end
