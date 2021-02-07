@@ -10,6 +10,7 @@ MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 include("indicator.jl")
 include("reified.jl")
 include("and.jl")
+include("or.jl")
 
 """
 MOI constraints

@@ -157,6 +157,10 @@ end
 
 get_value(::Type{Val{i}}) where i = i
 
-function typeof_without_parmas(set::AndSet)
+function typeof_without_parmas(::AndSet)
     return AndSet
+end
+
+function typeof_without_parmas(::OrSet)
+    return OrSet
 end
