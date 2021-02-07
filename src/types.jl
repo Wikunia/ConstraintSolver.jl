@@ -313,20 +313,23 @@ struct ReifiedSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
 end
 Base.copy(R::ReifiedSet{A,S}) where {A,S} = ReifiedSet{A,S}(R.set, R.dimension)
 
-struct AndSet{
-            F1<:Union{SAF,VAF,MOI.VectorOfVariables},
-            F2<:Union{SAF,VAF,MOI.VectorOfVariables},
-            F1dim<:Val,
-            F2dim<:Val,
-            S1<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
-            S2<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
-    } <: MOI.AbstractVectorSet
+abstract type BoolSet{
+    F1<:Union{SAF,VAF,MOI.VectorOfVariables},
+    F2<:Union{SAF,VAF,MOI.VectorOfVariables},
+    F1dim<:Val,
+    F2dim<:Val,
+    S1<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
+    S2<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
+} <: MOI.AbstractVectorSet end 
+
+struct AndSet{F1,F2,F1dim,F2dim,S1,S2} <: BoolSet{F1,F2,F1dim,F2dim,S1,S2}
  lhs_set::S1
  rhs_set::S2
  lhs_dimension::Int
  rhs_dimension::Int
  dimension::Int
 end
+
 function AndSet{F1,F2}(lhs_set::S1, rhs_set::S2) where {F1,F2,S1,S2}
     lhs_dim = MOI.dimension(lhs_set)
     rhs_dim = MOI.dimension(rhs_set)

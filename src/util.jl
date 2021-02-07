@@ -156,3 +156,7 @@ function is_no_variable_constraint(constraint::LinearConstraint)
 end
 
 get_value(::Type{Val{i}}) where i = i
+
+function typeof_without_parmas(set::AndSet)
+    return AndSet
+end

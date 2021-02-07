@@ -28,7 +28,7 @@ include("Bridges/util.jl")
 include("Bridges/indicator.jl")
 include("Bridges/reified.jl")
 include("Bridges/strictly_greater_than.jl")
-include("Bridges/and.jl")
+include("Bridges/bool.jl")
 include("constraints.jl")
 include("objective.jl")
 include("results.jl")
@@ -48,8 +48,8 @@ function Optimizer(; options...)
         CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}
     ]
     inner_bridges = greater2less_bridges
-    # have inner them inside the AndBridge
-    push!(inner_bridges, CS.AndBridge{options.solution_type, inner_bridges...})
+    # have inner them inside the BoolBridge
+    push!(inner_bridges, CS.BoolBridge{options.solution_type, inner_bridges...})
   
     for inner_bridge in inner_bridges
         MOIB.add_bridge(lbo, inner_bridge)
