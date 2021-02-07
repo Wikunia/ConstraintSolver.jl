@@ -7,14 +7,13 @@ function init_constraint!(
 )
     set_impl_functions!(com,  constraint.lhs)
     set_impl_functions!(com,  constraint.rhs)
-    !active && return true
     lhs_feasible = true
     if constraint.lhs.impl.init   
-        lhs_feasible = init_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
+        lhs_feasible = init_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set; active=active)
     end
     rhs_feasible = true
     if constraint.rhs.impl.init   
-        rhs_feasible = init_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
+        rhs_feasible = init_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set; active=active)
     end
     return lhs_feasible || rhs_feasible
 end
