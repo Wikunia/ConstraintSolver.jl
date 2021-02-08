@@ -156,7 +156,7 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
     if constraint isa IndicatorConstraint || constraint isa ReifiedConstraint
         set_pvals!(com, constraint.inner_constraint)
     end
-    if constraint isa AndConstraint
+    if constraint isa BoolConstraint
         set_pvals!(com, constraint.lhs)
         set_pvals!(com, constraint.rhs)
     end
