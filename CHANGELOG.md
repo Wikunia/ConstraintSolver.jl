@@ -3,6 +3,8 @@
 ## Unreleased
 - Support for `And` constraints in the inner constraints of `Indicator` and `Reified`:
     i.e `b := { sum(x) >= 10 && x in CS.AllDifferentSet() }`
+- Support for `Or` constraints in the inner constraints of `Indicator` and `Reified`:
+    i.e `b := { sum(x) >= 10 || x in CS.AllDifferentSet() }`
 
 ## v0.6.3 (17th of January 2021)
 - Use anti pruning in reified constraints 
