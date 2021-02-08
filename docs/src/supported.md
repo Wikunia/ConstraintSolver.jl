@@ -88,7 +88,7 @@ The following list shows constraints that are implemented and those which are pl
   - [X] for affine inner constraints
   - [X] for all types of inner constraints
   - [X] Allow `&&` inside the inner constraint i.e `@constraint(m, b => {x + y >= 12 && 2x + y <= 7})`
-  - [ ] Allow `||` inside the inner constraint i.e `@constraint(m, b => {x + y >= 12 || 2x + y <= 7})`
+  - [X] Allow `||` inside the inner constraint i.e `@constraint(m, b => {x + y >= 12 || 2x + y <= 7})`
 - Reified constraints [#171](https://github.com/Wikunia/ConstraintSolver.jl/pull/171)
   - i.e `@constraint(m, b := {x + y >= 12})`
   - [X] for everything that is supported by indicator constraints
