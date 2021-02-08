@@ -171,3 +171,24 @@ end
         @test !CS.has(variables[constraint.indices[3]], v)
     end
 end
+
+@testset "reified or constraint still_feasible" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, b >= 1, Bin)
+    @variable(m, 0 <= x[1:2] <= 5, Int)
+    @variable(m, 0 <= y <= 5, Int)
+    @constraint(m, b := { x in CS.AllDifferentSet() || y < 1}) 
+    optimize!(m)
+
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    constraint = com.constraints[1]
+
+    or_constraint =constraint.inner_constraint
+
+    constr_indices = or_constraint.indices
+    @test CS.fix!(com, variables[constraint.indices[2]], 0; check_feasibility = false)
+    @test CS.fix!(com, variables[constraint.indices[3]], 0; check_feasibility = false)
+    @test !CS.still_feasible(com, or_constraint, or_constraint.fct, or_constraint.set, constr_indices[3], 1)
+end

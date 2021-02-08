@@ -77,18 +77,22 @@ function still_feasible(
     vidx::Int,
     value::Int,
 )
-    lhs_feasible = true
-    lhs_indices = constraint.lhs.indices
-    for i in 1:length(lhs_indices)
-        if lhs_indices[i] == vidx
-            lhs_feasible = still_feasible(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set, vidx, value)
+    lhs_feasible = !is_constraint_violated(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
+    if lhs_feasible
+        lhs_indices = constraint.lhs.indices
+        for i in 1:length(lhs_indices)
+            if lhs_indices[i] == vidx
+                lhs_feasible = still_feasible(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set, vidx, value)
+            end
         end
     end
-    rhs_feasible = true
-    rhs_indices = constraint.rhs.indices
-    for i in 1:length(rhs_indices)
-        if rhs_indices[i] == vidx
-            rhs_feasible = !still_feasible(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set, vidx, value) 
+    rhs_feasible = !is_constraint_violated(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
+    if rhs_feasible
+        rhs_indices = constraint.rhs.indices
+        for i in 1:length(rhs_indices)
+            if rhs_indices[i] == vidx
+                rhs_feasible = still_feasible(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set, vidx, value) 
+            end
         end
     end
     return rhs_feasible || lhs_feasible
