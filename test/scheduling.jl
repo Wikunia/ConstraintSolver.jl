@@ -13,8 +13,6 @@ function cumulative(model, start, duration, resource, limit; times_max = nothing
         times_max = maximum(round.(Int,[JuMP.upper_bound(start[i])+duration[i] for i in tasks]))
     end
     for t in times_min:times_max
-        bs = @variable(model, [1:num_tasks], Bin)
-        bt = @variable(model, [1:num_tasks], Bin)
         b  = @variable(model, [1:num_tasks], Bin)
         for i in tasks
             # The following don't work since ConstraintSolver don't
@@ -22,9 +20,7 @@ function cumulative(model, start, duration, resource, limit; times_max = nothing
             # @constraint(model,sum([(start[i] <= t) * (t <= start[i] + duration[i])*resource[i] for i in tasks])  <= b)
 
             # is this task active during this time t?
-            @constraint(model, bs[i] := {start[i] <= t})
-            @constraint(model, bt[i] := {t < start[i]+duration[i]})
-            @constraint(model, b[i] := { bs[i] + bt[i] == 2}) # is this task active in time t ?
+            @constraint(model, b[i] := { start[i] <= t && t < start[i]+duration[i] }) # is this task active in time t ?
         end
         # Check that there's no conflicts in time t
         @constraint(model,sum([b[i]*resource[i] for i in tasks]) <= limit)

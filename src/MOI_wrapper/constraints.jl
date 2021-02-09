@@ -238,8 +238,38 @@ function get_anti_constraint(model, constraint::LinearConstraint{T}) where T
     return anti_lc
 end
 
+function get_anti_constraint(model, constraint::BoolConstraint)
+    lhs_anti_constraint = get_anti_constraint(model, constraint.lhs)
+    rhs_anti_constraint = get_anti_constraint(model, constraint.rhs)
 
+    if lhs_anti_constraint === nothing || rhs_anti_constraint === nothing
+        return nothing
+    end
 
+    T = parametric_type(model.inner)
+    fct = MOIU.operate(vcat, T, lhs_anti_constraint.fct, rhs_anti_constraint.fct)
+    return anti_bool_constraint(constraint, fct, lhs_anti_constraint, rhs_anti_constraint)
+end
+
+"""
+    anti_bool_constraint(::AndConstraint, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+
+Return the OrConstraint with the already anti constraints `lhs_constraint` and `rhs_constraint`
+::AndConstraint is just for dispatching ;)
+"""
+function anti_bool_constraint(::AndConstraint, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+    set = OrSet{typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
+
+    internals = ConstraintInternals(0,fct,set,get_indices(fct))
+    return OrConstraint(internals, lhs_constraint, rhs_constraint)
+end
+
+function anti_bool_constraint(::OrConstraint, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+    set = AndSet{typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
+
+    internals = ConstraintInternals(0,fct,set,get_indices(fct))
+    return AndConstraint(internals, lhs_constraint, rhs_constraint)
+end
 
 """
     MOI.add_constraint(

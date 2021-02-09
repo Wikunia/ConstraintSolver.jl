@@ -770,5 +770,6 @@
         @test JuMP.value(b) ≈ 1.0
         @test JuMP.value.(x) ≈ [4,3,4,3,2]
         @test JuMP.objective_value(m) ≈ sum([4,3,4,3,2]) + 100
-    end
+    end 
+
 end
