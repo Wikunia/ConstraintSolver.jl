@@ -729,4 +729,46 @@
         @test JuMP.objective_value(m) ≈ 20
         @test JuMP.value(b) ≈ 0
     end
+
+    @testset "Small test case for || in reified" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 1 <= x[1:5] <= 4, Int)
+        @variable(m, b, Bin)
+        @constraint(m, b := {(x[1] > x[2] || x in CS.AllDifferentSet()) })
+
+        @objective(m, Max, 100b+sum(x))
+        optimize!(m)
+
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+
+        @test JuMP.value(b) ≈ 1.0
+        @test JuMP.value.(x) ≈ [4,3,4,4,4]
+        @test JuMP.objective_value(m) ≈ sum([4,3,4,4,4]) + 100
+    end
+
+    @testset "Small test case for || and && in reified" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 1 <= x[1:5] <= 4, Int)
+        @variable(m, b, Bin)
+        table = [
+            4 0;
+            3 2;
+        ]
+        @constraint(m, b := {(x[1] > x[2] || x in CS.AllDifferentSet()) && x[4:5] in CS.TableSet(table) })
+
+        @objective(m, Max, 100b+sum(x))
+        optimize!(m)
+
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+
+        @test JuMP.value(b) ≈ 1.0
+        @test JuMP.value.(x) ≈ [4,3,4,3,2]
+        @test JuMP.objective_value(m) ≈ sum([4,3,4,3,2]) + 100
+    end
 end
