@@ -2,7 +2,7 @@ include("table/support.jl")
 include("table/residues.jl")
 include("table/RSparseBitSet.jl")
 
-function init_constraint_struct(::Type{TableSetInternal}, internals)
+function init_constraint_struct(::TableSetInternal, internals)
     TableConstraint(
         internals,
         RSparseBitSet(),

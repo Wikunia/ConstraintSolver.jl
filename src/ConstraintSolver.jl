@@ -35,6 +35,16 @@ const MOIB = MathOptInterface.Bridges
 const MOIBC = MathOptInterface.Bridges.Constraint
 const MOIU = MOI.Utilities
 
+const SVF = MOI.SingleVariable
+const SAF = MOI.ScalarAffineFunction
+const VAF = MOI.VectorAffineFunction
+
+# indices
+const VI = MOI.VariableIndex
+const CI = MOI.ConstraintIndex
+
+const VAR_TYPES = Union{MOI.ZeroOne,MOI.Integer}
+
 include("types.jl")
 const CoM = ConstraintSolverModel
 
@@ -56,6 +66,9 @@ include("objective.jl")
 include("constraints.jl")
 
 include("constraints/all_different.jl")
+include("constraints/boolset.jl")
+include("constraints/and.jl")
+include("constraints/or.jl")
 include("constraints/linear_constraints.jl")
 include("constraints/svc.jl")
 include("constraints/equal_set.jl")
@@ -143,6 +156,10 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
     constraint.pvals = pvals
     if constraint isa IndicatorConstraint || constraint isa ReifiedConstraint
         set_pvals!(com, constraint.inner_constraint)
+    end
+    if constraint isa BoolConstraint
+        set_pvals!(com, constraint.lhs)
+        set_pvals!(com, constraint.rhs)
     end
 end
 

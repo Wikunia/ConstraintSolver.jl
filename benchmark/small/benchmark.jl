@@ -17,22 +17,11 @@
 function all_different_except_c(model, x, c=0)
     n = length(x)
 
-    # Define the variables we'll use
-    b_len = length([1 for i in 2:n for j in 1:i-1 for k in 1:3])
-    bs = @variable(model, [1:b_len], Bin) # "Anonymous" variables
-    c = 1
     for i in 2:n, j in 1:i-1
-        b1 = bs[c]
-        b2 = bs[c+1]
-        b3 = bs[c+2]
-        @constraint(model, b1 := {x[i] != 0})
-        @constraint(model, b2 := {x[j] != 0})
-        @constraint(model, b3 := {b1 + b2 == 2})
-        @constraint(model, b3 => {x[i] != x[j]})
-        c += 3
+        b = @variable(model, binary=true)
+        @constraint(model, b := {x[i] != c && x[j] != c})
+        @constraint(model, b => {x[i] != x[j]})
     end
-    # return bs so we can print it in the main function
-    return bs
 end
 
 #
@@ -66,13 +55,12 @@ end
 function all_different_except_0(n=10)
     model = Model(optimizer_with_attributes(CS.Optimizer,
                                             "all_solutions"=>true,
-                                            # "all_solutions"=>false,
                                             "logging"=>[],
                                             )
                                             )
     @variable(model, 0 <= x[1:n] <= n, Int)
 
-    bs = all_different_except_c(model,x,0)
+    all_different_except_c(model,x,0)
     increasing(model, x)
 
     optimize!(model)

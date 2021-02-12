@@ -1,13 +1,3 @@
-const SVF = MOI.SingleVariable
-const SAF = MOI.ScalarAffineFunction
-const VAF = MOI.VectorAffineFunction
-
-# indices
-const VI = MOI.VariableIndex
-const CI = MOI.ConstraintIndex
-
-const VAR_TYPES = Union{MOI.ZeroOne,MOI.Integer}
-
 var_idx(x::JuMP.VariableRef) = JuMP.optimizer_index(x).value
 var_idx(x::MOI.VariableIndex) = x.value
 # support for @variable(m, x, Set)
@@ -32,11 +22,13 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     options::SolverOptions
 end
 
+include("util.jl")
 include("variables.jl")
 include("Bridges/util.jl")
 include("Bridges/indicator.jl")
 include("Bridges/reified.jl")
 include("Bridges/strictly_greater_than.jl")
+include("Bridges/bool.jl")
 include("constraints.jl")
 include("objective.jl")
 include("results.jl")
@@ -51,11 +43,19 @@ function Optimizer(; options...)
     com = CS.ConstraintSolverModel(options.solution_type)
     optimizer = Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
     lbo = MOIB.full_bridge_optimizer(optimizer, options.solution_type)
-    MOIB.add_bridge(lbo, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type})
-    MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, MOIBC.GreaterToLessBridge{options.solution_type}})
-    MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}})
-    MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, MOIBC.GreaterToLessBridge{options.solution_type}})
-    MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}})
+    greater2less_bridges = [
+        MOIBC.GreaterToLessBridge{options.solution_type},
+        CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}
+    ]
+    inner_bridges = greater2less_bridges
+    # have inner them inside the BoolBridge
+    push!(inner_bridges, CS.BoolBridge{options.solution_type, inner_bridges...})
+  
+    for inner_bridge in inner_bridges
+        MOIB.add_bridge(lbo, inner_bridge)
+        MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, inner_bridge})
+        MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, inner_bridge})
+    end
     return lbo
 end
 

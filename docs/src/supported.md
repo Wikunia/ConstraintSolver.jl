@@ -87,10 +87,13 @@ The following list shows constraints that are implemented and those which are pl
   - i.e `@constraint(m, b => {x + y >= 12})`
   - [X] for affine inner constraints
   - [X] for all types of inner constraints
+  - [X] Allow `&&` inside the inner constraint i.e `@constraint(m, b => {x + y >= 12 && 2x + y <= 7})`
+  - [X] Allow `||` inside the inner constraint i.e `@constraint(m, b => {x + y >= 12 || 2x + y <= 7})`
 - Reified constraints [#171](https://github.com/Wikunia/ConstraintSolver.jl/pull/171)
   - i.e `@constraint(m, b := {x + y >= 12})`
-  - [X] for affine inner constraints
-  - [X] for all types of inner constraints
+  - [X] for everything that is supported by indicator constraints
+- Boolean constraints
+  - i.e `@constraint(m, x + y >= 12 || 2x + y <= 7)`
 - Element constraints
   - [ ] 1D array with constant values 
     - i.e `T = [12,87,42,1337]` `T[y] == z` with `y` and `z` being variables [#213](https://github.com/Wikunia/ConstraintSolver.jl/pull/213)
@@ -98,7 +101,6 @@ The following list shows constraints that are implemented and those which are pl
     - where T is an array
   - [ ] 1D array with variables
     - where T is a vector of variables 
-- [ ] Allowing `&&` and `||` in indicator and reified constraints
 - [ ] Scheduling constraints
 - [ ] Cycle constraints
 

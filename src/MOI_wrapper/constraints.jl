@@ -7,25 +7,10 @@ sense_to_set(::Function, ::Val{:>}) = Strictly(MOI.GreaterThan(0.0))
 
 MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 
-"""
-    Support for indicator constraints with a set constraint as the right hand side
-"""
-function JuMP._build_indicator_constraint(
-    _error::Function,
-    variable::JuMP.AbstractVariableRef,
-    jump_constraint::JuMP.VectorConstraint,
-    ::Type{MOI.IndicatorSet{A}},
-) where {A}
-
-    set = CS.IndicatorSet{A}(jump_constraint.set, 1 + length(jump_constraint.func))
-    vov = VariableRef[variable]
-    append!(vov, jump_constraint.func)
-    return JuMP.VectorConstraint(vov, set)
-end
-
+include("indicator.jl")
 include("reified.jl")
-
-
+include("and.jl")
+include("or.jl")
 
 """
 MOI constraints
@@ -79,46 +64,79 @@ MOI.supports_constraint(
 function MOI.supports_constraint(
     ::Optimizer,
     func::Type{VAF{T}},
-    set::Type{IS},
-) where {A,T<:Real,ASS<:MOI.AbstractScalarSet,IS<:MOI.IndicatorSet{A,ASS}}
-    if ASS <: MOI.GreaterThan || ASS <: Strictly{T, MOI.GreaterThan{T}}
-        return false
-    end
-    return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
-end
-
-function MOI.supports_constraint(
-    ::Optimizer,
-    func::Type{MOI.VectorOfVariables},
-    set::Type{IS},
-) where {A,IS<:CS.IndicatorSet{A}}
-    return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
-end
-
-function MOI.supports_constraint(
-    ::Optimizer,
-    func::Type{MOI.VectorOfVariables},
-    set::Type{RS}
-) where {A,IS,RS<:CS.ReifiedSet{A,IS}}
-    return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
-end
-
-function MOI.supports_constraint(
-    ::Optimizer,
-    func::Type{VAF{T}},
-    set::Type{RS},
-) where {A,T<:Real,IS,RS<:CS.ReifiedSet{A,IS}}
+    set::Type{OS},
+) where {A,T<:Real,IS<:MOI.AbstractScalarSet,OS<:MOI.IndicatorSet{A,IS}}
     if IS <: MOI.GreaterThan || IS <: Strictly{T, MOI.GreaterThan{T}}
         return false
     end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
 
+function MOI.supports_constraint(
+    optimizer::Optimizer,
+    func::Type{VAF{T}},
+    set::Type{OS},
+) where {A,T<:Real,IS,OS<:CS.IndicatorSet{A,IS}}
+    if IS <: BoolSet
+        return is_boolset_supported(optimizer, IS)
+    end
+    return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
+end
+
+function MOI.supports_constraint(
+    optimizer::Optimizer,
+    func::Type{MOI.VectorOfVariables},
+    set::Type{OS},
+) where {A,IS,OS<:CS.IndicatorSet{A,IS}}
+    !(A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO) && return false
+    return MOI.supports_constraint(optimizer, func, IS)
+end
+
+function MOI.supports_constraint(
+    optimizer::Optimizer,
+    func::Type{MOI.VectorOfVariables},
+    set::Type{OS}
+) where {A,IS,OS<:CS.ReifiedSet{A,IS}}
+    !(A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO) && return false
+    return MOI.supports_constraint(optimizer, func, IS)
+end
+
+function MOI.supports_constraint(
+    optimizer::Optimizer,
+    func::Type{VAF{T}},
+    set::Type{OS},
+) where {A,T<:Real,IS,OS<:CS.ReifiedSet{A,IS}}
+    if IS <: MOI.GreaterThan || IS <: Strictly{T, MOI.GreaterThan{T}}
+        return false
+    end
+    if IS <: BoolSet
+        return is_boolset_supported(optimizer, IS)
+    end
+    return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
+end
+
+function MOI.supports_constraint(
+    optimizer::Optimizer,
+    func::Type{VAF{T}},
+    set::Type{BS},
+) where {T,F1,F2,F1dim,F2dim,S1,S2,BS<:CS.BoolSet{F1,F2,F1dim,F2dim,S1,S2}}
+    return is_boolset_supported(optimizer, set)
+end
+
+
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
     ::Type{GeqSetInternal},
 ) = true
+
+"""
+    Return whether the two constraint inside the `BoolSet` are supported directly by the solver
+"""
+function is_boolset_supported(optimizer::Optimizer, ::Type{<:CS.BoolSet{F1,F2,F1dim,F2dim,S1,S2}}) where {F1, F2, F1dim, F2dim, S1, S2}
+    is_supported = MOI.supports_constraint(optimizer, F1, S1) && MOI.supports_constraint(optimizer, F2, S2)
+    return is_supported
+end
 
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
     for term in aff.terms
@@ -145,37 +163,41 @@ function add_constraint!(model::Optimizer, constraint::Constraint)
 end
 
 """
-    new_linear_constraint(model::Optimizer, func::SAF{T}, set) where {T<:Real}
-
-Create a new linear constraint and return a `LinearConstraint` with already a correct index
-such that it can be simply added with [`add_constraint!`](@ref)
-"""
-function new_linear_constraint(model::Optimizer, func::SAF{T}, set) where {T<:Real}
-    func = remove_zero_coeff(func)
-
-    indices = [v.variable_index.value for v in func.terms]
-
-    lc_idx = length(model.inner.constraints) + 1
-    lc = LinearConstraint(lc_idx, func, set, indices)
-    return lc
-end
-
-function remove_zero_coeff(func::MOI.ScalarAffineFunction)
-    terms = [term for term in func.terms if term.coefficient != 0]
-    return MOI.ScalarAffineFunction(terms, func.constant)
-end
-
-"""
-    create_interals(com::CoM, vars::MOI.VectorOfVariables, set)
+    create_interals(com::CoM, vars, set)
 
 Create ConstraintInternals for a vector of variables constraint
 """
-function create_interals(com::CoM, vars::MOI.VectorOfVariables, set)
+function create_interals(com::CoM, vars, set)
+    internals = create_interals(vars, set)
+    internals.idx = length(com.constraints) + 1
+    return internals
+end
+
+"""
+    create_interals(vars::MOI.VectorOfVariables, set)
+
+Create ConstraintInternals for a vector of variables constraint
+"""
+function create_interals(vars::MOI.VectorOfVariables, set)
     ConstraintInternals(
-        length(com.constraints) + 1,
+        0,
         vars,
         set,
         Int[v.value for v in vars.variables],
+    )
+end
+
+"""
+    create_interals(func::VAF{T}, set) where {T}
+
+Create ConstraintInternals for a vector of variables constraint
+"""
+function create_interals(func::VAF{T}, set) where {T}
+    ConstraintInternals(
+        0,
+        func,
+        set,
+        get_indices(func)
     )
 end
 
@@ -216,8 +238,38 @@ function get_anti_constraint(model, constraint::LinearConstraint{T}) where T
     return anti_lc
 end
 
+function get_anti_constraint(model, constraint::BoolConstraint)
+    lhs_anti_constraint = get_anti_constraint(model, constraint.lhs)
+    rhs_anti_constraint = get_anti_constraint(model, constraint.rhs)
 
+    if lhs_anti_constraint === nothing || rhs_anti_constraint === nothing
+        return nothing
+    end
 
+    T = parametric_type(model.inner)
+    fct = MOIU.operate(vcat, T, lhs_anti_constraint.fct, rhs_anti_constraint.fct)
+    return anti_bool_constraint(constraint, fct, lhs_anti_constraint, rhs_anti_constraint)
+end
+
+"""
+    anti_bool_constraint(::AndConstraint, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+
+Return the OrConstraint with the already anti constraints `lhs_constraint` and `rhs_constraint`
+::AndConstraint is just for dispatching ;)
+"""
+function anti_bool_constraint(::AndConstraint, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+    set = OrSet{typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
+
+    internals = ConstraintInternals(0,fct,set,get_indices(fct))
+    return OrConstraint(internals, lhs_constraint, rhs_constraint)
+end
+
+function anti_bool_constraint(::OrConstraint, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+    set = AndSet{typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
+
+    internals = ConstraintInternals(0,fct,set,get_indices(fct))
+    return AndConstraint(internals, lhs_constraint, rhs_constraint)
+end
 
 """
     MOI.add_constraint(
@@ -239,7 +291,7 @@ function MOI.add_constraint(
 
     internals = create_interals(com, vars, set)
 
-    constraint = init_constraint_struct(typeof(set), internals)
+    constraint = init_constraint_struct(set, internals)
 
     add_constraint!(model, constraint)
     if set isa AllDifferentSetInternal
@@ -410,24 +462,16 @@ function MOI.add_constraint(
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
-    indices = [v.scalar_term.variable_index.value for v in func.terms]
-
-    # for normal linear constraints
-    inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
-    inner_constant = func.constants[2]
-    inner_set = set.set
-
-    inner_func = MOI.ScalarAffineFunction{T}(inner_terms, inner_constant)
+    indices = get_indices(func)
 
     internals = ConstraintInternals(
-        length(com.constraints) + 1,
+        length(com.constraints)+1,
         func,
-        MOI.IndicatorSet{A}(inner_set),
+        MOI.IndicatorSet{A}(set.set),
         indices,
     )
 
-    lc = new_linear_constraint(model, inner_func, inner_set)
-    lc.idx = 0
+    lc = get_inner_constraint(func, set, set.set)
 
     constraint = IndicatorConstraint(internals, A, lc, indices[1] in indices[2:end])
 
@@ -440,19 +484,13 @@ function MOI.add_constraint(
     model::Optimizer,
     vars::MOI.VectorOfVariables,
     set::IS,
-) where {A,IS<:CS.IndicatorSet{A}}
+) where {A,S,IS<:CS.IndicatorSet{A,S}}
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
     internals = create_interals(com, vars, set)
 
-    inner_internals = ConstraintInternals(
-        0,
-        MOI.VectorOfVariables(vars.variables[2:end]),
-        set.set,
-        Int[v.value for v in vars.variables[2:end]],
-    )
-    inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
+    inner_constraint = get_inner_constraint(vars, set, set.set)
 
     indices = internals.indices
     constraint =
@@ -460,34 +498,49 @@ function MOI.add_constraint(
 
     add_constraint!(model, constraint)
 
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.IndicatorSet{A}}(length(com.constraints))
+    return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.IndicatorSet{A,S}}(length(com.constraints))
+end
+
+
+function MOI.add_constraint(
+    model::Optimizer,
+    func::VAF{T},
+    set::IS,
+) where {T,A,S<:MOI.AbstractVectorSet,IS<:CS.IndicatorSet{A,S}}
+    com = model.inner
+    com.info.n_constraint_types.reified += 1
+
+    internals = create_interals(com, func, set)
+
+    inner_constraint = get_inner_constraint(func, set, set.set)
+    indices = internals.indices
+    constraint =
+        IndicatorConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
+
+    add_constraint!(model, constraint)
+
+    return MOI.ConstraintIndex{VAF{T},CS.IndicatorSet{A,S}}(length(com.constraints))
 end
 
 function MOI.add_constraint(
     model::Optimizer,
     func::VAF{T},
     set::RS,
-) where {A,S,T<:Real,RS<:ReifiedSet{A,S}}
+) where {A,S<:MOI.AbstractScalarSet,T<:Real,RS<:ReifiedSet{A,S}}
     com = model.inner
     com.info.n_constraint_types.reified += 1
 
-    indices = [v.scalar_term.variable_index.value for v in func.terms]
-
-    # for normal linear constraints
-    inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
-    inner_constant = func.constants[2]
-    inner_set = set.set
-
-    inner_func = MOI.ScalarAffineFunction{T}(inner_terms, inner_constant)
+    indices = get_indices(func)
 
     internals = ConstraintInternals(
-        length(com.constraints) + 1,
+        length(com.constraints)+1,
         func,
-        ReifiedSet{A,S}(inner_set, set.dimension),
+        typeof(set)(set.set, set.dimension),
         indices,
     )
 
-    lc = new_linear_constraint(model, inner_func, inner_set)
+    # for normal linear constraints
+    lc = get_inner_constraint(func, set, set.set)
     anti_lc = get_anti_constraint(model, lc)
     constraint = ReifiedConstraint(internals, A, lc, anti_lc, indices[1] in indices[2:end])
 
@@ -500,19 +553,12 @@ function MOI.add_constraint(
     model::Optimizer,
     vars::MOI.VectorOfVariables,
     set::RS,
-) where {A,S,RS<:CS.ReifiedSet{A,S}}
+) where {A,S<:MOI.AbstractVectorSet,RS<:CS.ReifiedSet{A,S}}
     com = model.inner
-    com.info.n_constraint_types.indicator += 1
-
+    com.info.n_constraint_types.reified += 1
     internals = create_interals(com, vars, set)
 
-    inner_internals = ConstraintInternals(
-        0,
-        MOI.VectorOfVariables(vars.variables[2:end]),
-        set.set,
-        Int[v.value for v in vars.variables[2:end]],
-    )
-    inner_constraint = init_constraint_struct(typeof(set.set), inner_internals)
+    inner_constraint = get_inner_constraint(vars, set, set.set)
     anti_constraint = get_anti_constraint(model, inner_constraint)
     indices = internals.indices
     constraint =
@@ -521,4 +567,39 @@ function MOI.add_constraint(
     add_constraint!(model, constraint)
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.ReifiedSet{A,S}}(length(com.constraints))
+end
+
+function MOI.add_constraint(
+    model::Optimizer,
+    func::VAF{T},
+    set::RS,
+) where {T,A,S<:MOI.AbstractVectorSet,RS<:CS.ReifiedSet{A,S}}
+    com = model.inner
+    com.info.n_constraint_types.reified += 1
+
+    internals = create_interals(com, func, set)
+
+    inner_constraint = get_inner_constraint(func, set, set.set)
+    anti_constraint = get_anti_constraint(model, inner_constraint)
+    indices = internals.indices
+    constraint =
+        ReifiedConstraint(internals, A, inner_constraint, anti_constraint, indices[1] in indices[2:end])
+
+    add_constraint!(model, constraint)
+
+    return MOI.ConstraintIndex{VAF{T},CS.ReifiedSet{A,S}}(length(com.constraints))
+end
+
+
+function MOI.add_constraint(
+    model::Optimizer,
+    func::VAF{T},
+    set::BS,
+) where {T,BS<:BoolSet}
+    com = model.inner
+    internals = create_interals(com, func, set)
+    constraint = init_constraint_struct(set, internals)
+    add_constraint!(model, constraint)
+
+    return MOI.ConstraintIndex{VAF{T},typeof(set)}(length(com.constraints))
 end
