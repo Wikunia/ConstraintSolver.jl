@@ -2,7 +2,8 @@ function init_constraint!(
     com::CS.CoM,
     constraint::ReifiedConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
-    set::RS,
+    set::RS;
+    active = true
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
     anti_constraint = constraint.anti_constraint
@@ -26,7 +27,7 @@ function init_constraint!(
         # map the bounds to the indicator constraint
         constraint.bound_rhs = inner_constraint.bound_rhs
         # the reified variable can't be activated if inner constraint is infeasible
-        if !feasible
+        if !feasible && active
             !rm!(com, rei_var, Int(constraint.activate_on)) && return false
         end
     end

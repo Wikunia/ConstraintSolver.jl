@@ -48,6 +48,28 @@ function get_inner_constraint(func::VAF{T}, set::Union{ReifiedSet, IndicatorSet}
     return init_constraint_struct(set.set, inner_internals)
 end
 
+function get_inner_constraint(func::VAF{T}, set::Union{ReifiedSet, IndicatorSet}, inner_set::Union{ReifiedSet{A}, IndicatorSet{A}, MOI.IndicatorSet{A}}) where {A,T<:Real}
+    f = MOIU.eachscalar(func)
+    inner_internals = ConstraintInternals(
+        0,
+        f[2:end],
+        set.set,
+        get_indices(f[2:end]),
+    )
+
+    inner_constraint = get_inner_constraint(f[2:end], inner_set, inner_set.set)
+    indices = inner_internals.indices
+    if inner_set isa ReifiedSet
+        constraint =
+            ReifiedConstraint(inner_internals, A, inner_constraint, nothing, indices[1] in indices[2:end])
+    else
+        constraint =
+            IndicatorConstraint(inner_internals, A, inner_constraint, indices[1] in indices[2:end])
+    end
+
+    return constraint
+end
+
 function get_inner_constraint(func::VAF{T}, set::Union{ReifiedSet, IndicatorSet, MOI.IndicatorSet}, inner_set::MOI.AbstractScalarSet) where {T<:Real}
     inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
     inner_constant = func.constants[2]
