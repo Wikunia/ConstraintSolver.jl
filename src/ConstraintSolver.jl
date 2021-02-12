@@ -66,7 +66,9 @@ include("objective.jl")
 include("constraints.jl")
 
 include("constraints/all_different.jl")
+include("constraints/boolset.jl")
 include("constraints/and.jl")
+include("constraints/or.jl")
 include("constraints/linear_constraints.jl")
 include("constraints/svc.jl")
 include("constraints/equal_set.jl")
@@ -155,7 +157,7 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
     if constraint isa IndicatorConstraint || constraint isa ReifiedConstraint
         set_pvals!(com, constraint.inner_constraint)
     end
-    if constraint isa AndConstraint
+    if constraint isa BoolConstraint
         set_pvals!(com, constraint.lhs)
         set_pvals!(com, constraint.rhs)
     end

@@ -10,6 +10,7 @@ MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 include("indicator.jl")
 include("reified.jl")
 include("and.jl")
+include("or.jl")
 
 """
 MOI constraints
@@ -76,8 +77,8 @@ function MOI.supports_constraint(
     func::Type{VAF{T}},
     set::Type{OS},
 ) where {A,T<:Real,IS,OS<:CS.IndicatorSet{A,IS}}
-    if IS <: AndSet
-        return is_and_supported(optimizer, IS)
+    if IS <: BoolSet
+        return is_boolset_supported(optimizer, IS)
     end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
@@ -108,8 +109,8 @@ function MOI.supports_constraint(
     if IS <: MOI.GreaterThan || IS <: Strictly{T, MOI.GreaterThan{T}}
         return false
     end
-    if IS <: AndSet
-        return is_and_supported(optimizer, IS)
+    if IS <: BoolSet
+        return is_boolset_supported(optimizer, IS)
     end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
@@ -117,9 +118,9 @@ end
 function MOI.supports_constraint(
     optimizer::Optimizer,
     func::Type{VAF{T}},
-    set::Type{AS},
-) where {T,F1,F2,F1dim,F2dim,S1,S2,AS<:CS.AndSet{F1,F2,F1dim,F2dim,S1,S2}}
-    return is_and_supported(optimizer, set)
+    set::Type{BS},
+) where {T,F1,F2,F1dim,F2dim,S1,S2,BS<:CS.BoolSet{F1,F2,F1dim,F2dim,S1,S2}}
+    return is_boolset_supported(optimizer, set)
 end
 
 
@@ -130,9 +131,9 @@ MOI.supports_constraint(
 ) = true
 
 """
-    Return whether the two constraint inside the `AndSet` are supported directly by the solver
+    Return whether the two constraint inside the `BoolSet` are supported directly by the solver
 """
-function is_and_supported(optimizer::Optimizer, ::Type{CS.AndSet{F1,F2,F1dim,F2dim,S1,S2}}) where {F1, F2, F1dim, F2dim, S1, S2}
+function is_boolset_supported(optimizer::Optimizer, ::Type{<:CS.BoolSet{F1,F2,F1dim,F2dim,S1,S2}}) where {F1, F2, F1dim, F2dim, S1, S2}
     is_supported = MOI.supports_constraint(optimizer, F1, S1) && MOI.supports_constraint(optimizer, F2, S2)
     return is_supported
 end
@@ -237,8 +238,38 @@ function get_anti_constraint(model, constraint::LinearConstraint{T}) where T
     return anti_lc
 end
 
+function get_anti_constraint(model, constraint::BoolConstraint)
+    lhs_anti_constraint = get_anti_constraint(model, constraint.lhs)
+    rhs_anti_constraint = get_anti_constraint(model, constraint.rhs)
 
+    if lhs_anti_constraint === nothing || rhs_anti_constraint === nothing
+        return nothing
+    end
 
+    T = parametric_type(model.inner)
+    fct = MOIU.operate(vcat, T, lhs_anti_constraint.fct, rhs_anti_constraint.fct)
+    return anti_bool_constraint(constraint, fct, lhs_anti_constraint, rhs_anti_constraint)
+end
+
+"""
+    anti_bool_constraint(::AndConstraint, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+
+Return the OrConstraint with the already anti constraints `lhs_constraint` and `rhs_constraint`
+::AndConstraint is just for dispatching ;)
+"""
+function anti_bool_constraint(::AndConstraint, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+    set = OrSet{typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
+
+    internals = ConstraintInternals(0,fct,set,get_indices(fct))
+    return OrConstraint(internals, lhs_constraint, rhs_constraint)
+end
+
+function anti_bool_constraint(::OrConstraint, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+    set = AndSet{typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
+
+    internals = ConstraintInternals(0,fct,set,get_indices(fct))
+    return AndConstraint(internals, lhs_constraint, rhs_constraint)
+end
 
 """
     MOI.add_constraint(
@@ -559,3 +590,16 @@ function MOI.add_constraint(
     return MOI.ConstraintIndex{VAF{T},CS.ReifiedSet{A,S}}(length(com.constraints))
 end
 
+
+function MOI.add_constraint(
+    model::Optimizer,
+    func::VAF{T},
+    set::BS,
+) where {T,BS<:BoolSet}
+    com = model.inner
+    internals = create_interals(com, func, set)
+    constraint = init_constraint_struct(set, internals)
+    add_constraint!(model, constraint)
+
+    return MOI.ConstraintIndex{VAF{T},typeof(set)}(length(com.constraints))
+end

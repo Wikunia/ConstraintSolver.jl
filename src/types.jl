@@ -323,11 +323,11 @@ abstract type BoolSet{
 } <: MOI.AbstractVectorSet end 
 
 struct AndSet{F1,F2,F1dim,F2dim,S1,S2} <: BoolSet{F1,F2,F1dim,F2dim,S1,S2}
- lhs_set::S1
- rhs_set::S2
- lhs_dimension::Int
- rhs_dimension::Int
- dimension::Int
+    lhs_set::S1
+    rhs_set::S2
+    lhs_dimension::Int
+    rhs_dimension::Int
+    dimension::Int
 end
 
 function AndSet{F1,F2}(lhs_set::S1, rhs_set::S2) where {F1,F2,S1,S2}
@@ -340,6 +340,26 @@ end
 
 function Base.copy(A::AndSet{F1,F2,F1dim,F2dim,S1,S2}) where {F1,F2,F1dim,F2dim,S1,S2} 
     AndSet{F1,F2,F1dim,F2dim,S1,S2}(A.lhs_set, A.rhs_set, A.lhs_dimension, A.rhs_dimension, A.dimension)
+end
+
+struct OrSet{F1,F2,F1dim,F2dim,S1,S2} <: BoolSet{F1,F2,F1dim,F2dim,S1,S2}
+    lhs_set::S1
+    rhs_set::S2
+    lhs_dimension::Int
+    rhs_dimension::Int
+    dimension::Int
+end
+
+function OrSet{F1,F2}(lhs_set::S1, rhs_set::S2) where {F1,F2,S1,S2}
+    lhs_dim = MOI.dimension(lhs_set)
+    rhs_dim = MOI.dimension(rhs_set)
+    F1dim = Val{lhs_dim}
+    F2dim = Val{rhs_dim}
+    return OrSet{F1,F2,F1dim,F2dim,S1,S2}(lhs_set, rhs_set, lhs_dim, rhs_dim, lhs_dim + rhs_dim)
+end
+
+function Base.copy(A::OrSet{F1,F2,F1dim,F2dim,S1,S2}) where {F1,F2,F1dim,F2dim,S1,S2} 
+    OrSet{F1,F2,F1dim,F2dim,S1,S2}(A.lhs_set, A.rhs_set, A.lhs_dimension, A.rhs_dimension, A.dimension)
 end
 
 
@@ -397,7 +417,15 @@ mutable struct AllDifferentConstraint <: Constraint
     sub_constraint_idxs::Vector{Int}
 end
 
-mutable struct AndConstraint{C1<:Constraint,C2<:Constraint} <: Constraint
+abstract type BoolConstraint{C1<:Constraint,C2<:Constraint} <: Constraint end
+
+struct AndConstraint{C1,C2} <: BoolConstraint{C1,C2}
+    std::ConstraintInternals
+    lhs::C1
+    rhs::C2
+end
+
+struct OrConstraint{C1,C2} <: BoolConstraint{C1,C2}
     std::ConstraintInternals
     lhs::C1
     rhs::C2
