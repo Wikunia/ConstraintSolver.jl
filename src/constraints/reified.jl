@@ -73,7 +73,7 @@ function prune_constraint!(
         !fix!(com, variables[rei_vidx], activate_on) && return false
         # 2
     elseif all(isfixed(variables[vidx]) for vidx in inner_constraint.indices)
-        !fix!(com, variables[rei_vidx], activate_on == 1 ? 0 : 1) && return false
+        !fix!(com, variables[rei_vidx], activate_off) && return false
         # 3
     elseif issetto(variables[rei_vidx], activate_on)
         return prune_constraint!(
@@ -104,7 +104,9 @@ function still_feasible(
     inner_constraint = constraint.inner_constraint
     variables = com.search_space
     activate_on = Int(constraint.activate_on)
+    activate_off = activate_on == 1 ? 0 : 1
     rei_vidx = constraint.indices[1]
+
     # if currently activated check if inner constraint is feasible
     if (vidx == rei_vidx && val == activate_on) || issetto(variables[rei_vidx], activate_on)
         # check if already violated
@@ -125,7 +127,7 @@ function still_feasible(
         )
     end
     # if inner constraint can't be activated it shouldn't be solved
-    if !has(variables[rei_vidx], activate_on)
+    if (vidx == rei_vidx && val == activate_off) || issetto(variables[rei_vidx], activate_off)
         if all(i == vidx || isfixed(com.search_space[i]) for i in inner_constraint.indices)
             values = [
                 i == vidx ? val : value(com.search_space[i])

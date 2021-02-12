@@ -1,4 +1,7 @@
 # ConstrainSolver.jl - Changelog
+ 
+## Unreleased
+- Bugfix in reified `still_feasible` when setting to inactive
 
 ## Unreleased
 - Support for `And` constraints in the inner constraints of `Indicator` and `Reified`:
