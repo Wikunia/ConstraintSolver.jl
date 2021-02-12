@@ -383,6 +383,7 @@ mutable struct LinearConstraint{T<:Real} <: Constraint
     # same as rhs but for `<` it saves the original value - constant
     # (rhs is then computed to be usable as <=)
     strict_rhs::T
+    coeffs::Vector{T}
     mins::Vector{T}
     maxs::Vector{T}
     pre_mins::Vector{T}

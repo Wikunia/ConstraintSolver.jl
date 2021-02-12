@@ -4,17 +4,17 @@
 Iterate over all backtrack objects to set the new best bound for the whole search tree
 """
 function update_best_bound!(com::CS.CoM)
-    if any(bo -> bo.status == :Open, com.backtrack_vec)
+    if !isempty(com.backtrack_pq)
         if com.sense == MOI.MIN_SENSE
             max_val = typemax(com.best_bound)
-            com.best_bound = minimum([
+            com.best_bound = minimum(
                 bo.status == :Open ? bo.best_bound : max_val for bo in com.backtrack_vec
-            ])
+            )
         elseif com.sense == MOI.MAX_SENSE
             min_val = typemin(com.best_bound)
-            com.best_bound = maximum([
+            com.best_bound = maximum(
                 bo.status == :Open ? bo.best_bound : min_val for bo in com.backtrack_vec
-            ])
+            )
         end # otherwise no update is needed
     end
 end
