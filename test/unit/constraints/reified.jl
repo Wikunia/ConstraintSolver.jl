@@ -260,3 +260,69 @@ end
         @test sort(CS.values(com.search_space[ind])) == [5]
     end
 end
+
+@testset "still_feasible reified active and inactive" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, b, Bin)
+    @variable(m, 0 <= x[1:2] <= 5, Int)
+    @constraint(m, b := {sum(x) > 10})
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    constraint = com.constraints[1]
+    constr_indices = constraint.indices
+    # set such that b must be 0
+    @test CS.fix!(com, variables[constr_indices[2]], 0; check_feasibility = false)
+    @test CS.fix!(com, variables[constr_indices[3]], 0; check_feasibility = false)
+    
+    @test !CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[1],
+        1,
+    )
+    @test CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[1],
+        0,
+    )
+
+    # same but b must be 1
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, b, Bin)
+    @variable(m, 0 <= x[1:2] <= 5, Int)
+    @constraint(m, b := {sum(x) > 9})
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    constraint = com.constraints[1]
+    constr_indices = constraint.indices
+    # set such that b must be 0
+    @test CS.fix!(com, variables[constr_indices[2]], 5; check_feasibility = false)
+    @test CS.fix!(com, variables[constr_indices[3]], 5; check_feasibility = false)
+    
+    @test !CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[1],
+        0,
+    )
+    @test CS.still_feasible(
+        com,
+        constraint,
+        constraint.fct,
+        constraint.set,
+        constr_indices[1],
+        1,
+    )
+end

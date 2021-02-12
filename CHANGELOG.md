@@ -1,6 +1,7 @@
 # ConstrainSolver.jl - Changelog
-
+ 
 ## Unreleased
+- Bugfix in reified `still_feasible` when setting to inactive
 - Support for `And` constraints in the inner constraints of `Indicator` and `Reified`:
     i.e `b := { sum(x) >= 10 && x in CS.AllDifferentSet() }`
 - Support for `Or` constraints in the inner constraints of `Indicator` and `Reified`:
