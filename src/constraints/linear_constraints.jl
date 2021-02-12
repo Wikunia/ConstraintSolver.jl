@@ -527,8 +527,7 @@ function is_constraint_solved(
     set::MOI.EqualTo{T},
     values::Vector{Int}
 ) where {T<:Real}
-    coeffs = [t.coefficient for t in fct.terms]
-    return sum(values .* coeffs) + fct.constant ≈ set.value
+    return sum(values .* constraint.coeffs) + fct.constant ≈ set.value
 end
 
 function is_constraint_solved(
@@ -537,8 +536,7 @@ function is_constraint_solved(
     set::MOI.LessThan{T},
     values::Vector{Int}
 ) where {T<:Real}
-    coeffs = [t.coefficient for t in fct.terms]
-    return sum(values .* coeffs) + fct.constant <= set.upper
+    return sum(values .* constraint.coeffs) + fct.constant <= set.upper
 end
 
 
@@ -548,8 +546,7 @@ function is_constraint_solved(
     set::Strictly{T, MOI.LessThan{T}},
     values::Vector{Int}
 ) where {T<:Real}
-    coeffs = [t.coefficient for t in fct.terms]
-    return sum(values .* coeffs) + fct.constant < set.set.upper
+    return sum(values .* constraint.coeffs) + fct.constant < set.set.upper
 end
 
 
@@ -575,7 +572,7 @@ function is_constraint_violated(
             constraint,
             fct,
             set,
-            [CS.value(var) for var in com.search_space[constraint.indices]],
+            CS.value.(com.search_space[constraint.indices]),
         )
     end
     return false

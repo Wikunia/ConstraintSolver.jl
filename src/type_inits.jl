@@ -101,6 +101,7 @@ function LinearConstraint(
         false, # the rhs is not a strong rhs yet
         zero(promote_T),
         zero(promote_T),
+        coeffs,
         mins,
         maxs,
         pre_mins,
