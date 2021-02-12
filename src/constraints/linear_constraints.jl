@@ -525,10 +525,8 @@ function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::MOI.EqualTo{T},
-    values::Vector{Int},
+    values::Vector{Int}
 ) where {T<:Real}
-
-    indices = [t.variable_index.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
     return sum(values .* coeffs) + fct.constant ≈ set.value
 end
@@ -537,10 +535,8 @@ function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::MOI.LessThan{T},
-    values::Vector{Int},
+    values::Vector{Int}
 ) where {T<:Real}
-
-    indices = [t.variable_index.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
     return sum(values .* coeffs) + fct.constant <= set.upper
 end
@@ -550,10 +546,8 @@ function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
     set::Strictly{T, MOI.LessThan{T}},
-    values::Vector{Int},
+    values::Vector{Int}
 ) where {T<:Real}
-
-    indices = [t.variable_index.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
     return sum(values .* coeffs) + fct.constant < set.set.upper
 end

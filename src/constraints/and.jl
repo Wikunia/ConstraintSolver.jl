@@ -34,9 +34,10 @@ function is_constraint_solved(
 )
     lhs_num_vars = get_num_vars(constraint.lhs.fct)
     lhs_solved = is_constraint_solved(constraint.lhs, constraint.lhs.fct, constraint.lhs.set, values[1:lhs_num_vars])
+    !lhs_solved && return false
     rhs_num_vars = get_num_vars(constraint.rhs.fct)
     rhs_solved = is_constraint_solved(constraint.rhs, constraint.rhs.fct, constraint.rhs.set, values[end-rhs_num_vars+1:end])
-    return lhs_solved && rhs_solved
+    return rhs_solved
 end
 
 """
@@ -56,6 +57,7 @@ function is_constraint_violated(
     set::AndSet,
 )
     lhs_violated = is_constraint_violated(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
+    lhs_violated && return true
     rhs_violated = is_constraint_violated(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
     return lhs_violated || rhs_violated
 end

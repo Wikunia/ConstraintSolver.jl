@@ -36,9 +36,10 @@ function is_constraint_solved(
 )
     lhs_num_vars = get_num_vars(constraint.lhs.fct)
     lhs_solved = is_constraint_solved(constraint.lhs, constraint.lhs.fct, constraint.lhs.set, values[1:lhs_num_vars])
+    lhs_solved && return true
     rhs_num_vars = get_num_vars(constraint.rhs.fct)
     rhs_solved = is_constraint_solved(constraint.rhs, constraint.rhs.fct, constraint.rhs.set, values[end-rhs_num_vars+1:end])
-    return lhs_solved || rhs_solved
+    rhs_solved && return true
 end
 
 """
@@ -83,6 +84,8 @@ function still_feasible(
         for i in 1:length(lhs_indices)
             if lhs_indices[i] == vidx
                 lhs_feasible = still_feasible(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set, vidx, value)
+                lhs_feasible && return true
+                break
             end
         end
     end
@@ -92,6 +95,8 @@ function still_feasible(
         for i in 1:length(rhs_indices)
             if rhs_indices[i] == vidx
                 rhs_feasible = still_feasible(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set, vidx, value) 
+                rhs_feasible && return true
+                break
             end
         end
     end
