@@ -118,8 +118,8 @@ end
 function MOI.supports_constraint(
     optimizer::Optimizer,
     func::Type{VAF{T}},
-    set::Type{AS},
-) where {T,F1,F2,F1dim,F2dim,S1,S2,AS<:CS.BoolSet{F1,F2,F1dim,F2dim,S1,S2}}
+    set::Type{BS},
+) where {T,F1,F2,F1dim,F2dim,S1,S2,BS<:CS.BoolSet{F1,F2,F1dim,F2dim,S1,S2}}
     return is_boolset_supported(optimizer, set)
 end
 
@@ -590,3 +590,16 @@ function MOI.add_constraint(
     return MOI.ConstraintIndex{VAF{T},CS.ReifiedSet{A,S}}(length(com.constraints))
 end
 
+
+function MOI.add_constraint(
+    model::Optimizer,
+    func::VAF{T},
+    set::BS,
+) where {T,BS<:BoolSet}
+    com = model.inner
+    internals = create_interals(com, func, set)
+    constraint = init_constraint_struct(set, internals)
+    add_constraint!(model, constraint)
+
+    return MOI.ConstraintIndex{VAF{T},typeof(set)}(length(com.constraints))
+end
