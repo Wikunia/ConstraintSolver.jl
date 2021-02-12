@@ -2,6 +2,7 @@
  
 ## Unreleased
 - Bugfix in reified `still_feasible` when setting to inactive
+- Some general performance updates [PR #247](https://github.com/Wikunia/ConstraintSolver.jl/pull/247)
 
 ## v0.6.3 (17th of January 2021)
 - Use anti pruning in reified constraints 
