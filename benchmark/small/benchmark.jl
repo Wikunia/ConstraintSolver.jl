@@ -18,18 +18,14 @@ function all_different_except_c(model, x, c=0)
     n = length(x)
 
     # Define the variables we'll use
-    b_len = length([1 for i in 2:n for j in 1:i-1 for k in 1:3])
+    b_len = length([1 for i in 2:n for j in 1:i-1])
     bs = @variable(model, [1:b_len], Bin) # "Anonymous" variables
     c = 1
     for i in 2:n, j in 1:i-1
-        b1 = bs[c]
-        b2 = bs[c+1]
-        b3 = bs[c+2]
-        @constraint(model, b1 := {x[i] != 0})
-        @constraint(model, b2 := {x[j] != 0})
-        @constraint(model, b3 := {b1 + b2 == 2})
-        @constraint(model, b3 => {x[i] != x[j]})
-        c += 3
+        b = bs[c]
+        @constraint(model, b := {x[i] != 0 && x[j] != 0})
+        @constraint(model, b => {x[i] != x[j]})
+        c += 1
     end
     # return bs so we can print it in the main function
     return bs
