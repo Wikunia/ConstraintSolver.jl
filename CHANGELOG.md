@@ -1,4 +1,7 @@
 # ConstrainSolver.jl - Changelog
+ 
+## Unreleased
+- Bugfix in reified `still_feasible` when setting to inactive
 
 ## v0.6.3 (17th of January 2021)
 - Use anti pruning in reified constraints 
