@@ -55,6 +55,20 @@ function added_constraint_types(
     set = get_bridged_and_set(bridge,F1,F2,F1dim,F2dim,S1,S2)
 end
 
+function MOIBC.concrete_bridge_type(
+    ::Type{<:BoolBridge{T,B1,B2}},
+    G::Type{<:MOI.AbstractFunction},
+    ::Type{<:CS.BoolSet{F1,F2,F1dim,F2dim,S1,S2}}
+) where {T,B1,B2,F1, F2, F1dim, F2dim, S1, S2}
+    return BoolBridge{T,B1,B2,F1,F2,S1,S2}
+end
+
+function MOIBC.bridge_constraint(B::Type{<:BoolBridge{T, B1, B2, F1, F2, S1, S2}}, model, fct, set::CS.BoolSet) where {T, B1, B2, F1, F2, S1, S2}
+    new_fct = map_function(B, fct, set)
+    new_set = map_set(B, set)
+    return BoolBridge{T,B1,B2,F1,F2,S1,S2}(MOI.add_constraint(model, new_fct, new_set))
+end
+
 function unpack_constraint_types(ct1, ct2)
     new_F1 = ct1[1][1]
     new_F2 = ct2[1][1]

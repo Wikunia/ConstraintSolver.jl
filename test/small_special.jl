@@ -772,4 +772,25 @@
         @test JuMP.objective_value(m) ≈ sum([4,3,4,3,2]) + 100
     end 
 
+    @testset "Small test case for || and &&" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 1 <= x[1:5] <= 4, Int)
+        table = [
+            4 0;
+            3 2;
+        ]
+        @constraint(m, (x[1] > x[2] || x in CS.AllDifferentSet()) && x[4:5] in CS.TableSet(table))
+
+        @objective(m, Max, sum(x))
+        optimize!(m)
+
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+
+        @test JuMP.value.(x) ≈ [4,3,4,3,2]
+        @test JuMP.objective_value(m) ≈ sum([4,3,4,3,2])
+    end 
+
 end
