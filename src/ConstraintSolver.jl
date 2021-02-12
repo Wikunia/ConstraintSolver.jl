@@ -103,8 +103,9 @@ function fulfills_constraints(com::CS.CoM, vidx, value)
         return true
     end
     feasible = true
+    constraints =  com.constraints
     for ci in com.subscription[vidx]
-        constraint = com.constraints[ci]
+        constraint = constraints[ci]
         # only call if the function got initialized already
         if constraint.is_initialized
             feasible =
@@ -481,8 +482,9 @@ function solve_with_backtrack!(com, max_bt_steps; sorting = true)
         log_table = true
     end
 
+    check_bounds = com.sense != MOI.FEASIBILITY_SENSE
     status, last_backtrack_id =
-        backtrack!(com, max_bt_steps; sorting = sorting, log_table = log_table)
+        backtrack!(com, max_bt_steps; sorting = sorting, log_table = log_table, check_bounds = check_bounds)
 
     status != :TBD && return status
 

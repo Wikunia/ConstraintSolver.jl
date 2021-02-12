@@ -4,6 +4,7 @@
 - Bugfix in reified `still_feasible` when setting to inactive
 - Support for `And` constraints in the inner constraints of `Indicator` and `Reified`:
     i.e `b := { sum(x) >= 10 && x in CS.AllDifferentSet() }`
+- Some general performance updates [PR #247](https://github.com/Wikunia/ConstraintSolver.jl/pull/247)
 
 ## v0.6.3 (17th of January 2021)
 - Use anti pruning in reified constraints 
