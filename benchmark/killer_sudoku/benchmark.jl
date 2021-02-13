@@ -11,11 +11,12 @@ function parseKillerJSON(json_sums)
     return sums
 end
 
-function solve_killer_sudoku(filename; special = false)
+function solve_killer_sudoku(filename; special = false, branch_strategy=:Auto)
     json_file = joinpath(dir, "benchmark/killer_sudoku/data/$filename")
     sums = parseKillerJSON(JSON.parsefile(json_file))
 
-    m = CS.Optimizer(logging = [], keep_logs = true, time_limit = 20)
+    m = CS.Optimizer(logging = [], time_limit = 20,
+                    branch_strategy= branch_strategy)
 
     x = [[MOI.add_constrained_variable(m, MOI.Integer()) for i in 1:9] for j in 1:9]
     for r in 1:9, c in 1:9

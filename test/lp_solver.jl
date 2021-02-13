@@ -116,7 +116,7 @@
         optimize!(model)
         @test JuMP.objective_value(model) ≈ 75
 
-        com = JuMP.backend(model).optimizer.model.inner
+        com = CS.get_inner_model(model)
     end
 
     @testset "Combine lp with table constraint" begin
@@ -132,7 +132,7 @@
 
         # Constraints
         @constraint(model, sum(x[1:5]) >= 10)
-        @constraint(model, sum(x[6:10]) <= 15)
+        @constraint(model, sum(x[6:10]) < 16)
 
         table_left = [
             1 2 3 4 5 # sum 16
@@ -170,7 +170,7 @@
         @variable(model, 1 <= x[1:10] <= 15, Int)
 
         # Constraints
-        @constraint(model, sum(x[1:4]) >= 10)
+        @constraint(model, sum(x[1:4]) > 9)
         @constraint(model, sum(x[5:10]) <= 15)
 
 
@@ -260,7 +260,7 @@
         @test sum(JuMP.value.(x[6:10])) ≈ 15
         @test !(1.5 * JuMP.value(x[1]) + 2 * JuMP.value(x[2]) ≈ 40.5)
 
-        com = JuMP.backend(model).optimizer.model.inner
+        com = CS.get_inner_model(model)
         @test is_solved(com)
         @test general_tree_test(com)
     end

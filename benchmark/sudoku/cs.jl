@@ -62,7 +62,6 @@ function solve_all(grids; benchmark = false, single_times = true)
         end
         if !benchmark
             println("Status: ", status)
-            @show m.inner.info
             solution = zeros(Int, 9, 9)
             for r in 1:9
                 solution[r, :] = [MOI.get(m, MOI.VariablePrimal(), x[r][c][1]) for c in 1:9]

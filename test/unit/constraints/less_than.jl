@@ -5,7 +5,7 @@
     @variable(m, -5 <= z <= 5, Int)
     @constraint(m, 1.2x + π * y - 2z <= 4.71)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
     @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 3])
@@ -62,7 +62,7 @@
     @variable(m, -5 <= z <= 5, Int)
     @constraint(m, 1.2x + π * y - 2z <= 4.71)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     constraint = com.constraints[1]
     constr_indices = constraint.indices
 
@@ -86,7 +86,7 @@ end
     @variable(m, -5 <= x[1:2] <= 5, Int)
     @constraint(m, sum(x) <= 7)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -99,11 +99,31 @@ end
     @variable(m, -5 <= x[1:2] <= 5, Int)
     @constraint(m, sum(x) <= 7)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
     variables = com.search_space
     @test CS.fix!(com, variables[constraint.indices[1]], 5; check_feasibility = false)
     @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+end
+
+@testset "constraint without variables" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
+    @variable(m, -5 <= x[1:2] <= 5, Int)
+    @constraint(m, x[2] - x[1] >= x[2]-x[1] + 10)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.INFEASIBLE
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
+    @variable(m, -5 <= x[1:2] <= 5, Int)
+    @constraint(m, x[2] - x[1] + (-x[2]) + x[1] <= 0)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
+    @variable(m, -5 <= x[1:2] <= 5, Int)
+    @constraint(m, sum(0 .* x) <= 1)
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
 end

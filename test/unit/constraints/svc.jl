@@ -4,7 +4,7 @@
     @variable(m, -5 <= y <= 5, Int)
     @constraint(m, x <= y)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
     @test constraint isa CS.SingleVariableConstraint
@@ -62,7 +62,7 @@
     @variable(m, -5 <= y <= 5, Int)
     @constraint(m, x <= y)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     constraint = com.constraints[1]
 
     # feasible and no changes
@@ -80,7 +80,7 @@
     @variable(m, -5 <= y <= 5, Int)
     @constraint(m, x <= y)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     constraint = com.constraints[1]
 
     # Should be synced to the other variables
@@ -97,7 +97,7 @@ end
     @variable(m, 0 <= y <= 3, Int)
     @constraint(m, x <= y)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -110,7 +110,7 @@ end
     @variable(m, 0 <= y <= 3, Int)
     @constraint(m, x <= y)
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 

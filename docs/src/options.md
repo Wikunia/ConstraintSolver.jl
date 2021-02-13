@@ -97,16 +97,16 @@ The following options can be set with `activity.` i.e `"activity.decay" => 0.9`.
 ### `decay` (0.999)
 
 The activity of variables decays when they are not used in the current node. In the following it is written as $\gamma$.
-
-$X$ are the variables and $X^{\prime}$ denotes variables that have been changed. $D(x)$ is the domain of the variable $x$ and 
+$X$ are the variables and $X^{\prime}$ denotes variables that have been changed. 
+$D(x)$ is the domain of the variable $x$ and 
 $A(x)$ is the activity.
 
-$$
+```math
 \begin{aligned}
-\forall x \in X & \text { s.t. } |D(x)| > 1: A(x) = A(x) \cdot \gamma \\
-\forall x \in X^{\prime} &: A(x)=A(x)+1
+\forall x \in X& \text { s.t. } |D(x)| > 1 &: A(x) = A(x) \cdot \gamma \\
+\forall x \in X^{\prime}& &: A(x)=A(x)+1
 \end{aligned}
-$$
+```
 
 ### `max_probes` (`10`)
 
@@ -119,9 +119,9 @@ The probing can be stopped by either hitting `max_probes` or when one can be con
 Probing as explained in `max_probes` can be stopped when each variable has an approximated activity when is in a specified bound. The bound can be changed using this option.
 
 More precisely probing is stopped when this range
-$$
+```math
 \left[\tilde{\mu_{A}}(x)-t_{0.05, n-1} \cdot \frac{\tilde{\sigma_{A}}(x)}{\sqrt{n}}, \tilde{\mu_{A}}(x)+t_{0.05, n-1} \cdot \frac{\tilde{\sigma_{A}}(x)}{\sqrt{n}}\right]
-$$
+```
 
 is within $\pm$ `max_confidence_deviation` % of the empirical mean.
 
@@ -176,7 +176,7 @@ To save the logs as a json file you need to run:
 ```
 m = Model()
 ...
-com = JuMP.backend(m).optimizer.model.inner
+com = CS.get_inner_model(m)
 
 CS.save_logs(com, "FILENAME.json")
 ```
@@ -196,4 +196,3 @@ etc...
 ## `solution_type` (`Float64`)
 
 Defines the type of `best_bound` and `incumbent`. Normally you don't want to change this as JuMP only works with `Float` but if you work directly using MathOptInterface you can use this option.
-

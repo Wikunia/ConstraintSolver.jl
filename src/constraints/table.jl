@@ -2,7 +2,7 @@ include("table/support.jl")
 include("table/residues.jl")
 include("table/RSparseBitSet.jl")
 
-function init_constraint_struct(::Type{TableSetInternal}, internals)
+function init_constraint_struct(::TableSetInternal, internals)
     TableConstraint(
         internals,
         RSparseBitSet(),
@@ -568,7 +568,12 @@ function is_constraint_violated(
     set::TableSetInternal,
 )
     if all(isfixed(var) for var in com.search_space[constraint.indices])
-        return !is_constraint_solved(constraint, fct, set, [CS.value(var) for var in com.search_space[constraint.indices]])
+        return !is_constraint_solved(
+            constraint,
+            fct,
+            set,
+            [CS.value(var) for var in com.search_space[constraint.indices]],
+        )
     end
     return false
 end

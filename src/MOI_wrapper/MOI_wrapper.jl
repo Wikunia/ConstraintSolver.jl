@@ -1,13 +1,3 @@
-const SVF = MOI.SingleVariable
-const SAF = MOI.ScalarAffineFunction
-const VAF = MOI.VectorAffineFunction
-
-# indices
-const VI = MOI.VariableIndex
-const CI = MOI.ConstraintIndex
-
-const VAR_TYPES = Union{MOI.ZeroOne,MOI.Integer}
-
 var_idx(x::JuMP.VariableRef) = JuMP.optimizer_index(x).value
 var_idx(x::MOI.VariableIndex) = x.value
 # support for @variable(m, x, Set)
@@ -32,7 +22,13 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     options::SolverOptions
 end
 
+include("util.jl")
 include("variables.jl")
+include("Bridges/util.jl")
+include("Bridges/indicator.jl")
+include("Bridges/reified.jl")
+include("Bridges/strictly_greater_than.jl")
+include("Bridges/bool.jl")
 include("constraints.jl")
 include("objective.jl")
 include("results.jl")
@@ -45,7 +41,22 @@ Optimizer struct constructor
 function Optimizer(; options...)
     options = combine_options(options)
     com = CS.ConstraintSolverModel(options.solution_type)
-    return Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
+    optimizer = Optimizer(com, [], [], MOI.OPTIMIZE_NOT_CALLED, options)
+    lbo = MOIB.full_bridge_optimizer(optimizer, options.solution_type)
+    greater2less_bridges = [
+        MOIBC.GreaterToLessBridge{options.solution_type},
+        CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}
+    ]
+    inner_bridges = greater2less_bridges
+    # have inner them inside the BoolBridge
+    push!(inner_bridges, CS.BoolBridge{options.solution_type, inner_bridges...})
+  
+    for inner_bridge in inner_bridges
+        MOIB.add_bridge(lbo, inner_bridge)
+        MOIB.add_bridge(lbo, CS.IndicatorBridge{options.solution_type, inner_bridge})
+        MOIB.add_bridge(lbo, CS.ReifiedBridge{options.solution_type, inner_bridge})
+    end
+    return lbo
 end
 
 """
@@ -99,7 +110,11 @@ function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
             if num_subcat == length(parts)
                 if hasmethod(convert, (Type{type_of_param}, typeof(value)))
                     if is_possible_option_value(p, value)
-                        setfield!(current_options_obj, cp_symbol, convert(type_of_param, value))
+                        setfield!(
+                            current_options_obj,
+                            cp_symbol,
+                            convert(type_of_param, value),
+                        )
                     else
                         @error "The option $(cp_symbol) doesn't have $(value) as a possible value. Possible values are: $(POSSIBLE_OPTIONS[p_symbol])"
                         break
@@ -138,19 +153,21 @@ end
     MOI.optimize!(model::Optimizer)
 """
 function MOI.optimize!(model::Optimizer)
+    model.inner.options = model.options
     # check if every variable has bounds and is an Integer
     check_var_bounds(model)
 
     set_pvals!(model)
+    set_var_in_all_different!(model)
 
     create_lp_model!(model)
 
-    status = solve!(model)
+    status = solve!(model.inner)
     set_status!(model, status)
 
     if status == :Solved
         com = model.inner
-        com.solutions = unique!(sol->sol.hash, com.solutions)
+        com.solutions = unique!(sol -> sol.hash, com.solutions)
         if !com.options.all_solutions
             filter!(sol -> sol.incumbent == com.best_sol, com.solutions)
         end

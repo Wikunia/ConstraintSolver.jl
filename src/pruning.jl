@@ -205,17 +205,20 @@ Reverse the changes made by a specific backtrack object
 function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
     com.c_backtrack_idx = backtrack_idx
     search_space = com.search_space
+    latest_changes = [var.changes[backtrack_idx] for var in search_space]
     for var in search_space
         v_idx = var.idx
-        for change in Iterators.reverse(var.changes[backtrack_idx])
+        for change in Iterators.reverse(latest_changes[v_idx])
             single_reverse_pruning!(search_space, v_idx, change[4], change[3])
         end
     end
+    subscriptions = com.subscription
+    constraints = com.constraints
     for var in search_space
-        length(var.changes[backtrack_idx]) == 0 && continue
-        var.idx > length(com.subscription) && continue
-        for ci in com.subscription[var.idx]
-            constraint = com.constraints[ci]
+        length(latest_changes[var.idx]) == 0 && continue
+        var.idx > length(subscriptions) && continue
+        @inbounds for ci in subscriptions[var.idx]
+            constraint = constraints[ci]
             if constraint.impl.single_reverse_pruning
                 single_reverse_pruning_constraint!(
                     com,
@@ -228,7 +231,7 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
             end
         end
     end
-    for constraint in com.constraints
+    for constraint in constraints
         if constraint.impl.reverse_pruning
             reverse_pruning_constraint!(
                 com,

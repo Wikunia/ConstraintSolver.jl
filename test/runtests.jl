@@ -4,29 +4,31 @@ using JSON
 using Random
 using MathOptInterface, JuMP, Cbc, GLPK, Combinatorics
 using ReferenceTests
+using LinearAlgebra
 
 const MOI = MathOptInterface
 const CS = ConstraintSolver
 const MOIU = MOI.Utilities
 
-function CSTestOptimizer(; branch_strategy=:Auto)
-    CS.Optimizer(logging = [], seed=1, branch_strategy=branch_strategy)
+function CSTestOptimizer(; branch_strategy = :Auto)
+    CS.Optimizer(logging = [], seed = 1, branch_strategy = branch_strategy)
 end
-function CSJuMPTestOptimizer(; branch_strategy=:Auto)
-    JuMP.optimizer_with_attributes(CS.Optimizer,
+function CSJuMPTestOptimizer(; branch_strategy = :Auto)
+    JuMP.optimizer_with_attributes(
+        CS.Optimizer,
         "logging" => [],
-        "seed"=>4,
-        "branch_strategy"=>branch_strategy
+        "seed" => 4,
+        "branch_strategy" => branch_strategy,
     )
 end
 cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
-function CSCbcJuMPTestOptimizer(; branch_strategy=:Auto)
+function CSCbcJuMPTestOptimizer(; branch_strategy = :Auto)
     JuMP.optimizer_with_attributes(
         CS.Optimizer,
         "logging" => [],
         "lp_optimizer" => cbc_optimizer,
         "seed" => 2,
-        "branch_strategy" => branch_strategy
+        "branch_strategy" => branch_strategy,
     )
 end
 
@@ -65,6 +67,7 @@ include("fcts.jl")
 include("unit/index.jl")
 include("options.jl")
 include("moi.jl")
+include("scheduling.jl")
 include("constraints/table.jl")
 include("constraints/indicator.jl")
 include("constraints/reified.jl")
@@ -73,6 +76,7 @@ include("constraints/element1Dconst.jl")
 
 include("lp_solver.jl")
 
+include("steiner.jl")
 include("stable_set.jl")
 include("small_special.jl")
 include("maximum_weight_matching.jl")

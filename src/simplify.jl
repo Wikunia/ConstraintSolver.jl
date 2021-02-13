@@ -62,7 +62,8 @@ function simplify_svc_less_than(com)
     rhs_cons = Dict{Int,Vector{Int}}()
     for constraint_idx in 1:length(com.constraints)
         constraint = com.constraints[constraint_idx]
-        if isa(constraint, SingleVariableConstraint) && isa(constraint.set, MOI.LessThan)
+        if isa(constraint, SingleVariableConstraint) &&
+           isa(constraint.set, MOI.LessThan)
             if haskey(lhs_vars, constraint.lhs)
                 push!(lhs_vars[constraint.lhs], constraint.rhs)
                 push!(lhs_cons[constraint.lhs], constraint.idx)
@@ -98,7 +99,7 @@ function simplify_svc_less_than(com)
                 Int[v.value for v in vars.variables],
             )
 
-            constraint = init_constraint_struct(GeqSetInternal, internals)
+            constraint = init_constraint_struct(set, internals)
             add_constraint!(com, constraint)
             push!(added_constraint_idxs, length(com.constraints))
 
@@ -165,7 +166,7 @@ function simplify_not_equal_to_cliques(com)
                 Int[v.value for v in vars.variables],
             )
 
-            constraint = init_constraint_struct(AllDifferentSetInternal, internals)
+            constraint = init_constraint_struct(set, internals)
             add_constraint!(com, constraint)
             push!(added_constraint_idxs, length(com.constraints))
 

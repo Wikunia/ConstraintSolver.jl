@@ -16,7 +16,7 @@
 
     @constraint(m, [x, y, z] in CS.TableSet(tab))
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -81,7 +81,7 @@
 
     @constraint(m, [x, y, z] in CS.TableSet(tab))
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
     constr_indices = constraint.indices
@@ -109,7 +109,7 @@
 
     @constraint(m, [x, y, z] in CS.TableSet(tab))
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
     constr_indices = constraint.indices
@@ -126,14 +126,14 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, 0 <= x <= 5, Int)
     @variable(m, 0 <= y <= 3, Int)
-    @constraint(m, [x,y] in CS.TableSet([
+    @constraint(m, [x, y] in CS.TableSet([
         1 2
         3 4
         2 1
         2 3
     ]))
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 
@@ -145,14 +145,14 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, 0 <= x <= 5, Int)
     @variable(m, 0 <= y <= 3, Int)
-    @constraint(m, [x,y] in CS.TableSet([
+    @constraint(m, [x, y] in CS.TableSet([
         1 2
         3 4
         2 1
         2 3
     ]))
     optimize!(m)
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
 

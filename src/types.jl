@@ -79,6 +79,8 @@ mutable struct Variable
     is_integer::Bool # must be true to work
     # branching strategies
     activity::Float64 #  + 1 if variable was used in node, * activity.decay if it wasn't
+    in_all_different::Vector{Bool} # saves in which all different constraint this variable is used
+                                   # can be used to check if two or more variables are in the same alldifferent constraint
 end
 
 mutable struct NumberConstraintTypes
@@ -140,7 +142,7 @@ struct TableSet <: JuMP.AbstractVectorSet
     table::Array{Int,2}
 end
 function JuMP.moi_set(ts::TableSet, dim)
-    if size(ts.table,2) != dim
+    if size(ts.table, 2) != dim
         throw(ArgumentError("The table provided has $(size(ts.table,2)) columns but the variable vector has $dim elements"))
     end
     TableSetInternal(dim, ts.table)
@@ -166,6 +168,23 @@ struct NotEqualTo{T} <: MOI.AbstractScalarSet
     value::T
 end
 Base.copy(N::NotEqualTo) = NotEqualTo(N.value)
+
+# From https://github.com/dourouc05/ConstraintProgrammingExtensions.jl
+"""
+    Strictly{S <: Union{LessThan{T}, GreaterThan{T}}}
+
+Converts an inequality set to a set with the same inequality made strict.
+For example, while `LessThan(1)` corresponds to the inequality `x <= 1`,
+`Strictly(LessThan(1))` corresponds to the inequality `x < 1`.
+"""
+struct Strictly{T, S <: Union{MOI.LessThan{T}, MOI.GreaterThan{T}}} <: MOI.AbstractScalarSet
+    set::S
+end
+
+Base.copy(set::Strictly{T,S}) where {T,S} = Strictly{T,S}(copy(set.set))
+MOI.constant(set::Strictly{S}) where S = MOI.constant(set.set)
+MOIU.shift_constant(set::Strictly{S}, offset::T) where {S, T} =
+    typeof(set)(MOIU.shift_constant(set.set, offset))
 
 #====================================================================================
 ====================== TYPES FOR TRAVERSING ========================================
@@ -275,7 +294,7 @@ mutable struct TableSupport
     # i.e [1,3,7,10] means that the first variable has 2 values, the second 4
     var_start::Vector{Int}
     values::Array{UInt64,2}
-    TableSupport() = new([], Array{UInt64,2}(undef, (0,0)))
+    TableSupport() = new([], Array{UInt64,2}(undef, (0, 0)))
 end
 
 mutable struct TableResidues
@@ -292,19 +311,69 @@ mutable struct TableBacktrackInfo
     indices::Vector{Int}
 end
 
-struct IndicatorSet{A} <: MOI.AbstractVectorSet
-    func::MOI.VectorOfVariables
-    set::MOI.AbstractVectorSet
+struct IndicatorSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
+    set::S
     dimension::Int
 end
-Base.copy(I::IndicatorSet{A}) where {A} = IndicatorSet{A}(I.func, I.set, I.dimension)
+IndicatorSet{A}(set::S) where {A,S} = IndicatorSet{A,S}(set, 1+MOI.dimension(set))
+Base.copy(I::IndicatorSet{A,S}) where {A,S} = IndicatorSet{A,S}(I.set, I.dimension)
 
-struct ReifiedSet{A} <: MOI.AbstractVectorSet
-    func::Union{JuMP.GenericAffExpr,MOI.VectorOfVariables}
-    set::Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
+struct ReifiedSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
+       MOI.AbstractVectorSet
+    set::S
     dimension::Int
 end
-Base.copy(R::ReifiedSet{A}) where {A} = ReifiedSet{A}(R.func, R.set, R.dimension)
+Base.copy(R::ReifiedSet{A,S}) where {A,S} = ReifiedSet{A,S}(R.set, R.dimension)
+
+abstract type BoolSet{
+    F1<:Union{SAF,VAF,MOI.VectorOfVariables},
+    F2<:Union{SAF,VAF,MOI.VectorOfVariables},
+    F1dim<:Val,
+    F2dim<:Val,
+    S1<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
+    S2<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
+} <: MOI.AbstractVectorSet end 
+
+struct AndSet{F1,F2,F1dim,F2dim,S1,S2} <: BoolSet{F1,F2,F1dim,F2dim,S1,S2}
+    lhs_set::S1
+    rhs_set::S2
+    lhs_dimension::Int
+    rhs_dimension::Int
+    dimension::Int
+end
+
+function AndSet{F1,F2}(lhs_set::S1, rhs_set::S2) where {F1,F2,S1,S2}
+    lhs_dim = MOI.dimension(lhs_set)
+    rhs_dim = MOI.dimension(rhs_set)
+    F1dim = Val{lhs_dim}
+    F2dim = Val{rhs_dim}
+    return AndSet{F1,F2,F1dim,F2dim,S1,S2}(lhs_set, rhs_set, lhs_dim, rhs_dim, lhs_dim + rhs_dim)
+end
+
+function Base.copy(A::AndSet{F1,F2,F1dim,F2dim,S1,S2}) where {F1,F2,F1dim,F2dim,S1,S2} 
+    AndSet{F1,F2,F1dim,F2dim,S1,S2}(A.lhs_set, A.rhs_set, A.lhs_dimension, A.rhs_dimension, A.dimension)
+end
+
+struct OrSet{F1,F2,F1dim,F2dim,S1,S2} <: BoolSet{F1,F2,F1dim,F2dim,S1,S2}
+    lhs_set::S1
+    rhs_set::S2
+    lhs_dimension::Int
+    rhs_dimension::Int
+    dimension::Int
+end
+
+function OrSet{F1,F2}(lhs_set::S1, rhs_set::S2) where {F1,F2,S1,S2}
+    lhs_dim = MOI.dimension(lhs_set)
+    rhs_dim = MOI.dimension(rhs_set)
+    F1dim = Val{lhs_dim}
+    F2dim = Val{rhs_dim}
+    return OrSet{F1,F2,F1dim,F2dim,S1,S2}(lhs_set, rhs_set, lhs_dim, rhs_dim, lhs_dim + rhs_dim)
+end
+
+function Base.copy(A::OrSet{F1,F2,F1dim,F2dim,S1,S2}) where {F1,F2,F1dim,F2dim,S1,S2} 
+    OrSet{F1,F2,F1dim,F2dim,S1,S2}(A.lhs_set, A.rhs_set, A.lhs_dimension, A.rhs_dimension, A.dimension)
+end
+
 
 #====================================================================================
 ====================================================================================#
@@ -369,6 +438,20 @@ mutable struct Element1DConstConstraint <: Constraint
     y_changes_ptr::Int # the start pointer for checking z.changes
 end
 
+abstract type BoolConstraint{C1<:Constraint,C2<:Constraint} <: Constraint end
+
+struct AndConstraint{C1,C2} <: BoolConstraint{C1,C2}
+    std::ConstraintInternals
+    lhs::C1
+    rhs::C2
+end
+
+struct OrConstraint{C1,C2} <: BoolConstraint{C1,C2}
+    std::ConstraintInternals
+    lhs::C1
+    rhs::C2
+end
+
 # support for a <= b constraint
 mutable struct SingleVariableConstraint <: Constraint
     std::ConstraintInternals
@@ -379,6 +462,14 @@ end
 mutable struct LinearConstraint{T<:Real} <: Constraint
     std::ConstraintInternals
     in_all_different::Bool
+    is_strict::Bool # for differentiate between < and <=
+    is_equal::Bool # for ==
+    is_rhs_strong::Bool # saves whether the rhs is already a strong rhs
+    rhs::T # combines value - constant
+    # same as rhs but for `<` it saves the original value - constant
+    # (rhs is then computed to be usable as <=)
+    strict_rhs::T
+    coeffs::Vector{T}
     mins::Vector{T}
     maxs::Vector{T}
     pre_mins::Vector{T}
@@ -416,10 +507,11 @@ mutable struct IndicatorConstraint{C<:Constraint} <: Constraint
     indicator_in_inner::Bool # is the indicator variable also in the inner constraint
 end
 
-mutable struct ReifiedConstraint{C<:Constraint} <: Constraint
+mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <: Constraint
     std::ConstraintInternals
     activate_on::MOI.ActivationCondition
     inner_constraint::C
+    anti_constraint::AC
     reified_in_inner::Bool # is the reified variable also in the inner constraint
 end
 
@@ -526,9 +618,9 @@ mutable struct BranchVarObj
 end
 
 struct VarAndVal
-    vidx :: Int
-    lb   :: Int
-    ub   :: Int
+    vidx::Int
+    lb::Int
+    ub::Int
 end
 
 mutable struct ConstraintSolverModel{T<:Real}

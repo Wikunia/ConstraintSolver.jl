@@ -12,7 +12,7 @@
         @test JuMP.value(b) ≈ 1.0
         @test JuMP.value(x) ≈ 4
         @test JuMP.value(y) ≈ 3
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -29,12 +29,12 @@
         @test JuMP.value(b) ≈ 1.0
         @test JuMP.value(x) ≈ 4
         @test JuMP.value(y) ≈ 3
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
     @testset "Basic >=" begin
-        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
+        m = Model(CSJuMPTestOptimizer(; branch_strategy = :ABS))
         @variable(m, x, CS.Integers([1, 2, 4]))
         @variable(m, y, CS.Integers([2, 3]))
         @variable(m, b, Bin)
@@ -62,7 +62,7 @@
         @test JuMP.value(b) ≈ 0.0
         @test JuMP.value(x) ≈ 5
         @test JuMP.value(y) ≈ 4
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test !com.constraints[1].reified_in_inner
         @test is_solved(com)
     end
@@ -80,7 +80,7 @@
         @test JuMP.value(b) ≈ 0.0
         @test JuMP.value(x) ≈ 4
         @test JuMP.value(y) ≈ 4
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -97,7 +97,7 @@
         @test JuMP.value(b) ≈ 1.0
         @test JuMP.value(x) ≈ 1
         @test JuMP.value(y) ≈ 1
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -114,7 +114,7 @@
         @test JuMP.value(b) ≈ 1.0
         @test JuMP.value(x) ≈ 2 || JuMP.value(y) ≈ 2
         @test JuMP.value(x) ≈ 4 || JuMP.value(y) ≈ 4
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -150,7 +150,7 @@
         @test JuMP.value(b) ≈ 1.0
         @test JuMP.value(x) ≈ 2
         @test JuMP.value(y) ≈ 4
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -176,7 +176,7 @@
         @test JuMP.value(b) ≈ 1.0
         @test JuMP.value(x) ≈ 4
         @test JuMP.value(y) ≈ 2
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
     end
 
@@ -209,7 +209,7 @@
         @test JuMP.value(b) ≈ 96
         @test JuMP.value(c) ≈ 100
         @test JuMP.value(reified) ≈ 1
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
         logs = CS.get_logs(com)
         @test CS.sanity_check_log(logs[:tree])

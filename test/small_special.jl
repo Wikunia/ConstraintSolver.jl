@@ -22,7 +22,7 @@
     end
 
     @testset "LessThan constraints JuMP" begin
-        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
+        m = Model(CSJuMPTestOptimizer(; branch_strategy = :ABS))
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         @constraint(m, sum(x) >= 20)
@@ -48,7 +48,7 @@
         @test JuMP.objective_value(m) == 37
 
         # minimize with negative and positive real weights
-        m = Model(CSJuMPTestOptimizer(; branch_strategy=:ABS))
+        m = Model(CSJuMPTestOptimizer(; branch_strategy = :ABS))
         @variable(m, 1 <= x[1:5] <= 9, Int)
         @constraint(m, sum(x) <= 25)
         weights = [-0.1, 0.2, -0.3, 0.4, 0.5]
@@ -274,14 +274,14 @@
         m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack" => false))
         @variable(m, x, CS.Integers([1, 2, 4]))
         optimize!(m)
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test !CS.has(com.search_space[1], 3)
         @test sort(CS.values(com.search_space[1])) == [1, 2, 4]
 
         m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack" => false))
         @variable(m, y, CS.Integers([2, 5, 6, 3]))
         optimize!(m)
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test !CS.has(com.search_space[1], 1)
         @test !CS.has(com.search_space[1], 4)
         @test sort(CS.values(com.search_space[1])) == [2, 3, 5, 6]
@@ -312,7 +312,7 @@
         @constraint(m, x[1] + x[2] == x[3])
         @constraint(m, x[1] <= x[2])
         optimize!(m)
-        com = JuMP.backend(m).optimizer.model.inner
+        com = CS.get_inner_model(m)
         @test is_solved(com)
         @test MOI.get(m, MOI.ResultCount()) == 20
     end
@@ -383,7 +383,7 @@
         optimize!(model)
         status = JuMP.termination_status(model)
         @test status == MOI.OPTIMAL
-        com = JuMP.backend(model).optimizer.model.inner
+        com = CS.get_inner_model(model)
         @test is_solved(com)
     end
 
@@ -411,7 +411,7 @@
         optimize!(model)
         status = JuMP.termination_status(model)
         @test status == MOI.OPTIMAL
-        com = JuMP.backend(model).optimizer.model.inner
+        com = CS.get_inner_model(model)
         @test is_solved(com)
     end
 
@@ -463,7 +463,7 @@
     @testset "Infeasible all different in indicator" begin
         model = Model(CSCbcJuMPTestOptimizer(; branch_strategy = :ABS))
         n = 2
-        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, 1 <= x[1:n] <= n - 1, Int)
         @variable(model, b, Bin)
         @constraint(model, b => {x in CS.AllDifferentSet()})
         @objective(model, Max, b)
@@ -477,7 +477,7 @@
     @testset "Infeasible all different in reified" begin
         model = Model(CSJuMPTestOptimizer())
         n = 4
-        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, 1 <= x[1:n] <= n - 1, Int)
         @variable(model, b, Bin)
         @constraint(model, b := {x in CS.AllDifferentSet()})
         @objective(model, Max, b)
@@ -491,7 +491,7 @@
     @testset "Table dim not matching" begin
         model = Model(CSJuMPTestOptimizer())
         n = 4
-        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, 1 <= x[1:n] <= n - 1, Int)
         @variable(model, b, Bin)
         @test_throws ArgumentError @constraint(model, b => {x in CS.TableSet([
             10 20
@@ -502,7 +502,7 @@
     @testset "Infeasible table in indicator" begin
         model = Model(CSJuMPTestOptimizer())
         n = 2
-        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, 1 <= x[1:n] <= n - 1, Int)
         @variable(model, b, Bin)
         @constraint(model, b => {x in CS.TableSet([
             10 20
@@ -520,7 +520,7 @@
     @testset "Infeasible table in reified" begin
         model = Model(CSJuMPTestOptimizer())
         n = 2
-        @variable(model, 1 <= x[1:n] <= n-1, Int)
+        @variable(model, 1 <= x[1:n] <= n - 1, Int)
         @variable(model, b, Bin)
         @constraint(model, b := {x in CS.TableSet([
             10 20
@@ -536,42 +536,261 @@
 
     @testset "Magic Square 5x5" begin
         n = 5
-        model = Model(optimizer_with_attributes(CS.Optimizer,
-                "traverse_strategy"=>:BFS,
-                "logging" => [],
-                "branch_split"=>:InHalf,
-                "time_limit"=>3,
-            )
-        )
+        model = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "traverse_strategy" => :BFS,
+            "logging" => [],
+            "branch_split" => :InHalf,
+            "time_limit" => 3,
+        ))
 
 
         # The total for each row, column, and the two main diaginals
-        s = round(Int,n*(n^2 + 1) / 2)
-        @variable(model, 1 <= x[1:n,1:n] <= n^2, Int)
+        s = round(Int, n * (n^2 + 1) / 2)
+        @variable(model, 1 <= x[1:n, 1:n] <= n^2, Int)
         @constraint(model, x[:] in CS.AllDifferentSet())
 
         for i in 1:n
             # Rows
-            @constraint(model, sum(x[i,:]) == s)
+            @constraint(model, sum(x[i, :]) == s)
 
             # Columns
-            @constraint(model, sum(x[:,i]) == s)
+            @constraint(model, sum(x[:, i]) == s)
         end
 
         # diagonals
-        @constraint(model, sum([x[i,i] for i in 1:n]) == s)
-        @constraint(model, s == sum([x[i,n-i+1] for i in 1:n]))
+        @constraint(model, sum([x[i, i] for i in 1:n]) == s)
+        @constraint(model, s == sum([x[i, n - i + 1] for i in 1:n]))
 
         optimize!(model)
         status = JuMP.termination_status(model)
         @test status == MOI.OPTIMAL
-        sol = convert.(Int,JuMP.value.(x))
-        for i=1:n
-            @test sum(sol[i,:]) == 65
-            @test sum(sol[:,i]) == 65
+        sol = convert.(Int, JuMP.value.(x))
+        for i in 1:n
+            @test sum(sol[i, :]) == 65
+            @test sum(sol[:, i]) == 65
         end
-        @test sum([sol[i,i] for i in 1:n]) == 65
-        @test sum([sol[i,n-i+1] for i in 1:n]) == 65
+        @test sum([sol[i, i] for i in 1:n]) == 65
+        @test sum([sol[i, n - i + 1] for i in 1:n]) == 65
         @test allunique(sol)
     end
+
+    @testset "Indicator with > and active" begin
+        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        model = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "lp_optimizer" => cbc_optimizer,
+            "logging" => []
+        ))
+        @variable(model, b >= 1, Bin)
+        @variable(model, 0 <= x[1:4] <= 5, Int)
+        @constraint(model, b => {sum([0.4,0.5,0.7,0.8] .* x) > 9})
+        @objective(model, Min, sum([0.4,0.5,0.7,0.8] .* x))
+        optimize!(model)
+        CS.get_inner_model(model)
+        @test JuMP.termination_status(model) == MOI.OPTIMAL
+        @test JuMP.objective_value(model) ≈ 9.1
+        @test JuMP.value(x[1]) ≈ 2.0
+        @test JuMP.value(x[2]) ≈ 3.0
+        @test JuMP.value(x[3]) ≈ 4.0
+        @test JuMP.value(x[4]) ≈ 5.0
+    end
+
+    @testset "AllDifferent except 0" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 0 <= x[1:5] <= 3, Int)
+        len = length(x)
+        for i in 2:len, j in 1:i-1
+            b = @variable(m, binary=true)
+            @constraint(m, b := {x[i] != 0 && x[j] != 0})
+            @constraint(m, b => {x[i] != x[j]} ) 
+        end
+        
+        @objective(m, Min, sum(x))
+        optimize!(m)
+        CS.get_inner_model(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 0
+        @test JuMP.value(x[1]) ≈ 0
+        @test JuMP.value(x[2]) ≈ 0
+        @test JuMP.value(x[3]) ≈ 0
+        @test JuMP.value(x[4]) ≈ 0
+        @test JuMP.value(x[5]) ≈ 0
+
+        # maximize
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 0 <= x[1:5] <= 3, Int)
+        len = length(x)
+        for i in 2:len, j in 1:i-1
+            b = @variable(m, binary=true)
+            @constraint(m, b := {x[i] != 0 && x[j] != 0})
+            @constraint(m, b => {x[i] != x[j]} ) 
+        end
+        
+        @objective(m, Max, sum(x))
+        optimize!(m)
+        CS.get_inner_model(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 3+2+1+0+0
+    end
+
+    @testset "Try to fulfill b with several conditions" begin
+        # inner part is infeasible
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 0 <= x[1:5] <= 3, Int)
+        @variable(m, b, Bin)
+        @constraint(m, b => {x[1] > x[2] && x[2] > x[3] && x[3] > x[4] && x[4] > x[5]})
+        
+        @objective(m, Max, b)
+        optimize!(m)
+        CS.get_inner_model(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 0
+        @test JuMP.value(b) ≈ 0
+
+        # inner part is feasible
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 0 <= x[1:5] <= 4, Int)
+        @variable(m, b, Bin)
+        @constraint(m, b => {x[1] > x[2] && x[2] > x[3] && x[3] > x[4] && x[4] > x[5]})
+        
+        @objective(m, Max, b)
+        optimize!(m)
+        CS.get_inner_model(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 1
+        @test JuMP.value(b) ≈ 1
+        vx = JuMP.value.(x)
+        @test vx[1] > vx[2] && vx[2] > vx[3] && vx[3] > vx[4] && vx[4] > vx[5]
+
+
+        # inner part is feasible
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 0 <= x[1:5] <= 4, Int)
+        @variable(m, b, Bin)
+        @constraint(m, b => {x[1] >= x[2] && (x[3] <= x[2] && (x[3] >= x[4] && x[4] > x[5])) && x in CS.AllDifferentSet()})
+        
+        @objective(m, Max, b)
+        optimize!(m)
+        CS.get_inner_model(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 1
+        @test JuMP.value(b) ≈ 1
+        vx = JuMP.value.(x)
+        @test vx[1] > vx[2] && vx[2] > vx[3] && vx[3] > vx[4] && vx[4] > vx[5]
+
+        # inner part is feasible have AndSet && AndSet 
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 0 <= x[1:5] <= 4, Int)
+        @variable(m, b, Bin)
+        @constraint(m, b => {(x[1] >= x[2] && x[3] <= x[2]) && (x[3] >= x[4] && x[4] > x[5] && x in CS.AllDifferentSet())})
+        
+        @objective(m, Max, b)
+        optimize!(m)
+        CS.get_inner_model(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 1
+        @test JuMP.value(b) ≈ 1
+        vx = JuMP.value.(x)
+        @test vx[1] > vx[2] && vx[2] > vx[3] && vx[3] > vx[4] && vx[4] > vx[5]
+    end
+
+    @testset "Table in reified where setting activator to false" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 1 <= x[1:5] <= 4, Int)
+        @variable(m, b, Bin)
+        @constraint(m, b => {x[1] > x[2] && [x[1],x[2]] in CS.TableSet([1 2; 1 3])})
+        
+        @objective(m, Max, 10b+sum(x))
+        optimize!(m)
+
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        @test JuMP.objective_value(m) ≈ 20
+        @test JuMP.value(b) ≈ 0
+    end
+
+    @testset "Small test case for || in reified" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 1 <= x[1:5] <= 4, Int)
+        @variable(m, b, Bin)
+        @constraint(m, b := {(x[1] > x[2] || x in CS.AllDifferentSet()) })
+
+        @objective(m, Max, 100b+sum(x))
+        optimize!(m)
+
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+
+        @test JuMP.value(b) ≈ 1.0
+        @test JuMP.value.(x) ≈ [4,3,4,4,4]
+        @test JuMP.objective_value(m) ≈ sum([4,3,4,4,4]) + 100
+    end
+
+    @testset "Small test case for || and && in reified" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 1 <= x[1:5] <= 4, Int)
+        @variable(m, b, Bin)
+        table = [
+            4 0;
+            3 2;
+        ]
+        @constraint(m, b := {(x[1] > x[2] || x in CS.AllDifferentSet()) && x[4:5] in CS.TableSet(table) })
+
+        @objective(m, Max, 100b+sum(x))
+        optimize!(m)
+
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+
+        @test JuMP.value(b) ≈ 1.0
+        @test JuMP.value.(x) ≈ [4,3,4,3,2]
+        @test JuMP.objective_value(m) ≈ sum([4,3,4,3,2]) + 100
+    end 
+
+    @testset "Small test case for || and &&" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => []
+        ))
+        @variable(m, 1 <= x[1:5] <= 4, Int)
+        table = [
+            4 0;
+            3 2;
+        ]
+        @constraint(m, (x[1] > x[2] || x in CS.AllDifferentSet()) && x[4:5] in CS.TableSet(table))
+
+        @objective(m, Max, sum(x))
+        optimize!(m)
+
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+
+        @test JuMP.value.(x) ≈ [4,3,4,3,2]
+        @test JuMP.objective_value(m) ≈ sum([4,3,4,3,2])
+    end 
+
 end

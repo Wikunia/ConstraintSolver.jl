@@ -24,6 +24,8 @@ SUITE["eternity"] = BenchmarkGroup(["alldifferent", "table", "equal"])
 solve_eternity("eternity_6x5"; height = 6, width = 5)
 SUITE["eternity"]["6x5"] =
     @benchmarkable solve_eternity("eternity_6x5"; height = 6, width = 5) seconds = 30
+SUITE["eternity"]["6x5_ABS"] =
+    @benchmarkable solve_eternity("eternity_6x5"; height = 6, width = 5, branch_strategy=:ABS) seconds = 30
 SUITE["eternity"]["5x5_opt"] =
     @benchmarkable solve_eternity("eternity_5x5"; height = 5, width = 5, optimize = true) seconds =
         120
@@ -60,6 +62,10 @@ SUITE["killer_sudoku"]["niall_5500"] =
     @benchmarkable solve_killer_sudoku("niallsudoku_5500") seconds = 5
 SUITE["killer_sudoku"]["niall_5501"] =
     @benchmarkable solve_killer_sudoku("niallsudoku_5501") seconds = 5
+SUITE["killer_sudoku"]["niall_5500_ABS"] =
+    @benchmarkable solve_killer_sudoku("niallsudoku_5500"; branch_strategy=:ABS) seconds = 5
+SUITE["killer_sudoku"]["niall_5501_ABS"] =
+    @benchmarkable solve_killer_sudoku("niallsudoku_5501"; branch_strategy=:ABS) seconds = 5
 SUITE["killer_sudoku"]["niall_5500_special"] =
     @benchmarkable solve_killer_sudoku("niallsudoku_5500"; special = true) seconds = 15
 SUITE["killer_sudoku"]["niall_5501_special"] =
@@ -74,6 +80,10 @@ SUITE["graph_coloring"]["US_8+equal"] =
     @benchmarkable solve_us_graph_coloring(; num_colors = 8, equality = true) seconds = 5
 SUITE["graph_coloring"]["US_50colors+equal"] =
     @benchmarkable solve_us_graph_coloring(; num_colors = 50, equality = true) seconds = 5
+SUITE["graph_coloring"]["US_8+equal_ABS"] =
+    @benchmarkable solve_us_graph_coloring(; num_colors = 8, equality = true, branch_strategy=:ABS) seconds = 5
+SUITE["graph_coloring"]["US_50colors+equal_ABS"] =
+    @benchmarkable solve_us_graph_coloring(; num_colors = 50, equality = true, branch_strategy=:ABS) seconds = 5
 SUITE["graph_coloring"]["US_50colors"] =
     @benchmarkable solve_us_graph_coloring(; num_colors = 50, equality = false) seconds = 5
 SUITE["graph_coloring"]["queen7_7"] =
@@ -82,3 +92,47 @@ SUITE["graph_coloring"]["queen7_7"] =
 SUITE["graph_coloring"]["le450_5d"] =
     @benchmarkable color_graph(joinpath(dir, "benchmark/graph_color/data/le450_5d.col"), 5) seconds =
         30
+
+
+include(joinpath(dir, "benchmark/scheduling/benchmark.jl"))
+
+SUITE["scheduling"] = BenchmarkGroup(["cumulative", "equal", "less_than"])
+# compiling run
+furniture_moving()
+SUITE["scheduling"]["furniture_moving"] =
+    @benchmarkable furniture_moving() seconds = 5
+
+
+# Problem instance
+organize_day_problem = Dict(
+
+    #task id     1      2      3      4
+    :tasks => ["Work","Mail","Shop","Bank"],
+
+    # duration of the four tasks
+    :durations => [4,1,2,1],
+
+    # precedences
+    # [A,B] : task A must be completed before task B
+    :precedences => [
+                        4 3;
+                        2 1
+                    ],
+    # Time limits
+    :start_time => 9,
+    :end_time => 17
+)
+
+SUITE["scheduling"]["organize_day"] =
+    @benchmarkable organize_day(organize_day_problem) seconds = 5
+
+
+include(joinpath(dir, "benchmark/small/benchmark.jl"))
+
+SUITE["small"] = BenchmarkGroup(["all_different_except", "reified", "indicator", "less_than"])
+# compiling run
+all_different_except_0(5)
+SUITE["scheduling"]["all_different_except_0_len10"] =
+    @benchmarkable all_different_except_0(10) seconds = 10
+SUITE["scheduling"]["all_different_except_0_len12"] =
+    @benchmarkable all_different_except_0(12) seconds = 15

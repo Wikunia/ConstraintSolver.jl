@@ -100,19 +100,28 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.ZeroOne)
     vi = v.variable
     model.variable_info[vi.value].is_integer = true
 
-    model.variable_info[vi.value].upper_bound = 1
-    model.variable_info[vi.value].max = 1
-    model.variable_info[vi.value].has_upper_bound = true
-    model.variable_info[vi.value].lower_bound = 0
-    model.variable_info[vi.value].min = 0
-    model.variable_info[vi.value].has_lower_bound = true
-    model.variable_info[vi.value].values = [0, 1]
-    model.variable_info[vi.value].init_vals = [0, 1]
-    model.variable_info[vi.value].init_val_to_index = 1:2
+    # this gets called after setting lower and upper bound
+    # => make sure that it's not already set
+    if !has_upper_bound(model, vi) || model.variable_info[vi.value].upper_bound > 1
+        model.variable_info[vi.value].upper_bound = 1
+        model.variable_info[vi.value].max = 1
+        model.variable_info[vi.value].has_upper_bound = true
+    end
+    if !has_lower_bound(model, vi) || model.variable_info[vi.value].lower_bound < 0
+        model.variable_info[vi.value].lower_bound = 0
+        model.variable_info[vi.value].min = 0
+        model.variable_info[vi.value].has_lower_bound = true
+    end
+    min_val, max_val = model.variable_info[vi.value].lower_bound,
+                       model.variable_info[vi.value].upper_bound
+    values = collect(min_val:max_val)
+    model.variable_info[vi.value].values = values
+    model.variable_info[vi.value].init_vals = values
+    model.variable_info[vi.value].init_val_to_index = 1:length(values)
     model.variable_info[vi.value].offset = 1
-    model.variable_info[vi.value].indices = 1:2
+    model.variable_info[vi.value].indices = 1:length(values)
     model.variable_info[vi.value].first_ptr = 1
-    model.variable_info[vi.value].last_ptr = 2
+    model.variable_info[vi.value].last_ptr = length(values)
     addupd_var_in_inner_model(model, vi.value)
 
     cidx = length(model.var_constraints) + 1

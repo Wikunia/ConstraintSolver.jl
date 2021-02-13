@@ -127,7 +127,7 @@ end
     white[9, :] = [0 1 1 0 0 1 1 1 1]
 
     status, m, x = solve_str8ts(grid, white; all_solutions = true, logging = [])
-    com = JuMP.backend(m).optimizer.model.inner
+    com = CS.get_inner_model(m)
     @test JuMP.termination_status(m) == MOI.OPTIMAL
     @test MOI.get(m, MOI.ResultCount()) == 1
     @test convert.(Int, JuMP.value.(x[1, :])) == [7, 9, 6, 8, 0, 0, 2, 3, 0]

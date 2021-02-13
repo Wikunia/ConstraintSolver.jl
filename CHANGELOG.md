@@ -1,4 +1,30 @@
 # ConstrainSolver.jl - Changelog
+ 
+## Unreleased
+- Bugfix in reified `still_feasible` when setting to inactive
+- Bugfix in alldifferent constraint when there is a gap in the values
+- Support for `And` constraints in the inner constraints of `Indicator` and `Reified`:
+    i.e `b := { sum(x) >= 10 && x in CS.AllDifferentSet() }`
+- Support for `Or` constraints in the inner constraints of `Indicator` and `Reified`:
+    i.e `b := { sum(x) >= 10 || x in CS.AllDifferentSet() }`
+- Support for `&&` and `||` outside of `Indicator` and `Reified`
+  - i.e `sum(x) >= 10 || x in CS.AllDifferentSet()`
+- Some general performance updates [PR #247](https://github.com/Wikunia/ConstraintSolver.jl/pull/247)
+
+## v0.6.3 (17th of January 2021)
+- Use anti pruning in reified constraints
+
+## v0.6.2 (16th of January 2021)
+- Bugfix when linear constraint has only variables with coefficient 0 like `x <= x` => `0x <= 0`
+
+## v0.6.1 (15th of January 2021)
+- Bugfix if binary variable is constrained directly in `@variable`
+- Use `CS.get_inner_model` to get the `ConstraintSolverModel`
+  - Usage of `JuMP.backend` as before will fail
+- Support for strictly less than and greater than with `<` and `>`
+- Refactoring
+  - Using bridges for `>=` and `>` in indicator and reified constraint
+  - Combining `==` and `<=` into `src/constraints/linear_constraints.jl`
 
 ## v0.6.0 (15th of December 2020) 
 - **Dropped support for Julia v1.0 and v1.1**
