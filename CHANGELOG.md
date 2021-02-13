@@ -1,6 +1,6 @@
 # ConstrainSolver.jl - Changelog
  
-## Unreleased
+## v0.6.4 (13th of February 2021)
 - Bugfix in reified `still_feasible` when setting to inactive
 - Bugfix in alldifferent constraint when there is a gap in the values
 - Support for `And` constraints in the inner constraints of `Indicator` and `Reified`:
@@ -86,7 +86,7 @@
 - Support for indicator constraints
     - i.e. `@constraint(m, b => { x + y <= 10 })`
 
-## v0.1.7 (22th of May 2020)
+## v0.1.7 (22nd of May 2020)
 - Better feasibility and pruning in `==`
 - **Bugfixes:**
   - Correct set of change ptr in `EqualSet` for faster/correct pruning
