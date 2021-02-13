@@ -7,6 +7,7 @@ sense_to_set(::Function, ::Val{:>}) = Strictly(MOI.GreaterThan(0.0))
 
 MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 
+include("element.jl")
 include("indicator.jl")
 include("reified.jl")
 include("and.jl")

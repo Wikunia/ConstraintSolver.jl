@@ -1,4 +1,4 @@
-function init_constraint_struct(::Type{Element1DConstInner}, internals)
+function init_constraint_struct(::Element1DConstInner, internals)
     Element1DConstConstraint(
         internals,
         Int[], # zSupp will be filled later
