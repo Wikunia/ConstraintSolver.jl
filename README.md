@@ -6,8 +6,8 @@
 
 ![Logo](https://user-images.githubusercontent.com/4931746/83681097-2c247480-a5e2-11ea-9301-0c46726dea25.png)
 
-This package aims to be a constraint solver written in Julia and will be documented completely on my blog [OpenSourc.es](https://opensourc.es/blog/constraint-solver-1).
-There is of course also the general user manual [here](https://wikunia.github.io/ConstraintSolver.jl/stable)
+This package aims to be a constraint solver completely written in Julia. The concepts are more or less fully described on my blog [OpenSourc.es](https://opensourc.es/blog/constraint-solver-1).
+There is of course also the general user manual [here](https://wikunia.github.io/ConstraintSolver.jl/stable) which explains how to solve your model.
 
 
 ## Goals
@@ -21,7 +21,7 @@ You can install this julia package using
 
 ## Example
 
-You can easily use this package with the same modelling package as you might be used to for solving (non)linear problems in Julia: [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl).
+You can easily use this package with the same modeling package as you might be used to for solving (non)linear problems in Julia: [JuMP.jl](https://github.com/JuliaOpt/JuMP.jl).
 
 ### Sudoku
 ```julia
@@ -71,39 +71,25 @@ grid = convert.(Int, JuMP.value.(x))
 
 ## Supported variables and constraints
 You can see a list of currently supported constraints [in the docs](https://wikunia.github.io/ConstraintSolver.jl/stable/supported/).
-This constraint solver works only with bounded discrete variables.
+In general the solver works only with bounded discrete variables and supports these constraints
+- linear constraints
+- all different
+- table
+- indictoar
+- reified
+- boolean
+
+## Examples
+
+A list of example problems can be found on the website by [Håkan Kjellerstrand](http://hakank.org/julia/constraints/).
 
 
 ## Blog posts
-- [Setup of the solver and basic backtracking for Sudoku](https://opensourc.es/blog/constraint-solver-1)
-- [Pruning in Sudoku](https://opensourc.es/blog/constraint-solver-pruning)
-- [More pruning and benchmarks](https://opensourc.es/blog/constraint-solver-pruning-benchmarking)
-- [Sophisticated implementation of the alldifferent constraint and benchmarks](https://opensourc.es/blog/constraint-solver-alldifferent)
-- [New data structure for better user interface and performance](https://opensourc.es/blog/constraint-solver-data-structure)
-- [Backtrack without recursion and start of sum constraint](https://opensourc.es/blog/constraint-solver-backtrack-sum)
-- [Speed up the sum constraint](https://opensourc.es/blog/constraint-solver-sum-speed)
-- [UI changes and refactoring](https://opensourc.es/blog/constraint-solver-ui-refactor)
-- [Recap video](https://opensourc.es/blog/constraint-solver-first-recap)
-- [First step in graph coloring](https://opensourc.es/blog/constraint-solver-simple-graph-coloring)
-- [Comarison with MIP using graph coloring](https://opensourc.es/blog/constraint-solver-mip-graph-coloring)
-- [Documentation with Documenter.jl and newest Benchmarking results](https://opensourc.es/blog/constraint-solver-docs-and-benchmarks)
-- [How to profile Julia code](https://opensourc.es/blog/constraint-solver-profiling)
-- [Second take on bipartite matchings](https://opensourc.es/blog/constraint-solver-bipartite-matching)
-- [Making it a JuMP solver](https://opensourc.es/blog/constraint-solver-jump)
-- [Dealing with real objectives](https://opensourc.es/blog/constraint-solver-floats)
-- [Support for linear objectives](https://opensourc.es/blog/constraint-solver-linear-objective)
-- [Table logging](https://opensourc.es/blog/table-logging)
-- [Bound computation](https://opensourc.es/blog/constraint-solver-bounds)
-- [v0.1.0](https://opensourc.es/blog/constraint-solver-v0.1.0)
-- [Table Constraint](https://opensourc.es/blog/constraint-solver-table-constraint)
-- [Solving Str8ts](https://opensourc.es/blog/constraint-solver-str8ts)
-- [Bugs & Benchmarks](https://opensourc.es/blog/constraint-solver-bugs-and-benchmarks/)
-- [Indicator constraint](https://opensourc.es/blog/constraint-solver-indicator/)
-- [Indicator constraint Part 2](https://opensourc.es/blog/constraint-solver-indicator-2/)
+If you're interested in how the solver works you can checkout my blog [opensourc.es](https://opensourc.es). There are currently around 30 blog posts about the constraint solver and a new one is added about once per month.
 
 ## Notice
 I'm a MSc student in computer science so I don't have much knowledge on how constraint programming works but I'm keen to find out ;)
 
 ## Support
 If you find a bug or improvement please open an issue or make a pull request. 
-You just enjoy reading and want to see more posts and get them earlier? Support me on [Patreon](https://www.patreon.com/opensources) or click on the support button at the top of this website. ;)
+Additionally if you use the solver regularly or are interested in further development please checkout my [Patreon](https://www.patreon.com/opensources) page or click on the support button at the top of this website. ;)
