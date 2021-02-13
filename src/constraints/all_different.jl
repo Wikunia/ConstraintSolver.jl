@@ -364,7 +364,7 @@ function prune_constraint!(
     end
 
     new_vertex = num_nodes + 1
-    used_in_maximum_matching = zeros(Bool, length(pvals))
+    used_in_maximum_matching = zeros(Bool, len_range)
     @inbounds for pv in pvals
         vc = 0
         for i in indices

@@ -2,6 +2,7 @@
  
 ## Unreleased
 - Bugfix in reified `still_feasible` when setting to inactive
+- Bugfix in alldifferent constraint when there is a gap in the values
 - Support for `And` constraints in the inner constraints of `Indicator` and `Reified`:
     i.e `b := { sum(x) >= 10 && x in CS.AllDifferentSet() }`
 - Support for `Or` constraints in the inner constraints of `Indicator` and `Reified`:
