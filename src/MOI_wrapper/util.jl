@@ -67,3 +67,32 @@ function get_inner_constraint(vars::MOI.VectorOfVariables, set::Union{ReifiedSet
     )
     return init_constraint_struct(set.set, inner_internals)
 end
+
+"""
+    move_element_constraint(model)
+
+If there are element constraints which are only used inside of an indicator or reified constraint
+=> combine them with `&&` and deactive the previously added element constraint
+    this is to avoid filtering based on this element constraint when the inner constraint isn't active
+"""
+function move_element_constraint(model)
+    com = model.inner
+    constraints = com.constraints
+    subscriptions = com.subscription
+    for constraint in constraints
+        if constraint isa Element1DConstConstraint
+            element_var = constraint.indices[1]
+
+            # check if the element var only appears in indicator or reified constraints
+            only_inside = true
+            for element_cons in constraints[subscriptions[element_var]]
+                if !(element_cons isa IndicatorConstraint) && !(element_cons isa ReifiedConstraint) && !(element_cons isa Element1DConstConstraint)
+                    only_inside = false
+                end
+            end
+            !only_inside && continue
+            constraint.is_deactivated = true
+            # Todo: Move into `AndConstraint`
+        end
+    end
+end

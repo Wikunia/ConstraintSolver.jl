@@ -79,6 +79,7 @@ set_impl_functions!(com, constraint::Constraint)
 Set std.impl.[] for each constraint
 """
 function set_impl_functions!(com, constraint::Constraint)
+    constraint.is_deactivated && return
     if com.sense != MOI.FEASIBILITY_SENSE
         set_impl_update_best_bound!(constraint)
     end

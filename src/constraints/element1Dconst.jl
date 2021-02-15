@@ -22,6 +22,8 @@ function init_constraint!(
     set::Element1DConstInner;
     active = true,
 )
+    println("init element constraint?")
+    @show active
     # Assume z == T[y]
     pvals = constraint.pvals
 
@@ -36,15 +38,19 @@ function init_constraint!(
 
     # Remove values of y which are out of bounds
     # Assume normal indexing
-    !remove_below!(com, y, 1) && return false
-    !remove_above!(com, y, length(set.array)) && return false
+    if active
+        !remove_below!(com, y, 1) && return false
+        !remove_above!(com, y, length(set.array)) && return false
+    end
 
     T = set.array
 
     # initial filtering for y
-    for val in CS.values(y)
-        if !(has(z, T[val]))
-            !rm!(com, y, val) && return false
+    if active
+        for val in CS.values(y)
+            if !(has(z, T[val]))
+                !rm!(com, y, val) && return false
+            end
         end
     end
 
@@ -53,10 +59,12 @@ function init_constraint!(
     calculate_zSupp!(constraint, set)
 
     # for each value v in values(z):
-    for val in CS.values(z)
-        val_shifted = val - z.lower_bound + 1
-        if zSupp[val_shifted] == 0
-            !rm!(com, z, val) && return false
+    if active 
+        for val in CS.values(z)
+            val_shifted = val - z.lower_bound + 1
+            if zSupp[val_shifted] == 0
+                !rm!(com, z, val) && return false
+            end
         end
     end
     return true
