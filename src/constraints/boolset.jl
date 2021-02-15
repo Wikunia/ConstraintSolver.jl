@@ -41,3 +41,92 @@ function bool_constraint(::OrSet, internals, lhs, rhs)
     )
 end
 
+function single_reverse_pruning_constraint!(
+    com::CoM,
+    constraint::BoolConstraint,
+    fct::VAF{T},
+    set::BoolSet,
+    var::Variable,
+    backtrack_idx::Int,
+) where {
+    T<:Real,
+}
+    for inner_constraint in (constraint.lhs, constraint.rhs)
+        # the variable must be part of the inner constraint
+        # Todo: Speed up the `in` here
+        if inner_constraint.impl.single_reverse_pruning && var.idx in inner_constraint.indices
+            single_reverse_pruning_constraint!(
+                com,
+                inner_constraint,
+                inner_constraint.fct,
+                inner_constraint.set,
+                var,
+                backtrack_idx,
+            )
+        end
+    end
+end
+
+function reverse_pruning_constraint!(
+    com::CoM,
+    constraint::BoolConstraint,
+    fct::VAF{T},
+    set::BoolSet,
+    backtrack_id::Int,
+) where {
+    T<:Real,
+}
+    for inner_constraint in (constraint.lhs, constraint.rhs)
+        if inner_constraint.impl.reverse_pruning
+            reverse_pruning_constraint!(
+                com,
+                inner_constraint,
+                inner_constraint.fct,
+                inner_constraint.set,
+                backtrack_id,
+            )
+        end
+    end
+end
+
+function restore_pruning_constraint!(
+    com::CoM,
+    constraint::BoolConstraint,
+    fct::VAF{T},
+    set::BoolSet,
+    prune_steps::Union{Int,Vector{Int}},
+) where {
+    T<:Real,
+}
+    for inner_constraint in (constraint.lhs, constraint.rhs)
+        if inner_constraint.impl.restore_pruning
+            restore_pruning_constraint!(
+                com,
+                inner_constraint,
+                inner_constraint.fct,
+                inner_constraint.set,
+                prune_steps,
+            )
+        end
+    end
+end
+
+function finished_pruning_constraint!(
+    com::CS.CoM,
+    constraint::BoolConstraint,
+    fct::VAF{T},
+    set::BoolSet,
+) where {
+    T<:Real,
+}
+    for inner_constraint in (constraint.lhs, constraint.rhs)
+        if inner_constraint.impl.finished_pruning
+            finished_pruning_constraint!(
+                com,
+                inner_constraint,
+                inner_constraint.fct,
+                inner_constraint.set,
+            )
+        end
+    end
+end
