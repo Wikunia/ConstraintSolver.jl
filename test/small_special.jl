@@ -793,4 +793,54 @@
         @test JuMP.objective_value(m) ≈ sum([4,3,4,3,2])
     end 
 
+    @testset "Small test case for && and TableSet" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "logging" => [],
+            "all_solutions" => true
+        ))
+        @variable(m, x[1:2], Bin)
+        @variable(m, y[1:2], Bin)
+        xor = [
+            0 1;
+            1 0;
+        ]
+        and = [
+            1 1;
+        ]
+        @constraint(m, (x in CS.TableSet(xor) || y in CS.TableSet(and)))
+
+        optimize!(m)
+
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+
+        # x = 0 1 | y = 00 / 01 / 10 / 11
+        # x = 1 0 | y = 00 / 01 / 10 / 11
+        # y = 1 1 | x = 00 / 11 <- without double counting
+        num_sols = MOI.get(m, MOI.ResultCount())
+        @test num_sols == 10
+
+        sets = [
+            [0, 1, 0, 0],
+            [0, 1, 0, 1],
+            [0, 1, 1, 0],
+            [0, 1, 1, 1],
+            [1, 0, 0, 0],
+            [1, 0, 0, 1],
+            [1, 0, 1, 0],
+            [1, 0, 1, 1],
+            [0, 0, 1, 1],
+            [1, 1, 1, 1]
+        ]
+        for i in 1:10
+            found = false
+            for j in 1:10
+                if JuMP.value.([x...,y...]; result=j) == sets[i]
+                    found = true
+                    break
+                end
+            end
+            @test found
+        end
+    end 
 end

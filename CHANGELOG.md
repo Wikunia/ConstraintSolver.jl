@@ -1,5 +1,10 @@
 # ConstrainSolver.jl - Changelog
  
+## Unreleased
+- Bugfix in `Or` constraint outside indicator and reified when the constraint removes values when initialized
+- Bugfix in bool constraints for constraints that implement reverse pruning functions
+
+
 ## v0.6.4 (13th of February 2021)
 - Bugfix in reified `still_feasible` when setting to inactive
 - Bugfix in alldifferent constraint when there is a gap in the values
