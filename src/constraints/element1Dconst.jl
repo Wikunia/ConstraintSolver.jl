@@ -22,8 +22,6 @@ function init_constraint!(
     set::Element1DConstInner;
     active = true,
 )
-    println("init element constraint?")
-    @show active
     # Assume z == T[y]
     pvals = constraint.pvals
 
@@ -52,14 +50,11 @@ function init_constraint!(
                 !rm!(com, y, val) && return false
             end
         end
-    end
 
-    # initial filtering for z
-    zSupp = constraint.zSupp
-    calculate_zSupp!(constraint, set)
-
-    # for each value v in values(z):
-    if active 
+        # initial filtering for z
+        zSupp = constraint.zSupp
+        calculate_zSupp!(constraint, set)
+        # for each value v in values(z):
         for val in CS.values(z)
             val_shifted = val - z.lower_bound + 1
             if zSupp[val_shifted] == 0
@@ -224,7 +219,7 @@ function calculate_zSupp!(constraint, set)
     z = constraint.z
     y = constraint.y
     T = set.array
-        
+
     # for each value v in values(z):
     for val in CS.values(z)
         # zSupp(v) = |{i in D(y): T[i]=z}| 
