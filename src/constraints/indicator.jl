@@ -301,7 +301,7 @@ function single_reverse_pruning_constraint!(
     inner_constraint = constraint.inner_constraint
     # the variable must be part of the inner constraint
     if inner_constraint.impl.single_reverse_pruning &&
-       (var.idx != constraint.indices[1] || constraint.indicator_in_inner)
+       (var.idx != constraint.indices[1] || constraint.activator_in_inner)
         single_reverse_pruning_constraint!(
             com,
             inner_constraint,

@@ -67,3 +67,7 @@ function get_inner_constraint(vars::MOI.VectorOfVariables, set::Union{ReifiedSet
     )
     return init_constraint_struct(set.set, inner_internals)
 end
+
+function get_activator_internals(A, indices)
+    ActivatorConstraintInternals(A, indices[1] in indices[2:end], false, 0)
+end

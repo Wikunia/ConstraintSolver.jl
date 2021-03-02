@@ -479,19 +479,26 @@ mutable struct GeqSetConstraint <: Constraint
     sub_constraint_idxs::Vector{Int}
 end
 
-mutable struct IndicatorConstraint{C<:Constraint} <: Constraint
-    std::ConstraintInternals
+abstract type ActivatorConstraint <: Constraint end
+
+mutable struct ActivatorConstraintInternals
     activate_on::MOI.ActivationCondition
-    inner_constraint::C
-    indicator_in_inner::Bool # is the indicator variable also in the inner constraint
+    activator_in_inner::Bool
+    inner_activated::Bool
+    activated_in_backtrack_idx::Int
 end
 
-mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <: Constraint
+mutable struct IndicatorConstraint{C<:Constraint} <: ActivatorConstraint
     std::ConstraintInternals
-    activate_on::MOI.ActivationCondition
+    act_std::ActivatorConstraintInternals
+    inner_constraint::C
+end
+
+mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <: ActivatorConstraint
+    std::ConstraintInternals
+    act_std::ActivatorConstraintInternals
     inner_constraint::C
     anti_constraint::AC
-    reified_in_inner::Bool # is the reified variable also in the inner constraint
 end
 
 #====================================================================================

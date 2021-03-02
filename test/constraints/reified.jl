@@ -63,7 +63,7 @@
         @test JuMP.value(x) ≈ 5
         @test JuMP.value(y) ≈ 4
         com = CS.get_inner_model(m)
-        @test !com.constraints[1].reified_in_inner
+        @test !com.constraints[1].activator_in_inner
         @test is_solved(com)
     end
 

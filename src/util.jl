@@ -148,6 +148,61 @@ end
     end
 end
 
+#=
+    Access standard ActivatorConstraintInternals without using .act_std syntax
+=#
+@inline function Base.getproperty(c::ActivatorConstraint, s::Symbol)
+    if s in (
+        :idx,
+        :indices,
+        :fct,
+        :set,
+        :pvals,
+        :impl,
+        :is_initialized,
+        :is_deactivated,
+        :bound_rhs,
+    )
+        Core.getproperty(Core.getproperty(c, :std), s)
+    elseif s in (
+        :activate_on,
+        :activator_in_inner,
+        :inner_activated,
+        :sactivated_in_backtrack_idxet,
+    )
+        Core.getproperty(Core.getproperty(c, :act_std), s)
+    else
+        getfield(c, s)
+    end
+end
+
+@inline function Base.setproperty!(c::ActivatorConstraint, s::Symbol, v)
+    if s in (
+        :idx,
+        :indices,
+        :fct,
+        :set,
+        :pvals,
+        :impl,
+        :is_initialized,
+        :is_deactivated,
+        :bound_rhs,
+    )
+        Core.setproperty!(c.std, s, v)
+    elseif s in (
+        :activate_on,
+        :activator_in_inner,
+        :inner_activated,
+        :activated_in_backtrack_idx,
+    )
+        Core.setproperty!(c.act_std, s, v)
+    else
+        Core.setproperty!(c, s, v)
+    end
+end
+
+
+
 """
     Return whether the given LinearConstraint doesn't contain any variables i.e for 0 <= 0
 """

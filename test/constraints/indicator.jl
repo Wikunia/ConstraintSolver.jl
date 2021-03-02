@@ -13,7 +13,7 @@
         @test JuMP.value(x) ≈ 4
         @test JuMP.value(y) ≈ 3
         com = CS.get_inner_model(m)
-        @test !com.constraints[1].indicator_in_inner
+        @test !com.constraints[1].activator_in_inner
         @test is_solved(com)
     end
 
@@ -141,7 +141,7 @@
         num_indicator = 0
         for i in 1:length(com.constraints)
             if com.constraints[i] isa CS.IndicatorConstraint
-                @test com.constraints[i].indicator_in_inner
+                @test com.constraints[i].activator_in_inner
                 num_indicator += 1
             end
         end
