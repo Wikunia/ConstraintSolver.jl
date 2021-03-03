@@ -3,8 +3,7 @@ function init_constraint_struct(::GeqSetInternal, internals)
 end
 
 """
-    init_constraint!(com::CS.CoM, constraint::GeqSetConstraint, fct::MOI.VectorOfVariables, set::GeqSetInternal;
-                     active = true)
+    init_constraint!(com::CS.CoM, constraint::GeqSetConstraint, fct::MOI.VectorOfVariables, set::GeqSetInternal)
 
 Initialize the GeqSetConstraint by filling `sub_constraint_idxs` with all constraints
 which variables are fully included in this constraint.
@@ -14,7 +13,6 @@ function init_constraint!(
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,
     set::GeqSetInternal;
-    active = true,
 )
     for other_constraint in com.constraints
         if other_constraint.indices ⊆ constraint.indices[2:end]

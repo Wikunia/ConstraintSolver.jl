@@ -471,9 +471,11 @@ function MOI.add_constraint(
         indices,
     )
 
+    activator_internals = get_activator_internals(A, indices)
+
     lc = get_inner_constraint(func, set, set.set)
 
-    constraint = IndicatorConstraint(internals, A, lc, indices[1] in indices[2:end])
+    constraint = IndicatorConstraint(internals, activator_internals, lc)
 
     add_constraint!(model, constraint)
 
@@ -493,8 +495,9 @@ function MOI.add_constraint(
     inner_constraint = get_inner_constraint(vars, set, set.set)
 
     indices = internals.indices
+    activator_internals = get_activator_internals(A, indices)
     constraint =
-        IndicatorConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
+        IndicatorConstraint(internals, activator_internals, inner_constraint)
 
     add_constraint!(model, constraint)
 
@@ -514,8 +517,11 @@ function MOI.add_constraint(
 
     inner_constraint = get_inner_constraint(func, set, set.set)
     indices = internals.indices
+
+    activator_internals = get_activator_internals(A, indices)
+
     constraint =
-        IndicatorConstraint(internals, A, inner_constraint, indices[1] in indices[2:end])
+        IndicatorConstraint(internals, activator_internals, inner_constraint)
 
     add_constraint!(model, constraint)
 
@@ -542,7 +548,9 @@ function MOI.add_constraint(
     # for normal linear constraints
     lc = get_inner_constraint(func, set, set.set)
     anti_lc = get_anti_constraint(model, lc)
-    constraint = ReifiedConstraint(internals, A, lc, anti_lc, indices[1] in indices[2:end])
+
+    activator_internals = get_activator_internals(A, indices)
+    constraint = ReifiedConstraint(internals, activator_internals, lc, anti_lc)
 
     add_constraint!(model, constraint)
 
@@ -561,8 +569,9 @@ function MOI.add_constraint(
     inner_constraint = get_inner_constraint(vars, set, set.set)
     anti_constraint = get_anti_constraint(model, inner_constraint)
     indices = internals.indices
+    activator_internals = get_activator_internals(A, indices)
     constraint =
-        ReifiedConstraint(internals, A, inner_constraint, anti_constraint, indices[1] in indices[2:end])
+        ReifiedConstraint(internals, activator_internals, inner_constraint, anti_constraint)
 
     add_constraint!(model, constraint)
 
@@ -582,8 +591,9 @@ function MOI.add_constraint(
     inner_constraint = get_inner_constraint(func, set, set.set)
     anti_constraint = get_anti_constraint(model, inner_constraint)
     indices = internals.indices
+    activator_internals = get_activator_internals(A, indices)
     constraint =
-        ReifiedConstraint(internals, A, inner_constraint, anti_constraint, indices[1] in indices[2:end])
+        ReifiedConstraint(internals, activator_internals, inner_constraint, anti_constraint)
 
     add_constraint!(model, constraint)
 

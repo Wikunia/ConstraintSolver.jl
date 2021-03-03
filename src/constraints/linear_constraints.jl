@@ -66,8 +66,7 @@ function get_rhs_from_strictly(com::CS.CoM, constraint::LinearConstraint,
 end
 
 """
-    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::Strictly{MOI.LessThan{T}};
-                     active = true)
+    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::Strictly{MOI.LessThan{T}})
 
 Initialize the LinearConstraint by checking whether it might be an unfillable constraint
 without variable i.e x == x-1 => x -x == -1 => 0 == -1 => return false
@@ -77,7 +76,6 @@ function init_constraint!(
     constraint::CS.LinearConstraint,
     fct::SAF{T},
     set::Strictly{T, MOI.LessThan{T}};
-    active = true,
 ) where {T<:Real}
     # rhs will be changed to use as <=
     constraint.rhs = get_rhs_from_strictly(com, constraint, fct, set)
@@ -89,8 +87,7 @@ function init_constraint!(
 end
 
 """
-    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::MOI.LessThan{T};
-                     active = true)
+    init_constraint!(com::CS.CoM, constraint::CS.LinearConstraint,fct::SAF{T}, set::MOI.LessThan{T})
 
 Initialize the LinearConstraint by checking whether it might be an unfillable constraint
 without variable i.e x == x-1 => x -x == -1 => 0 == -1 => return false
@@ -100,11 +97,9 @@ function init_constraint!(
     constraint::CS.LinearConstraint,
     fct::SAF{T},
     set::MOI.LessThan{T};
-    active = true,
 ) where {T<:Real}
     constraint.rhs = set.upper - fct.constant
     is_no_variable_constraint(constraint) && return fct.constant <= set.upper
-
     return true
 end
 
@@ -113,11 +108,9 @@ function init_constraint!(
     constraint::CS.LinearConstraint,
     fct::SAF{T},
     set::MOI.EqualTo{T};
-    active = true,
 ) where {T<:Real}
     constraint.rhs = set.value - fct.constant
     is_no_variable_constraint(constraint) && return fct.constant == set.value
-
     return true
 end
 

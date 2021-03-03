@@ -16,8 +16,7 @@ function init_constraint_struct(::AllDifferentSetInternal, internals)
 end
 
 """
-    init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal;
-                     active = true)
+    init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal)
 
 Initialize the AllDifferentConstraint by filling matching_init
 """
@@ -25,8 +24,7 @@ function init_constraint!(
     com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSetInternal;
-    active = true,
+    set::AllDifferentSetInternal
 )
     pvals = constraint.pvals
     nindices = length(constraint.indices)
