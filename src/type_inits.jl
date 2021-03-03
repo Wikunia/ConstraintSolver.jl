@@ -33,6 +33,7 @@ function ConstraintInternals(cidx::Int, fct, set, indices::Vector{Int})
         ImplementedConstraintFunctions(),
         false,
         false,
+        false,
         Vector{BoundRhsVariable}(undef, 0),
     )
 end

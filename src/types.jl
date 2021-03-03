@@ -368,6 +368,7 @@ end
 
 mutable struct ImplementedConstraintFunctions
     init::Bool
+    activate::Bool
     update_init::Bool
     finished_pruning::Bool
     restore_pruning::Bool
@@ -387,6 +388,7 @@ mutable struct ConstraintInternals{
     pvals::Vector{Int}
     impl::ImplementedConstraintFunctions
     is_initialized::Bool
+    is_activated::Bool
     is_deactivated::Bool # can be deactivated if it's absorbed by other constraints
     bound_rhs::Vector{BoundRhsVariable}# should be set if `update_best_bound` is true
 end

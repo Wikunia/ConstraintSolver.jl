@@ -29,7 +29,7 @@
         com = CS.get_inner_model(m)
         constraint = com.constraints[1]
 
-        feasible = CS.init_constraint!(
+        feasible = CS.init_and_activate_constraint!(
             com,
             constraint,
             MOI.VectorOfVariables([x, y, z]),
@@ -78,7 +78,7 @@
         com = CS.get_inner_model(m)
         constraint = com.constraints[1]
 
-        feasible = CS.init_constraint!(
+        feasible = CS.init_and_activate_constraint!(
             com,
             constraint,
             MOI.VectorOfVariables([x, y, z]),
@@ -145,7 +145,7 @@
         com = CS.get_inner_model(m)
         constraint = com.constraints[1]
 
-        feasible = CS.init_constraint!(
+        feasible = CS.init_and_activate_constraint!(
             com,
             constraint,
             MOI.VectorOfVariables([x, y, z]),
@@ -190,7 +190,7 @@
         com = CS.get_inner_model(m)
         constraint = com.constraints[1]
 
-        feasible = CS.init_constraint!(
+        feasible = CS.init_and_activate_constraint!(
             com,
             constraint,
             MOI.VectorOfVariables([x, y, z]),
@@ -247,7 +247,7 @@
         com = CS.get_inner_model(m)
         constraint = com.constraints[1]
 
-        feasible = CS.init_constraint!(
+        feasible = CS.init_and_activate_constraint!(
             com,
             constraint,
             MOI.VectorOfVariables([x, y, z]),
@@ -333,7 +333,7 @@
         constraint = com.constraints[1]
         constraint2 = com.constraints[2]
 
-        feasible = CS.init_constraint!(
+        feasible = CS.init_and_activate_constraint!(
             com,
             constraint,
             MOI.VectorOfVariables([x, y, z]),
@@ -341,7 +341,7 @@
         )
         @test feasible
 
-        feasible = CS.init_constraint!(
+        feasible = CS.init_and_activate_constraint!(
             com,
             constraint2,
             MOI.VectorOfVariables([x, y, z]),
@@ -438,7 +438,7 @@
         constraint2 = com.constraints[2]
         constraint3 = com.constraints[3]
 
-        feasible = CS.init_constraint!(
+        feasible = CS.init_and_activate_constraint!(
             com,
             constraint,
             MOI.VectorOfVariables([x, y, z]),
@@ -446,7 +446,7 @@
         )
         @test feasible
 
-        feasible = CS.init_constraint!(
+        feasible = CS.init_and_activate_constraint!(
             com,
             constraint2,
             MOI.VectorOfVariables([y, z, a]),
@@ -454,7 +454,7 @@
         )
         @test feasible
 
-        feasible = CS.init_constraint!(
+        feasible = CS.init_and_activate_constraint!(
             com,
             constraint3,
             MOI.VectorOfVariables([a, b, c]),

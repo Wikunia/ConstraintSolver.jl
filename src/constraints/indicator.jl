@@ -32,8 +32,7 @@ function init_constraint!(
             com,
             inner_constraint,
             inner_constraint.fct,
-            inner_constraint.set;
-            active = false,
+            inner_constraint.set
         )
         # map the bounds to the indicator constraint
         constraint.bound_rhs = inner_constraint.bound_rhs

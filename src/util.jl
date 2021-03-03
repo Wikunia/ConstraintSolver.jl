@@ -121,6 +121,7 @@ end
         :pvals,
         :impl,
         :is_initialized,
+        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -139,6 +140,7 @@ end
         :pvals,
         :impl,
         :is_initialized,
+        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -160,6 +162,7 @@ end
         :pvals,
         :impl,
         :is_initialized,
+        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -185,6 +188,7 @@ end
         :pvals,
         :impl,
         :is_initialized,
+        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -235,4 +239,22 @@ end
 
 function get_vov(fct::MOI.VectorAffineFunction)
     return MOI.VectorOfVariables([t.scalar_term.variable_index for t in fct.terms])
+end
+
+"""
+    init_and_activate_constraint!(com, constraint, fct, set)
+
+Initializes and activates the constraint. Does **not** check whether the functions are implemented.
+"""
+function init_and_activate_constraint!(
+    com::CS.CoM,
+    constraint::Constraint,
+    fct,
+    set
+)
+    !init_constraint!(com, constraint, fct, set) && return false
+    constraint.is_initialized = true
+    !activate_constraint!(com, constraint, fct, set) && return false
+    constraint.is_activated = true
+    return true
 end
