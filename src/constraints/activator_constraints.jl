@@ -1,3 +1,9 @@
+"""
+    activate_inner!(com, constraint::ActivatorConstraint)
+
+Activate the inner constraint of `constraint` when not activated yet.
+Saves at which stage it was activated.
+"""
 function activate_inner!(com, constraint::ActivatorConstraint)
     inner_constraint = constraint.inner_constraint
     if !constraint.inner_activated && inner_constraint.impl.activate 
@@ -8,6 +14,12 @@ function activate_inner!(com, constraint::ActivatorConstraint)
     return true
 end
 
+"""
+    activate_anti_inner!(com, constraint::ActivatorConstraint)
+
+Activate the anti constraint of `constraint` when not activated yet.
+Saves at which stage it was activated.
+"""
 function activate_anti_inner!(com, constraint::ActivatorConstraint)
     anti_constraint = constraint.anti_constraint
     if !constraint.anti_inner_activated && anti_constraint.impl.activate 
