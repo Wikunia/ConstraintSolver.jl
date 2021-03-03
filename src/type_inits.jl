@@ -111,6 +111,10 @@ function LinearConstraint(
     return lc
 end
 
+function ReifiedConstraint(std, act_std, inner_constraint, anti_constraint)
+    return ReifiedConstraint(std, act_std, inner_constraint, anti_constraint, false, 0)
+end
+
 """
     ConstraintSolverModel(T::DataType=Float64)
 

@@ -1,3 +1,23 @@
+function activate_inner!(com, constraint::ActivatorConstraint)
+    inner_constraint = constraint.inner_constraint
+    if !constraint.inner_activated && inner_constraint.impl.activate 
+        !activate_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set) && return false
+        constraint.inner_activated = true
+        constraint.inner_activated_in_backtrack_idx = com.c_backtrack_idx
+    end
+    return true
+end
+
+function activate_anti_inner!(com, constraint::ActivatorConstraint)
+    anti_constraint = constraint.anti_constraint
+    if !constraint.anti_inner_activated && anti_constraint.impl.activate 
+        !activate_constraint!(com, anti_constraint, anti_constraint.fct, anti_constraint.set) && return false
+        constraint.anti_inner_activated = true
+        constraint.anti_inner_activated_in_backtrack_idx = com.c_backtrack_idx
+    end
+    return true
+end
+
 """
     update_best_bound_constraint!(com::CS.CoM,
         constraint::ActivatorConstraint,
@@ -15,7 +35,7 @@ This method calls the inner_constraint method if it exists and the indicator is 
 """
 function update_best_bound_constraint!(
     com::CS.CoM,
-    constraint::IndicatorConstraint,
+    constraint::ActivatorConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
     set,
     vidx::Int,
@@ -84,6 +104,18 @@ function reverse_pruning_constraint!(
 ) where {
     T<:Real,
 }
+    # check if inner constraint should be deactived again
+    if constraint.inner_activated && backtrack_id == constraint.inner_activated_in_backtrack_idx
+        constraint.inner_activated = false
+        constraint.inner_activated_in_backtrack_idx = 0
+    end
+    if constraint isa ReifiedConstraint 
+        if constraint.anti_inner_activated && backtrack_id == constraint.anti_inner_activated_in_backtrack_idx
+            constraint.anti_inner_activated = false
+            constraint.anti_inner_activated_in_backtrack_idx = 0
+        end
+    end
+
     inner_constraint = constraint.inner_constraint
     if inner_constraint.impl.reverse_pruning
         reverse_pruning_constraint!(

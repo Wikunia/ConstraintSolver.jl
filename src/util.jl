@@ -171,7 +171,7 @@ end
         :activate_on,
         :activator_in_inner,
         :inner_activated,
-        :sactivated_in_backtrack_idxet,
+        :inner_activated_in_backtrack_idx,
     )
         Core.getproperty(Core.getproperty(c, :act_std), s)
     else
@@ -197,7 +197,7 @@ end
         :activate_on,
         :activator_in_inner,
         :inner_activated,
-        :activated_in_backtrack_idx,
+        :inner_activated_in_backtrack_idx,
     )
         Core.setproperty!(c.act_std, s, v)
     else

@@ -74,6 +74,7 @@ function prune_constraint!(
         !fix!(com, variables[rei_vidx], activate_off) && return false
         # 3
     elseif issetto(variables[rei_vidx], activate_on)
+        !activate_inner!(com, constraint) && return false
         return prune_constraint!(
             com,
             inner_constraint,
@@ -81,6 +82,7 @@ function prune_constraint!(
             inner_constraint.set,
         )
     elseif issetto(variables[rei_vidx], activate_off) && anti_constraint !== nothing
+        !activate_anti_inner!(com, constraint) && return false
         return prune_constraint!(
             com,
             anti_constraint,

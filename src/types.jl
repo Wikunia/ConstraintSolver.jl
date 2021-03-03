@@ -487,7 +487,7 @@ mutable struct ActivatorConstraintInternals
     activate_on::MOI.ActivationCondition
     activator_in_inner::Bool
     inner_activated::Bool
-    activated_in_backtrack_idx::Int
+    inner_activated_in_backtrack_idx::Int
 end
 
 mutable struct IndicatorConstraint{C<:Constraint} <: ActivatorConstraint
@@ -501,6 +501,8 @@ mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <
     act_std::ActivatorConstraintInternals
     inner_constraint::C
     anti_constraint::AC
+    anti_inner_activated::Bool
+    anti_inner_activated_in_backtrack_idx::Int
 end
 
 #====================================================================================

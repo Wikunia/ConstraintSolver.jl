@@ -76,9 +76,11 @@ function prune_constraint!(
     indicator_var = search_space[indicator_vidx]
     # still feasible but nothing to prune
     !isfixed(indicator_var) && return true
-    # if active
-    CS.value(indicator_var) != Int(constraint.activate_on) && return true
+
     inner_constraint = constraint.inner_constraint
+    # check if active
+    CS.value(indicator_var) != Int(constraint.activate_on) && return true
+    !activate_inner!(com, constraint) && return false
     return prune_constraint!(
         com,
         inner_constraint,
