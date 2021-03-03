@@ -41,6 +41,39 @@ function bool_constraint(::OrSet, internals, lhs, rhs)
     )
 end
 
+
+"""
+    activate_lhs!(com, constraint::BoolConstraint)
+
+Activate the lhs constraint of `constraint` when not activated yet.
+Saves at which stage it was activated.
+"""
+function activate_lhs!(com, constraint::BoolConstraint)
+    lhs = constraint.lhs
+    if !constraint.lhs_activated && lhs.impl.activate 
+        !activate_constraint!(com, lhs, lhs.fct, lhs.set) && return false
+        constraint.lhs_activated = true
+        constraint.lhs_activated_in_backtrack_idx = com.c_backtrack_idx
+    end
+    return true
+end
+
+"""
+    activate_rhs!(com, constraint::BoolConstraint)
+
+Activate the rhs constraint of `constraint` when not activated yet.
+Saves at which stage it was activated.
+"""
+function activate_rhs!(com, constraint::BoolConstraint)
+    rhs = constraint.rhs
+    if !constraint.rhs_activated && rhs.impl.activate 
+        !activate_constraint!(com, rhs, rhs.fct, rhs.set) && return false
+        constraint.rhs_activated = true
+        constraint.rhs_activated_in_backtrack_idx = com.c_backtrack_idx
+    end
+    return true
+end
+
 function single_reverse_pruning_constraint!(
     com::CoM,
     constraint::BoolConstraint,
@@ -76,6 +109,16 @@ function reverse_pruning_constraint!(
 ) where {
     T<:Real,
 }
+    # check if inner constraint should be deactived again
+    if constraint.lhs_activated && backtrack_id == constraint.lhs_activated_in_backtrack_idx
+        constraint.lhs_activated = false
+        constraint.lhs_activated_in_backtrack_idx = 0
+    end
+    if constraint.rhs_activated && backtrack_id == constraint.rhs_activated_in_backtrack_idx
+        constraint.rhs_activated = false
+        constraint.rhs_activated_in_backtrack_idx = 0
+    end
+
     for inner_constraint in (constraint.lhs, constraint.rhs)
         if inner_constraint.impl.reverse_pruning
             reverse_pruning_constraint!(
