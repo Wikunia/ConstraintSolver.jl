@@ -33,6 +33,7 @@ function ConstraintInternals(cidx::Int, fct, set, indices::Vector{Int})
         ImplementedConstraintFunctions(),
         false,
         false,
+        false,
         Vector{BoundRhsVariable}(undef, 0),
     )
 end
@@ -108,6 +109,10 @@ function LinearConstraint(
         pre_maxs,
     )
     return lc
+end
+
+function ReifiedConstraint(std, act_std, inner_constraint, anti_constraint)
+    return ReifiedConstraint(std, act_std, inner_constraint, anti_constraint, false, 0)
 end
 
 """

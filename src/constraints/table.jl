@@ -18,16 +18,14 @@ function init_constraint_struct(::TableSetInternal, internals)
 end
 
 """
-    init_constraint!(com::CS.CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal;
-                    active = true)
+    init_constraint!(com::CS.CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal)
 
 """
 function init_constraint!(
     com::CS.CoM,
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
-    set::TableSetInternal;
-    active = true,
+    set::TableSetInternal
 )
     table = set.table
     num_pos_rows = size(table, 1)
@@ -55,16 +53,13 @@ function init_constraint!(
         row_sums = sum(table[possible_rows, :]; dims = 2)[:, 1]
         local_sort_perm = sortperm(row_sums)
         row_sums = row_sums[local_sort_perm]
-        # initial bounds for sum(variables[indices])
-        table_min = row_sums[1]
-        table_max = row_sums[end]
-        # if not active (inside an indicator constraint)
-        # don't have any bounds
-        if !active
-            table_min = typemin(Int)
-            table_max = typemax(Int)
-        end
         pos_rows_idx = pos_rows_idx[local_sort_perm]
+        # initial bounds for sum(variables[indices])
+
+        # currently the constraint can be inactive. Bounds will be set in activate_constraint!
+        table_min = typemin(Int)
+        table_max = typemax(Int)
+        
 
         lp_backend = backend(com.lp_model)
         lp_vidx =
@@ -135,32 +130,6 @@ function init_constraint!(
         end
     end
 
-    # check if a support column is completely zero
-    # that means that the variable corresponding to that column can't have the value corresponding to the column
-    feasible = true
-    if active
-        for c in 1:num_supports
-            if all(i -> i == UInt64(0), support.values[:, c])
-                # getting the correct index in indices
-                var_i = 1
-                while support.var_start[var_i] <= c
-                    var_i += 1
-                end
-                var_i -= 1
-                val_i = c - support.var_start[var_i] + 1
-                var = indices[var_i]
-                val = search_space[var].init_vals[val_i]
-                if has(search_space[var], val)
-                    feasible = rm!(com, search_space[var], val)
-                    if !feasible
-                        break
-                    end
-                end
-            end
-        end
-    end
-    !feasible && return false
-
     # define residues
     residues = constraint.residues
     residues.var_start = copy(support.var_start)
@@ -173,8 +142,49 @@ function init_constraint!(
 
     # define last_sizes
     constraint.last_sizes = [CS.nvalues(com.search_space[vidx]) for vidx in indices]
+    return true
+end
+
+function activate_constraint!(
+    com::CS.CoM,
+    constraint::TableConstraint,
+    fct::MOI.VectorOfVariables,
+    set::TableSetInternal
+)
+    search_space = com.search_space
+    indices = constraint.indices
+    support = constraint.supports
+
+    num_supports = support.var_start[end] - 1
+    # check if a support column is completely zero
+    # that means that the variable corresponding to that column can't have the value corresponding to the column
+    feasible = true
+    for c in 1:num_supports
+        if all(i -> i == UInt64(0), support.values[:, c])
+            # getting the correct index in indices
+            var_i = 1
+            while support.var_start[var_i] <= c
+                var_i += 1
+            end
+            var_i -= 1
+            val_i = c - support.var_start[var_i] + 1
+            var = indices[var_i]
+            val = search_space[var].init_vals[val_i]
+            if has(search_space[var], val)
+                feasible = rm!(com, search_space[var], val)
+                if !feasible
+                    break
+                end
+            end
+        end
+    end
+
+    # vidx = 0 such that the current best bound is computed not the one when limiting vidx to something
+    update_best_bound_constraint!(com, constraint, fct, set, 0, 0, 0)
     return feasible
 end
+
+
 
 function update_table(com::CoM, constraint::TableConstraint)
     current = constraint.current
@@ -367,7 +377,7 @@ end
     )
 
 Update the bound constraint associated with this constraint. This means that the `bound_rhs` bounds will be changed according to
-the possible values the table constraint allows. `vidx`, `lb` and `ub` don't are not considered atm.
+the possible values the table constraint allows. `vidx`, `lb` and `ub` are not considered atm.
 Additionally only a rough estimated bound is used which can be computed relatively fast.
 """
 function update_best_bound_constraint!(
@@ -376,8 +386,8 @@ function update_best_bound_constraint!(
     fct::MOI.VectorOfVariables,
     set::TableSetInternal,
     vidx::Int,
-    lb::Int,
-    ub::Int,
+    vlb::Int,
+    vub::Int,
 )
     isempty(constraint.bound_rhs) && return
     sum_min = constraint.sum_min

@@ -121,6 +121,7 @@ end
         :pvals,
         :impl,
         :is_initialized,
+        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -139,6 +140,7 @@ end
         :pvals,
         :impl,
         :is_initialized,
+        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -147,6 +149,63 @@ end
         Core.setproperty!(c, s, v)
     end
 end
+
+#=
+    Access standard ActivatorConstraintInternals without using .act_std syntax
+=#
+@inline function Base.getproperty(c::ActivatorConstraint, s::Symbol)
+    if s in (
+        :idx,
+        :indices,
+        :fct,
+        :set,
+        :pvals,
+        :impl,
+        :is_initialized,
+        :is_activated,
+        :is_deactivated,
+        :bound_rhs,
+    )
+        Core.getproperty(Core.getproperty(c, :std), s)
+    elseif s in (
+        :activate_on,
+        :activator_in_inner,
+        :inner_activated,
+        :inner_activated_in_backtrack_idx,
+    )
+        Core.getproperty(Core.getproperty(c, :act_std), s)
+    else
+        getfield(c, s)
+    end
+end
+
+@inline function Base.setproperty!(c::ActivatorConstraint, s::Symbol, v)
+    if s in (
+        :idx,
+        :indices,
+        :fct,
+        :set,
+        :pvals,
+        :impl,
+        :is_initialized,
+        :is_activated,
+        :is_deactivated,
+        :bound_rhs,
+    )
+        Core.setproperty!(c.std, s, v)
+    elseif s in (
+        :activate_on,
+        :activator_in_inner,
+        :inner_activated,
+        :inner_activated_in_backtrack_idx,
+    )
+        Core.setproperty!(c.act_std, s, v)
+    else
+        Core.setproperty!(c, s, v)
+    end
+end
+
+
 
 """
     Return whether the given LinearConstraint doesn't contain any variables i.e for 0 <= 0
@@ -180,4 +239,22 @@ end
 
 function get_vov(fct::MOI.VectorAffineFunction)
     return MOI.VectorOfVariables([t.scalar_term.variable_index for t in fct.terms])
+end
+
+"""
+    init_and_activate_constraint!(com, constraint, fct, set)
+
+Initializes and activates the constraint. Does **not** check whether the functions are implemented.
+"""
+function init_and_activate_constraint!(
+    com::CS.CoM,
+    constraint::Constraint,
+    fct,
+    set
+)
+    !init_constraint!(com, constraint, fct, set) && return false
+    constraint.is_initialized = true
+    !activate_constraint!(com, constraint, fct, set) && return false
+    constraint.is_activated = true
+    return true
 end

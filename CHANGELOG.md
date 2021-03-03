@@ -1,9 +1,13 @@
 # ConstrainSolver.jl - Changelog
  
 ## Unreleased
+- Refactoring constraints
+  - using `init_constraint!` and `activate_constraint!` [PR #257](https://github.com/Wikunia/ConstraintSolver.jl/pull/257)
+
+
+## v0.6.5 (15th of February 2021)
 - Bugfix in `Or` constraint outside indicator and reified when the constraint removes values when initialized
 - Bugfix in bool constraints for constraints that implement reverse pruning functions
-
 
 ## v0.6.4 (13th of February 2021)
 - Bugfix in reified `still_feasible` when setting to inactive

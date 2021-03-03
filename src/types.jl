@@ -380,6 +380,7 @@ end
 
 mutable struct ImplementedConstraintFunctions
     init::Bool
+    activate::Bool
     update_init::Bool
     finished_pruning::Bool
     restore_pruning::Bool
@@ -399,6 +400,7 @@ mutable struct ConstraintInternals{
     pvals::Vector{Int}
     impl::ImplementedConstraintFunctions
     is_initialized::Bool
+    is_activated::Bool
     is_deactivated::Bool # can be deactivated if it's absorbed by other constraints
     bound_rhs::Vector{BoundRhsVariable}# should be set if `update_best_bound` is true
 end
@@ -500,19 +502,28 @@ mutable struct GeqSetConstraint <: Constraint
     sub_constraint_idxs::Vector{Int}
 end
 
-mutable struct IndicatorConstraint{C<:Constraint} <: Constraint
-    std::ConstraintInternals
+abstract type ActivatorConstraint <: Constraint end
+
+mutable struct ActivatorConstraintInternals
     activate_on::MOI.ActivationCondition
-    inner_constraint::C
-    indicator_in_inner::Bool # is the indicator variable also in the inner constraint
+    activator_in_inner::Bool
+    inner_activated::Bool
+    inner_activated_in_backtrack_idx::Int
 end
 
-mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <: Constraint
+mutable struct IndicatorConstraint{C<:Constraint} <: ActivatorConstraint
     std::ConstraintInternals
-    activate_on::MOI.ActivationCondition
+    act_std::ActivatorConstraintInternals
+    inner_constraint::C
+end
+
+mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <: ActivatorConstraint
+    std::ConstraintInternals
+    act_std::ActivatorConstraintInternals
     inner_constraint::C
     anti_constraint::AC
-    reified_in_inner::Bool # is the reified variable also in the inner constraint
+    anti_inner_activated::Bool
+    anti_inner_activated_in_backtrack_idx::Int
 end
 
 #====================================================================================

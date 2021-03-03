@@ -2,17 +2,15 @@ function init_constraint_struct(::EqualSetInternal, internals)
     EqualConstraint(internals, ones(Int, length(internals.indices)))
 end
 
-function init_constraint!(
+function activate_constraint!(
     com::CS.CoM,
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
-    set::CS.EqualSetInternal;
-    active = true,
+    set::CS.EqualSetInternal
 )
     indices = constraint.indices
     search_space = com.search_space
     intersect_vals = Set(intersect(CS.values.(search_space[indices])...))
-    !active && return true
     if isempty(intersect_vals)
         return false
     end
