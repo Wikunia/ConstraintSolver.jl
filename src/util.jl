@@ -205,6 +205,62 @@ end
     end
 end
 
+#=
+    Access standard BoolConstraintInternals without using .bool_std syntax
+=#
+@inline function Base.getproperty(c::BoolConstraint, s::Symbol)
+    if s in (
+        :idx,
+        :indices,
+        :fct,
+        :set,
+        :pvals,
+        :impl,
+        :is_initialized,
+        :is_activated,
+        :is_deactivated,
+        :bound_rhs,
+    )
+        Core.getproperty(Core.getproperty(c, :std), s)
+    elseif s in (
+        :lhs_activated,
+        :lhs_activated_in_backtrack_idx,
+        :rhs_activated,
+        :rhs_activated_in_backtrack_idx,
+    )
+        Core.getproperty(Core.getproperty(c, :bool_std), s)
+    else
+        getfield(c, s)
+    end
+end
+
+@inline function Base.setproperty!(c::BoolConstraint, s::Symbol, v)
+    if s in (
+        :idx,
+        :indices,
+        :fct,
+        :set,
+        :pvals,
+        :impl,
+        :is_initialized,
+        :is_activated,
+        :is_deactivated,
+        :bound_rhs,
+    )
+        Core.setproperty!(c.std, s, v)
+    elseif s in (
+        :lhs_activated,
+        :lhs_activated_in_backtrack_idx,
+        :rhs_activated,
+        :rhs_activated_in_backtrack_idx,
+    )
+        Core.setproperty!(c.bool_std, s, v)
+    else
+        Core.setproperty!(c, s, v)
+    end
+end
+
+
 
 
 """

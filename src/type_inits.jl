@@ -195,3 +195,15 @@ function BacktrackObj(com::CS.CoM)
         zeros(length(com.search_space)),
     )
 end
+
+function BoolConstraintInternals() 
+    return BoolConstraintInternals(false, 0, false, 0)
+end
+
+function AndConstraint(internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+    return AndConstraint(internals, BoolConstraintInternals(), lhs, rhs)
+end
+
+function OrConstraint(internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+    return OrConstraint(internals, BoolConstraintInternals(), lhs, rhs)
+end

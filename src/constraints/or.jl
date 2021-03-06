@@ -121,9 +121,11 @@ function prune_constraint!(
         return false
     end
     if lhs_violated
+        activate_rhs!(com, constraint)
         return prune_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set; logs=logs)
     end
     if rhs_violated
+        activate_lhs!(com, constraint)
         return prune_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set; logs=logs)
     end
     return true

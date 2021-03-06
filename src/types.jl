@@ -442,14 +442,23 @@ end
 
 abstract type BoolConstraint{C1<:Constraint,C2<:Constraint} <: Constraint end
 
+mutable struct BoolConstraintInternals
+    lhs_activated::Bool
+    lhs_activated_in_backtrack_idx::Int
+    rhs_activated::Bool
+    rhs_activated_in_backtrack_idx::Int
+end
+
 struct AndConstraint{C1,C2} <: BoolConstraint{C1,C2}
     std::ConstraintInternals
+    bool_std::BoolConstraintInternals
     lhs::C1
     rhs::C2
 end
 
 struct OrConstraint{C1,C2} <: BoolConstraint{C1,C2}
     std::ConstraintInternals
+    bool_std::BoolConstraintInternals
     lhs::C1
     rhs::C2
 end
