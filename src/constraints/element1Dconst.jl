@@ -20,11 +20,8 @@ function init_constraint!(
     constraint::Element1DConstConstraint,
     fct::MOI.VectorOfVariables,
     set::Element1DConstInner;
-    active = true,
 )
     # Assume z == T[y]
-    pvals = constraint.pvals
-
     z = com.search_space[constraint.indices[1]]
     y = com.search_space[constraint.indices[2]]
 
@@ -33,33 +30,44 @@ function init_constraint!(
 
     num_vals = z.upper_bound - z.lower_bound + 1
     constraint.zSupp = zeros(Int, num_vals)
-
-    # Remove values of y which are out of bounds
-    # Assume normal indexing
-    if active
-        !remove_below!(com, y, 1) && return false
-        !remove_above!(com, y, length(set.array)) && return false
-    end
-
     T = set.array
 
-    # initial filtering for y
-    if active
-        for val in CS.values(y)
-            if !(has(z, T[val]))
-                !rm!(com, y, val) && return false
-            end
-        end
+   return true
+end
 
-        # initial filtering for z
-        zSupp = constraint.zSupp
-        calculate_zSupp!(constraint, set)
-        # for each value v in values(z):
-        for val in CS.values(z)
-            val_shifted = val - z.lower_bound + 1
-            if zSupp[val_shifted] == 0
-                !rm!(com, z, val) && return false
-            end
+function activate_constraint!(
+    com::CS.CoM,
+    constraint::Element1DConstConstraint,
+    fct::MOI.VectorOfVariables,
+    set::Element1DConstInner;
+)
+    # Assume z == T[y]
+    pvals = constraint.pvals
+
+    y = constraint.y
+    z = constraint.z
+    T = set.array
+
+    # Remove values of y which are out of bounds
+    # Normal indexing
+    !remove_below!(com, y, 1) && return false
+    !remove_above!(com, y, length(set.array)) && return false
+
+    # initial filtering for y
+    for val in CS.values(y)
+        if !(has(z, T[val]))
+            !rm!(com, y, val) && return false
+        end
+    end
+
+    # initial filtering for z
+    zSupp = constraint.zSupp
+    calculate_zSupp!(constraint, set)
+    # for each value v in values(z):
+    for val in CS.values(z)
+        val_shifted = val - z.lower_bound + 1
+        if zSupp[val_shifted] == 0
+            !rm!(com, z, val) && return false
         end
     end
     return true
@@ -176,11 +184,36 @@ function still_feasible(
     T = set.array
 
     if vidx == z_vidx
-        return any(y_val->T[y_val] == value, CS.values(y))
+        # constraint doesn't have to be activated => check if y_val is a possible index
+        return any(y_val->y_val >= 1 && T[y_val] == value, CS.values(y))
     elseif vidx == y_vidx
         return has(z, T[value])
     end
     return true
+end
+
+function is_constraint_violated(  
+    com::CoM,
+    constraint::Element1DConstConstraint, 
+    fct::MOI.VectorOfVariables, 
+    set::Element1DConstInner
+)
+    # Assume z == T[y]
+    z_vidx = constraint.indices[1]
+    y_vidx = constraint.indices[2]
+    z = com.search_space[z_vidx]
+    y = com.search_space[y_vidx]    
+    T = set.array
+    if isfixed(y)
+        val = T[CS.value(y)]
+        return !has(z, val)
+    end
+    if isfixed(z)
+        vals = T[CS.values(y)]
+        zval = CS.value(z)
+        return !(zval in vals)
+    end
+    return false
 end
 
 function finished_pruning_constraint!(

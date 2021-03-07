@@ -87,11 +87,22 @@ function move_element_constraint(model)
             # check if the element var only appears in indicator or reified constraints
             only_inside = true
             for constraint in constraints[subscriptions[element_var]]
-                if !(constraint isa IndicatorConstraint) && !(constraint isa ReifiedConstraint) && !(constraint isa Element1DConstConstraint)
+                # if not inside indicator or reified and not the current constraint that we check
+                if !(constraint isa IndicatorConstraint) && !(constraint isa ReifiedConstraint) && constraint.idx != element_cons.idx
                     only_inside = false
                 end
             end
             !only_inside && continue
+            # check if at least once inside
+            only_inside = false
+            for constraint in constraints[subscriptions[element_var]]
+                if (constraint isa IndicatorConstraint) || (constraint isa ReifiedConstraint)
+                    only_inside = true
+                    break
+                end
+            end
+            !only_inside && continue
+
             element_cons.is_deactivated = true
             # Todo: Move into `AndConstraint`
             for constraint in constraints[subscriptions[element_var]]
@@ -103,6 +114,7 @@ function move_element_constraint(model)
                     fct = MOIU.operate(vcat, T, constraint.fct, element_cons.fct)
                     set = AndSet{typeof(constraint.inner_constraint.fct), typeof(element_cons.fct)}(constraint.inner_constraint.set, element_cons.set)
                     MOI.add_constraint(model, fct, IndicatorSet{MOI.ACTIVATE_ON_ONE}(set))
+                    println("Added new constraint")
                 end
             end
         end

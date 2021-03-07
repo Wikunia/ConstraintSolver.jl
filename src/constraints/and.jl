@@ -104,9 +104,9 @@ function prune_constraint!(
     set::AndSet;
     logs = true,
 )
-    activate_lhs!(com, constraint)
+    !activate_lhs!(com, constraint) && return false
     !prune_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set; logs=logs) && return false
-    activate_rhs!(com, constraint)
+    !activate_rhs!(com, constraint) && return false
     feasible = prune_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set; logs=logs)
     return feasible
 end

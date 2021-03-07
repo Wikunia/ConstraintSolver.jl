@@ -42,6 +42,7 @@ Return if feasible after initalization
 function init_constraints!(com::CS.CoM; constraints = com.constraints)
     feasible = true
     for constraint in constraints
+        constraint.is_deactivated && continue
         if constraint.impl.init
             feasible = init_constraint!(com, constraint, constraint.fct, constraint.set)
             !feasible && break
