@@ -272,13 +272,11 @@ end
 
 get_value(::Type{Val{i}}) where i = i
 
-function typeof_without_parmas(::AndSet)
-    return AndSet
-end
-
-function typeof_without_parmas(::OrSet)
-    return OrSet
-end
+typeof_without_params(::AndSet) = AndSet
+typeof_without_params(::OrSet) = OrSet
+typeof_without_params(::IndicatorSet) = IndicatorSet
+typeof_without_params(::MOI.IndicatorSet) = MOI.IndicatorSet
+typeof_without_params(::ReifiedSet) = ReifiedSet
 
 function get_constraint(fct, set)
     if fct isa SAF

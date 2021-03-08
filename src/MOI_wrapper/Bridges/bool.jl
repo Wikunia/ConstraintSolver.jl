@@ -248,7 +248,7 @@ function map_set(
 ) where {T,B1,B2,F1,F2,F1dim,F2dim,S1<:BoolSet,S2<:BoolSet}
     lhs_set = map_set(bridge, set.lhs_set)
     rhs_set = map_set(bridge, set.rhs_set)
-    return typeof_without_parmas(set){F1,F2}(lhs_set, rhs_set)
+    return typeof_without_params(set){F1,F2}(lhs_set, rhs_set)
 end
 
 function map_set(
@@ -257,7 +257,7 @@ function map_set(
 ) where {T,B1,B2,F1,F2,F1dim,F2dim,S1<:BoolSet,S2}
     lhs_set = map_set(bridge, set.lhs_set)
     rhs_set = get_mapped_set(B1, B2, F2, S2, set.rhs_set)
-    return typeof_without_parmas(set){F1,F2}(lhs_set, rhs_set)
+    return typeof_without_params(set){F1,F2}(lhs_set, rhs_set)
 end
 
 function map_set(
@@ -266,7 +266,7 @@ function map_set(
 ) where {T,B1,B2,F1,F2,F1dim,F2dim,S1,S2<:BoolSet}
     lhs_set = get_mapped_set(B1, B2, F1, S1, set.lhs_set)
     rhs_set = map_set(bridge, set.rhs_set)
-    return typeof_without_parmas(set){F1,F2}(lhs_set, rhs_set)
+    return typeof_without_params(set){F1,F2}(lhs_set, rhs_set)
 end
 
 function map_set(
@@ -276,5 +276,5 @@ function map_set(
     lhs_set = get_mapped_set(B1, B2, F1, S1, set.lhs_set)
     rhs_set = get_mapped_set(B1, B2, F2, S2, set.rhs_set)
 
-    return typeof_without_parmas(set){F1,F2}(lhs_set, rhs_set)
+    return typeof_without_params(set){F1,F2}(lhs_set, rhs_set)
 end

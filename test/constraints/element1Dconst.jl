@@ -49,4 +49,32 @@ end
     @test issorted(vals)
     @test c[idxs] == vals
 end
+
+@testset "Two Element in indicator " begin
+    m = Model(CSJuMPTestOptimizer())
+    c = collect(1:5)
+    crev = reverse(c)
+    @variable(m, b, Bin)
+    @constraint(m, b > 0.5)
+    @variable(m, 1 <= idx <= length(c), Int)
+    @constraint(m, b => {c[idx] == crev[idx]})
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    idx_val = convert(Int, JuMP.value(idx))
+    @test c[idx_val] == crev[idx_val]
+end
+
+@testset "Two Element in reified" begin
+    m = Model(CSJuMPTestOptimizer())
+    c = collect(1:5)
+    crev = reverse(c)
+    @variable(m, b, Bin)
+    @constraint(m, b > 0.5)
+    @variable(m, 1 <= idx <= length(c), Int)
+    @constraint(m, b := {c[idx] == crev[idx]})
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    idx_val = convert(Int, JuMP.value(idx))
+    @test c[idx_val] == crev[idx_val]
+end
 end
