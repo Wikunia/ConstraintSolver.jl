@@ -1,5 +1,8 @@
 # ConstrainSolver.jl - Changelog
  
+## Unreleased
+- Support for element constraints with a constant array like `T[y] == z`
+
 ## v0.6.6 (8th of March 2021)
 - Bugfix: `binary` variables in `TableSet` might have failed because `init_vals` wasn't copied [PR #259](https://github.com/Wikunia/ConstraintSolver.jl/pull/259)
 - Refactoring constraints
