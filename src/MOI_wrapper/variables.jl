@@ -116,7 +116,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.ZeroOne)
                        model.variable_info[vi.value].upper_bound
     values = collect(min_val:max_val)
     model.variable_info[vi.value].values = values
-    model.variable_info[vi.value].init_vals = values
+    model.variable_info[vi.value].init_vals = copy(values)
     model.variable_info[vi.value].init_val_to_index = 1:length(values)
     model.variable_info[vi.value].offset = 1
     model.variable_info[vi.value].indices = 1:length(values)

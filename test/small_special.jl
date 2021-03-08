@@ -920,5 +920,10 @@
         monks_val = convert.(Integer,JuMP.value.(monks))
         @test doors_val == [1, 0, 0, 0]
         @test monks_val == [1, 0, 0, 0, 0, 0, 1, 1]
+
+        com = CS.get_inner_model(model)
+        for var in com.search_space
+            @test issorted(var.init_vals)
+        end
     end
 end
