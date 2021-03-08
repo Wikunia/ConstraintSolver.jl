@@ -1,9 +1,9 @@
 # ConstrainSolver.jl - Changelog
  
-## Unreleased
+## v0.6.6 (8th of March 2021)
+- Bugfix: `binary` variables in `TableSet` might have failed because `init_vals` wasn't copied [PR #259](https://github.com/Wikunia/ConstraintSolver.jl/pull/259)
 - Refactoring constraints
   - using `init_constraint!` and `activate_constraint!` [PR #257](https://github.com/Wikunia/ConstraintSolver.jl/pull/257)
-
 
 ## v0.6.5 (15th of February 2021)
 - Bugfix in `Or` constraint outside indicator and reified when the constraint removes values when initialized
