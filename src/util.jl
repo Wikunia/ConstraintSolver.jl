@@ -278,6 +278,10 @@ typeof_without_params(::IndicatorSet) = IndicatorSet
 typeof_without_params(::MOI.IndicatorSet) = MOI.IndicatorSet
 typeof_without_params(::ReifiedSet) = ReifiedSet
 
+get_activation_condition(::IndicatorSet{A}) where A = A
+get_activation_condition(::MOI.IndicatorSet{A}) where A = A
+get_activation_condition(::ReifiedSet{A}) where A = A
+
 function get_constraint(fct, set)
     if fct isa SAF
         return new_linear_constraint(fct, set)

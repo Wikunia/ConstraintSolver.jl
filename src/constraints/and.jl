@@ -79,13 +79,17 @@ function still_feasible(
     lhs_indices = constraint.lhs.indices
     for i in 1:length(lhs_indices)
         if lhs_indices[i] == vidx
-            !still_feasible(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set, vidx, value) && return false
+            if !still_feasible(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set, vidx, value) 
+                return false
+            end
         end
     end
     rhs_indices = constraint.rhs.indices
     for i in 1:length(rhs_indices)
         if rhs_indices[i] == vidx
-            !still_feasible(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set, vidx, value) && return false
+            if !still_feasible(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set, vidx, value) 
+                return false
+            end
         end
     end
     return true

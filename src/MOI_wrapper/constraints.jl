@@ -521,7 +521,7 @@ function MOI.add_constraint(
     set::IS,
 ) where {T,A,S<:MOI.AbstractVectorSet,IS<:CS.IndicatorSet{A,S}}
     com = model.inner
-    com.info.n_constraint_types.reified += 1
+    com.info.n_constraint_types.indicator += 1
 
     internals = create_interals(com, func, set)
 
