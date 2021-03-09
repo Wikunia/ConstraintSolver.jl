@@ -926,32 +926,4 @@
             @test issorted(var.init_vals)
         end
     end
-
-    @testset "element in indicator" begin
-        m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
-        c = collect(1:5)
-        crev = reverse(c)
-        @variable(m, b, Bin)
-        @constraint(m, b > 0.5)
-        @variable(m, 1 <= idx <= length(c), Int)
-        @constraint(m, b := {c[idx] == crev[idx] || idx >= 2})
-        @objective(m, Min, idx)
-        optimize!(m)
-
-        @test JuMP.termination_status(m) == MOI.OPTIMAL
-        @test convert(Int, JuMP.value(idx)) == 2 
-
-        m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
-        c = collect(1:5)
-        crev = reverse(c)
-        @variable(m, b, Bin)
-        @constraint(m, b > 0.5)
-        @variable(m, 1 <= idx <= length(c), Int)
-        @constraint(m, b := {c[idx] == crev[idx] || idx <= 2})
-        @objective(m, Max, idx)
-        optimize!(m)
-
-        @test JuMP.termination_status(m) == MOI.OPTIMAL
-        @test convert(Int, JuMP.value(idx)) == 3
-    end
 end
