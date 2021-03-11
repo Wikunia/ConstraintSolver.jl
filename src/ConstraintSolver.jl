@@ -296,7 +296,7 @@ function addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com::CS.Co
     add2priorityqueue(com, backtrack_obj)
 
     for v in com.search_space
-        push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
+        push!(v.changes, nothing)
     end
     create_log_node(com)
 end

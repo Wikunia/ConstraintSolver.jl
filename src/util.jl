@@ -314,3 +314,23 @@ function init_and_activate_constraint!(
     constraint.is_activated = true
     return true
 end
+
+function has_changes(v::Variable, backtrack_idx::Int)
+    return v.changes[backtrack_idx] !== nothing
+end
+
+function push_to_changes!(v::Variable, backtrack_idx::Int, tuple::Tuple{Symbol,Int,Int,Int})
+    if has_changes(v, backtrack_idx)
+        push!(v.changes[backtrack_idx], tuple)
+    else
+        v.changes[backtrack_idx] = [tuple]
+    end
+end
+
+function num_changes(v::Variable, backtrack_idx::Int)
+    if v.changes[backtrack_idx] === nothing
+        return 0
+    else
+        return length(v.changes[backtrack_idx])
+    end
+end

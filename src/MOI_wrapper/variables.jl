@@ -57,8 +57,8 @@ end
 function MOI.add_variable(model::Optimizer)
     vidx = length(model.variable_info) + 1
     push!(model.variable_info, Variable(vidx))
-    changes = changes = Vector{Vector{Tuple{Symbol,Int,Int,Int}}}()
-    push!(changes, Vector{Tuple{Symbol,Int,Int,Int}}())
+    changes = Vector{Union{Nothing,Vector{Tuple{Symbol,Int,Int,Int}}}}()
+    push!(changes, nothing)
     model.variable_info[vidx].changes = changes
     push!(model.inner.subscription, Int[])
     push!(model.inner.bt_infeasible, 0)

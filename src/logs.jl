@@ -69,7 +69,7 @@ function update_log_node!(com, back_idx; feasible = nothing)
             # increases time and file size but that is not critical if keep_logs is `true` anyway.
             # Hopefully :D
             tree_log_node.var_states[var.idx] = sort!(values(var))
-            if length(var.changes[back_idx]) > 0
+            if num_changes(var, back_idx) > 0
                 tree_log_node.var_changes[var.idx] = var.changes[back_idx]
             end
             tree_log_node.activity[var.idx] = var.activity

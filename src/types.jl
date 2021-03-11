@@ -72,7 +72,7 @@ mutable struct Variable
     # [2] To which value got it fixed, which value was removed, which value was the upper/lower bound
     # [3] Only if fixed it saves the last ptr to revert the changes otherwise 0
     # [4] How many values got removed (0 for fix)
-    changes::Vector{Vector{Tuple{Symbol,Int,Int,Int}}}
+    changes::Vector{Union{Nothing, Vector{Tuple{Symbol,Int,Int,Int}}}}
     has_upper_bound::Bool # must be true to work
     has_lower_bound::Bool # must be true to work
     is_fixed::Bool

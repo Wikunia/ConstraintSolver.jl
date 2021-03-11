@@ -320,7 +320,7 @@ function update_activity!(com)
         if nvalues(variable) > 1
             variable.activity *= γ
         end
-        if length(variable.changes[c_backtrack_idx]) > 0
+        if has_changes(variable, c_backtrack_idx)
             variable.activity += 1
         end
     end
@@ -332,7 +332,7 @@ function update_probe_activity!(activities, com)
     branch_vidx = backtrack_obj.vidx
     for variable in com.search_space
         variable.idx == branch_vidx && continue
-        if length(variable.changes[c_backtrack_idx]) > 0
+        if has_changes(variable, c_backtrack_idx)
             activities[variable.idx] += 1
         end
     end

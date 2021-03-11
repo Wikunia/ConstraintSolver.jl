@@ -65,7 +65,7 @@ function prune!(
     # get all constraints which need to be called (only once)
     current_backtrack_id = com.c_backtrack_idx
     for var in search_space
-        new_var_length = length(var.changes[current_backtrack_id])
+        new_var_length = num_changes(var, current_backtrack_id)
         if new_var_length > 0 || all || initial_check
             prev_var_length[var.idx] = new_var_length
             for ci in com.subscription[var.idx]
@@ -108,7 +108,7 @@ function prune!(
         # if we changed another variable increase the level of the constraints to call them later
         for vidx in constraint.indices
             var = search_space[vidx]
-            new_var_length = length(var.changes[current_backtrack_id])
+            new_var_length = num_changes(var, current_backtrack_id)
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
                 for ci in com.subscription[var.idx]
@@ -141,6 +141,7 @@ function restore_prune!(com::CS.CoM, prune_steps)
     search_space = com.search_space
     for backtrack_idx in prune_steps
         for var in search_space
+            !has_changes(var, backtrack_idx) && continue
             for change in var.changes[backtrack_idx]
                 fct_symbol = change[1]
                 val = change[2]
@@ -208,14 +209,16 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
     latest_changes = [var.changes[backtrack_idx] for var in search_space]
     for var in search_space
         v_idx = var.idx
-        for change in Iterators.reverse(latest_changes[v_idx])
-            single_reverse_pruning!(search_space, v_idx, change[4], change[3])
+        if latest_changes[v_idx] !== nothing
+            for change in Iterators.reverse(latest_changes[v_idx])
+                single_reverse_pruning!(search_space, v_idx, change[4], change[3])
+            end
         end
     end
     subscriptions = com.subscription
     constraints = com.constraints
     for var in search_space
-        length(latest_changes[var.idx]) == 0 && continue
+        latest_changes[var.idx] === nothing && continue
         var.idx > length(subscriptions) && continue
         @inbounds for ci in subscriptions[var.idx]
             constraint = constraints[ci]
