@@ -74,7 +74,7 @@ function prune_constraint!(
             for i in 1:length(indices)
                 v1 = search_space[indices[i]]
                 v1_changes = v1.changes[com.c_backtrack_idx]
-                isempty(v1_changes) && continue
+                isnothing(v1_changes) && continue
                 for j in 1:length(indices)
                     i == j && continue
                     v2 = search_space[indices[j]]
@@ -102,13 +102,17 @@ function prune_constraint!(
         if !fixed_v1 && !fixed_v2
             changes_v1 = v1.changes[com.c_backtrack_idx]
             changes_v2 = v2.changes[com.c_backtrack_idx]
-            if isempty(changes_v1) && isempty(changes_v2)
+            if isnothing(changes_v1) && isnothing(changes_v2)
                 return true
             end
-            !apply_changes!(com, v2, changes_v1, constraint.first_ptrs[1]) && return false
-            !apply_changes!(com, v1, changes_v2, constraint.first_ptrs[2]) && return false
-            constraint.first_ptrs[1] = length(changes_v1) + 1
-            constraint.first_ptrs[2] = length(changes_v2) + 1
+            if !isnothing(changes_v1)
+                !apply_changes!(com, v2, changes_v1, constraint.first_ptrs[1]) && return false
+            end
+            if !isnothing(changes_v2)
+                !apply_changes!(com, v1, changes_v2, constraint.first_ptrs[2]) && return false
+            end
+            constraint.first_ptrs[1] = num_changes(v1, com.c_backtrack_idx) + 1
+            constraint.first_ptrs[2] = num_changes(v2, com.c_backtrack_idx) + 1
             return true
         elseif fixed_v1 && fixed_v2
             if CS.value(v1) != CS.value(v2)
