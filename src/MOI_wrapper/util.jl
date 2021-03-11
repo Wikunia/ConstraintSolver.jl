@@ -134,7 +134,7 @@ function move_element_constraint(model)
         only_inside = true
         for constraint in constraints[subscriptions[element_var]]
             # if not inside indicator or reified and not the current constraint that we check
-            if !(constraint isa ActivatorConstraint) && !(constraint isa ReifiedConstraint) && constraint.idx != element_cons.idx
+            if !(constraint isa ActivatorConstraint) && !(constraint isa OrConstraint) && constraint.idx != element_cons.idx
                 only_inside = false
             end
         end
@@ -142,7 +142,7 @@ function move_element_constraint(model)
         # check if at least once inside
         only_inside = false
         for constraint in constraints[subscriptions[element_var]]
-            if (constraint isa ActivatorConstraint)
+            if constraint isa ActivatorConstraint || constraint isa OrConstraint
                 only_inside = true
                 break
             end
@@ -150,20 +150,24 @@ function move_element_constraint(model)
         !only_inside && continue
 
         element_cons.is_deactivated = true
-        # Todo: Move into `AndConstraint`
         for constraint in constraints[subscriptions[element_var]]
             constraint isa Element1DConstConstraint && continue
             constraint.is_deactivated && continue
             constraint.is_deactivated = true
             fct, set = nothing, nothing
-            if constraint.inner_constraint isa OrConstraint
-                inner_constraint = constraint.inner_constraint
-                fct, set = find_element_var_and_combine(T, inner_constraint, element_cons, element_var)
-            else
-                fct = MOIU.operate(vcat, T, constraint.inner_constraint.fct, element_cons.fct)
-                set = AndSet{typeof(constraint.inner_constraint.fct), typeof(element_cons.fct)}(constraint.inner_constraint.set, element_cons.set)
+            if constraint isa ActivatorConstraint
+                if constraint.inner_constraint isa OrConstraint
+                    inner_constraint = constraint.inner_constraint
+                    fct, set = find_element_var_and_combine(T, inner_constraint, element_cons, element_var)
+                else
+                    fct = MOIU.operate(vcat, T, constraint.inner_constraint.fct, element_cons.fct)
+                    set = AndSet{typeof(constraint.inner_constraint.fct), typeof(element_cons.fct)}(constraint.inner_constraint.set, element_cons.set)
+                end
+                create_new_activator_constraint(model, constraint, fct, set)
+            else # OrConstraint
+                fct, set = find_element_var_and_combine(T, constraint, element_cons, element_var)
+                MOI.add_constraint(model, fct, set)
             end
-            create_new_activator_constraint(model, constraint, fct, set)
         end
     end
 
