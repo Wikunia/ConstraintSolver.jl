@@ -73,6 +73,16 @@ function activate_constraint!(
     return true
 end
 
+function is_constraint_solved(
+    constraint::Element1DConstConstraint,
+    fct::MOI.VectorOfVariables,
+    set::Element1DConstInner,
+    values::Vector{Int},
+)
+    T = set.array
+    return T[values[2]] == values[1]
+end
+
 """
     prune_constraint!(com::CS.CoM, constraint::Element1DConstConstraint, fct::MOI.VectorOfVariables, set::Element1DConstInner; logs = true)
 
@@ -182,10 +192,10 @@ function still_feasible(
     z = com.search_space[z_vidx]
     y = com.search_space[y_vidx]    
     T = set.array
-
+    
     if vidx == z_vidx
         # constraint doesn't have to be activated => check if y_val is a possible index
-        return any(y_val->y_val >= 1 && T[y_val] == value, CS.values(y))
+        return any(y_val->checkbounds(Bool, T, y_val) && T[y_val] == value, CS.values(y))
     elseif vidx == y_vidx
         return has(z, T[value])
     end
