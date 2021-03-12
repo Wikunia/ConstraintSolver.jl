@@ -136,3 +136,13 @@ SUITE["scheduling"]["all_different_except_0_len10"] =
     @benchmarkable all_different_except_0(10) seconds = 10
 SUITE["scheduling"]["all_different_except_0_len12"] =
     @benchmarkable all_different_except_0(12) seconds = 15
+
+
+include(joinpath(dir, "benchmark/steiner/benchmark.jl"))
+
+SUITE["steiner"] = BenchmarkGroup(["reified", "and"])
+# compiling run
+steiner(3)
+SUITE["steiner"]["steiner_7"] =
+    @benchmarkable steiner(7) seconds = 5
+    
