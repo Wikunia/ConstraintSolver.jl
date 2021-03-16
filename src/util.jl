@@ -315,22 +315,18 @@ function init_and_activate_constraint!(
     return true
 end
 
-function has_changes(v::Variable, backtrack_idx::Int)
-    return v.changes[backtrack_idx] !== nothing
+function push_to_changes!(v::Variable, step_nr::Int, tuple::Tuple{Symbol,Int,Int,Int})
+    v.changes.indices[end] += 1
+    push!(v.changes.changes, tuple)
+    @assert v.changes.indices[end]-1 == length(v.changes.changes)
 end
 
-function push_to_changes!(v::Variable, backtrack_idx::Int, tuple::Tuple{Symbol,Int,Int,Int})
-    if has_changes(v, backtrack_idx)
-        push!(v.changes[backtrack_idx], tuple)
-    else
-        v.changes[backtrack_idx] = [tuple]
-    end
+function num_changes(v::Variable, step_nr::Int)
+    return v.changes.indices[step_nr+1] - v.changes.indices[step_nr]
 end
 
-function num_changes(v::Variable, backtrack_idx::Int)
-    if v.changes[backtrack_idx] === nothing
-        return 0
-    else
-        return length(v.changes[backtrack_idx])
-    end
+function view_changes(v::Variable, step_nr::Int)
+    idx_begin = v.changes.indices[step_nr]
+    idx_end = v.changes.indices[step_nr+1]-1
+    return @views v.changes.changes[idx_begin:idx_end]
 end

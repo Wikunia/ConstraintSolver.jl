@@ -61,6 +61,7 @@ function update_log_node!(com, back_idx; feasible = nothing)
     tree_log_node.best_bound = com.backtrack_vec[back_idx].best_bound
     tree_log_node.step_nr = com.backtrack_vec[back_idx].step_nr
 
+    step_nr = tree_log_node.step_nr
 
     variables = com.search_space
     if tree_log_node.status == :Closed
@@ -69,8 +70,8 @@ function update_log_node!(com, back_idx; feasible = nothing)
             # increases time and file size but that is not critical if keep_logs is `true` anyway.
             # Hopefully :D
             tree_log_node.var_states[var.idx] = sort!(values(var))
-            if num_changes(var, back_idx) > 0
-                tree_log_node.var_changes[var.idx] = var.changes[back_idx]
+            if step_nr > 0 && num_changes(var, step_nr) > 0
+                tree_log_node.var_changes[var.idx] = copy(view_changes(var, step_nr))
             end
             tree_log_node.activity[var.idx] = var.activity
         end

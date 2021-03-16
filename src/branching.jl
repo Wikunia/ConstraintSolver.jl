@@ -34,7 +34,6 @@ Return lb, leq, geq, ub => the bounds for the lower part and the bounds for the 
 """
 function get_split_pvals(com, ::Val{:InHalf}, var::Variable)
     pvals = values(var)
-    @assert length(pvals) >= 2
     mean_val = mean(pvals)
     leq = typemin(Int)
     geq = typemax(Int)
@@ -215,7 +214,7 @@ function probe_until(com::CS.CoM)
     backtrack_obj.parent_idx = 1
     backtrack_obj.depth = 1
     com.c_step_nr += 1
-    backtrack_obj.step_nr = com.c_step_nr
+    set_current_step_nr!(backtrack_obj, com)
 
     addBacktrackObj2Backtrack_vec!(com.backtrack_vec, backtrack_obj, com)
     update_log_node!(com, 2)
@@ -312,6 +311,7 @@ end
 
 function update_activity!(com)
     c_backtrack_idx = com.c_backtrack_idx
+    c_step_nr = com.c_step_nr
     backtrack_obj = com.backtrack_vec[c_backtrack_idx]
     branch_vidx = backtrack_obj.vidx
     γ = com.options.activity.decay
@@ -320,7 +320,7 @@ function update_activity!(com)
         if nvalues(variable) > 1
             variable.activity *= γ
         end
-        if has_changes(variable, c_backtrack_idx)
+        if num_changes(variable, c_step_nr) > 0
             variable.activity += 1
         end
     end
@@ -328,11 +328,12 @@ end
 
 function update_probe_activity!(activities, com)
     c_backtrack_idx = com.c_backtrack_idx
+    c_step_nr = com.c_step_nr
     backtrack_obj = com.backtrack_vec[c_backtrack_idx]
     branch_vidx = backtrack_obj.vidx
     for variable in com.search_space
         variable.idx == branch_vidx && continue
-        if has_changes(variable, c_backtrack_idx)
+        if num_changes(variable, c_step_nr) > 0
             activities[variable.idx] += 1
         end
     end

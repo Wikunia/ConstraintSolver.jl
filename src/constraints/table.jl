@@ -438,7 +438,6 @@ function single_reverse_pruning_constraint!(
     indices = constraint.indices
     loc_vidx = 1
     vidx = var.idx
-    changes = var.changes[backtrack_idx]
     while loc_vidx <= length(indices)
         if vidx == indices[loc_vidx]
             break

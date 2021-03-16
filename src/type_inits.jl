@@ -11,7 +11,7 @@ Variable(vidx) = Variable(
     0,
     0,
     0,
-    Vector{Vector{Tuple{Symbol,Int,Int,Int}}}(),
+    VariableChanges(),
     false,
     false,
     false,

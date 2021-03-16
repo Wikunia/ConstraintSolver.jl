@@ -97,6 +97,13 @@ function get_first_open(backtrack_vec)
     return found, backtrack_obj
 end
 
+function set_current_step_nr!(backtrack_obj::BacktrackObj, com::CS.CoM)
+    backtrack_obj.step_nr = com.c_step_nr
+    for var in com.search_space
+        push!(var.changes.indices, var.changes.indices[end])
+    end
+end
+
 function get_next_node(
     com::CS.CoM,
     backtrack_vec::Vector{BacktrackObj{T}},
@@ -104,8 +111,7 @@ function get_next_node(
 ) where {T<:Real}
     found, backtrack_obj = get_next_node(com, com.traverse_strategy, backtrack_vec, sorting)
     com.c_step_nr += 1
-    backtrack_obj.step_nr = com.c_step_nr
-
+    
     # if we found the optimal solution or one feasible
     # => check whether all solutions are requested
     if !found && com.options.all_solutions
@@ -138,6 +144,7 @@ function get_next_node(
             found = true
         end
     end
+    set_current_step_nr!(backtrack_obj, com)
     return found, backtrack_obj
 end
 

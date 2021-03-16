@@ -52,7 +52,7 @@
     @testset "Basic == where not active" begin
         m = Model(CSJuMPTestOptimizer())
         @variable(m, x, CS.Integers([1, 2, 4, 5]))
-        @variable(m, y, CS.Integers([3, 4]))
+        @variable(m, y, CS.Integers([2, 4]))
         @variable(m, b, Bin)
         @constraint(m, b := {x + y == 7})
         @objective(m, Max, b + x + y)

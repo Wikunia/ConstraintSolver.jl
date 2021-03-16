@@ -63,9 +63,8 @@ function prune!(
     prev_var_length = zeros(Int, length(search_space))
     constraint_idxs_vec = fill(N, length(com.constraints))
     # get all constraints which need to be called (only once)
-    current_backtrack_id = com.c_backtrack_idx
     for var in search_space
-        new_var_length = num_changes(var, current_backtrack_id)
+        new_var_length = num_changes(var, com.c_step_nr)
         if new_var_length > 0 || all || initial_check
             prev_var_length[var.idx] = new_var_length
             for ci in com.subscription[var.idx]
@@ -108,7 +107,7 @@ function prune!(
         # if we changed another variable increase the level of the constraints to call them later
         for vidx in constraint.indices
             var = search_space[vidx]
-            new_var_length = num_changes(var, current_backtrack_id)
+            new_var_length = num_changes(var, com.c_step_nr)
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
                 for ci in com.subscription[var.idx]
@@ -140,9 +139,9 @@ Prune the search space based on a list of backtracking indices `prune_steps`.
 function restore_prune!(com::CS.CoM, prune_steps)
     search_space = com.search_space
     for backtrack_idx in prune_steps
+        step_nr = com.backtrack_vec[backtrack_idx].step_nr
         for var in search_space
-            !has_changes(var, backtrack_idx) && continue
-            for change in var.changes[backtrack_idx]
+            for change in view_changes(var, step_nr)
                 fct_symbol = change[1]
                 val = change[2]
                 if fct_symbol == :fix
@@ -205,20 +204,20 @@ Reverse the changes made by a specific backtrack object
 """
 function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
     com.c_backtrack_idx = backtrack_idx
+    step_nr = com.backtrack_vec[backtrack_idx].step_nr
     search_space = com.search_space
-    latest_changes = [var.changes[backtrack_idx] for var in search_space]
     for var in search_space
         v_idx = var.idx
-        if latest_changes[v_idx] !== nothing
-            for change in Iterators.reverse(latest_changes[v_idx])
-                single_reverse_pruning!(search_space, v_idx, change[4], change[3])
-            end
+        changes = var.changes.changes
+        ch_indices = var.changes.indices
+        for change_id in ch_indices[step_nr+1]-1:-1:ch_indices[step_nr]
+            single_reverse_pruning!(search_space, v_idx, changes[change_id][4], changes[change_id][3])
         end
     end
     subscriptions = com.subscription
     constraints = com.constraints
     for var in search_space
-        latest_changes[var.idx] === nothing && continue
+        num_changes(var, step_nr) == 0 && continue
         var.idx > length(subscriptions) && continue
         @inbounds for ci in subscriptions[var.idx]
             constraint = constraints[ci]
