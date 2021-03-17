@@ -105,12 +105,8 @@ function prune_constraint!(
             if num_changes_v1 == 0 && num_changes_v2 == 0 
                 return true
             end
-            if num_changes_v1 > 0
-                !apply_changes!(com, v2, view_changes(v1, com.c_step_nr), constraint.first_ptrs[1]) && return false
-            end
-            if num_changes_v2 > 0
-                !apply_changes!(com, v1, view_changes(v2, com.c_step_nr), constraint.first_ptrs[2]) && return false
-            end
+            !apply_changes!(com, v2, view_changes(v1, com.c_step_nr), constraint.first_ptrs[1]) && return false
+            !apply_changes!(com, v1, view_changes(v2, com.c_step_nr), constraint.first_ptrs[2]) && return false
             constraint.first_ptrs[1] = num_changes(v1, com.c_step_nr) + 1
             constraint.first_ptrs[2] = num_changes(v2, com.c_step_nr) + 1
             return true

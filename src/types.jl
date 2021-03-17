@@ -53,11 +53,17 @@ mutable struct SolverOptions
 end
 
 # General
- # Tuple explanation
-    # [1] :fix, :rm, :rm_below, :rm_above
-    # [2] To which value got it fixed, which value was removed, which value was the upper/lower bound
-    # [3] Only if fixed it saves the last ptr to revert the changes otherwise 0
-    # [4] How many values got removed (0 for fix)
+"""
+Save the changes for a variable with two vectors
+- `indices` saves a list of indices that can be extracted by the step_nr
+    - i.e [1,1,3,5] would mean that step_nr 1 did no changes to the variable and steps 2 and 3 have two changes each
+- `changes`:
+    Explanation of the tuple
+    - [1] :fix, :rm, :rm_below, :rm_above
+    - [2] To which value got it fixed, which value was removed, which value was the upper/lower bound
+    - [3] Only if fixed it saves the last ptr to revert the changes otherwise 0
+    - [4] How many values got removed (0 for fix)
+"""
 mutable struct VariableChanges
     indices :: Vector{Int}
     changes :: Vector{Tuple{Symbol, Int, Int, Int}}

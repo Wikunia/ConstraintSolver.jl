@@ -97,6 +97,12 @@ function get_first_open(backtrack_vec)
     return found, backtrack_obj
 end
 
+"""
+    set_current_step_nr!(backtrack_obj::BacktrackObj, com::CS.CoM)
+
+Set the `step_nr` of `backtrack_obj` to the current step nr of `com`.
+Additionally increases the size of `var.changes` for the new step
+"""
 function set_current_step_nr!(backtrack_obj::BacktrackObj, com::CS.CoM)
     backtrack_obj.step_nr = com.c_step_nr
     for var in com.search_space
@@ -104,6 +110,14 @@ function set_current_step_nr!(backtrack_obj::BacktrackObj, com::CS.CoM)
     end
 end
 
+"""
+    get_next_node(com::CS.CoM,backtrack_vec::Vector{BacktrackObj{T}}, sorting) where {T<:Real}
+
+Return whether search is continued and the next branching node if this is the case.
+The next node depends on `com.traverse_strategy`. 
+
+The tuple returned consists of `found, backtrack_obj`
+"""
 function get_next_node(
     com::CS.CoM,
     backtrack_vec::Vector{BacktrackObj{T}},
