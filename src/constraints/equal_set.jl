@@ -28,7 +28,7 @@ end
 function apply_changes!(
     com::CS.CoM,
     v::Variable,
-    changes::Vector{Tuple{Symbol,Int,Int,Int}},
+    changes,
     first_ptr::Int,
 )
     for i in first_ptr:length(changes)
@@ -73,8 +73,8 @@ function prune_constraint!(
             # sync the changes in each variable
             for i in 1:length(indices)
                 v1 = search_space[indices[i]]
-                v1_changes = v1.changes[com.c_backtrack_idx]
-                isempty(v1_changes) && continue
+                v1_changes = view_changes(v1, com.c_step_nr)
+                isnothing(v1_changes) && continue
                 for j in 1:length(indices)
                     i == j && continue
                     v2 = search_space[indices[j]]
@@ -100,15 +100,15 @@ function prune_constraint!(
         fixed_v1 = isfixed(v1)
         fixed_v2 = isfixed(v2)
         if !fixed_v1 && !fixed_v2
-            changes_v1 = v1.changes[com.c_backtrack_idx]
-            changes_v2 = v2.changes[com.c_backtrack_idx]
-            if isempty(changes_v1) && isempty(changes_v2)
+            num_changes_v1 = num_changes(v1, com.c_step_nr)
+            num_changes_v2 = num_changes(v2, com.c_step_nr)
+            if num_changes_v1 == 0 && num_changes_v2 == 0 
                 return true
             end
-            !apply_changes!(com, v2, changes_v1, constraint.first_ptrs[1]) && return false
-            !apply_changes!(com, v1, changes_v2, constraint.first_ptrs[2]) && return false
-            constraint.first_ptrs[1] = length(changes_v1) + 1
-            constraint.first_ptrs[2] = length(changes_v2) + 1
+            !apply_changes!(com, v2, view_changes(v1, com.c_step_nr), constraint.first_ptrs[1]) && return false
+            !apply_changes!(com, v1, view_changes(v2, com.c_step_nr), constraint.first_ptrs[2]) && return false
+            constraint.first_ptrs[1] = num_changes(v1, com.c_step_nr) + 1
+            constraint.first_ptrs[2] = num_changes(v2, com.c_step_nr) + 1
             return true
         elseif fixed_v1 && fixed_v2
             if CS.value(v1) != CS.value(v2)

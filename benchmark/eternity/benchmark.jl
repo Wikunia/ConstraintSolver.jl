@@ -28,7 +28,7 @@ function get_rotations(puzzle)
 end
 
 function solve_eternity(
-    fname = "eternity_7";
+    fname = "eternity_6x6";
     height = nothing,
     width = nothing,
     all_solutions = false,
@@ -147,5 +147,6 @@ function solve_eternity(
     optimize!(m)
 
     status = JuMP.termination_status(m)
+    @show status
     @assert status == MOI.OPTIMAL
 end

@@ -295,9 +295,6 @@ function addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com::CS.Co
     @assert length(backtrack_vec) == backtrack_obj.idx
     add2priorityqueue(com, backtrack_obj)
 
-    for v in com.search_space
-        push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
-    end
     create_log_node(com)
 end
 
@@ -577,7 +574,6 @@ function backtrack!(
         vidx = backtrack_obj.vidx
 
         com.c_backtrack_idx = backtrack_obj.idx
-
         checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
 
         # if backtracking was started
