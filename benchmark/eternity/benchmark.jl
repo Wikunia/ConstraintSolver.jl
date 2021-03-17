@@ -46,7 +46,7 @@ function solve_eternity(
 
     m = Model(optimizer_with_attributes(
         CS.Optimizer,
-        # "logging" => [],
+        "logging" => [],
         "all_solutions" => all_solutions,
         "seed" => 1,
         "branch_strategy" => branch_strategy,
