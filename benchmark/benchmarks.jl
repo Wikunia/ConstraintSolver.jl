@@ -14,6 +14,8 @@ include(joinpath(dir, "benchmark/sudoku/data/25x25_gecode.jl"))
 
 SUITE["sudoku"] = BenchmarkGroup(["alldifferent"])
 sudoku_grids = from_file(joinpath(dir, "benchmark/sudoku/data/top95.txt"))
+# compiling run to make sure...
+solve_sudoku($sudoku_grids[2])
 for i in 1:5:95
     SUITE["sudoku"]["top95_$i"] = @benchmarkable solve_sudoku($sudoku_grids[$i]) seconds = 1
 end
