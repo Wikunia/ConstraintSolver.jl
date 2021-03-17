@@ -260,7 +260,19 @@ end
     end
 end
 
-
+@inline function Base.getproperty(c::AbstractBoolSet, s::Symbol)
+    if s in (
+        :lhs_set,
+        :rhs_set,
+        :lhs_dimension,
+        :rhs_dimension,
+        :dimension,
+    )
+        Core.getproperty(Core.getproperty(c, :bsi), s)
+    else
+        getfield(c, s)
+    end
+end
 
 
 """
@@ -272,11 +284,19 @@ end
 
 get_value(::Type{Val{i}}) where i = i
 
-function typeof_without_parmas(::AndSet)
+function typeof_without_params(::AndSet)
     return AndSet
 end
 
-function typeof_without_parmas(::OrSet)
+function typeof_without_params(::OrSet)
+    return OrSet
+end
+
+function typeof_without_params(::Type{<:AndSet})
+    return AndSet
+end
+
+function typeof_without_params(::Type{<:OrSet})
     return OrSet
 end
 

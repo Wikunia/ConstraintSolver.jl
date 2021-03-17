@@ -9,7 +9,7 @@ function MOI.supports_constraint(
 ) where {T, B, F<:MOI.VectorAffineFunction, A, S}
     is_supported = MOI.supports_constraint(B, MOIU.scalar_type(F), S)
     !is_supported && return false
-    S <: BoolSet && return true
+    S <: AbstractBoolSet && return true
 
     concrete_B = MOIBC.concrete_bridge_type(B, MOI.ScalarAffineFunction{T}, S)
     return supports_concreteB(concrete_B)
@@ -20,7 +20,7 @@ function MOIBC.concrete_bridge_type(
     G::Type{<:MOI.VectorAffineFunction},
     ::Type{IS},
 ) where {T,B,A,S,IS<:CS.ReifiedSet{A,S}}
-    if S <: BoolSet
+    if S <: AbstractBoolSet
         concrete_B = B
     else
         concrete_B = MOIBC.concrete_bridge_type(B, MOI.ScalarAffineFunction{T}, S)
@@ -31,7 +31,7 @@ end
 function MOIB.added_constraint_types(
     ::Type{<:ReifiedBridge{T,B,A,S}}
 ) where {T,B,A,S}
-    if S <: BoolSet
+    if S <: AbstractBoolSet
         added_constraints = added_constraint_types(B, S)
     else
         added_constraints = MOIB.added_constraint_types(B)
@@ -45,7 +45,7 @@ end
 
 function MOIBC.bridge_constraint(::Type{<:ReifiedBridge{T, B, A, S}}, model, func, set) where {T, B, A, S}
     f = MOIU.eachscalar(func)
-    if S <: BoolSet
+    if S <: AbstractBoolSet
         new_func = MOIU.operate(vcat, T, f[1], map_function(B, f[2:end], set.set))
         new_inner_set = map_set(B, set.set)
     else

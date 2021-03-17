@@ -9,8 +9,7 @@ MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 
 include("indicator.jl")
 include("reified.jl")
-include("and.jl")
-include("or.jl")
+include("bool.jl")
 
 """
 MOI constraints
@@ -77,7 +76,7 @@ function MOI.supports_constraint(
     func::Type{VAF{T}},
     set::Type{OS},
 ) where {A,T<:Real,IS,OS<:CS.IndicatorSet{A,IS}}
-    if IS <: BoolSet
+    if IS <: AbstractBoolSet
         return is_boolset_supported(optimizer, IS)
     end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
@@ -109,7 +108,7 @@ function MOI.supports_constraint(
     if IS <: MOI.GreaterThan || IS <: Strictly{T, MOI.GreaterThan{T}}
         return false
     end
-    if IS <: BoolSet
+    if IS <: AbstractBoolSet
         return is_boolset_supported(optimizer, IS)
     end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
@@ -119,7 +118,7 @@ function MOI.supports_constraint(
     optimizer::Optimizer,
     func::Type{VAF{T}},
     set::Type{BS},
-) where {T,F1,F2,F1dim,F2dim,S1,S2,BS<:CS.BoolSet{F1,F2,F1dim,F2dim,S1,S2}}
+) where {T,F1,F2,F1dim,F2dim,S1,S2,BS<:CS.AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}}
     return is_boolset_supported(optimizer, set)
 end
 
@@ -131,9 +130,9 @@ MOI.supports_constraint(
 ) = true
 
 """
-    Return whether the two constraint inside the `BoolSet` are supported directly by the solver
+    Return whether the two constraint inside the `AbstractBoolSet` are supported directly by the solver
 """
-function is_boolset_supported(optimizer::Optimizer, ::Type{<:CS.BoolSet{F1,F2,F1dim,F2dim,S1,S2}}) where {F1, F2, F1dim, F2dim, S1, S2}
+function is_boolset_supported(optimizer::Optimizer, ::Type{<:CS.AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}}) where {F1, F2, F1dim, F2dim, S1, S2}
     is_supported = MOI.supports_constraint(optimizer, F1, S1) && MOI.supports_constraint(optimizer, F2, S2)
     return is_supported
 end
@@ -605,7 +604,7 @@ function MOI.add_constraint(
     model::Optimizer,
     func::VAF{T},
     set::BS,
-) where {T,BS<:BoolSet}
+) where {T,BS<:AbstractBoolSet}
     com = model.inner
     internals = create_interals(com, func, set)
     constraint = init_constraint_struct(set, internals)
