@@ -1,4 +1,4 @@
-function init_constraint_struct(set::BoolSet{F1,F2}, internals) where {F1,F2}
+function init_constraint_struct(set::AbstractBoolSet{F1,F2}, internals) where {F1,F2}
     f = MOIU.eachscalar(internals.fct)
 
     lhs_fct = f[1:set.lhs_dimension]
@@ -78,7 +78,7 @@ function single_reverse_pruning_constraint!(
     com::CoM,
     constraint::BoolConstraint,
     fct::VAF{T},
-    set::BoolSet,
+    set::AbstractBoolSet,
     var::Variable,
     backtrack_idx::Int,
 ) where {
@@ -104,7 +104,7 @@ function reverse_pruning_constraint!(
     com::CoM,
     constraint::BoolConstraint,
     fct::VAF{T},
-    set::BoolSet,
+    set::AbstractBoolSet,
     backtrack_id::Int,
 ) where {
     T<:Real,
@@ -136,7 +136,7 @@ function restore_pruning_constraint!(
     com::CoM,
     constraint::BoolConstraint,
     fct::VAF{T},
-    set::BoolSet,
+    set::AbstractBoolSet,
     prune_steps::Union{Int,Vector{Int}},
 ) where {
     T<:Real,
@@ -158,7 +158,7 @@ function finished_pruning_constraint!(
     com::CS.CoM,
     constraint::BoolConstraint,
     fct::VAF{T},
-    set::BoolSet,
+    set::AbstractBoolSet,
 ) where {
     T<:Real,
 }
