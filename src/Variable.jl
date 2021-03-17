@@ -58,11 +58,6 @@ function rm!(
     changes = true,
     check_feasibility = true,
 )
-    if v.last_ptr == 0
-        @show com.search_space[3].changes
-        CS.save_logs(com, "/home/ole/http/ConstraintVisual/data/json/test.json", :x => [MOI.VariableIndex(i) for i=1:length(com.search_space)])
-        error(1)
-    end
     if !in_remove_several && check_feasibility
         # after removing nothing would be possible
         len_vals = nvalues(v)
