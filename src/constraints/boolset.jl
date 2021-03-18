@@ -25,33 +25,39 @@ function init_constraint_struct(set::AbstractBoolSet{F1,F2}, internals) where {F
     return bool_constraint(set, internals, lhs, rhs)
 end
 
-function bool_constraint(::AndSet, internals, lhs, rhs)
-    AndConstraint(
-        internals,
-        lhs,
-        rhs
-    )
-end
-
-function bool_constraint(::OrSet, internals, lhs, rhs)
-    OrConstraint(
-        internals,
-        lhs,
-        rhs
-    )
+for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    @eval begin
+        function bool_constraint(::$set, internals, lhs, rhs)
+            $(bool_data.constraint)(
+                internals,
+                lhs,
+                rhs
+            )
+        end
+    end
 end
 
 anti_set(::Type{<:AndSet}) = OrSet
 anti_set(::Type{<:OrSet}) = AndSet
-apply_bool_operator(::Type{<:AndSet}, lhs, rhs) = lhs && rhs
-apply_bool_operator(::Type{<:OrSet}, lhs, rhs)  = lhs || rhs
 
-function apply_bool_operator(::Type{<:AndSet}, lhs_fct, rhs_fct, args...) 
-    lhs_fct(args...) && rhs_fct(args...)
-end
+for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    if get(bool_data, :needs_call, false)
+        @eval begin
+            apply_bool_operator(::Type{<:$(set)}, lhs, rhs) = $(Expr(:call, bool_data.op, :lhs, :rhs))
 
-function apply_bool_operator(::Type{<:OrSet}, lhs_fct, rhs_fct, args...)  
-    lhs_fct(args...) || rhs_fct(args...)
+            function apply_bool_operator(::Type{<:$set}, lhs_fct, rhs_fct, args...) 
+                $(Expr(:call, bool_data.op, :(lhs_fct(args...)), :(rhs_fct(args...))))
+            end
+        end
+    else
+        @eval begin
+            apply_bool_operator(::Type{<:$(set)}, lhs, rhs) = $(Expr(bool_data.op, :lhs, :rhs))
+
+            function apply_bool_operator(::Type{<:$set}, lhs_fct, rhs_fct, args...) 
+                $(Expr(bool_data.op, :(lhs_fct(args...)), :(rhs_fct(args...))))
+            end
+        end
+    end
 end
 
 function apply_anti_bool_operator(s::Type{<:AbstractBoolSet}, args...)
@@ -74,7 +80,11 @@ function init_constraint!(
     if constraint.rhs.impl.init   
         rhs_feasible = init_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
     end
-    return apply_bool_operator(typeof(set), lhs_feasible, rhs_feasible)
+    # check only for && constraint if both are feasible
+    if set isa AndSet
+        return lhs_feasible && rhs_feasible
+    end
+    return true
 end
 
 """

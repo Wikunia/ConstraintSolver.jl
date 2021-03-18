@@ -104,8 +104,22 @@ end
 
 function is_constraint_solved(com::CS.CoM, constraint::Constraint, fct, set)
     variables = com.search_space
-    !all(isfixed(variables[var]) for var in constraint.indices) && return false
+    !all(isfixed(variables[ind]) for ind in constraint.indices) && return false
     values = CS.value.(variables[constraint.indices])
+    return is_constraint_solved(constraint, fct, set, values)
+end
+
+function is_constraint_solved_when_fixed(com::CS.CoM, constraint::Constraint, fct, set, vidx::Int, value::Int)
+    variables = com.search_space
+    !all(isfixed(variables[ind]) || variables[ind].idx == vidx for ind in constraint.indices) && return false
+    values = zeros(Int, length(constraint.indices))
+    for (i,ind) in enumerate(constraint.indices)
+        if ind != vidx
+            values[i] = CS.value(variables[ind])
+        else
+            values[i] = value
+        end 
+    end
     return is_constraint_solved(constraint, fct, set, values)
 end
 
@@ -227,6 +241,8 @@ end
         :lhs_activated_in_backtrack_idx,
         :rhs_activated,
         :rhs_activated_in_backtrack_idx,
+        :lhs,
+        :rhs
     )
         Core.getproperty(Core.getproperty(c, :bool_std), s)
     else
@@ -253,6 +269,8 @@ end
         :lhs_activated_in_backtrack_idx,
         :rhs_activated,
         :rhs_activated_in_backtrack_idx,
+        :lhs,
+        :rhs
     )
         Core.setproperty!(c.bool_std, s, v)
     else
@@ -284,20 +302,10 @@ end
 
 get_value(::Type{Val{i}}) where i = i
 
-function typeof_without_params(::AndSet)
-    return AndSet
-end
-
-function typeof_without_params(::OrSet)
-    return OrSet
-end
-
-function typeof_without_params(::Type{<:AndSet})
-    return AndSet
-end
-
-function typeof_without_params(::Type{<:OrSet})
-    return OrSet
+for bool_pair = BOOL_SET_TO_CONSTRAINT
+    bool_set = bool_pair.first
+    @eval typeof_without_params(::$bool_set) = $bool_set
+    @eval typeof_without_params(::Type{<:$bool_set}) = $bool_set
 end
 
 function get_constraint(fct, set)

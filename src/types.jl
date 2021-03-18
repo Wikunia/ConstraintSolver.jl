@@ -341,12 +341,18 @@ struct BoolSetInternals{S1,S2}
     dimension::Int
 end
 
-struct AndSet{F1,F2,F1dim,F2dim,S1,S2} <: AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
-    bsi::BoolSetInternals{S1,S2}
-end
+const BOOL_SET_TO_CONSTRAINT = (
+    :AndSet => (constraint = :AndConstraint, op = :(&&)),
+    :OrSet  => (constraint = :OrConstraint, op = :(||)),
+    :XorSet => (constraint = :XorConstraint, op = :(⊻), needs_call = true)
+)
 
-struct OrSet{F1,F2,F1dim,F2dim,S1,S2} <: AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
-    bsi::BoolSetInternals{S1,S2}
+for (set, _) in BOOL_SET_TO_CONSTRAINT
+    @eval begin
+        struct $set{F1,F2,F1dim,F2dim,S1,S2} <: AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
+            bsi::BoolSetInternals{S1,S2}
+        end
+    end
 end
 
 function (::Type{BS})(lhs_set::S1, rhs_set::S2) where {S1,S2,F1,F2,BS<:CS.AbstractBoolSet{F1,F2,F1dim,F2dim,S1_,S2_} where {F1dim,F2dim,S1_,S2_}}
@@ -420,25 +426,22 @@ end
 
 abstract type BoolConstraint{C1<:Constraint,C2<:Constraint} <: Constraint end
 
-mutable struct BoolConstraintInternals
+mutable struct BoolConstraintInternals{C1<:Constraint,C2<:Constraint}
     lhs_activated::Bool
     lhs_activated_in_backtrack_idx::Int
     rhs_activated::Bool
     rhs_activated_in_backtrack_idx::Int
-end
-
-struct AndConstraint{C1,C2} <: BoolConstraint{C1,C2}
-    std::ConstraintInternals
-    bool_std::BoolConstraintInternals
     lhs::C1
     rhs::C2
 end
 
-struct OrConstraint{C1,C2} <: BoolConstraint{C1,C2}
-    std::ConstraintInternals
-    bool_std::BoolConstraintInternals
-    lhs::C1
-    rhs::C2
+for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    @eval begin
+        struct $(bool_data.constraint){C1,C2} <: BoolConstraint{C1,C2}
+            std::ConstraintInternals
+            bool_std::BoolConstraintInternals{C1,C2}
+        end
+    end
 end
 
 # support for a <= b constraint

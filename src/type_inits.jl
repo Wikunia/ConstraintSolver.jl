@@ -196,14 +196,14 @@ function BacktrackObj(com::CS.CoM)
     )
 end
 
-function BoolConstraintInternals() 
-    return BoolConstraintInternals(false, 0, false, 0)
+function BoolConstraintInternals(lhs, rhs) 
+    return BoolConstraintInternals(false, 0, false, 0, lhs, rhs)
 end
 
-function AndConstraint(internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
-    return AndConstraint(internals, BoolConstraintInternals(), lhs, rhs)
-end
-
-function OrConstraint(internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
-    return OrConstraint(internals, BoolConstraintInternals(), lhs, rhs)
+for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    @eval begin
+        function $(bool_data.constraint)(internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+            return $(bool_data.constraint)(internals, BoolConstraintInternals(lhs, rhs))
+        end
+    end
 end
