@@ -99,7 +99,7 @@ function simplify_svc_less_than(com)
                 Int[v.value for v in vars.variables],
             )
 
-            constraint = init_constraint_struct(set, internals)
+            constraint = init_constraint_struct(com, set, internals)
             add_constraint!(com, constraint)
             push!(added_constraint_idxs, length(com.constraints))
 
@@ -166,7 +166,7 @@ function simplify_not_equal_to_cliques(com)
                 Int[v.value for v in vars.variables],
             )
 
-            constraint = init_constraint_struct(set, internals)
+            constraint = init_constraint_struct(com, set, internals)
             add_constraint!(com, constraint)
             push!(added_constraint_idxs, length(com.constraints))
 

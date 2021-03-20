@@ -308,12 +308,12 @@ for bool_pair = BOOL_SET_TO_CONSTRAINT
     @eval typeof_without_params(::Type{<:$bool_set}) = $bool_set
 end
 
-function get_constraint(fct, set)
+function get_constraint(com, fct, set)
     if fct isa SAF
-        return new_linear_constraint(fct, set)
+        return get_linear_constraint(fct, set)
     else
         internals = create_interals(fct, set)
-        return init_constraint_struct(set, internals) 
+        return init_constraint_struct(com, set, internals) 
     end
 end
 

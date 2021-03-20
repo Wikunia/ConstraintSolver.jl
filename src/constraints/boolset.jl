@@ -1,4 +1,4 @@
-function init_constraint_struct(set::AbstractBoolSet{F1,F2}, internals) where {F1,F2}
+function init_constraint_struct(com, set::AbstractBoolSet{F1,F2}, internals) where {F1,F2}
     f = MOIU.eachscalar(internals.fct)
 
     lhs_fct = f[1:set.lhs_dimension]
@@ -19,15 +19,25 @@ function init_constraint_struct(set::AbstractBoolSet{F1,F2}, internals) where {F
     end
 
    
-    lhs = get_constraint(lhs_fct, set.lhs_set)
-    rhs = get_constraint(rhs_fct, set.rhs_set)
+    lhs = get_constraint(com, lhs_fct, set.lhs_set)
+    rhs = get_constraint(com, rhs_fct, set.rhs_set)
 
-    return bool_constraint(set, internals, lhs, rhs)
+    return bool_constraint(set, com, internals, lhs, rhs)
+end
+
+function bool_constraint(::XorSet, com, internals, lhs, rhs)
+    XorConstraint(
+        internals,
+        BoolConstraintInternals(lhs, rhs),
+        get_anti_constraint(com, lhs),
+        get_anti_constraint(com, rhs)
+    )
 end
 
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    get(bool_data, :specific_constraint, false) && continue
     @eval begin
-        function bool_constraint(::$set, internals, lhs, rhs)
+        function bool_constraint(::$set, com, internals, lhs, rhs)
             $(bool_data.constraint)(
                 internals,
                 lhs,
@@ -37,24 +47,42 @@ for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
     end
 end
 
+"""
+    anti_set(::Type{<:AbstractBoolSet}) 
+
+Return the type of the anti bool set so AndSet => OrSet
+"""
 anti_set(::Type{<:AndSet}) = OrSet
 anti_set(::Type{<:OrSet}) = AndSet
+anti_set(::Type{<:XorSet}) = NXorSet
+anti_set(::Type{<:NXorSet}) = XorSet
+
+"""
+    anti_constraint_type(::Type{<:AbstractBoolSet}) 
+
+Return the constraint of the anti bool set so AndSet => OrConstraint
+"""
+anti_constraint_type(::Type{<:AndSet}) = OrConstraint
+anti_constraint_type(::Type{<:OrSet}) = AndConstraint
+anti_constraint_type(::Type{<:XorSet}) = NXorConstraint
+anti_constraint_type(::Type{<:NXorSet}) = XorConstraint
 
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    res_op = get(bool_data, :res_op, :identity)
     if get(bool_data, :needs_call, false)
         @eval begin
-            apply_bool_operator(::Type{<:$(set)}, lhs, rhs) = $(Expr(:call, bool_data.op, :lhs, :rhs))
+            apply_bool_operator(::Type{<:$(set)}, lhs, rhs) = $(Expr(:call, res_op, Expr(:call, bool_data.op, :lhs, :rhs)))
 
             function apply_bool_operator(::Type{<:$set}, lhs_fct, rhs_fct, args...) 
-                $(Expr(:call, bool_data.op, :(lhs_fct(args...)), :(rhs_fct(args...))))
+                $(Expr(:call, res_op, Expr(:call, bool_data.op, :(lhs_fct(args...)), :(rhs_fct(args...)))))
             end
         end
     else
         @eval begin
-            apply_bool_operator(::Type{<:$(set)}, lhs, rhs) = $(Expr(bool_data.op, :lhs, :rhs))
+            apply_bool_operator(::Type{<:$(set)}, lhs, rhs) = $(Expr(:call, res_op, Expr(bool_data.op, :lhs, :rhs)))
 
             function apply_bool_operator(::Type{<:$set}, lhs_fct, rhs_fct, args...) 
-                $(Expr(bool_data.op, :(lhs_fct(args...)), :(rhs_fct(args...))))
+                $(Expr(:call, res_op, Expr(bool_data.op, :(lhs_fct(args...)), :(rhs_fct(args...)))))
             end
         end
     end
@@ -65,6 +93,15 @@ function apply_anti_bool_operator(s::Type{<:AbstractBoolSet}, args...)
 end
 
 function init_constraint!(
+    com::CS.CoM,
+    constraint::BoolConstraint,
+    fct,
+    set::AbstractBoolSet;
+)
+   init_lhs_and_rhs!(com, constraint, fct, set)
+end
+
+function init_lhs_and_rhs!(
     com::CS.CoM,
     constraint::BoolConstraint,
     fct,

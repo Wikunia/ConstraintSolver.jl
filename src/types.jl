@@ -344,10 +344,11 @@ end
 const BOOL_SET_TO_CONSTRAINT = (
     :AndSet => (constraint = :AndConstraint, op = :(&&)),
     :OrSet  => (constraint = :OrConstraint, op = :(||)),
-    :XorSet => (constraint = :XorConstraint, op = :(⊻), needs_call = true)
+    :XorSet => (constraint = :XorConstraint, op = :(⊻), needs_call = true, specific_constraint = true),
+    :NXorSet => (constraint = :NXorConstraint, res_op = :(!), op = :(⊻), needs_call = true)
 )
 
-for (set, _) in BOOL_SET_TO_CONSTRAINT
+for (set, bool_data) in BOOL_SET_TO_CONSTRAINT 
     @eval begin
         struct $set{F1,F2,F1dim,F2dim,S1,S2} <: AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
             bsi::BoolSetInternals{S1,S2}
@@ -435,7 +436,15 @@ mutable struct BoolConstraintInternals{C1<:Constraint,C2<:Constraint}
     rhs::C2
 end
 
+struct XorConstraint{C1,C2} <: BoolConstraint{C1,C2}
+    std::ConstraintInternals
+    bool_std::BoolConstraintInternals{C1,C2}
+    anti_lhs::Union{Nothing, Constraint}
+    anti_rhs::Union{Nothing, Constraint}
+end
+
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    get(bool_data, :specific_constraint, false) && continue
     @eval begin
         struct $(bool_data.constraint){C1,C2} <: BoolConstraint{C1,C2}
             std::ConstraintInternals

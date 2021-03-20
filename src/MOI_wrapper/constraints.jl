@@ -201,7 +201,7 @@ function create_interals(func::VAF{T}, set) where {T}
 end
 
 """
-    get_anti_constraint(mode, constraint)
+    get_anti_constraint(com, constraint)
 
 Return the anti constraint if it exists and `nothing` otherwise.
 The anti constraint is the constraint that expresses the opposite i.e
@@ -211,11 +211,11 @@ input 5x == 2 => 5x != 2
 
 Currently it's only implemented for linear constraints
 """
-function get_anti_constraint(model, constraint::Constraint)
+function get_anti_constraint(com, constraint::Constraint)
     return nothing
 end
 
-function get_anti_constraint(model, constraint::LinearConstraint{T}) where T
+function get_anti_constraint(com, constraint::LinearConstraint{T}) where T
     set = constraint.set
     anti_fct = nothing
     anti_set = nothing
@@ -232,42 +232,33 @@ function get_anti_constraint(model, constraint::LinearConstraint{T}) where T
         anti_fct = copy(constraint.fct)
         anti_set = MOI.EqualTo(set.value)
     end
-    anti_lc = new_linear_constraint(model, anti_fct, anti_set)
-    anti_lc.idx = 0
+    anti_lc = get_linear_constraint(anti_fct, anti_set)
     return anti_lc
 end
 
-function get_anti_constraint(model, constraint::BoolConstraint)
-    lhs_anti_constraint = get_anti_constraint(model, constraint.lhs)
-    rhs_anti_constraint = get_anti_constraint(model, constraint.rhs)
+function get_anti_constraint(com, constraint::BoolConstraint)
+    lhs_anti_constraint = get_anti_constraint(com, constraint.lhs)
+    rhs_anti_constraint = get_anti_constraint(com, constraint.rhs)
 
     if lhs_anti_constraint === nothing || rhs_anti_constraint === nothing
         return nothing
     end
 
-    T = parametric_type(model.inner)
+    T = parametric_type(com)
     fct = MOIU.operate(vcat, T, lhs_anti_constraint.fct, rhs_anti_constraint.fct)
-    return anti_bool_constraint(constraint, fct, lhs_anti_constraint, rhs_anti_constraint)
+    return anti_bool_constraint(typeof(constraint.set), fct, lhs_anti_constraint, rhs_anti_constraint)
 end
 
 """
-    anti_bool_constraint(::AndConstraint, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+    anti_bool_constraint(bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
 
-Return the OrConstraint with the already anti constraints `lhs_constraint` and `rhs_constraint`
-::AndConstraint is just for dispatching ;)
+Return the anti constraint with the already anti constraints `lhs_constraint` and `rhs_constraint`
 """
-function anti_bool_constraint(::AndConstraint, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
-    set = OrSet{typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
+function anti_bool_constraint(bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+    set = anti_set(bst){typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
 
     internals = ConstraintInternals(0,fct,set,get_indices(fct))
-    return OrConstraint(internals, lhs_constraint, rhs_constraint)
-end
-
-function anti_bool_constraint(::OrConstraint, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
-    set = AndSet{typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
-
-    internals = ConstraintInternals(0,fct,set,get_indices(fct))
-    return AndConstraint(internals, lhs_constraint, rhs_constraint)
+    return anti_constraint_type(bst)(internals, lhs_constraint, rhs_constraint)
 end
 
 """
@@ -290,7 +281,7 @@ function MOI.add_constraint(
 
     internals = create_interals(com, vars, set)
 
-    constraint = init_constraint_struct(set, internals)
+    constraint = init_constraint_struct(com, set, internals)
 
     add_constraint!(model, constraint)
     if set isa AllDifferentSetInternal
@@ -338,7 +329,7 @@ function MOI.add_constraint(
         end
     end
 
-    lc = new_linear_constraint(model, func, set)
+    lc = new_linear_constraint(model.inner, func, set)
 
     add_constraint!(model, lc)
     model.inner.info.n_constraint_types.equality += 1
@@ -400,7 +391,7 @@ function MOI.add_constraint(
         return add_variable_less_than_variable_constraint(model, func, set)
     end
 
-    lc = new_linear_constraint(model, func, set)
+    lc = new_linear_constraint(model.inner, func, set)
 
     add_constraint!(model, lc)
     model.inner.info.n_constraint_types.inequality += 1
@@ -432,7 +423,7 @@ function MOI.add_constraint(
         return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(0)
     end
 
-    lc = new_linear_constraint(model, func, set)
+    lc = new_linear_constraint(model.inner, func, set)
 
     add_constraint!(model, lc)
 
@@ -445,7 +436,7 @@ function MOI.add_constraint(
 ) where {T<:Real}
     check_inbounds(model, func)
 
-    lc = new_linear_constraint(model, func, set)
+    lc = new_linear_constraint(model.inner, func, set)
 
     add_constraint!(model, lc)
     model.inner.info.n_constraint_types.inequality += 1
@@ -472,7 +463,7 @@ function MOI.add_constraint(
 
     activator_internals = get_activator_internals(A, indices)
 
-    lc = get_inner_constraint(func, set, set.set)
+    lc = get_inner_constraint(com, func, set, set.set)
 
     constraint = IndicatorConstraint(internals, activator_internals, lc)
 
@@ -491,7 +482,7 @@ function MOI.add_constraint(
 
     internals = create_interals(com, vars, set)
 
-    inner_constraint = get_inner_constraint(vars, set, set.set)
+    inner_constraint = get_inner_constraint(com, vars, set, set.set)
 
     indices = internals.indices
     activator_internals = get_activator_internals(A, indices)
@@ -514,7 +505,7 @@ function MOI.add_constraint(
 
     internals = create_interals(com, func, set)
 
-    inner_constraint = get_inner_constraint(func, set, set.set)
+    inner_constraint = get_inner_constraint(com, func, set, set.set)
     indices = internals.indices
 
     activator_internals = get_activator_internals(A, indices)
@@ -545,7 +536,7 @@ function MOI.add_constraint(
     )
 
     # for normal linear constraints
-    lc = get_inner_constraint(func, set, set.set)
+    lc = get_inner_constraint(com, func, set, set.set)
     anti_lc = get_anti_constraint(model, lc)
 
     activator_internals = get_activator_internals(A, indices)
@@ -565,7 +556,7 @@ function MOI.add_constraint(
     com.info.n_constraint_types.reified += 1
     internals = create_interals(com, vars, set)
 
-    inner_constraint = get_inner_constraint(vars, set, set.set)
+    inner_constraint = get_inner_constraint(com, vars, set, set.set)
     anti_constraint = get_anti_constraint(model, inner_constraint)
     indices = internals.indices
     activator_internals = get_activator_internals(A, indices)
@@ -587,8 +578,8 @@ function MOI.add_constraint(
 
     internals = create_interals(com, func, set)
 
-    inner_constraint = get_inner_constraint(func, set, set.set)
-    anti_constraint = get_anti_constraint(model, inner_constraint)
+    inner_constraint = get_inner_constraint(com, func, set, set.set)
+    anti_constraint = get_anti_constraint(com, inner_constraint)
     indices = internals.indices
     activator_internals = get_activator_internals(A, indices)
     constraint =
@@ -607,7 +598,7 @@ function MOI.add_constraint(
 ) where {T,BS<:AbstractBoolSet}
     com = model.inner
     internals = create_interals(com, func, set)
-    constraint = init_constraint_struct(set, internals)
+    constraint = init_constraint_struct(com, set, internals)
     add_constraint!(model, constraint)
 
     return MOI.ConstraintIndex{VAF{T},typeof(set)}(length(com.constraints))
