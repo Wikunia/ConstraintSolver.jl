@@ -369,6 +369,12 @@ function Base.copy(A::AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}) where {F1,F2,F1d
     typeof_without_params(A){F1,F2,F1dim,F2dim,S1,S2}(A.bsi)
 end
 
+struct AntiSet{S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
+    set::S
+    dimension::Int
+end
+Base.copy(A::AntiSet{S}) where {S} = AntiSet{S}(A.set, A.dimension)
+
 #====================================================================================
 ====================================================================================#
 
