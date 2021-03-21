@@ -345,7 +345,7 @@ const BOOL_SET_TO_CONSTRAINT = (
     :AndSet => (constraint = :AndConstraint, op = :(&&)),
     :OrSet  => (constraint = :OrConstraint, op = :(||)),
     :XorSet => (constraint = :XorConstraint, op = :(⊻), needs_call = true, specific_constraint = true),
-    :NXorSet => (constraint = :NXorConstraint, res_op = :(!), op = :(⊻), needs_call = true)
+    :NXorSet => (constraint = :NXorConstraint, res_op = :(!), op = :(⊻), needs_call = true, specific_constraint = true)
 )
 
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT 
@@ -443,6 +443,13 @@ mutable struct BoolConstraintInternals{C1<:Constraint,C2<:Constraint}
 end
 
 struct XorConstraint{C1,C2} <: BoolConstraint{C1,C2}
+    std::ConstraintInternals
+    bool_std::BoolConstraintInternals{C1,C2}
+    anti_lhs::Union{Nothing, Constraint}
+    anti_rhs::Union{Nothing, Constraint}
+end
+
+struct NXorConstraint{C1,C2} <: BoolConstraint{C1,C2}
     std::ConstraintInternals
     bool_std::BoolConstraintInternals{C1,C2}
     anti_lhs::Union{Nothing, Constraint}

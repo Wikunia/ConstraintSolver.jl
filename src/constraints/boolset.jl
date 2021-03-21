@@ -34,11 +34,21 @@ function bool_constraint(::XorSet, com, internals, lhs, rhs)
     )
 end
 
+function bool_constraint(::NXorSet, com, internals, lhs, rhs)
+    NXorConstraint(
+        internals,
+        BoolConstraintInternals(lhs, rhs),
+        get_anti_constraint(com, lhs),
+        get_anti_constraint(com, rhs)
+    )
+end
+
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
     get(bool_data, :specific_constraint, false) && continue
     @eval begin
         function bool_constraint(::$set, com, internals, lhs, rhs)
             $(bool_data.constraint)(
+                com,
                 internals,
                 lhs,
                 rhs

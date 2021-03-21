@@ -200,9 +200,18 @@ function BoolConstraintInternals(lhs, rhs)
     return BoolConstraintInternals(false, 0, false, 0, lhs, rhs)
 end
 
+function XorConstraint(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+    return XorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_anti_constraint(com, lhs), get_anti_constraint(com, rhs))
+end
+
+function NXorConstraint(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+    return NXorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_anti_constraint(com, lhs), get_anti_constraint(com, rhs))
+end
+
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    get(bool_data, :specific_constraint, false) && continue
     @eval begin
-        function $(bool_data.constraint)(internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+        function $(bool_data.constraint)(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
             return $(bool_data.constraint)(internals, BoolConstraintInternals(lhs, rhs))
         end
     end

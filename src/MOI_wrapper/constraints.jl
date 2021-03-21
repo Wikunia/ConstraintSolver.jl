@@ -61,6 +61,12 @@ MOI.supports_constraint(
     ::Type{Strictly{T, MOI.LessThan{T}}},
 ) where {T<:Real} = true
 
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{<:MathOptInterface.AbstractFunction},
+    ::Type{<:AntiSet},
+) = true
+
 function MOI.supports_constraint(
     ::Optimizer,
     func::Type{VAF{T}},
@@ -247,19 +253,19 @@ function get_anti_constraint(com, constraint::BoolConstraint)
 
     T = parametric_type(com)
     fct = MOIU.operate(vcat, T, lhs_anti_constraint.fct, rhs_anti_constraint.fct)
-    return anti_bool_constraint(typeof(constraint.set), fct, lhs_anti_constraint, rhs_anti_constraint)
+    return anti_bool_constraint(com, typeof(constraint.set), fct, lhs_anti_constraint, rhs_anti_constraint)
 end
 
 """
-    anti_bool_constraint(bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+    anti_bool_constraint(com, bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
 
 Return the anti constraint with the already anti constraints `lhs_constraint` and `rhs_constraint`
 """
-function anti_bool_constraint(bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+function anti_bool_constraint(com, bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
     set = anti_set(bst){typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
 
     internals = ConstraintInternals(0,fct,set,get_indices(fct))
-    return anti_constraint_type(bst)(internals, lhs_constraint, rhs_constraint)
+    return anti_constraint_type(bst)(com, internals, lhs_constraint, rhs_constraint)
 end
 
 """
@@ -294,6 +300,30 @@ function MOI.add_constraint(
     end
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,typeof(set)}(length(com.constraints))
+end
+
+"""
+    MOI.add_constraint(
+        model::Optimizer,
+        vars::MOI.AbstractFunction,
+        set::AntiSet,
+    )
+
+Add an AntiConstraint
+"""
+function MOI.add_constraint(
+    model::Optimizer,
+    fct::MOI.AbstractFunction,
+    set::AntiSet,
+)
+    com = model.inner
+    inner_set = set.set
+    constraint = get_constraint(com, fct, inner_set)
+    anti_constraint = get_anti_constraint(com, constraint)
+    anti_constraint.idx = length(com.constraints)+1
+
+    add_constraint!(model, anti_constraint)
+    return MOI.ConstraintIndex{typeof(fct),typeof(set)}(length(com.constraints))
 end
 
 function MOI.add_constraint(

@@ -1,13 +1,13 @@
 function init_constraint!(
     com::CS.CoM,
-    constraint::XorConstraint,
+    constraint::NXorConstraint,
     fct,
-    set::XorSet;
+    set::NXorSet;
 )
     !init_lhs_and_rhs!(com, constraint, fct, set) && return false
 
-    set_impl_functions!(com,  constraint.anti_lhs)
-    set_impl_functions!(com,  constraint.anti_rhs)
+    set_impl_functions!(com, constraint.anti_lhs)
+    set_impl_functions!(com, constraint.anti_rhs)
     if constraint.anti_lhs.impl.init   
         init_constraint!(com, constraint.anti_lhs, constraint.anti_lhs.fct, constraint.anti_lhs.set)
     end
@@ -18,16 +18,16 @@ function init_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::XorConstraint, fct, set::XorSet, vidx::Int, value::Int)
+    still_feasible(com::CoM, constraint::NXorConstraint, fct, set::NXorSet, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `vidx` to `value`.
 **Attention:** This assumes that it isn't violated before.
 """
 function still_feasible(
     com::CoM,
-    constraint::XorConstraint,
+    constraint::NXorConstraint,
     fct,
-    set::XorSet,
+    set::NXorSet,
     vidx::Int,
     value::Int,
 )
@@ -42,7 +42,6 @@ function still_feasible(
         for i in 1:length(lhs_indices)
             if lhs_indices[i] == vidx
                 lhs_feasible = still_feasible(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set, vidx, value)
-
                 break
             end
         end
@@ -52,6 +51,10 @@ function still_feasible(
     rhs_solved = false
     if rhs_feasible
         rhs_solved = is_constraint_solved_when_fixed(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set, vidx, value)
+    end
+    # both must be violated or both must be solved in the end
+    if !lhs_feasible && rhs_solved
+        return false
     end
     if rhs_feasible && !rhs_solved
         rhs_indices = constraint.rhs.indices
@@ -63,60 +66,55 @@ function still_feasible(
         end
     end
 
-    # at least one must be feasible
-    if lhs_violated
-        return rhs_feasible
-    elseif rhs_violated
-        return lhs_feasible
+    if !rhs_feasible && lhs_solved
+        return false
     end
-    # not allowed that both are already solved
-    return !(lhs_solved && rhs_solved)
+    return true
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::XorConstraint, fct, set::XorSet; logs = true)
+    prune_constraint!(com::CS.CoM, constraint::NXorConstraint, fct, set::NXorSet; logs = true)
 
-Reduce the number of possibilities given the `XorConstraint` by pruning both parts
+Reduce the number of possibilities given the `NXorConstraint` by pruning both parts
 Return whether still feasible
 """
 function prune_constraint!(
     com::CS.CoM,
-    constraint::XorConstraint,
+    constraint::NXorConstraint,
     fct,
-    set::XorSet;
+    set::NXorSet;
     logs = true,
 )
     lhs_violated = is_constraint_violated(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
     rhs_violated = is_constraint_violated(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
     if lhs_violated && rhs_violated
-        return false
+        return true
     end
     # check if one is already solved
     lhs_solved = is_constraint_solved(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
     rhs_solved = is_constraint_solved(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
     if lhs_solved && rhs_solved
-        return false
+        return true
     end
 
-    # if one is solved => anti prune the other
+    # if one is solved => prune the other
+    if lhs_solved
+        activate_rhs!(com, constraint)
+        return prune_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set; logs=logs)
+    end
+    if rhs_solved
+        activate_lhs!(com, constraint)
+        return prune_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set; logs=logs)
+    end
+
+
+    # if one is violated anti prune the other
     # Todo implement for activated anti constraints
-    if lhs_solved && constraint.anti_rhs !== nothing && !constraint.anti_rhs.impl.activate 
+    if lhs_violated && constraint.anti_rhs !== nothing && !constraint.anti_rhs.impl.activate 
         return prune_constraint!(com, constraint.anti_rhs, constraint.anti_rhs.fct, constraint.anti_rhs.set; logs=logs)
     end
-    if rhs_solved && constraint.anti_lhs !== nothing && !constraint.anti_lhs.impl.activate 
+    if rhs_violated && constraint.anti_lhs !== nothing && !constraint.anti_lhs.impl.activate 
         return prune_constraint!(com, constraint.anti_lhs, constraint.anti_lhs.fct, constraint.anti_lhs.set; logs=logs)
-    end
-
-    # if both aren't solved yet we only prune if one is violated
-    if !lhs_solved && !rhs_solved
-        if lhs_violated
-            activate_rhs!(com, constraint)
-            return prune_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set; logs=logs)
-        end
-        if rhs_violated
-            activate_lhs!(com, constraint)
-            return prune_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set; logs=logs)
-        end
     end
    
     return true
