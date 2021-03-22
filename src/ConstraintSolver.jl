@@ -93,15 +93,16 @@ function get_inner_model(m::Model)
     JuMP.backend(m).optimizer.model.model.inner
 end
 
+// documentation
 function get_inner_model(o::MOIB.LazyBridgeOptimizer{Optimizer})
     o.model.inner
 end
 
-"""
+/*
     fulfills_constraints(com::CS.CoM, vidx, value)
 
 Return whether the model is still feasible after setting the variable at position `vidx` to `value`.
-"""
+*/
 function fulfills_constraints(com::CS.CoM, vidx, value)
     # variable doesn't have any constraint
     if vidx > length(com.subscription)
