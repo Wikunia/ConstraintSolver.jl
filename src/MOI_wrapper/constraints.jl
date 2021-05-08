@@ -208,7 +208,7 @@ function create_interals(func::VAF{T}, set) where {T}
 end
 
 """
-    get_anti_constraint(com, constraint)
+    get_complement_constraint(com, constraint)
 
 Return the anti constraint if it exists and `nothing` otherwise.
 The anti constraint is the constraint that expresses the opposite i.e
@@ -218,54 +218,54 @@ input 5x == 2 => 5x != 2
 
 Currently it's only implemented for linear constraints
 """
-function get_anti_constraint(com, constraint::Constraint)
+function get_complement_constraint(com, constraint::Constraint)
     return nothing
 end
 
-function get_anti_constraint(com, constraint::LinearConstraint{T}) where T
+function get_complement_constraint(com, constraint::LinearConstraint{T}) where T
     set = constraint.set
-    anti_fct = nothing
-    anti_set = nothing
+    complement_fct = nothing
+    complement_set = nothing
     if constraint.set isa MOI.LessThan
-        anti_fct = MOIU.operate(-, T, constraint.fct)
-        anti_set = Strictly(MOI.LessThan(-set.upper))
+        complement_fct = MOIU.operate(-, T, constraint.fct)
+        complement_set = Strictly(MOI.LessThan(-set.upper))
     elseif constraint.set isa Strictly{T, MOI.LessThan{T}}
-        anti_fct = MOIU.operate(-, T, constraint.fct)
-        anti_set = MOI.LessThan(-set.set.upper)
+        complement_fct = MOIU.operate(-, T, constraint.fct)
+        complement_set = MOI.LessThan(-set.set.upper)
     elseif constraint.set isa MOI.EqualTo
-        anti_fct = copy(constraint.fct)
-        anti_set = NotEqualTo(set.value)
+        complement_fct = copy(constraint.fct)
+        complement_set = NotEqualTo(set.value)
     elseif constraint.set isa NotEqualTo
-        anti_fct = copy(constraint.fct)
-        anti_set = MOI.EqualTo(set.value)
+        complement_fct = copy(constraint.fct)
+        complement_set = MOI.EqualTo(set.value)
     end
-    anti_lc = get_linear_constraint(anti_fct, anti_set)
-    return anti_lc
+    complement_lc = get_linear_constraint(complement_fct, complement_set)
+    return complement_lc
 end
 
-function get_anti_constraint(com, constraint::BoolConstraint)
-    lhs_anti_constraint = get_anti_constraint(com, constraint.lhs)
-    rhs_anti_constraint = get_anti_constraint(com, constraint.rhs)
+function get_complement_constraint(com, constraint::BoolConstraint)
+    lhs_complement_constraint = get_complement_constraint(com, constraint.lhs)
+    rhs_complement_constraint = get_complement_constraint(com, constraint.rhs)
 
-    if lhs_anti_constraint === nothing || rhs_anti_constraint === nothing
+    if lhs_complement_constraint === nothing || rhs_complement_constraint === nothing
         return nothing
     end
 
     T = parametric_type(com)
-    fct = MOIU.operate(vcat, T, lhs_anti_constraint.fct, rhs_anti_constraint.fct)
-    return anti_bool_constraint(com, typeof(constraint.set), fct, lhs_anti_constraint, rhs_anti_constraint)
+    fct = MOIU.operate(vcat, T, lhs_complement_constraint.fct, rhs_complement_constraint.fct)
+    return complement_bool_constraint(com, typeof(constraint.set), fct, lhs_complement_constraint, rhs_complement_constraint)
 end
 
 """
-    anti_bool_constraint(com, bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+    complement_bool_constraint(com, bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
 
 Return the anti constraint with the already anti constraints `lhs_constraint` and `rhs_constraint`
 """
-function anti_bool_constraint(com, bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
-    set = anti_set(bst){typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
+function complement_bool_constraint(com, bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+    set = complement_set(bst){typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
 
     internals = ConstraintInternals(0,fct,set,get_indices(fct))
-    return anti_constraint_type(bst)(com, internals, lhs_constraint, rhs_constraint)
+    return complement_constraint_type(bst)(com, internals, lhs_constraint, rhs_constraint)
 end
 
 """
@@ -319,10 +319,10 @@ function MOI.add_constraint(
     com = model.inner
     inner_set = set.set
     constraint = get_constraint(com, fct, inner_set)
-    anti_constraint = get_anti_constraint(com, constraint)
-    anti_constraint.idx = length(com.constraints)+1
+    complement_constraint = get_complement_constraint(com, constraint)
+    complement_constraint.idx = length(com.constraints)+1
 
-    add_constraint!(model, anti_constraint)
+    add_constraint!(model, complement_constraint)
     return MOI.ConstraintIndex{typeof(fct),typeof(set)}(length(com.constraints))
 end
 
@@ -568,10 +568,10 @@ function MOI.add_constraint(
 
     # for normal linear constraints
     lc = get_inner_constraint(com, func, set, set.set)
-    anti_lc = get_anti_constraint(model, lc)
+    complement_lc = get_complement_constraint(model, lc)
 
     activator_internals = get_activator_internals(A, indices)
-    constraint = ReifiedConstraint(internals, activator_internals, lc, anti_lc)
+    constraint = ReifiedConstraint(internals, activator_internals, lc, complement_lc)
 
     add_constraint!(model, constraint)
 
@@ -588,11 +588,11 @@ function MOI.add_constraint(
     internals = create_interals(com, vars, set)
 
     inner_constraint = get_inner_constraint(com, vars, set, set.set)
-    anti_constraint = get_anti_constraint(model, inner_constraint)
+    complement_constraint = get_complement_constraint(model, inner_constraint)
     indices = internals.indices
     activator_internals = get_activator_internals(A, indices)
     constraint =
-        ReifiedConstraint(internals, activator_internals, inner_constraint, anti_constraint)
+        ReifiedConstraint(internals, activator_internals, inner_constraint, complement_constraint)
 
     add_constraint!(model, constraint)
 
@@ -610,11 +610,11 @@ function MOI.add_constraint(
     internals = create_interals(com, func, set)
 
     inner_constraint = get_inner_constraint(com, func, set, set.set)
-    anti_constraint = get_anti_constraint(com, inner_constraint)
+    complement_constraint = get_complement_constraint(com, inner_constraint)
     indices = internals.indices
     activator_internals = get_activator_internals(A, indices)
     constraint =
-        ReifiedConstraint(internals, activator_internals, inner_constraint, anti_constraint)
+        ReifiedConstraint(internals, activator_internals, inner_constraint, complement_constraint)
 
     add_constraint!(model, constraint)
 

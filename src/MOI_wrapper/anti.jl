@@ -1,4 +1,4 @@
-function _build_anti_constraint(
+function _build_complement_constraint(
     _error::Function,
     constraint,
 )
@@ -20,7 +20,7 @@ function JuMP.parse_one_operator_constraint(_error::Function, vectorized::Bool, 
 
     vectorized, inner_parsecode, inner_buildcall = JuMP.parse_constraint_expr(_error1, constraint)
 
-    buildcall = :($(esc(:(CS._build_anti_constraint)))(
+    buildcall = :($(esc(:(CS._build_complement_constraint)))(
         $_error,
         $inner_buildcall,
     ))

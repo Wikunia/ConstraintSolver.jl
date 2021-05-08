@@ -111,8 +111,8 @@ function LinearConstraint(
     return lc
 end
 
-function ReifiedConstraint(std, act_std, inner_constraint, anti_constraint)
-    return ReifiedConstraint(std, act_std, inner_constraint, anti_constraint, false, 0)
+function ReifiedConstraint(std, act_std, inner_constraint, complement_constraint)
+    return ReifiedConstraint(std, act_std, inner_constraint, complement_constraint, false, 0)
 end
 
 """
@@ -201,11 +201,11 @@ function BoolConstraintInternals(lhs, rhs)
 end
 
 function XorConstraint(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
-    return XorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_anti_constraint(com, lhs), get_anti_constraint(com, rhs))
+    return XorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_complement_constraint(com, lhs), get_complement_constraint(com, rhs))
 end
 
 function NXorConstraint(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
-    return NXorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_anti_constraint(com, lhs), get_anti_constraint(com, rhs))
+    return NXorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_complement_constraint(com, lhs), get_complement_constraint(com, rhs))
 end
 
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT

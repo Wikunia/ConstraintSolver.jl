@@ -5,7 +5,7 @@ function init_constraint!(
     set::RS,
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
-    anti_constraint = constraint.anti_constraint
+    complement_constraint = constraint.complement_constraint
 
     variables = com.search_space
     rei_vidx = constraint.indices[1]
@@ -13,7 +13,7 @@ function init_constraint!(
 
     # check which methods that inner constraint supports
     set_impl_functions!(com, inner_constraint)
-    anti_constraint !== nothing && set_impl_functions!(com, anti_constraint)
+    complement_constraint !== nothing && set_impl_functions!(com, complement_constraint)
 
     if inner_constraint.impl.init
         feasible = init_constraint!(
@@ -30,12 +30,12 @@ function init_constraint!(
         end
     end
 
-    if anti_constraint !== nothing && anti_constraint.impl.init
+    if complement_constraint !== nothing && complement_constraint.impl.init
         feasible = init_constraint!(
             com,
-            anti_constraint,
-            anti_constraint.fct,
-            anti_constraint.set;
+            complement_constraint,
+            complement_constraint.fct,
+            complement_constraint.set;
         )
     end
     # still feasible
@@ -57,7 +57,7 @@ function prune_constraint!(
     variables = com.search_space
     rei_vidx = constraint.indices[1]
     inner_constraint = constraint.inner_constraint
-    anti_constraint = constraint.anti_constraint
+    complement_constraint = constraint.complement_constraint
     activate_on = Int(constraint.activate_on)
     activate_off = activate_on == 1 ? 0 : 1
 
@@ -81,13 +81,13 @@ function prune_constraint!(
             inner_constraint.fct,
             inner_constraint.set,
         )
-    elseif issetto(variables[rei_vidx], activate_off) && anti_constraint !== nothing
-        !activate_anti_inner!(com, constraint) && return false
+    elseif issetto(variables[rei_vidx], activate_off) && complement_constraint !== nothing
+        !activate_complement_inner!(com, constraint) && return false
         return prune_constraint!(
             com,
-            anti_constraint,
-            anti_constraint.fct,
-            anti_constraint.set,
+            complement_constraint,
+            complement_constraint.fct,
+            complement_constraint.set,
         )
     end
     return true

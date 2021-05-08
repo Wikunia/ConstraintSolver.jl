@@ -29,8 +29,8 @@ function bool_constraint(::XorSet, com, internals, lhs, rhs)
     XorConstraint(
         internals,
         BoolConstraintInternals(lhs, rhs),
-        get_anti_constraint(com, lhs),
-        get_anti_constraint(com, rhs)
+        get_complement_constraint(com, lhs),
+        get_complement_constraint(com, rhs)
     )
 end
 
@@ -38,8 +38,8 @@ function bool_constraint(::NXorSet, com, internals, lhs, rhs)
     NXorConstraint(
         internals,
         BoolConstraintInternals(lhs, rhs),
-        get_anti_constraint(com, lhs),
-        get_anti_constraint(com, rhs)
+        get_complement_constraint(com, lhs),
+        get_complement_constraint(com, rhs)
     )
 end
 
@@ -58,24 +58,24 @@ for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
 end
 
 """
-    anti_set(::Type{<:AbstractBoolSet}) 
+    complement_set(::Type{<:AbstractBoolSet}) 
 
 Return the type of the anti bool set so AndSet => OrSet
 """
-anti_set(::Type{<:AndSet}) = OrSet
-anti_set(::Type{<:OrSet}) = AndSet
-anti_set(::Type{<:XorSet}) = NXorSet
-anti_set(::Type{<:NXorSet}) = XorSet
+complement_set(::Type{<:AndSet}) = OrSet
+complement_set(::Type{<:OrSet}) = AndSet
+complement_set(::Type{<:XorSet}) = NXorSet
+complement_set(::Type{<:NXorSet}) = XorSet
 
 """
-    anti_constraint_type(::Type{<:AbstractBoolSet}) 
+    complement_constraint_type(::Type{<:AbstractBoolSet}) 
 
 Return the constraint of the anti bool set so AndSet => OrConstraint
 """
-anti_constraint_type(::Type{<:AndSet}) = OrConstraint
-anti_constraint_type(::Type{<:OrSet}) = AndConstraint
-anti_constraint_type(::Type{<:XorSet}) = NXorConstraint
-anti_constraint_type(::Type{<:NXorSet}) = XorConstraint
+complement_constraint_type(::Type{<:AndSet}) = OrConstraint
+complement_constraint_type(::Type{<:OrSet}) = AndConstraint
+complement_constraint_type(::Type{<:XorSet}) = NXorConstraint
+complement_constraint_type(::Type{<:NXorSet}) = XorConstraint
 
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
     res_op = get(bool_data, :res_op, :identity)
@@ -98,8 +98,8 @@ for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
     end
 end
 
-function apply_anti_bool_operator(s::Type{<:AbstractBoolSet}, args...)
-    apply_bool_operator(anti_set(s), args...)
+function apply_complement_bool_operator(s::Type{<:AbstractBoolSet}, args...)
+    apply_bool_operator(complement_set(s), args...)
 end
 
 function init_constraint!(
@@ -187,7 +187,7 @@ function is_constraint_violated(
     fct,
     set::AbstractBoolSet,
 )
-    return apply_anti_bool_operator(
+    return apply_complement_bool_operator(
         typeof(set),
         is_lhs_constraint_violated,
         is_rhs_constraint_violated,

@@ -169,10 +169,10 @@ end
     com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
-    anti_constraint = constraint.anti_constraint
-    @test anti_constraint.set == MOI.LessThan(10.0)
-    @test all(term.coefficient == 1 for term in anti_constraint.fct.terms)
-    @test anti_constraint.fct.constant == 0
+    complement_constraint = constraint.complement_constraint
+    @test complement_constraint.set == MOI.LessThan(10.0)
+    @test all(term.coefficient == 1 for term in complement_constraint.fct.terms)
+    @test complement_constraint.fct.constant == 0
 
     variables = com.search_space
     constr_indices = constraint.indices
@@ -193,10 +193,10 @@ end
     com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
-    anti_constraint = constraint.anti_constraint
-    @test anti_constraint.set == CS.Strictly(MOI.LessThan(-10.0))
-    @test all(term.coefficient == -1 for term in anti_constraint.fct.terms)
-    @test anti_constraint.fct.constant == 0
+    complement_constraint = constraint.complement_constraint
+    @test complement_constraint.set == CS.Strictly(MOI.LessThan(-10.0))
+    @test all(term.coefficient == -1 for term in complement_constraint.fct.terms)
+    @test complement_constraint.fct.constant == 0
 
     variables = com.search_space
     constr_indices = constraint.indices
@@ -217,10 +217,10 @@ end
     com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
-    anti_constraint = constraint.anti_constraint
-    @test anti_constraint.set == CS.NotEqualTo(10.0)
-    @test all(term.coefficient == 1 for term in anti_constraint.fct.terms)
-    @test anti_constraint.fct.constant == 0
+    complement_constraint = constraint.complement_constraint
+    @test complement_constraint.set == CS.NotEqualTo(10.0)
+    @test all(term.coefficient == 1 for term in complement_constraint.fct.terms)
+    @test complement_constraint.fct.constant == 0
 
     variables = com.search_space
     constr_indices = constraint.indices
@@ -243,10 +243,10 @@ end
     com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
-    anti_constraint = constraint.anti_constraint
-    @test anti_constraint.set == MOI.EqualTo(10.0)
-    @test all(term.coefficient == 1 for term in anti_constraint.fct.terms)
-    @test anti_constraint.fct.constant == 0
+    complement_constraint = constraint.complement_constraint
+    @test complement_constraint.set == MOI.EqualTo(10.0)
+    @test all(term.coefficient == 1 for term in complement_constraint.fct.terms)
+    @test complement_constraint.fct.constant == 0
 
     variables = com.search_space
     constr_indices = constraint.indices

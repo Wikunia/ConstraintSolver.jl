@@ -445,15 +445,15 @@ end
 struct XorConstraint{C1,C2} <: BoolConstraint{C1,C2}
     std::ConstraintInternals
     bool_std::BoolConstraintInternals{C1,C2}
-    anti_lhs::Union{Nothing, Constraint}
-    anti_rhs::Union{Nothing, Constraint}
+    complement_lhs::Union{Nothing, Constraint}
+    complement_rhs::Union{Nothing, Constraint}
 end
 
 struct NXorConstraint{C1,C2} <: BoolConstraint{C1,C2}
     std::ConstraintInternals
     bool_std::BoolConstraintInternals{C1,C2}
-    anti_lhs::Union{Nothing, Constraint}
-    anti_rhs::Union{Nothing, Constraint}
+    complement_lhs::Union{Nothing, Constraint}
+    complement_rhs::Union{Nothing, Constraint}
 end
 
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
@@ -533,9 +533,9 @@ mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <
     std::ConstraintInternals
     act_std::ActivatorConstraintInternals
     inner_constraint::C
-    anti_constraint::AC
-    anti_inner_activated::Bool
-    anti_inner_activated_in_backtrack_idx::Int
+    complement_constraint::AC
+    complement_inner_constraint::Bool
+    complement_inner_constraint_in_backtrack_idx::Int
 end
 
 #====================================================================================

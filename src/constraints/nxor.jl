@@ -6,13 +6,13 @@ function init_constraint!(
 )
     !init_lhs_and_rhs!(com, constraint, fct, set) && return false
 
-    set_impl_functions!(com, constraint.anti_lhs)
-    set_impl_functions!(com, constraint.anti_rhs)
-    if constraint.anti_lhs.impl.init   
-        init_constraint!(com, constraint.anti_lhs, constraint.anti_lhs.fct, constraint.anti_lhs.set)
+    set_impl_functions!(com, constraint.complement_lhs)
+    set_impl_functions!(com, constraint.complement_rhs)
+    if constraint.complement_lhs.impl.init   
+        init_constraint!(com, constraint.complement_lhs, constraint.complement_lhs.fct, constraint.complement_lhs.set)
     end
-    if constraint.anti_rhs.impl.init   
-        init_constraint!(com, constraint.anti_rhs, constraint.anti_rhs.fct, constraint.anti_rhs.set)
+    if constraint.complement_rhs.impl.init   
+        init_constraint!(com, constraint.complement_rhs, constraint.complement_rhs.fct, constraint.complement_rhs.set)
     end
     return true
 end
@@ -110,11 +110,11 @@ function prune_constraint!(
 
     # if one is violated anti prune the other
     # Todo implement for activated anti constraints
-    if lhs_violated && constraint.anti_rhs !== nothing && !constraint.anti_rhs.impl.activate 
-        return prune_constraint!(com, constraint.anti_rhs, constraint.anti_rhs.fct, constraint.anti_rhs.set; logs=logs)
+    if lhs_violated && constraint.complement_rhs !== nothing && !constraint.complement_rhs.impl.activate 
+        return prune_constraint!(com, constraint.complement_rhs, constraint.complement_rhs.fct, constraint.complement_rhs.set; logs=logs)
     end
-    if rhs_violated && constraint.anti_lhs !== nothing && !constraint.anti_lhs.impl.activate 
-        return prune_constraint!(com, constraint.anti_lhs, constraint.anti_lhs.fct, constraint.anti_lhs.set; logs=logs)
+    if rhs_violated && constraint.complement_lhs !== nothing && !constraint.complement_lhs.impl.activate 
+        return prune_constraint!(com, constraint.complement_lhs, constraint.complement_lhs.fct, constraint.complement_lhs.set; logs=logs)
     end
    
     return true
