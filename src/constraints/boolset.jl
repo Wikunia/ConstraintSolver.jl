@@ -58,22 +58,33 @@ for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
 end
 
 """
+    demorgan_complement_set(::Type{<:AbstractBoolSet}) 
+
+Return the type of the demorgan complement bool set so AndSet <-> OrSet
+"""
+demorgan_complement_set(::Type{<:AbstractBoolSet}) = nothing
+demorgan_complement_set(::Type{<:AndSet}) = OrSet
+demorgan_complement_set(::Type{<:OrSet}) = AndSet
+
+demorgan_complement_constraint_type(::Type{<:AbstractBoolSet}) = nothing
+demorgan_complement_constraint_type(::Type{<:AndSet}) = OrConstraint
+demorgan_complement_constraint_type(::Type{<:OrSet}) = AndConstraint
+
+"""
     complement_set(::Type{<:AbstractBoolSet}) 
 
-Return the type of the complement bool set so AndSet => OrSet
+Return the type of the complement bool set so XorSet => XNorSet
 """
-complement_set(::Type{<:AndSet}) = OrSet
-complement_set(::Type{<:OrSet}) = AndSet
+complement_set(::Type{<:AbstractBoolSet}) = nothing
 complement_set(::Type{<:XorSet}) = XNorSet
 complement_set(::Type{<:XNorSet}) = XorSet
 
 """
     complement_constraint_type(::Type{<:AbstractBoolSet}) 
 
-Return the constraint of the complement bool set so AndSet => OrConstraint
+Return the constraint of the complement bool set so XorSet => XNorConstraint
 """
-complement_constraint_type(::Type{<:AndSet}) = OrConstraint
-complement_constraint_type(::Type{<:OrSet}) = AndConstraint
+complement_constraint_type(::Type{<:AbstractBoolSet}) = nothing
 complement_constraint_type(::Type{<:XorSet}) = XNorConstraint
 complement_constraint_type(::Type{<:XNorSet}) = XorConstraint
 
@@ -96,10 +107,6 @@ for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
             end
         end
     end
-end
-
-function apply_complement_bool_operator(s::Type{<:AbstractBoolSet}, args...)
-    apply_bool_operator(complement_set(s), args...)
 end
 
 function init_constraint!(
@@ -179,7 +186,7 @@ end
         set::AbstractBoolSet,
     )
 
-Check if the inner constraints are violated and apply the boolean operator to the inverse 
+Check if the inner constraints are violated return !(!lhs op !rhs) 
 """
 function is_constraint_violated(
     com::CoM,
@@ -187,10 +194,10 @@ function is_constraint_violated(
     fct,
     set::AbstractBoolSet,
 )
-    return apply_complement_bool_operator(
+    return !apply_bool_operator(
         typeof(set),
-        is_lhs_constraint_violated,
-        is_rhs_constraint_violated,
+        !is_lhs_constraint_violated,
+        !is_rhs_constraint_violated,
         com,
         constraint
     )

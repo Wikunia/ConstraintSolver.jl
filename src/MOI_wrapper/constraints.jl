@@ -244,28 +244,38 @@ function get_complement_constraint(com, constraint::LinearConstraint{T}) where T
 end
 
 function get_complement_constraint(com, constraint::BoolConstraint)
-    lhs_complement_constraint = get_complement_constraint(com, constraint.lhs)
-    rhs_complement_constraint = get_complement_constraint(com, constraint.rhs)
-
-    if lhs_complement_constraint === nothing || rhs_complement_constraint === nothing
-        return nothing
-    end
-
-    T = parametric_type(com)
-    fct = MOIU.operate(vcat, T, lhs_complement_constraint.fct, rhs_complement_constraint.fct)
-    return complement_bool_constraint(com, typeof(constraint.set), fct, lhs_complement_constraint, rhs_complement_constraint)
+    return complement_bool_constraint(com, typeof(constraint.set), constraint.fct, constraint.lhs, constraint.rhs)
 end
 
 """
     complement_bool_constraint(com, bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
 
-Return the complement constraint with the already complement constraints `lhs_constraint` and `rhs_constraint`
+Return the complement constraint
 """
-function complement_bool_constraint(com, bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
-    set = complement_set(bst){typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
-
-    internals = ConstraintInternals(0,fct,set,get_indices(fct))
-    return complement_constraint_type(bst)(com, internals, lhs_constraint, rhs_constraint)
+function complement_bool_constraint(com, bset::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
+    cs = complement_set(bset)
+    # if there is no complement set check for demorgan complement sets
+    if cs === nothing 
+        dcs = demorgan_complement_set(bset)
+        if dcs === nothing 
+            return nothing # if no complement set option exists
+        end
+        # demorgan rule -> complement the inners and then apply the demorgan set
+        lhs_complement_constraint = get_complement_constraint(com, lhs_constraint)
+        rhs_complement_constraint = get_complement_constraint(com, rhs_constraint)
+        if lhs_complement_constraint === nothing || rhs_complement_constraint === nothing
+            return nothing
+        end
+        T = parametric_type(com)
+        fct = MOIU.operate(vcat, T, lhs_complement_constraint.fct, rhs_complement_constraint.fct)
+        set = dcs{typeof(lhs_complement_constraint.fct), typeof(rhs_complement_constraint.fct)}(lhs_complement_constraint.set, rhs_complement_constraint.set)
+        internals = ConstraintInternals(0,fct,set,get_indices(fct))
+        return demorgan_complement_constraint_type(bset)(com, internals, lhs_complement_constraint, rhs_complement_constraint)
+    else
+        set = cs{typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
+        internals = ConstraintInternals(0,fct,set,get_indices(fct))
+        return complement_constraint_type(bset)(com, internals, lhs_constraint, rhs_constraint)
+    end
 end
 
 """
