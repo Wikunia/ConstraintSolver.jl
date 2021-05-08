@@ -17,7 +17,7 @@ end
 """
     activate_complement_inner!(com, constraint::ActivatorConstraint)
 
-Activate the anti constraint of `constraint` when not activated yet.
+Activate the complement constraint of `constraint` when not activated yet.
 Saves at which stage it was activated.
 """
 function activate_complement_inner!(com, constraint::ActivatorConstraint)

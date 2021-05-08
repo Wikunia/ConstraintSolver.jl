@@ -1,8 +1,8 @@
 function init_constraint!(
     com::CS.CoM,
-    constraint::NXorConstraint,
+    constraint::XNorConstraint,
     fct,
-    set::NXorSet;
+    set::XNorSet;
 )
     !init_lhs_and_rhs!(com, constraint, fct, set) && return false
 
@@ -18,16 +18,16 @@ function init_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::NXorConstraint, fct, set::NXorSet, vidx::Int, value::Int)
+    still_feasible(com::CoM, constraint::XNorConstraint, fct, set::XNorSet, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `vidx` to `value`.
 **Attention:** This assumes that it isn't violated before.
 """
 function still_feasible(
     com::CoM,
-    constraint::NXorConstraint,
+    constraint::XNorConstraint,
     fct,
-    set::NXorSet,
+    set::XNorSet,
     vidx::Int,
     value::Int,
 )
@@ -73,16 +73,16 @@ function still_feasible(
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::NXorConstraint, fct, set::NXorSet; logs = true)
+    prune_constraint!(com::CS.CoM, constraint::XNorConstraint, fct, set::XNorSet; logs = true)
 
-Reduce the number of possibilities given the `NXorConstraint` by pruning both parts
+Reduce the number of possibilities given the `XNorConstraint` by pruning both parts
 Return whether still feasible
 """
 function prune_constraint!(
     com::CS.CoM,
-    constraint::NXorConstraint,
+    constraint::XNorConstraint,
     fct,
-    set::NXorSet;
+    set::XNorSet;
     logs = true,
 )
     lhs_violated = is_constraint_violated(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
@@ -108,8 +108,8 @@ function prune_constraint!(
     end
 
 
-    # if one is violated anti prune the other
-    # Todo implement for activated anti constraints
+    # if one is violated complement prune the other
+    # Todo implement for activated complement constraints
     if lhs_violated && constraint.complement_rhs !== nothing && !constraint.complement_rhs.impl.activate 
         return prune_constraint!(com, constraint.complement_rhs, constraint.complement_rhs.fct, constraint.complement_rhs.set; logs=logs)
     end

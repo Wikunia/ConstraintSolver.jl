@@ -160,7 +160,7 @@ end
     @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
 end
 
-@testset "reified anti prune" begin
+@testset "reified complement prune" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b, Bin)
     @variable(m, 0 <= x[1:3] <= 15, Int)
@@ -178,7 +178,7 @@ end
     constr_indices = constraint.indices
     # set inactive
     @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
-    # should anti prune
+    # should prune complement
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 
     for ind in constr_indices[2:4]
@@ -202,7 +202,7 @@ end
     constr_indices = constraint.indices
     # set inactive
     @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
-    # should anti prune
+    # should prune complement
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 
     for ind in constr_indices[2:4]
@@ -228,7 +228,7 @@ end
     @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[2]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[3]], 5; check_feasibility = false)
-    # should anti prune
+    # should prune complement
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 
     for ind in constr_indices[4]
@@ -254,7 +254,7 @@ end
     @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[2]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[3]], 5; check_feasibility = false)
-    # should anti prune
+    # should prune complement
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 
     for ind in constr_indices[4]

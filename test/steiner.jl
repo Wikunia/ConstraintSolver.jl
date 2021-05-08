@@ -18,7 +18,7 @@ end
 
 # taken from http://hakank.org/julia/constraints/steiner_and.jl
 @testset "Steiner tests" begin
-@testset "Steiner test for && and || anti constraints with !b" begin
+@testset "Steiner test for && and || complement constraints with !b" begin
     model = Model(CSJuMPTestOptimizer())
 
     n = 7
@@ -49,7 +49,7 @@ end
     @test check_steiner(n, nb, x) 
 end
 
-@testset "Steiner test for && and || anti constraints with b" begin
+@testset "Steiner test for && and || complement constraints with b" begin
     model = Model(CSJuMPTestOptimizer())
 
     n = 7

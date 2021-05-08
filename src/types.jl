@@ -345,7 +345,7 @@ const BOOL_SET_TO_CONSTRAINT = (
     :AndSet => (constraint = :AndConstraint, op = :(&&)),
     :OrSet  => (constraint = :OrConstraint, op = :(||)),
     :XorSet => (constraint = :XorConstraint, op = :(⊻), needs_call = true, specific_constraint = true),
-    :NXorSet => (constraint = :NXorConstraint, res_op = :(!), op = :(⊻), needs_call = true, specific_constraint = true)
+    :XNorSet => (constraint = :XNorConstraint, res_op = :(!), op = :(⊻), needs_call = true, specific_constraint = true)
 )
 
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT 
@@ -369,11 +369,11 @@ function Base.copy(A::AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}) where {F1,F2,F1d
     typeof_without_params(A){F1,F2,F1dim,F2dim,S1,S2}(A.bsi)
 end
 
-struct AntiSet{S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
+struct ComplementSet{S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
     set::S
     dimension::Int
 end
-Base.copy(A::AntiSet{S}) where {S} = AntiSet{S}(A.set, A.dimension)
+Base.copy(A::ComplementSet{S}) where {S} = ComplementSet{S}(A.set, A.dimension)
 
 #====================================================================================
 ====================================================================================#
@@ -449,7 +449,7 @@ struct XorConstraint{C1,C2} <: BoolConstraint{C1,C2}
     complement_rhs::Union{Nothing, Constraint}
 end
 
-struct NXorConstraint{C1,C2} <: BoolConstraint{C1,C2}
+struct XNorConstraint{C1,C2} <: BoolConstraint{C1,C2}
     std::ConstraintInternals
     bool_std::BoolConstraintInternals{C1,C2}
     complement_lhs::Union{Nothing, Constraint}

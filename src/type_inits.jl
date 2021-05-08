@@ -204,8 +204,8 @@ function XorConstraint(com, internals::ConstraintInternals, lhs::Constraint, rhs
     return XorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_complement_constraint(com, lhs), get_complement_constraint(com, rhs))
 end
 
-function NXorConstraint(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
-    return NXorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_complement_constraint(com, lhs), get_complement_constraint(com, rhs))
+function XNorConstraint(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+    return XNorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_complement_constraint(com, lhs), get_complement_constraint(com, rhs))
 end
 
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT

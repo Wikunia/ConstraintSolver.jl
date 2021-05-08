@@ -34,8 +34,8 @@ function bool_constraint(::XorSet, com, internals, lhs, rhs)
     )
 end
 
-function bool_constraint(::NXorSet, com, internals, lhs, rhs)
-    NXorConstraint(
+function bool_constraint(::XNorSet, com, internals, lhs, rhs)
+    XNorConstraint(
         internals,
         BoolConstraintInternals(lhs, rhs),
         get_complement_constraint(com, lhs),
@@ -60,22 +60,22 @@ end
 """
     complement_set(::Type{<:AbstractBoolSet}) 
 
-Return the type of the anti bool set so AndSet => OrSet
+Return the type of the complement bool set so AndSet => OrSet
 """
 complement_set(::Type{<:AndSet}) = OrSet
 complement_set(::Type{<:OrSet}) = AndSet
-complement_set(::Type{<:XorSet}) = NXorSet
-complement_set(::Type{<:NXorSet}) = XorSet
+complement_set(::Type{<:XorSet}) = XNorSet
+complement_set(::Type{<:XNorSet}) = XorSet
 
 """
     complement_constraint_type(::Type{<:AbstractBoolSet}) 
 
-Return the constraint of the anti bool set so AndSet => OrConstraint
+Return the constraint of the complement bool set so AndSet => OrConstraint
 """
 complement_constraint_type(::Type{<:AndSet}) = OrConstraint
 complement_constraint_type(::Type{<:OrSet}) = AndConstraint
-complement_constraint_type(::Type{<:XorSet}) = NXorConstraint
-complement_constraint_type(::Type{<:NXorSet}) = XorConstraint
+complement_constraint_type(::Type{<:XorSet}) = XNorConstraint
+complement_constraint_type(::Type{<:XNorSet}) = XorConstraint
 
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
     res_op = get(bool_data, :res_op, :identity)

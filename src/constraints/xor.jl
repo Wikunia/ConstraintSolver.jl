@@ -98,8 +98,8 @@ function prune_constraint!(
         return false
     end
 
-    # if one is solved => anti prune the other
-    # Todo implement for activated anti constraints
+    # if one is solved => complement prune the other
+    # Todo implement for activated complement constraints
     if lhs_solved && constraint.complement_rhs !== nothing && !constraint.complement_rhs.impl.activate 
         return prune_constraint!(com, constraint.complement_rhs, constraint.complement_rhs.fct, constraint.complement_rhs.set; logs=logs)
     end

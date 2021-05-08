@@ -50,9 +50,9 @@ function prune_constraint!(
     logs = true,
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     # 1. if the inner constraint is solved then the reified variable can be set to activate_on
-    # 2. if the inner constraint is anti-solved (all fixed but don't fulfill) the reified variable can be set to !activate_on
+    # 2. if the complement of the inner constraint is solved (all fixed but don't fulfill) the reified variable can be set to !activate_on
     # 3. if the reified constraint is active then prune can be called for the inner constraint
-    # 4. if the reified constraint is fixed to inactive one can "anti" prune
+    # 4. if the reified constraint is fixed to inactive one can complement prune
 
     variables = com.search_space
     rei_vidx = constraint.indices[1]

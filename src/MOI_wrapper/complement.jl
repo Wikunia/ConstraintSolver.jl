@@ -7,7 +7,7 @@ function _build_complement_constraint(
     jump_func = JuMP.jump_function(constraint)
 
     return JuMP.VectorConstraint(
-        jump_func, AntiSet(set, MOI.dimension(set))
+        jump_func, ComplementSet(set, MOI.dimension(set))
     )
 end
 
@@ -15,7 +15,7 @@ end
 function JuMP.parse_one_operator_constraint(_error::Function, vectorized::Bool, ::Val{:!}, constraint)
     _error1 = deepcopy(_error)
     if vectorized
-        _error("`$(constraint)` should be non vectorized. There is currently no vectorized support for `anti` constraints. Please open an issue at ConstraintSolver.jl")
+        _error("`$(constraint)` should be non vectorized. There is currently no vectorized support for `!` constraints. Please open an issue at ConstraintSolver.jl")
     end
 
     vectorized, inner_parsecode, inner_buildcall = JuMP.parse_constraint_expr(_error1, constraint)

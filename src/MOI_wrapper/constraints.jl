@@ -10,7 +10,7 @@ MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 include("indicator.jl")
 include("reified.jl")
 include("bool.jl")
-include("anti.jl")
+include("complement.jl")
 
 """
 MOI constraints
@@ -64,7 +64,7 @@ MOI.supports_constraint(
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{<:MathOptInterface.AbstractFunction},
-    ::Type{<:AntiSet},
+    ::Type{<:ComplementSet},
 ) = true
 
 function MOI.supports_constraint(
@@ -210,8 +210,8 @@ end
 """
     get_complement_constraint(com, constraint)
 
-Return the anti constraint if it exists and `nothing` otherwise.
-The anti constraint is the constraint that expresses the opposite i.e
+Return the complement constraint if it exists and `nothing` otherwise.
+The complement constraint is the constraint that expresses the opposite i.e
 input: 2x + 7 <= 5 => 2x + 7 > 5
  - it will actually output only less than constraints not great than as it's not supported
 input 5x == 2 => 5x != 2
@@ -259,7 +259,7 @@ end
 """
     complement_bool_constraint(com, bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
 
-Return the anti constraint with the already anti constraints `lhs_constraint` and `rhs_constraint`
+Return the complement constraint with the already complement constraints `lhs_constraint` and `rhs_constraint`
 """
 function complement_bool_constraint(com, bst::Type{<:AbstractBoolSet}, fct, lhs_constraint::Constraint, rhs_constraint::Constraint)
     set = complement_set(bst){typeof(lhs_constraint.fct), typeof(rhs_constraint.fct)}(lhs_constraint.set, rhs_constraint.set)
@@ -306,15 +306,15 @@ end
     MOI.add_constraint(
         model::Optimizer,
         vars::MOI.AbstractFunction,
-        set::AntiSet,
+        set::ComplementSet,
     )
 
-Add an AntiConstraint
+Add a complement constraint
 """
 function MOI.add_constraint(
     model::Optimizer,
     fct::MOI.AbstractFunction,
-    set::AntiSet,
+    set::ComplementSet,
 )
     com = model.inner
     inner_set = set.set
