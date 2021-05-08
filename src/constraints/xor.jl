@@ -6,13 +6,17 @@ function init_constraint!(
 )
     !init_lhs_and_rhs!(com, constraint, fct, set) && return false
 
-    set_impl_functions!(com,  constraint.complement_lhs)
-    set_impl_functions!(com,  constraint.complement_rhs)
-    if constraint.complement_lhs.impl.init   
-        init_constraint!(com, constraint.complement_lhs, constraint.complement_lhs.fct, constraint.complement_lhs.set)
+    if constraint.complement_lhs !== nothing 
+        set_impl_functions!(com,  constraint.complement_lhs)
+        if constraint.complement_lhs.impl.init   
+            init_constraint!(com, constraint.complement_lhs, constraint.complement_lhs.fct, constraint.complement_lhs.set)
+        end
     end
-    if constraint.complement_rhs.impl.init   
-        init_constraint!(com, constraint.complement_rhs, constraint.complement_rhs.fct, constraint.complement_rhs.set)
+    if constraint.complement_rhs !== nothing
+        set_impl_functions!(com,  constraint.complement_rhs)
+        if constraint.complement_rhs.impl.init   
+            init_constraint!(com, constraint.complement_rhs, constraint.complement_rhs.fct, constraint.complement_rhs.set)
+        end
     end
     return true
 end
