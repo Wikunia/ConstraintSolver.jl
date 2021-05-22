@@ -13,6 +13,7 @@ end
     include("constraints/and.jl")
     include("constraints/or.jl")
     include("constraints/xor.jl")
+    include("constraints/xnor.jl")
     include("constraints/scc.jl")
     include("constraints/equal_to.jl")
     include("constraints/equal.jl")

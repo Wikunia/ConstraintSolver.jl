@@ -66,6 +66,7 @@ include("objective.jl")
 include("constraints.jl")
 
 include("constraints/all_different.jl")
+include("constraints/complement.jl")
 include("constraints/boolset.jl")
 include("constraints/and.jl")
 include("constraints/or.jl")

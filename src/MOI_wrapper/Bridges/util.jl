@@ -21,3 +21,31 @@ end
 function get_num_vars(fct::MOI.VectorOfVariables)
     return length(fct.variables)
 end
+
+"""
+    map_function(bridge, fct, set)
+
+Default for when set is not needed so return `MOIBC.map_function(bridge, fct)`
+If the set is needed a specific method should be implemented
+"""
+function map_function(
+    bridge::Type{<:MOIBC.AbstractBridge},
+    fct,
+    set
+)
+    MOIBC.map_function(bridge, fct)
+end
+
+
+"""
+    added_constraint_types(bridge, set)
+
+Default for when set is not needed so return `MOIBC.added_constraint_types(bridge)`
+If the set is needed a specific method should be implemented
+"""
+function added_constraint_types(
+    B::Type{<:MOIBC.AbstractBridge},
+    S,
+)
+    return MOIB.added_constraint_types(B)
+end

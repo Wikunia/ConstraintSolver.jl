@@ -4,10 +4,11 @@ function _build_complement_constraint(
 )
     set = JuMP.moi_set(constraint)
 
-    jump_func = JuMP.jump_function(constraint)
+    jump_fct = JuMP.jump_function(constraint)
+    moi_fct = JuMP.moi_function(constraint)
 
     return JuMP.VectorConstraint(
-        jump_func, ComplementSet(set, MOI.dimension(set))
+        [jump_fct...], ComplementSet{typeof(moi_fct)}(set)
     )
 end
 

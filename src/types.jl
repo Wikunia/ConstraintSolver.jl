@@ -310,19 +310,19 @@ mutable struct TableBacktrackInfo
     indices::Vector{Int}
 end
 
-struct IndicatorSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
+struct IndicatorSet{A,F,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
     set::S
     dimension::Int
 end
-IndicatorSet{A}(set::S) where {A,S} = IndicatorSet{A,S}(set, 1+MOI.dimension(set))
-Base.copy(I::IndicatorSet{A,S}) where {A,S} = IndicatorSet{A,S}(I.set, I.dimension)
+IndicatorSet{A,F}(set::S) where {A,F,S} = IndicatorSet{A,F,S}(set, 1+MOI.dimension(set))
+Base.copy(I::IndicatorSet{A,F,S}) where {A,F,S} = IndicatorSet{A,F,S}(I.set, I.dimension)
 
-struct ReifiedSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
+struct ReifiedSet{A,F,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
        MOI.AbstractVectorSet
     set::S
     dimension::Int
 end
-Base.copy(R::ReifiedSet{A,S}) where {A,S} = ReifiedSet{A,S}(R.set, R.dimension)
+Base.copy(R::ReifiedSet{A,F,S}) where {A,F,S} = ReifiedSet{A,F,S}(R.set, R.dimension)
 
 abstract type AbstractBoolSet{
     F1<:Union{SAF,VAF,MOI.VectorOfVariables},
@@ -369,11 +369,12 @@ function Base.copy(A::AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}) where {F1,F2,F1d
     typeof_without_params(A){F1,F2,F1dim,F2dim,S1,S2}(A.bsi)
 end
 
-struct ComplementSet{S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
+struct ComplementSet{F<:MOI.AbstractFunction, S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
     set::S
     dimension::Int
 end
-Base.copy(A::ComplementSet{S}) where {S} = ComplementSet{S}(A.set, A.dimension)
+ComplementSet{F}(set::S) where {F,S} = ComplementSet{F,S}(set, MOI.dimension(set))
+Base.copy(A::ComplementSet{F,S}) where {F,S} = ComplementSet{F,S}(A.set, A.dimension)
 
 #====================================================================================
 ====================================================================================#

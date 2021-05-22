@@ -312,18 +312,16 @@ function get_constraint(com, fct, set)
     if fct isa SAF
         return get_linear_constraint(fct, set)
     else
-        internals = create_interals(fct, set)
+        internals = create_internals(fct, set)
         return init_constraint_struct(com, set, internals) 
     end
 end
 
-function get_saf(fct::MOI.VectorAffineFunction)
-    MOI.ScalarAffineFunction([t.scalar_term for t in fct.terms], fct.constants[1])
-end
+get_saf(fct::MOI.ScalarAffineFunction) = fct
+get_saf(fct::MOI.VectorAffineFunction) = MOI.ScalarAffineFunction([t.scalar_term for t in fct.terms], fct.constants[1])
 
-function get_vov(fct::MOI.VectorAffineFunction)
-    return MOI.VectorOfVariables([t.scalar_term.variable_index for t in fct.terms])
-end
+get_vov(fct::MOI.VectorOfVariables) = fct
+get_vov(fct::MOI.VectorAffineFunction) = MOI.VectorOfVariables([t.scalar_term.variable_index for t in fct.terms])
 
 """
     init_and_activate_constraint!(com, constraint, fct, set)
