@@ -92,16 +92,12 @@ for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
     res_op = get(bool_data, :res_op, :identity)
     if get(bool_data, :needs_call, false)
         @eval begin
-            apply_bool_operator(::Type{<:$(set)}, lhs, rhs) = $(Expr(:call, res_op, Expr(:call, bool_data.op, :lhs, :rhs)))
-
             function apply_bool_operator(::Type{<:$set}, lhs_fct, rhs_fct, args...) 
                 $(Expr(:call, res_op, Expr(:call, bool_data.op, :(lhs_fct(args...)), :(rhs_fct(args...)))))
             end
         end
     else
         @eval begin
-            apply_bool_operator(::Type{<:$(set)}, lhs, rhs) = $(Expr(:call, res_op, Expr(bool_data.op, :lhs, :rhs)))
-
             function apply_bool_operator(::Type{<:$set}, lhs_fct, rhs_fct, args...) 
                 $(Expr(:call, res_op, Expr(bool_data.op, :(lhs_fct(args...)), :(rhs_fct(args...)))))
             end
