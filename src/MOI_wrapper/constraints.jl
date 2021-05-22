@@ -305,7 +305,7 @@ function MOI.add_constraint(
 ) where {F<:MOI.AbstractFunction,CF}
     com = model.inner
     inner_set = set.set
-    if !(F <: SAF) && CF <: SAF
+    if CF <: SAF
         fct = get_saf(fct)
     end
     constraint = get_constraint(com, fct, inner_set)
@@ -588,29 +588,6 @@ function MOI.add_constraint(
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.ReifiedSet{A,F,S}}(length(com.constraints))
 end
-
-function MOI.add_constraint(
-    model::Optimizer,
-    func::VAF{T},
-    set::RS,
-) where {T,A,S<:MOI.AbstractVectorSet,RS<:CS.ReifiedSet{A,S}}
-    com = model.inner
-    com.info.n_constraint_types.reified += 1
-
-    internals = create_internals(com, func, set)
-
-    inner_constraint = get_inner_constraint(com, func, set, set.set)
-    complement_constraint = get_complement_constraint(com, inner_constraint)
-    indices = internals.indices
-    activator_internals = get_activator_internals(A, indices)
-    constraint =
-        ReifiedConstraint(internals, activator_internals, inner_constraint, complement_constraint)
-
-    add_constraint!(model, constraint)
-
-    return MOI.ConstraintIndex{VAF{T},CS.ReifiedSet{A,S}}(length(com.constraints))
-end
-
 
 function MOI.add_constraint(
     model::Optimizer,
