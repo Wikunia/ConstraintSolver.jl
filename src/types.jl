@@ -350,7 +350,14 @@ const BOOL_SET_TO_CONSTRAINT = (
 
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT 
     @eval begin
-        struct $set{F1,F2,F1dim,F2dim,S1,S2} <: AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
+        struct $set{
+            F1<:Union{SAF,VAF,MOI.VectorOfVariables},
+            F2<:Union{SAF,VAF,MOI.VectorOfVariables},
+            F1dim<:Val,
+            F2dim<:Val,
+            S1<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
+            S2<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
+        } <: AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
             bsi::BoolSetInternals{S1,S2}
         end
     end

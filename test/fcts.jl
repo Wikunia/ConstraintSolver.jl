@@ -614,4 +614,14 @@
             bo.status = :Closed
         end
     end
+
+    @testset "Demorgan Complement Set" begin
+        @test CS.demorgan_complement_set(CS.XorSet) === nothing
+        @test CS.demorgan_complement_set(CS.AndSet) == CS.OrSet
+        @test CS.demorgan_complement_set(CS.OrSet) == CS.AndSet
+
+        @test CS.demorgan_complement_constraint_type(CS.XorSet) === nothing
+        @test CS.demorgan_complement_constraint_type(CS.AndSet) == CS.OrConstraint
+        @test CS.demorgan_complement_constraint_type(CS.OrSet) == CS.AndConstraint
+    end
 end
