@@ -202,3 +202,123 @@ end
     @test CS.still_feasible(com, xor_constraint, xor_constraint.fct, xor_constraint.set, xor_constraint.indices[2], 0)
     @test CS.still_feasible(com, xor_constraint, xor_constraint.fct, xor_constraint.set, xor_constraint.indices[2], 3)
 end
+
+@testset "xnor constraint still feasible" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, 0 <= x[1:2] <= 5, Int)
+    @constraint(m, !((x[1]+x[2] <= 2) ⊻ (x[2] <= 2)))
+    optimize!(m)
+
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    xnor_constraint = com.constraints[1]
+
+    constr_indices = xnor_constraint.indices
+    @test CS.still_feasible(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set, xnor_constraint.indices[1], 0)
+    @test CS.fix!(com, variables[xnor_constraint.indices[2]], 1; check_feasibility = false)
+    @test !CS.still_feasible(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set, xnor_constraint.indices[1], 3)
+
+    ###
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, 0 <= x[1:2] <= 5, Int)
+    @constraint(m, !((x[1] <= 2) ⊻ (x[2]+x[1] <= 2)))
+    optimize!(m)
+
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    xnor_constraint = com.constraints[1]
+
+    constr_indices = xnor_constraint.indices
+    @test CS.still_feasible(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set, xnor_constraint.indices[2], 0)
+    @test CS.fix!(com, variables[xnor_constraint.indices[1]], 1; check_feasibility = false)
+    @test !CS.still_feasible(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set, xnor_constraint.indices[2], 3)
+end
+
+
+@testset "xnor constraint prune_constraint" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, 2 <= x[1:2] <= 5, Int)
+    @constraint(m, !((x[1]+x[2] < 2) ⊻ (x[2] < 2)))
+    optimize!(m)
+
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    xnor_constraint = com.constraints[1]
+
+    constr_indices = xnor_constraint.indices
+    # is already solved as both are violated no pruning possible
+    @test CS.prune_constraint!(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set)
+
+    ###
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, 2 <= x[1:2] <= 5, Int)
+    @constraint(m, !((x[1]+x[2] >= 2) ⊻ (x[2] >= 2)))
+    optimize!(m)
+
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    xnor_constraint = com.constraints[1]
+
+    constr_indices = xnor_constraint.indices
+    # is already solved as both are subconstraints are solved => no pruning possible
+    @test CS.prune_constraint!(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set)
+
+    ###
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, 2 <= x[1:2] <= 5, Int)
+    @constraint(m, !((x[1]+x[2] >= 2) ⊻ (x[2] > 4)))
+    optimize!(m)
+
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    xnor_constraint = com.constraints[1]
+
+    constr_indices = xnor_constraint.indices
+    # lhs solved => rhs must be solved
+    @test CS.prune_constraint!(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set)
+    @test CS.values(variables[2]) == [5]
+
+    ###
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, 2 <= x[1:2] <= 5, Int)
+    @constraint(m, !((x[1]+x[2] <= 2) ⊻ (x[2] > 4)))
+    optimize!(m)
+
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    xnor_constraint = com.constraints[1]
+
+    constr_indices = xnor_constraint.indices
+    # lhs violated => rhs must be complement solved
+    @test CS.prune_constraint!(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set)
+    @test sort!(CS.values(variables[2])) == [2,3,4]
+
+    ###
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, 0 <= x[1:2] <= 5, Int)
+    @constraint(m, !((x[1]+x[2] <= 5) ⊻ (x[2] > 5)))
+    optimize!(m)
+
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    xnor_constraint = com.constraints[1]
+
+    constr_indices = xnor_constraint.indices
+    # rhs violated => lhs must be complement solved
+    @test CS.prune_constraint!(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set)
+    # the variables can't be 0 as otherwise we can't fullfil the complement x[1]+x[2] > 5
+    @test !CS.has(variables[1], 0)
+    @test !CS.has(variables[2], 0)
+end
