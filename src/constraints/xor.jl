@@ -22,6 +22,29 @@ function init_constraint!(
 end
 
 """
+    function is_constraint_violated(
+        com::CoM,
+        constraint::BoolConstraint,
+        fct,
+        set::XorSet,
+    )
+
+Check if both of the inner constraints are violated or whether both are solved
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::BoolConstraint,
+    fct,
+    set::XorSet,
+)
+    both_violated = is_lhs_constraint_violated(com, constraint) && is_rhs_constraint_violated(com, constraint) 
+    both_violated && return true
+    lhs_solved = is_constraint_solved(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
+    rhs_solved = is_constraint_solved(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
+    return lhs_solved && rhs_solved
+end
+
+"""
     still_feasible(com::CoM, constraint::XorConstraint, fct, set::XorSet, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `vidx` to `value`.

@@ -22,6 +22,44 @@ function init_constraint!(
 end
 
 """
+    function is_constraint_violated(
+        com::CoM,
+        constraint::BoolConstraint,
+        fct,
+        set::XNorSet,
+    )
+
+Check whether one side is solved and other is violated
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::BoolConstraint,
+    fct,
+    set::XNorSet,
+)
+    lhs_solved = is_constraint_solved(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
+    rhs_solved = is_constraint_solved(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
+    # neither of them is solved => it's not violated yet
+    if !lhs_solved && !rhs_solved 
+        return false
+    end
+    if lhs_solved && rhs_solved
+        return false
+    end
+
+    lhs_violated = is_lhs_constraint_violated(com, constraint) 
+    rhs_violated = is_rhs_constraint_violated(com, constraint) 
+    if lhs_solved && rhs_violated
+        return true
+    end
+    if rhs_solved && lhs_violated
+        return true
+    end
+
+    return false
+end
+
+"""
     still_feasible(com::CoM, constraint::XNorConstraint, fct, set::XNorSet, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `vidx` to `value`.

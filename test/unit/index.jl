@@ -9,6 +9,7 @@ function get_constraints_by_type(com, t)
 end
 
 @testset "Unit Tests" begin
+    include("constraints/bool.jl")
     include("constraints/alldifferent.jl")
     include("constraints/and.jl")
     include("constraints/or.jl")

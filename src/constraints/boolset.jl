@@ -166,31 +166,6 @@ function is_rhs_constraint_violated(com, constraint)
 end
 
 """
-    function is_constraint_violated(
-        com::CoM,
-        constraint::BoolConstraint,
-        fct,
-        set::AbstractBoolSet,
-    )
-
-Check if the inner constraints are violated return !(!lhs op !rhs) 
-"""
-function is_constraint_violated(
-    com::CoM,
-    constraint::BoolConstraint,
-    fct,
-    set::AbstractBoolSet,
-)
-    return !apply_bool_operator(
-        typeof(set),
-        !is_lhs_constraint_violated,
-        !is_rhs_constraint_violated,
-        com,
-        constraint
-    )
-end
-
-"""
     activate_lhs!(com, constraint::BoolConstraint)
 
 Activate the lhs constraint of `constraint` when not activated yet.
