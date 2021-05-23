@@ -514,6 +514,48 @@ function still_feasible(
     return true
 end
 
+"""
+    is_constraint_solved(
+        com::CS.CoM,
+        constraint::LinearConstraint,
+        fct::SAF{T},
+        set::MOI.LessThan{T},
+    )
+
+    Check if the constraint is fulfilled even though not all variables are set
+"""
+function is_constraint_solved(
+    com::CS.CoM,
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::MOI.LessThan{T},
+) where T
+    recompute_lc_extrema!(com, constraint, fct)
+    sum_maxs = sum(constraint.maxs)
+    return sum_maxs <= MOI.constant(set)
+end
+
+"""
+    is_constraint_solved(
+        com::CS.CoM,
+        constraint::LinearConstraint,
+        fct::SAF{T},
+        set::Strictly{T, MOI.LessThan{T}}
+    )
+
+    Check if the constraint is fulfilled even though not all variables are set
+"""
+function is_constraint_solved(
+    com::CS.CoM,
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::Strictly{T, MOI.LessThan{T}},
+) where T
+    recompute_lc_extrema!(com, constraint, fct)
+    sum_maxs = sum(constraint.maxs)
+    return sum_maxs < MOI.constant(set)
+end
+
 function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
@@ -548,7 +590,7 @@ end
         com::CoM,
         constraint::LinearConstraint,
         fct::SAF{T},
-        set::MOI.EqualTo{T}
+        set::Union{MOI.LessThan, MOI.EqualTo, Strictly{T, MOI.LessThan{T}}}
     ) where {T<:Real}
 
 Checks if the constraint is violated as it is currently set. This can happen inside an
@@ -568,5 +610,23 @@ function is_constraint_violated(
             CS.value.(com.search_space[constraint.indices]),
         )
     end
-    return false
+    # check if it can be feasible using the minimum sum
+    recompute_lc_extrema!(com, constraint, fct)
+    return !min_sum_feasible(com, sum(constraint.mins), set)
+end
+
+"""
+    min_sum_feasible(min_sum, set::Union{MOI.LessThan, MOI.EqualTo}) 
+
+Check if the minimum sum is <= set value + absolute tolerance 
+"""
+function min_sum_feasible(com, min_sum, set::Union{MOI.LessThan, MOI.EqualTo})
+    return min_sum <= MOI.constant(set) + com.options.atol
+end
+
+function min_sum_feasible(com, min_sum, set::Strictly{T, MOI.LessThan{T}}) where T
+    if isapprox_discrete(com, min_sum) && isapprox_discrete(com, MOI.constant(set))
+        return get_approx_discrete(min_sum) < get_approx_discrete(MOI.constant(set))
+    end
+    return min_sum <= MOI.constant(set) + com.options.atol
 end

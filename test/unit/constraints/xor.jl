@@ -203,3 +203,37 @@ end
     @test CS.still_feasible(com, xor_constraint, xor_constraint.fct, xor_constraint.set, xor_constraint.indices[2], 0)
     @test CS.still_feasible(com, xor_constraint, xor_constraint.fct, xor_constraint.set, xor_constraint.indices[2], 3)
 end
+
+@testset "reified xor constraint prune_constraint" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, b >= 1, Bin)
+    @variable(m, 2 <= x[1:2] <= 5, Int)
+    @constraint(m, b := {(x[1] < 2) ⊻ (x[2] < 2)}) 
+    optimize!(m)
+
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    constraint = com.constraints[1]
+    xor_constraint = com.constraints[1].inner_constraint
+
+    constr_indices = xor_constraint.indices
+    @test !CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+
+    ##########################
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, b >= 1, Bin)
+    @variable(m, 2 <= x[1:2] <= 5, Int)
+    @constraint(m, b := {(x[1] > 1) ⊻ (x[2] > 1)}) 
+    optimize!(m)
+
+    com = CS.get_inner_model(m)
+
+    variables = com.search_space
+    constraint = com.constraints[1]
+    xor_constraint = com.constraints[1].inner_constraint
+
+    constr_indices = xor_constraint.indices
+    @test !CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+end
