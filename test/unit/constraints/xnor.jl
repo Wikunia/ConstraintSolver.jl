@@ -215,9 +215,9 @@ end
     xnor_constraint = com.constraints[1]
 
     constr_indices = xnor_constraint.indices
-    @test CS.still_feasible(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set, xnor_constraint.indices[1], 0)
-    @test CS.fix!(com, variables[xnor_constraint.indices[2]], 1; check_feasibility = false)
-    @test !CS.still_feasible(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set, xnor_constraint.indices[1], 3)
+    @test CS.still_feasible(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set, 1, 0)
+    @test CS.fix!(com, variables[2], 1; check_feasibility = false)
+    @test !CS.still_feasible(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set, 1, 3)
 
     ###
 
@@ -232,9 +232,9 @@ end
     xnor_constraint = com.constraints[1]
 
     constr_indices = xnor_constraint.indices
-    @test CS.still_feasible(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set, xnor_constraint.indices[2], 0)
-    @test CS.fix!(com, variables[xnor_constraint.indices[1]], 1; check_feasibility = false)
-    @test !CS.still_feasible(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set, xnor_constraint.indices[2], 3)
+    @test CS.still_feasible(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set, 2, 0)
+    @test CS.fix!(com, variables[1], 1; check_feasibility = false)
+    @test !CS.still_feasible(com, xnor_constraint, xnor_constraint.fct, xnor_constraint.set, 2, 3)
 end
 
 
