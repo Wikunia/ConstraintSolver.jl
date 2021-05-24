@@ -22,6 +22,8 @@ function init_constraint_struct(com, set::AbstractBoolSet{F1,F2}, internals) whe
     lhs = get_constraint(com, lhs_fct, set.lhs_set)
     rhs = get_constraint(com, rhs_fct, set.rhs_set)
 
+    bs = bool_constraint(set, com, internals, lhs, rhs)
+
     return bool_constraint(set, com, internals, lhs, rhs)
 end
 

@@ -117,8 +117,9 @@ MOI.supports_constraint(
     Return whether the two constraint inside the `AbstractBoolSet` are supported directly by the solver
 """
 function is_boolset_supported(optimizer::Optimizer, ::Type{<:CS.AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}}) where {F1, F2, F1dim, F2dim, S1, S2}
-    is_supported = MOI.supports_constraint(optimizer, F1, S1) && MOI.supports_constraint(optimizer, F2, S2)
-    return is_supported
+    is_supported_left = MOI.supports_constraint(optimizer, F1, S1)
+    is_supported_right = MOI.supports_constraint(optimizer, F2, S2)
+    return is_supported_left && is_supported_right
 end
 
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
@@ -556,12 +557,11 @@ function MOI.add_constraint(
         indices,
     )
 
-    # for normal linear constraints
-    lc = get_inner_constraint(com, func, set, set.set)
-    complement_lc = get_complement_constraint(com, lc)
+    inner = get_inner_constraint(com, func, set, set.set)
+    complement_inner = get_complement_constraint(com, inner)
 
     activator_internals = get_activator_internals(A, indices)
-    constraint = ReifiedConstraint(internals, activator_internals, lc, complement_lc)
+    constraint = ReifiedConstraint(internals, activator_internals, inner, complement_inner)
 
     add_constraint!(model, constraint)
 

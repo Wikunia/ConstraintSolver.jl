@@ -36,7 +36,6 @@ function map_function(
     MOIBC.map_function(bridge, fct)
 end
 
-
 """
     added_constraint_types(bridge, set)
 

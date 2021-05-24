@@ -69,7 +69,6 @@ function still_feasible(
         for i in 1:length(lhs_indices)
             if lhs_indices[i] == vidx
                 lhs_feasible = still_feasible(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set, vidx, value)
-
                 break
             end
         end
@@ -91,9 +90,9 @@ function still_feasible(
     end
 
     # at least one must be feasible
-    if lhs_violated
+    if !lhs_feasible
         return rhs_feasible
-    elseif rhs_violated
+    elseif !rhs_feasible
         return lhs_feasible
     end
     # not allowed that both are already solved

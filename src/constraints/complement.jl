@@ -6,5 +6,6 @@ function init_constraint_struct(com, set::ComplementSet{F,S}, internals) where {
     end
 
     constraint = get_constraint(com, fct, inner_set)
-    return get_complement_constraint(com, constraint)
+    complement_constraint = get_complement_constraint(com, constraint)
+    return complement_constraint
 end

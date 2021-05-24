@@ -6,7 +6,7 @@ function _build_complement_constraint(
 
     jump_fct = JuMP.jump_function(constraint)
     moi_fct = JuMP.moi_function(constraint)
-
+    
     return JuMP.VectorConstraint(
         [jump_fct...], ComplementSet{typeof(moi_fct)}(set)
     )

@@ -52,8 +52,10 @@ function Optimizer(; options...)
     for i in 1:length(inner_bridges)
         push!(inner_bridges, CS.ComplementBridge{options.solution_type, inner_bridges[i]})
     end
-    # the bool bridge supporst all inner bridges
-    push!(inner_bridges, CS.BoolBridge{options.solution_type, inner_bridges...})
+    # the bool bridge supports all inner bridges
+    for i in 1:length(inner_bridges)
+        push!(inner_bridges, CS.BoolBridge{options.solution_type, inner_bridges[i]})
+    end
     for i in 1:length(inner_bridges)
         push!(inner_bridges, CS.ComplementBridge{options.solution_type, inner_bridges[i]})
     end

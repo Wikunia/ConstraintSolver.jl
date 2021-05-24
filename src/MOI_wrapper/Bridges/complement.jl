@@ -74,9 +74,9 @@ function MOIBC.map_function(
 end
 
 function MOIBC.map_set(
-    bridge::Type{<:ComplementBridge{T, B, F, S}},
-    set,
-) where {T,B,F,S}
+    bridge::Type{<:ComplementBridge{T, B}},
+    set::ComplementSet{F},
+) where {T,B,F}
     mapped_set = MOIBC.map_set(B, set.set)
     return ComplementSet{F}(mapped_set)
 end
