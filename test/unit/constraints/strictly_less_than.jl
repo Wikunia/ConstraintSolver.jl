@@ -41,6 +41,7 @@
 
     # need to create a backtrack_vec to reverse pruning
     dummy_backtrack_obj = CS.BacktrackObj(com)
+    dummy_backtrack_obj.step_nr = 1
     push!(com.backtrack_vec, dummy_backtrack_obj)
     # reverse previous fix
     CS.reverse_pruning!(com, 1)
@@ -166,6 +167,7 @@ end
 
     # need to create a backtrack_vec to reverse pruning
     dummy_backtrack_obj = CS.BacktrackObj(com)
+    dummy_backtrack_obj.step_nr = 1
     push!(com.backtrack_vec, dummy_backtrack_obj)
     # reverse previous fix
     CS.reverse_pruning!(com, 1)

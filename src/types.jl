@@ -53,6 +53,22 @@ mutable struct SolverOptions
 end
 
 # General
+"""
+Save the changes for a variable with two vectors
+- `indices` saves a list of indices that can be extracted by the step_nr
+    - i.e [1,1,3,5] would mean that step_nr 1 did no changes to the variable and steps 2 and 3 have two changes each
+- `changes`:
+    Explanation of the tuple
+    - [1] :fix, :rm, :rm_below, :rm_above
+    - [2] To which value got it fixed, which value was removed, which value was the upper/lower bound
+    - [3] Only if fixed it saves the last ptr to revert the changes otherwise 0
+    - [4] How many values got removed (0 for fix)
+"""
+mutable struct VariableChanges
+    indices :: Vector{Int}
+    changes :: Vector{Tuple{Symbol, Int, Int, Int}}
+    VariableChanges() = new(Int[1,1], Tuple{Symbol, Int, Int, Int}[])
+end
 
 mutable struct Variable
     idx::Int
@@ -67,12 +83,7 @@ mutable struct Variable
     offset::Int
     min::Int # the minimum value during the solving process
     max::Int # for initial see lower/upper_bound
-    # Tuple explanation
-    # [1] :fix, :rm, :rm_below, :rm_above
-    # [2] To which value got it fixed, which value was removed, which value was the upper/lower bound
-    # [3] Only if fixed it saves the last ptr to revert the changes otherwise 0
-    # [4] How many values got removed (0 for fix)
-    changes::Vector{Vector{Tuple{Symbol,Int,Int,Int}}}
+    changes::VariableChanges
     has_upper_bound::Bool # must be true to work
     has_lower_bound::Bool # must be true to work
     is_fixed::Bool
@@ -326,7 +337,7 @@ end
 ReifiedSet{A}(set::S) where {A,S} = ReifiedSet{A,S}(set, 1+MOI.dimension(set))
 Base.copy(R::ReifiedSet{A,S}) where {A,S} = ReifiedSet{A,S}(R.set, R.dimension)
 
-abstract type BoolSet{
+abstract type AbstractBoolSet{
     F1<:Union{SAF,VAF,MOI.VectorOfVariables},
     F2<:Union{SAF,VAF,MOI.VectorOfVariables},
     F1dim<:Val,
@@ -335,7 +346,7 @@ abstract type BoolSet{
     S2<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
 } <: MOI.AbstractVectorSet end 
 
-struct AndSet{F1,F2,F1dim,F2dim,S1,S2} <: BoolSet{F1,F2,F1dim,F2dim,S1,S2}
+struct BoolSetInternals{S1,S2}
     lhs_set::S1
     rhs_set::S2
     lhs_dimension::Int
@@ -343,38 +354,26 @@ struct AndSet{F1,F2,F1dim,F2dim,S1,S2} <: BoolSet{F1,F2,F1dim,F2dim,S1,S2}
     dimension::Int
 end
 
-function AndSet{F1,F2}(lhs_set::S1, rhs_set::S2) where {F1,F2,S1,S2}
+struct AndSet{F1,F2,F1dim,F2dim,S1,S2} <: AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
+    bsi::BoolSetInternals{S1,S2}
+end
+
+struct OrSet{F1,F2,F1dim,F2dim,S1,S2} <: AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
+    bsi::BoolSetInternals{S1,S2}
+end
+
+function (::Type{BS})(lhs_set::S1, rhs_set::S2) where {S1,S2,F1,F2,BS<:CS.AbstractBoolSet{F1,F2,F1dim,F2dim,S1_,S2_} where {F1dim,F2dim,S1_,S2_}}
     lhs_dim = MOI.dimension(lhs_set)
     rhs_dim = MOI.dimension(rhs_set)
     F1dim = Val{lhs_dim}
     F2dim = Val{rhs_dim}
-    return AndSet{F1,F2,F1dim,F2dim,S1,S2}(lhs_set, rhs_set, lhs_dim, rhs_dim, lhs_dim + rhs_dim)
+    internals = BoolSetInternals(lhs_set, rhs_set, lhs_dim, rhs_dim, lhs_dim + rhs_dim)
+    return typeof_without_params(BS){F1,F2,F1dim,F2dim,S1,S2}(internals)
 end
 
-function Base.copy(A::AndSet{F1,F2,F1dim,F2dim,S1,S2}) where {F1,F2,F1dim,F2dim,S1,S2} 
-    AndSet{F1,F2,F1dim,F2dim,S1,S2}(A.lhs_set, A.rhs_set, A.lhs_dimension, A.rhs_dimension, A.dimension)
+function Base.copy(A::AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}) where {F1,F2,F1dim,F2dim,S1,S2} 
+    typeof_without_params(A){F1,F2,F1dim,F2dim,S1,S2}(A.bsi)
 end
-
-struct OrSet{F1,F2,F1dim,F2dim,S1,S2} <: BoolSet{F1,F2,F1dim,F2dim,S1,S2}
-    lhs_set::S1
-    rhs_set::S2
-    lhs_dimension::Int
-    rhs_dimension::Int
-    dimension::Int
-end
-
-function OrSet{F1,F2}(lhs_set::S1, rhs_set::S2) where {F1,F2,S1,S2}
-    lhs_dim = MOI.dimension(lhs_set)
-    rhs_dim = MOI.dimension(rhs_set)
-    F1dim = Val{lhs_dim}
-    F2dim = Val{rhs_dim}
-    return OrSet{F1,F2,F1dim,F2dim,S1,S2}(lhs_set, rhs_set, lhs_dim, rhs_dim, lhs_dim + rhs_dim)
-end
-
-function Base.copy(A::OrSet{F1,F2,F1dim,F2dim,S1,S2}) where {F1,F2,F1dim,F2dim,S1,S2} 
-    OrSet{F1,F2,F1dim,F2dim,S1,S2}(A.lhs_set, A.rhs_set, A.lhs_dimension, A.rhs_dimension, A.dimension)
-end
-
 
 #====================================================================================
 ====================================================================================#

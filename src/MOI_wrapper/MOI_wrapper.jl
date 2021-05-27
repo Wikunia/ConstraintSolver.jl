@@ -136,7 +136,7 @@ function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
 end
 
 """
-    MOI.set(model::Optimizer, ::MOI.RawParameter, value)
+    MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value)
 
 Set the time limit
 """

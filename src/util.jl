@@ -260,7 +260,19 @@ end
     end
 end
 
-
+@inline function Base.getproperty(c::AbstractBoolSet, s::Symbol)
+    if s in (
+        :lhs_set,
+        :rhs_set,
+        :lhs_dimension,
+        :rhs_dimension,
+        :dimension,
+    )
+        Core.getproperty(Core.getproperty(c, :bsi), s)
+    else
+        getfield(c, s)
+    end
+end
 
 
 """
@@ -315,4 +327,35 @@ function init_and_activate_constraint!(
     !activate_constraint!(com, constraint, fct, set) && return false
     constraint.is_activated = true
     return true
+end
+
+"""
+    push_to_changes!(v::Variable, tuple::Tuple{Symbol,Int,Int,Int})   
+
+Push a new change to the variable `v`. 
+"""
+function push_to_changes!(v::Variable, tuple::Tuple{Symbol,Int,Int,Int})
+    v.changes.indices[end] += 1
+    push!(v.changes.changes, tuple)
+    @assert v.changes.indices[end]-1 == length(v.changes.changes)
+end
+
+"""
+    num_changes(v::Variable, step_nr::Int)
+
+Return the number of changes that were done for `v` in `step_nr`.
+"""
+function num_changes(v::Variable, step_nr::Int)
+    return v.changes.indices[step_nr+1] - v.changes.indices[step_nr]
+end
+
+"""
+    view_changes(v::Variable, step_nr::Int) 
+
+Return a view of the changes made for `v` in `step_nr`
+"""
+function view_changes(v::Variable, step_nr::Int)
+    idx_begin = v.changes.indices[step_nr]
+    idx_end = v.changes.indices[step_nr+1]-1
+    return @views v.changes.changes[idx_begin:idx_end]
 end

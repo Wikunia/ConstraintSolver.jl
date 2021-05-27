@@ -89,7 +89,7 @@ function rm!(
                 v.max = maximum(vals)
             end
         end
-        changes && push!(v.changes[com.c_backtrack_idx], (:rm, x, 0, 1))
+        changes && push_to_changes!(v, (:rm, x, 0, 1))
     end
     return true
 end
@@ -103,7 +103,7 @@ function fix!(com::CS.CoM, v::CS.Variable, x::Int; changes = true, check_feasibi
     vidx = v.indices[x + v.offset]
     pr_below = vidx - v.first_ptr
     pr_above = v.last_ptr - vidx
-    changes && push!(v.changes[com.c_backtrack_idx], (:fix, x, v.last_ptr, 0))
+    changes && push_to_changes!(v, (:fix, x, v.last_ptr, 0))
     v.last_ptr = vidx
     v.first_ptr = vidx
     v.min = x
@@ -149,7 +149,7 @@ function remove_below!(
     if nremoved > 0 && feasible(var)
         var.min = minimum(values(var))
         changes &&
-            push!(var.changes[com.c_backtrack_idx], (:remove_below, val, 0, nremoved))
+            push_to_changes!(var, (:remove_below, val, 0, nremoved))
     end
     return true
 end
@@ -188,7 +188,7 @@ function remove_above!(
     if nremoved > 0 && feasible(var)
         var.max = maximum(values(var))
         changes &&
-            push!(var.changes[com.c_backtrack_idx], (:remove_above, val, 0, nremoved))
+            push_to_changes!(var, (:remove_above, val, 0, nremoved))
     end
     return true
 end

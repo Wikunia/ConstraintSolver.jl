@@ -1,7 +1,13 @@
-function _build_or_constraint(
+const BOOL_VALS = Union{Val{:(&&)}, Val{:(||)}}
+
+bool_val_to_set(::Val{:(&&)}) = AndSet 
+bool_val_to_set(::Val{:(||)}) = OrSet 
+
+function _build_bool_constraint(
     _error::Function,
     lhs,
     rhs,
+    set_type
 )
     lhs_set = JuMP.moi_set(lhs)
     rhs_set = JuMP.moi_set(rhs)
@@ -14,25 +20,25 @@ function _build_or_constraint(
 
     func = [lhs_jump_func..., rhs_jump_func...]
     return JuMP.VectorConstraint(
-        func, OrSet{typeof(lhs_func), typeof(rhs_func)}(lhs_set, rhs_set)
+        func, set_type{typeof(lhs_func), typeof(rhs_func)}(lhs_set, rhs_set)
     )
 end
 
 
-function JuMP.parse_constraint_head(_error::Function, ::Val{:(||)}, lhs, rhs)
+function JuMP.parse_constraint_head(_error::Function, bool_val::BOOL_VALS, lhs, rhs)
     _error1 = deepcopy(_error)
     lhs_vectorized, lhs_parsecode, lhs_buildcall =
         JuMP.parse_constraint_expr(_error, lhs)
 
     if lhs_vectorized
-        _error("`$(lhs)` should be non vectorized. There is currently no vectorized support for `or` constraints. Please open an issue at ConstraintSolver.jl")
+        _error("`$(lhs)` should be non vectorized. There is currently no vectorized support for `and` constraints. Please open an issue at ConstraintSolver.jl")
     end
 
     rhs_vectorized, rhs_parsecode, rhs_buildcall =
         JuMP.parse_constraint_expr(_error1, rhs)
 
     if rhs_vectorized
-        _error("`$(rhs)` should be non vectorized. There is currently no vectorized support for `or` constraints. Please open an issue at ConstraintSolver.jl")
+        _error("`$(rhs)` should be non vectorized. There is currently no vectorized support for `and` constraints. Please open an issue at ConstraintSolver.jl")
     end
 
     # TODO implement vectorized version
@@ -42,10 +48,13 @@ function JuMP.parse_constraint_head(_error::Function, ::Val{:(||)}, lhs, rhs)
         $rhs_parsecode
     end
 
-    buildcall = :($(esc(:(CS._build_or_constraint)))(
+    bool_set = bool_val_to_set(bool_val)
+
+    buildcall = :($(esc(:(CS._build_bool_constraint)))(
         $_error,
         $lhs_buildcall,
-        $rhs_buildcall
+        $rhs_buildcall,
+        $bool_set
     ))
     return vectorized, complete_parsecode, buildcall
 end
