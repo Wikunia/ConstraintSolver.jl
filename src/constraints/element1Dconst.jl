@@ -103,7 +103,8 @@ function prune_constraint!(
     T = set.array
     
     # change in z 
-    current_z_changes = z.changes[com.c_backtrack_idx]
+    step_nr = com.c_step_nr
+    current_z_changes = view_changes(z, step_nr)
     for change_ptr in constraint.z_changes_ptr:length(current_z_changes)
         change = current_z_changes[change_ptr]
         change_type = change[1]
@@ -137,7 +138,7 @@ function prune_constraint!(
     constraint.z_changes_ptr = length(current_z_changes) + 1
 
     # change in y
-    current_y_changes = y.changes[com.c_backtrack_idx]
+    current_y_changes = view_changes(y, step_nr)
     for change_ptr in constraint.y_changes_ptr:length(current_y_changes)
         change = current_y_changes[change_ptr]
         change_type = change[1]
