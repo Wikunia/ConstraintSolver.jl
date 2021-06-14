@@ -83,7 +83,7 @@ function find_element_var_and_combine(T, constraint, element_constraint, element
             fct, set = find_element_var_and_combine(T, lhs, element_constraint, element_var)
         else
             fct = MOIU.operate(vcat, T, lhs.fct, element_constraint.fct)
-            set = AndSet{typeof(lhs.fct), typeof(element_constraint.fct)}(lhs.set, element_constraint.set)
+            set = XNorSet{typeof(lhs.fct), typeof(element_constraint.fct)}(lhs.set, element_constraint.set)
         end
         fct, set = get_bool_constraint_fct_set(T, constraint, fct, set, rhs.fct, rhs.set)
     else
@@ -91,7 +91,7 @@ function find_element_var_and_combine(T, constraint, element_constraint, element
             fct, set = find_element_var_and_combine(T, rhs, element_constraint, element_var)
         else
             fct = MOIU.operate(vcat, T, element_constraint.fct, rhs.fct)
-            set = AndSet{typeof(element_constraint.fct), typeof(rhs.fct)}(element_constraint.set, rhs.set)
+            set = XNorSet{typeof(element_constraint.fct), typeof(rhs.fct)}(element_constraint.set, rhs.set)
         end
         fct, set = get_bool_constraint_fct_set(T, constraint, lhs.fct, lhs.set, fct, set)
     end
@@ -153,7 +153,6 @@ function move_element_constraint(model)
         for constraint in constraints[subscriptions[element_var]]
             constraint isa Element1DConstConstraint && continue
             constraint.is_deactivated && continue
-            constraint.is_deactivated = true
             fct, set = nothing, nothing
             if constraint isa ActivatorConstraint
                 if constraint.inner_constraint isa OrConstraint
@@ -161,7 +160,7 @@ function move_element_constraint(model)
                     fct, set = find_element_var_and_combine(T, inner_constraint, element_cons, element_var)
                 else
                     fct = MOIU.operate(vcat, T, constraint.inner_constraint.fct, element_cons.fct)
-                    set = AndSet{typeof(constraint.inner_constraint.fct), typeof(element_cons.fct)}(constraint.inner_constraint.set, element_cons.set)
+                    set = XNorSet{typeof(constraint.inner_constraint.fct), typeof(element_cons.fct)}(constraint.inner_constraint.set, element_cons.set)
                 end
                 create_new_activator_constraint(model, constraint, fct, set)
             else # OrConstraint

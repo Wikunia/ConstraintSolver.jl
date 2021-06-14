@@ -104,6 +104,35 @@ end
 
     @test JuMP.termination_status(m) == MOI.OPTIMAL
     @test convert(Int, JuMP.value(idx)) == 3
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
+    c = collect(1:5)
+    @variable(m, b, Bin)
+    @constraint(m, b > 0.5)
+    @variable(m, 1 <= idx <= length(c), Int)
+    @constraint(m, b := {idx < 2 || (c[idx] == 2 && idx >= 3)})
+    @objective(m, Max, idx)
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test convert(Int, JuMP.value(idx)) == 1
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_optimal_solutions"=>true))
+    c = collect(1:5)
+    crev = collect(5:-1:1)
+    @variable(m, b, Bin)
+    @constraint(m, b < 0.5)
+    @variable(m, 1 <= idx <= length(c), Int)
+    @constraint(m, b := {c[idx] == crev[idx]})
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    num_sols = MOI.get(m, MOI.ResultCount())
+    @test num_sols == 4
+    for i in 1:num_sols
+        idx_var = convert.(Int, JuMP.value.(idx; result=i));
+        @test c[idx_var] != crev[idx_var]
+    end
 end
 
 @testset "element in indicator/reified with and + or" begin
