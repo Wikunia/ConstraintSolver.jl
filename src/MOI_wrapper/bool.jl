@@ -1,7 +1,8 @@
-const BOOL_VALS = Union{Val{:(&&)}, Val{:(||)}}
+const BOOL_VALS = Union{Val{:(&&)}, Val{:(||)}, Val{:(⊻)}}
 
 bool_val_to_set(::Val{:(&&)}) = AndSet 
 bool_val_to_set(::Val{:(||)}) = OrSet 
+bool_val_to_set(::Val{:(⊻)}) = XorSet 
 
 function _build_bool_constraint(
     _error::Function,
@@ -24,8 +25,7 @@ function _build_bool_constraint(
     )
 end
 
-
-function JuMP.parse_constraint_head(_error::Function, bool_val::BOOL_VALS, lhs, rhs)
+function parse_bool_constraint(_error, bool_val::BOOL_VALS, lhs, rhs)
     _error1 = deepcopy(_error)
     lhs_vectorized, lhs_parsecode, lhs_buildcall =
         JuMP.parse_constraint_expr(_error, lhs)
@@ -57,4 +57,14 @@ function JuMP.parse_constraint_head(_error::Function, bool_val::BOOL_VALS, lhs, 
         $bool_set
     ))
     return vectorized, complete_parsecode, buildcall
+end
+
+function JuMP.parse_constraint_head(_error::Function, bool_val::BOOL_VALS, lhs, rhs)
+    return parse_bool_constraint(_error, bool_val, lhs, rhs)
+end
+
+function JuMP.parse_one_operator_constraint(_error::Function, vectorized::Bool, bool_val::BOOL_VALS, lhs, rhs)
+    @assert !vectorized
+    v,c,b = parse_bool_constraint(_error, bool_val, lhs, rhs)
+    return c,b
 end
