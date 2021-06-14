@@ -1,4 +1,4 @@
-function init_constraint_struct(::EqualSetInternal, internals)
+function init_constraint_struct(com, ::EqualSetInternal, internals)
     EqualConstraint(internals, ones(Int, length(internals.indices)))
 end
 

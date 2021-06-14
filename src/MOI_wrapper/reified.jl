@@ -5,24 +5,26 @@ function _build_reified_constraint(
     ::Type{<:CS.ReifiedSet{A}},
 ) where {A}
     S = typeof(JuMP.moi_set(constraint))
-    set = ReifiedSet{A,S}(JuMP.moi_set(constraint), 2)
+    F = typeof(JuMP.moi_function(constraint))
+    set = ReifiedSet{A,F,S}(JuMP.moi_set(constraint), 2)
     return JuMP.VectorConstraint([variable, JuMP.jump_function(constraint)], set)
 end
 
 function _build_reified_constraint(
     _error::Function,
     variable::JuMP.AbstractVariableRef,
-    jump_constraint::JuMP.VectorConstraint,
+    constraint::JuMP.VectorConstraint,
     ::Type{<:CS.ReifiedSet{A}},
 ) where {A}
-    S = typeof(jump_constraint.set)
-    set = CS.ReifiedSet{A,S}(jump_constraint.set, 1 + length(jump_constraint.func))
-    if jump_constraint.func isa Vector{VariableRef}
+    S = typeof(constraint.set)
+    F = typeof(JuMP.moi_function(constraint))
+    set = CS.ReifiedSet{A,F,S}(constraint.set, 1 + length(constraint.func))
+    if constraint.func isa Vector{VariableRef}
         vov = JuMP.VariableRef[variable]
     else
         vov = JuMP.AffExpr[variable]
     end
-    append!(vov, jump_constraint.func)
+    append!(vov, constraint.func)
     return JuMP.VectorConstraint(vov, set)
 end
 

@@ -1,4 +1,23 @@
 """
+    function is_constraint_violated(
+        com::CoM,
+        constraint::BoolConstraint,
+        fct,
+        set::AndSet,
+    )
+
+Check if one of the inner constraints is violated
+"""
+function is_constraint_violated(
+    com::CoM,
+    constraint::BoolConstraint,
+    fct,
+    set::AndSet,
+)
+    return is_lhs_constraint_violated(com, constraint) || is_rhs_constraint_violated(com, constraint) 
+end
+
+"""
     still_feasible(com::CoM, constraint::AndConstraint, fct, set::AndSet, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `vidx` to `value`.

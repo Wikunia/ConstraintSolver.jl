@@ -1,4 +1,4 @@
-function init_constraint_struct(set::AbstractBoolSet{F1,F2}, internals) where {F1,F2}
+function init_constraint_struct(com, set::AbstractBoolSet{F1,F2}, internals) where {F1,F2}
     f = MOIU.eachscalar(internals.fct)
 
     lhs_fct = f[1:set.lhs_dimension]
@@ -19,46 +19,95 @@ function init_constraint_struct(set::AbstractBoolSet{F1,F2}, internals) where {F
     end
 
    
-    lhs = get_constraint(lhs_fct, set.lhs_set)
-    rhs = get_constraint(rhs_fct, set.rhs_set)
+    lhs = get_constraint(com, lhs_fct, set.lhs_set)
+    rhs = get_constraint(com, rhs_fct, set.rhs_set)
 
-    return bool_constraint(set, internals, lhs, rhs)
+    bs = bool_constraint(set, com, internals, lhs, rhs)
+
+    return bool_constraint(set, com, internals, lhs, rhs)
 end
 
-function bool_constraint(::AndSet, internals, lhs, rhs)
-    AndConstraint(
+function bool_constraint(::XorSet, com, internals, lhs, rhs)
+    XorConstraint(
         internals,
-        lhs,
-        rhs
+        BoolConstraintInternals(lhs, rhs),
+        get_complement_constraint(com, lhs),
+        get_complement_constraint(com, rhs)
     )
 end
 
-function bool_constraint(::OrSet, internals, lhs, rhs)
-    OrConstraint(
-        internals,
-        lhs,
-        rhs
-    )
+for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    get(bool_data, :specific_constraint, false) && continue
+    @eval begin
+        function bool_constraint(::$set, com, internals, lhs, rhs)
+            $(bool_data.constraint)(
+                com,
+                internals,
+                lhs,
+                rhs
+            )
+        end
+    end
 end
 
-anti_set(::Type{<:AndSet}) = OrSet
-anti_set(::Type{<:OrSet}) = AndSet
-apply_bool_operator(::Type{<:AndSet}, lhs, rhs) = lhs && rhs
-apply_bool_operator(::Type{<:OrSet}, lhs, rhs)  = lhs || rhs
+"""
+    demorgan_complement_set(::Type{<:AbstractBoolSet}) 
 
-function apply_bool_operator(::Type{<:AndSet}, lhs_fct, rhs_fct, args...) 
-    lhs_fct(args...) && rhs_fct(args...)
-end
+Return the type of the demorgan complement bool set so AndSet <-> OrSet
+"""
+demorgan_complement_set(::Type{<:AbstractBoolSet}) = nothing
+demorgan_complement_set(::Type{<:AndSet}) = OrSet
+demorgan_complement_set(::Type{<:OrSet}) = AndSet
 
-function apply_bool_operator(::Type{<:OrSet}, lhs_fct, rhs_fct, args...)  
-    lhs_fct(args...) || rhs_fct(args...)
-end
+demorgan_complement_constraint_type(::Type{<:AbstractBoolSet}) = nothing
+demorgan_complement_constraint_type(::Type{<:AndSet}) = OrConstraint
+demorgan_complement_constraint_type(::Type{<:OrSet}) = AndConstraint
 
-function apply_anti_bool_operator(s::Type{<:AbstractBoolSet}, args...)
-    apply_bool_operator(anti_set(s), args...)
+"""
+    complement_set(::Type{<:AbstractBoolSet}) 
+
+Return the type of the complement bool set so XorSet => XNorSet
+"""
+complement_set(::Type{<:AbstractBoolSet}) = nothing
+complement_set(::Type{<:XorSet}) = XNorSet
+complement_set(::Type{<:XNorSet}) = XorSet
+
+"""
+    complement_constraint_type(::Type{<:AbstractBoolSet}) 
+
+Return the constraint of the complement bool set so XorSet => XNorConstraint
+"""
+complement_constraint_type(::Type{<:AbstractBoolSet}) = nothing
+complement_constraint_type(::Type{<:XorSet}) = XNorConstraint
+complement_constraint_type(::Type{<:XNorSet}) = XorConstraint
+
+for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    res_op = get(bool_data, :res_op, :identity)
+    if get(bool_data, :needs_call, false)
+        @eval begin
+            function apply_bool_operator(::Type{<:$set}, lhs_fct, rhs_fct, args...) 
+                $(Expr(:call, res_op, Expr(:call, bool_data.op, :(lhs_fct(args...)), :(rhs_fct(args...)))))
+            end
+        end
+    else
+        @eval begin
+            function apply_bool_operator(::Type{<:$set}, lhs_fct, rhs_fct, args...) 
+                $(Expr(:call, res_op, Expr(bool_data.op, :(lhs_fct(args...)), :(rhs_fct(args...)))))
+            end
+        end
+    end
 end
 
 function init_constraint!(
+    com::CS.CoM,
+    constraint::BoolConstraint,
+    fct,
+    set::AbstractBoolSet;
+)
+   init_lhs_and_rhs!(com, constraint, fct, set)
+end
+
+function init_lhs_and_rhs!(
     com::CS.CoM,
     constraint::BoolConstraint,
     fct,
@@ -74,7 +123,11 @@ function init_constraint!(
     if constraint.rhs.impl.init   
         rhs_feasible = init_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
     end
-    return apply_bool_operator(typeof(set), lhs_feasible, rhs_feasible)
+    # check only for && constraint if both are feasible
+    if set isa AndSet
+        return lhs_feasible && rhs_feasible
+    end
+    return true
 end
 
 """
@@ -112,31 +165,6 @@ end
 
 function is_rhs_constraint_violated(com, constraint)
     is_constraint_violated(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
-end
-
-"""
-    function is_constraint_violated(
-        com::CoM,
-        constraint::BoolConstraint,
-        fct,
-        set::AbstractBoolSet,
-    )
-
-Check if the inner constraints are violated and apply the boolean operator to the inverse 
-"""
-function is_constraint_violated(
-    com::CoM,
-    constraint::BoolConstraint,
-    fct,
-    set::AbstractBoolSet,
-)
-    return apply_anti_bool_operator(
-        typeof(set),
-        is_lhs_constraint_violated,
-        is_rhs_constraint_violated,
-        com,
-        constraint
-    )
 end
 
 """

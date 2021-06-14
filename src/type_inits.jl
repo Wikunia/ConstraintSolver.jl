@@ -111,8 +111,8 @@ function LinearConstraint(
     return lc
 end
 
-function ReifiedConstraint(std, act_std, inner_constraint, anti_constraint)
-    return ReifiedConstraint(std, act_std, inner_constraint, anti_constraint, false, 0)
+function ReifiedConstraint(std, act_std, inner_constraint, complement_constraint)
+    return ReifiedConstraint(std, act_std, inner_constraint, complement_constraint, false, 0)
 end
 
 """
@@ -196,14 +196,23 @@ function BacktrackObj(com::CS.CoM)
     )
 end
 
-function BoolConstraintInternals() 
-    return BoolConstraintInternals(false, 0, false, 0)
+function BoolConstraintInternals(lhs, rhs) 
+    return BoolConstraintInternals(false, 0, false, 0, lhs, rhs)
 end
 
-function AndConstraint(internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
-    return AndConstraint(internals, BoolConstraintInternals(), lhs, rhs)
+function XorConstraint(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+    return XorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_complement_constraint(com, lhs), get_complement_constraint(com, rhs))
 end
 
-function OrConstraint(internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
-    return OrConstraint(internals, BoolConstraintInternals(), lhs, rhs)
+function XNorConstraint(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+    return XNorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_complement_constraint(com, lhs), get_complement_constraint(com, rhs))
+end
+
+for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    get(bool_data, :specific_constraint, false) && continue
+    @eval begin
+        function $(bool_data.constraint)(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+            return $(bool_data.constraint)(internals, BoolConstraintInternals(lhs, rhs))
+        end
+    end
 end

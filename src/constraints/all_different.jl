@@ -1,7 +1,7 @@
 include("all_different/bipartite.jl")
 include("all_different/scc.jl")
 
-function init_constraint_struct(::AllDifferentSetInternal, internals)
+function init_constraint_struct(com, ::AllDifferentSetInternal, internals)
     AllDifferentConstraint(
         internals,
         Int[], # pval_mapping will be filled later
