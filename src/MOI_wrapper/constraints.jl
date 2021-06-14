@@ -7,6 +7,7 @@ sense_to_set(::Function, ::Val{:>}) = Strictly(MOI.GreaterThan(0.0))
 
 MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 
+include("element.jl")
 include("indicator.jl")
 include("reified.jl")
 include("bool.jl")
@@ -36,10 +37,17 @@ MOI.supports_constraint(
     ::Type{MOI.VectorOfVariables},
     ::Type{EqualSetInternal},
 ) = true
+
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
     ::Type{AllDifferentSetInternal},
+) = true
+
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{MOI.VectorOfVariables},
+    ::Type{Element1DConstInner},
 ) = true
 
 MOI.supports_constraint(
@@ -285,6 +293,8 @@ function MOI.add_constraint(
         com.info.n_constraint_types.table += 1
     elseif set isa EqualSetInternal
         com.info.n_constraint_types.equality += 1
+    elseif set isa Element1DConstInner
+        com.info.n_constraint_types.element += 1
     end
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,typeof(set)}(length(com.constraints))
@@ -523,7 +533,7 @@ function MOI.add_constraint(
     set::IS,
 ) where {T,A,F,S<:MOI.AbstractVectorSet,IS<:CS.IndicatorSet{A,F,S}}
     com = model.inner
-    com.info.n_constraint_types.reified += 1
+    com.info.n_constraint_types.indicator += 1
 
     internals = create_internals(com, func, set)
 

@@ -1,5 +1,8 @@
 # ConstrainSolver.jl - Changelog
  
+## Unreleased
+- Support for element constraints with a constant array like `T[y] == z`
+  
 ## v0.6.8 (14th of June 2021)
 - support for xor and xnor constraints 
 - better bridge structure for boolean constraints

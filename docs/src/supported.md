@@ -95,7 +95,7 @@ The following list shows constraints that are implemented and those which are pl
 - Boolean constraints
   - i.e `@constraint(m, x + y >= 12 || 2x + y <= 7)`
 - Element constraints
-  - [ ] 1D array with constant values 
+  - [X] 1D array with constant values 
     - i.e `T = [12,87,42,1337]` `T[y] == z` with `y` and `z` being variables [#213](https://github.com/Wikunia/ConstraintSolver.jl/pull/213)
   - [ ] 2D array with constant values 
     - where T is an array

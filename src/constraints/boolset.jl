@@ -36,6 +36,15 @@ function bool_constraint(::XorSet, com, internals, lhs, rhs)
     )
 end
 
+function bool_constraint(::XNorSet, com, internals, lhs, rhs)
+    XNorConstraint(
+        internals,
+        BoolConstraintInternals(lhs, rhs),
+        get_complement_constraint(com, lhs),
+        get_complement_constraint(com, rhs)
+    )
+end
+
 for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
     get(bool_data, :specific_constraint, false) && continue
     @eval begin

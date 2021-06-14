@@ -7,7 +7,7 @@ function init_constraint_struct(com, ::TableSetInternal, internals)
         internals,
         RSparseBitSet(),
         TableSupport(), # will be filled in init_constraint!
-        Int[], # will be changes later as it needs the number of words
+        Int[], # will be changed later as it needs the number of words
         TableResidues(),
         Vector{TableBacktrackInfo}(),
         Int[], # changed_vars
