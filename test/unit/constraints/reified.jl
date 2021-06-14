@@ -160,7 +160,7 @@ end
     @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
 end
 
-@testset "reified anti prune" begin
+@testset "reified complement prune" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b, Bin)
     @variable(m, 0 <= x[1:3] <= 15, Int)
@@ -169,16 +169,16 @@ end
     com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
-    anti_constraint = constraint.anti_constraint
-    @test anti_constraint.set == MOI.LessThan(10.0)
-    @test all(term.coefficient == 1 for term in anti_constraint.fct.terms)
-    @test anti_constraint.fct.constant == 0
+    complement_constraint = constraint.complement_constraint
+    @test complement_constraint.set == MOI.LessThan(10.0)
+    @test all(term.coefficient == 1 for term in complement_constraint.fct.terms)
+    @test complement_constraint.fct.constant == 0
 
     variables = com.search_space
     constr_indices = constraint.indices
     # set inactive
     @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
-    # should anti prune
+    # should prune complement
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 
     for ind in constr_indices[2:4]
@@ -193,16 +193,16 @@ end
     com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
-    anti_constraint = constraint.anti_constraint
-    @test anti_constraint.set == CS.Strictly(MOI.LessThan(-10.0))
-    @test all(term.coefficient == -1 for term in anti_constraint.fct.terms)
-    @test anti_constraint.fct.constant == 0
+    complement_constraint = constraint.complement_constraint
+    @test complement_constraint.set == CS.Strictly(MOI.LessThan(-10.0))
+    @test all(term.coefficient == -1 for term in complement_constraint.fct.terms)
+    @test complement_constraint.fct.constant == 0
 
     variables = com.search_space
     constr_indices = constraint.indices
     # set inactive
     @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
-    # should anti prune
+    # should prune complement
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 
     for ind in constr_indices[2:4]
@@ -217,10 +217,10 @@ end
     com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
-    anti_constraint = constraint.anti_constraint
-    @test anti_constraint.set == CS.NotEqualTo(10.0)
-    @test all(term.coefficient == 1 for term in anti_constraint.fct.terms)
-    @test anti_constraint.fct.constant == 0
+    complement_constraint = constraint.complement_constraint
+    @test complement_constraint.set == CS.NotEqualTo(10.0)
+    @test all(term.coefficient == 1 for term in complement_constraint.fct.terms)
+    @test complement_constraint.fct.constant == 0
 
     variables = com.search_space
     constr_indices = constraint.indices
@@ -228,7 +228,7 @@ end
     @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[2]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[3]], 5; check_feasibility = false)
-    # should anti prune
+    # should prune complement
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 
     for ind in constr_indices[4]
@@ -243,10 +243,10 @@ end
     com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
-    anti_constraint = constraint.anti_constraint
-    @test anti_constraint.set == MOI.EqualTo(10.0)
-    @test all(term.coefficient == 1 for term in anti_constraint.fct.terms)
-    @test anti_constraint.fct.constant == 0
+    complement_constraint = constraint.complement_constraint
+    @test complement_constraint.set == MOI.EqualTo(10.0)
+    @test all(term.coefficient == 1 for term in complement_constraint.fct.terms)
+    @test complement_constraint.fct.constant == 0
 
     variables = com.search_space
     constr_indices = constraint.indices
@@ -254,7 +254,7 @@ end
     @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[2]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[3]], 5; check_feasibility = false)
-    # should anti prune
+    # should prune complement
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 
     for ind in constr_indices[4]

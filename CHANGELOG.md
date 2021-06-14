@@ -2,6 +2,10 @@
  
 ## Unreleased
 - Support for element constraints with a constant array like `T[y] == z`
+  
+## v0.6.8 (14th of June 2021)
+- support for xor and xnor constraints 
+- better bridge structure for boolean constraints
 
 ## v0.6.7 (18th of March 2021) 
 - different data structure for saving variable changes for a speedup of ~10-25% in most instances [PR #260](https://github.com/Wikunia/ConstraintSolver.jl/pull/260)

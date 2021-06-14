@@ -52,12 +52,12 @@ function solve_eternity(
         "branch_strategy" => branch_strategy,
     ))
     if optimize
-        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "logging" => [],
             "all_solutions" => all_solutions,
-            "lp_optimizer" => cbc_optimizer,
+            "lp_optimizer" => glpk_optimizer,
             "seed" => 1,
         ))
     end
@@ -147,6 +147,5 @@ function solve_eternity(
     optimize!(m)
 
     status = JuMP.termination_status(m)
-    @show status
     @assert status == MOI.OPTIMAL
 end

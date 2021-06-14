@@ -104,8 +104,22 @@ end
 
 function is_constraint_solved(com::CS.CoM, constraint::Constraint, fct, set)
     variables = com.search_space
-    !all(isfixed(variables[var]) for var in constraint.indices) && return false
+    !all(isfixed(variables[ind]) for ind in constraint.indices) && return false
     values = CS.value.(variables[constraint.indices])
+    return is_constraint_solved(constraint, fct, set, values)
+end
+
+function is_constraint_solved_when_fixed(com::CS.CoM, constraint::Constraint, fct, set, vidx::Int, value::Int)
+    variables = com.search_space
+    !all(isfixed(variables[ind]) || variables[ind].idx == vidx for ind in constraint.indices) && return false
+    values = zeros(Int, length(constraint.indices))
+    for (i,ind) in enumerate(constraint.indices)
+        if ind != vidx
+            values[i] = CS.value(variables[ind])
+        else
+            values[i] = value
+        end 
+    end
     return is_constraint_solved(constraint, fct, set, values)
 end
 
@@ -227,6 +241,8 @@ end
         :lhs_activated_in_backtrack_idx,
         :rhs_activated,
         :rhs_activated_in_backtrack_idx,
+        :lhs,
+        :rhs
     )
         Core.getproperty(Core.getproperty(c, :bool_std), s)
     else
@@ -253,6 +269,8 @@ end
         :lhs_activated_in_backtrack_idx,
         :rhs_activated,
         :rhs_activated_in_backtrack_idx,
+        :lhs,
+        :rhs
     )
         Core.setproperty!(c.bool_std, s, v)
     else
@@ -299,22 +317,26 @@ get_activation_condition(::IndicatorSet{A}) where A = A
 get_activation_condition(::MOI.IndicatorSet{A}) where A = A
 get_activation_condition(::ReifiedSet{A}) where A = A
 
-function get_constraint(fct, set)
+for bool_pair = BOOL_SET_TO_CONSTRAINT
+    bool_set = bool_pair.first
+    @eval typeof_without_params(::$bool_set) = $bool_set
+    @eval typeof_without_params(::Type{<:$bool_set}) = $bool_set
+end
+
+function get_constraint(com, fct, set)
     if fct isa SAF
-        return new_linear_constraint(fct, set)
+        return get_linear_constraint(fct, set)
     else
-        internals = create_interals(fct, set)
-        return init_constraint_struct(set, internals) 
+        internals = create_internals(fct, set)
+        return init_constraint_struct(com, set, internals) 
     end
 end
 
-function get_saf(fct::MOI.VectorAffineFunction)
-    MOI.ScalarAffineFunction([t.scalar_term for t in fct.terms], fct.constants[1])
-end
+get_saf(fct::MOI.ScalarAffineFunction) = fct
+get_saf(fct::MOI.VectorAffineFunction) = MOI.ScalarAffineFunction([t.scalar_term for t in fct.terms], fct.constants[1])
 
-function get_vov(fct::MOI.VectorAffineFunction)
-    return MOI.VectorOfVariables([t.scalar_term.variable_index for t in fct.terms])
-end
+get_vov(fct::MOI.VectorOfVariables) = fct
+get_vov(fct::MOI.VectorAffineFunction) = MOI.VectorOfVariables([t.scalar_term.variable_index for t in fct.terms])
 
 """
     init_and_activate_constraint!(com, constraint, fct, set)

@@ -15,17 +15,17 @@ function activate_inner!(com, constraint::ActivatorConstraint)
 end
 
 """
-    activate_anti_inner!(com, constraint::ActivatorConstraint)
+    activate_complement_inner!(com, constraint::ActivatorConstraint)
 
-Activate the anti constraint of `constraint` when not activated yet.
+Activate the complement constraint of `constraint` when not activated yet.
 Saves at which stage it was activated.
 """
-function activate_anti_inner!(com, constraint::ActivatorConstraint)
-    anti_constraint = constraint.anti_constraint
-    if !constraint.anti_inner_activated && anti_constraint.impl.activate 
-        !activate_constraint!(com, anti_constraint, anti_constraint.fct, anti_constraint.set) && return false
-        constraint.anti_inner_activated = true
-        constraint.anti_inner_activated_in_backtrack_idx = com.c_backtrack_idx
+function activate_complement_inner!(com, constraint::ActivatorConstraint)
+    complement_constraint = constraint.complement_constraint
+    if !constraint.complement_inner_constraint && complement_constraint.impl.activate 
+        !activate_constraint!(com, complement_constraint, complement_constraint.fct, complement_constraint.set) && return false
+        constraint.complement_inner_constraint = true
+        constraint.complement_inner_constraint_in_backtrack_idx = com.c_backtrack_idx
     end
     return true
 end
@@ -122,9 +122,9 @@ function reverse_pruning_constraint!(
         constraint.inner_activated_in_backtrack_idx = 0
     end
     if constraint isa ReifiedConstraint 
-        if constraint.anti_inner_activated && backtrack_id == constraint.anti_inner_activated_in_backtrack_idx
-            constraint.anti_inner_activated = false
-            constraint.anti_inner_activated_in_backtrack_idx = 0
+        if constraint.complement_inner_constraint && backtrack_id == constraint.complement_inner_constraint_in_backtrack_idx
+            constraint.complement_inner_constraint = false
+            constraint.complement_inner_constraint_in_backtrack_idx = 0
         end
     end
 

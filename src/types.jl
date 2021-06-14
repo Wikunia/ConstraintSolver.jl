@@ -322,20 +322,20 @@ mutable struct TableBacktrackInfo
     indices::Vector{Int}
 end
 
-struct IndicatorSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
+struct IndicatorSet{A,F,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
     set::S
     dimension::Int
 end
-IndicatorSet{A}(set::S) where {A,S} = IndicatorSet{A,S}(set, 1+MOI.dimension(set))
-Base.copy(I::IndicatorSet{A,S}) where {A,S} = IndicatorSet{A,S}(I.set, I.dimension)
+IndicatorSet{A,F}(set::S) where {A,F,S} = IndicatorSet{A,F,S}(set, 1+MOI.dimension(set))
+Base.copy(I::IndicatorSet{A,F,S}) where {A,F,S} = IndicatorSet{A,F,S}(I.set, I.dimension)
 
-struct ReifiedSet{A,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
+struct ReifiedSet{A,F,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
        MOI.AbstractVectorSet
     set::S
     dimension::Int
 end
-ReifiedSet{A}(set::S) where {A,S} = ReifiedSet{A,S}(set, 1+MOI.dimension(set))
-Base.copy(R::ReifiedSet{A,S}) where {A,S} = ReifiedSet{A,S}(R.set, R.dimension)
+ReifiedSet{A,F}(set::S) where {A,F,S} = ReifiedSet{A,F,S}(set, 1+MOI.dimension(set))
+Base.copy(R::ReifiedSet{A,F,S}) where {A,F,S} = ReifiedSet{A,F,S}(R.set, R.dimension)
 
 abstract type AbstractBoolSet{
     F1<:Union{SAF,VAF,MOI.VectorOfVariables},
@@ -354,12 +354,26 @@ struct BoolSetInternals{S1,S2}
     dimension::Int
 end
 
-struct AndSet{F1,F2,F1dim,F2dim,S1,S2} <: AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
-    bsi::BoolSetInternals{S1,S2}
-end
+const BOOL_SET_TO_CONSTRAINT = (
+    :AndSet => (constraint = :AndConstraint, op = :(&&)),
+    :OrSet  => (constraint = :OrConstraint, op = :(||)),
+    :XorSet => (constraint = :XorConstraint, op = :(⊻), needs_call = true, specific_constraint = true),
+    :XNorSet => (constraint = :XNorConstraint, res_op = :(!), op = :(⊻), needs_call = true, specific_constraint = true)
+)
 
-struct OrSet{F1,F2,F1dim,F2dim,S1,S2} <: AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
-    bsi::BoolSetInternals{S1,S2}
+for (set, bool_data) in BOOL_SET_TO_CONSTRAINT 
+    @eval begin
+        struct $set{
+            F1<:Union{SAF,VAF,MOI.VectorOfVariables},
+            F2<:Union{SAF,VAF,MOI.VectorOfVariables},
+            F1dim<:Val,
+            F2dim<:Val,
+            S1<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
+            S2<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}
+        } <: AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
+            bsi::BoolSetInternals{S1,S2}
+        end
+    end
 end
 
 function (::Type{BS})(lhs_set::S1, rhs_set::S2) where {S1,S2,F1,F2,BS<:CS.AbstractBoolSet{F1,F2,F1dim,F2dim,S1_,S2_} where {F1dim,F2dim,S1_,S2_}}
@@ -374,6 +388,13 @@ end
 function Base.copy(A::AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}) where {F1,F2,F1dim,F2dim,S1,S2} 
     typeof_without_params(A){F1,F2,F1dim,F2dim,S1,S2}(A.bsi)
 end
+
+struct ComplementSet{F<:MOI.AbstractFunction, S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
+    set::S
+    dimension::Int
+end
+ComplementSet{F}(set::S) where {F,S} = ComplementSet{F,S}(set, MOI.dimension(set))
+Base.copy(A::ComplementSet{F,S}) where {F,S} = ComplementSet{F,S}(A.set, A.dimension)
 
 #====================================================================================
 ====================================================================================#
@@ -442,25 +463,37 @@ end
 
 abstract type BoolConstraint{C1<:Constraint,C2<:Constraint} <: Constraint end
 
-mutable struct BoolConstraintInternals
+mutable struct BoolConstraintInternals{C1<:Constraint,C2<:Constraint}
     lhs_activated::Bool
     lhs_activated_in_backtrack_idx::Int
     rhs_activated::Bool
     rhs_activated_in_backtrack_idx::Int
-end
-
-struct AndConstraint{C1,C2} <: BoolConstraint{C1,C2}
-    std::ConstraintInternals
-    bool_std::BoolConstraintInternals
     lhs::C1
     rhs::C2
 end
 
-struct OrConstraint{C1,C2} <: BoolConstraint{C1,C2}
+struct XorConstraint{C1,C2} <: BoolConstraint{C1,C2}
     std::ConstraintInternals
-    bool_std::BoolConstraintInternals
-    lhs::C1
-    rhs::C2
+    bool_std::BoolConstraintInternals{C1,C2}
+    complement_lhs::Union{Nothing, Constraint}
+    complement_rhs::Union{Nothing, Constraint}
+end
+
+struct XNorConstraint{C1,C2} <: BoolConstraint{C1,C2}
+    std::ConstraintInternals
+    bool_std::BoolConstraintInternals{C1,C2}
+    complement_lhs::Union{Nothing, Constraint}
+    complement_rhs::Union{Nothing, Constraint}
+end
+
+for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    get(bool_data, :specific_constraint, false) && continue
+    @eval begin
+        struct $(bool_data.constraint){C1,C2} <: BoolConstraint{C1,C2}
+            std::ConstraintInternals
+            bool_std::BoolConstraintInternals{C1,C2}
+        end
+    end
 end
 
 # support for a <= b constraint
@@ -530,9 +563,9 @@ mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <
     std::ConstraintInternals
     act_std::ActivatorConstraintInternals
     inner_constraint::C
-    anti_constraint::AC
-    anti_inner_activated::Bool
-    anti_inner_activated_in_backtrack_idx::Int
+    complement_constraint::AC
+    complement_inner_constraint::Bool
+    complement_inner_constraint_in_backtrack_idx::Int
 end
 
 #====================================================================================
