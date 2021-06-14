@@ -302,20 +302,16 @@ end
 
 get_value(::Type{Val{i}}) where i = i
 
-typeof_without_params(::AndSet) = AndSet
-typeof_without_params(::OrSet) = OrSet
-typeof_without_params(::IndicatorSet) = IndicatorSet
-typeof_without_params(::MOI.IndicatorSet) = MOI.IndicatorSet
-typeof_without_params(::ReifiedSet) = ReifiedSet
-typeof_without_params(::Type{<:AndSet}) = AndSet
-typeof_without_params(::Type{<:OrSet}) = OrSet
-typeof_without_params(::Type{<:IndicatorSet}) = IndicatorSet
-typeof_without_params(::Type{<:MOI.IndicatorSet}) = MOI.IndicatorSet
-typeof_without_params(::Type{<:ReifiedSet}) = ReifiedSet
-
 get_activation_condition(::IndicatorSet{A}) where A = A
 get_activation_condition(::MOI.IndicatorSet{A}) where A = A
 get_activation_condition(::ReifiedSet{A}) where A = A
+
+typeof_without_params(::MOI.IndicatorSet) = MOI.IndicatorSet
+typeof_without_params(::Type{<:MOI.IndicatorSet}) = MOI.IndicatorSet
+typeof_without_params(::IndicatorSet) = IndicatorSet
+typeof_without_params(::Type{<:IndicatorSet}) = IndicatorSet
+typeof_without_params(::ReifiedSet) = ReifiedSet
+typeof_without_params(::Type{<:ReifiedSet}) = ReifiedSet
 
 for bool_pair = BOOL_SET_TO_CONSTRAINT
     bool_set = bool_pair.first

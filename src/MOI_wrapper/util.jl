@@ -110,7 +110,7 @@ function create_new_activator_constraint(model, activation_constraint::Activator
 
     activator_fct = f[1]
     fct = MOIU.operate(vcat, T, activator_fct, fct)
-    MOI.add_constraint(model, fct, ACS{A}(set))
+    MOI.add_constraint(model, fct, ACS{A,typeof(fct)}(set))
 end
 
 """
