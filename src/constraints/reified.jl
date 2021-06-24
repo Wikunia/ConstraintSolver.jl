@@ -50,7 +50,7 @@ function prune_constraint!(
     logs = true,
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     # 1. if the inner constraint is solved then the reified variable can be set to activate_on
-    # 2. if the complement of the inner constraint is solved (all fixed but don't fulfill) the reified variable can be set to !activate_on
+    # 2. if the inner constraint is infeasible the reified variable can be set to !activate_on
     # 3. if the reified constraint is active then prune can be called for the inner constraint
     # 4. if the reified constraint is fixed to inactive one can complement prune
 
@@ -69,8 +69,13 @@ function prune_constraint!(
         inner_constraint.set,
     )
         !fix!(com, variables[rei_vidx], activate_on) && return false
-        # 2
-    elseif all(isfixed(variables[vidx]) for vidx in inner_constraint.indices)
+    # 2
+    elseif is_constraint_violated(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set,
+    )
         !fix!(com, variables[rei_vidx], activate_off) && return false
         # 3
     elseif issetto(variables[rei_vidx], activate_on)
