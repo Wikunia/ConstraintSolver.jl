@@ -62,25 +62,26 @@ function prune!(
     search_space = com.search_space
     prev_var_length = zeros(Int, length(search_space))
     constraint_idxs_vec = fill(N, length(com.constraints))
+    constraint_changed = zeros(Bool, length(com.constraints))
     # get all constraints which need to be called (only once)
     for var in search_space
         new_var_length = num_changes(var, com.c_step_nr)
         if new_var_length > 0 || all || initial_check
             prev_var_length[var.idx] = new_var_length
             for ci in com.subscription[var.idx]
+                constraint_changed[ci] && continue
                 com.constraints[ci].is_deactivated && continue
                 inner_constraint = com.constraints[ci]
+                constraint_changed[ci] = true
                 constraint_idxs_vec[inner_constraint.idx] =
                     open_possibilities(search_space, inner_constraint.indices)
-                    changed!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
+                changed!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
             end
         end
     end
 
     # while we haven't called every constraint
     while true
-        b_open_constraint = false
-        # will be changed or b_open_constraint => false
         open_pos, ci = get_next_prune_constraint(com, constraint_idxs_vec)
         # no open values => don't need to call again
         if open_pos == 0 && !initial_check
@@ -93,6 +94,7 @@ function prune!(
         end
         constraint_idxs_vec[ci] = N
         constraint = com.constraints[ci]
+        constraint_changed[ci] = false
 
         feasible =
             prune_constraint!(com, constraint, constraint.fct, constraint.set; logs = false)
@@ -119,11 +121,13 @@ function prune!(
                         inner_constraint = com.constraints[ci]
                         # if initial check or don't add constraints => update only those which already have open possibilities
                         if (only_once || initial_check) &&
-                           constraint_idxs_vec[inner_constraint.idx] == N
+                            constraint_idxs_vec[inner_constraint.idx] == N
                             continue
                         end
                         constraint_idxs_vec[inner_constraint.idx] =
-                            open_possibilities(search_space, inner_constraint.indices)
+                        open_possibilities(search_space, inner_constraint.indices)
+                        constraint_changed[ci] && continue
+                        constraint_changed[ci] = true
                         changed!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
                     end
                 end
