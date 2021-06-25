@@ -254,6 +254,7 @@ end
     @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[2]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[3]], 5; check_feasibility = false)
+    CS.changed!(com, constraint, constraint.fct, constraint.set)
     # should prune complement
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 

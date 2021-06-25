@@ -82,7 +82,7 @@ function init_constraint!(
     constraint.strict_rhs = set.set.upper - fct.constant
     constraint.is_strict = true
     is_no_variable_constraint(constraint) && return fct.constant < set.set.upper
-
+    recompute_lc_extrema!(com, constraint, fct)
     return true
 end
 
@@ -100,6 +100,7 @@ function init_constraint!(
 ) where {T<:Real}
     constraint.rhs = set.upper - fct.constant
     is_no_variable_constraint(constraint) && return fct.constant <= set.upper
+    recompute_lc_extrema!(com, constraint, fct)
     return true
 end
 
@@ -111,7 +112,12 @@ function init_constraint!(
 ) where {T<:Real}
     constraint.rhs = set.value - fct.constant
     is_no_variable_constraint(constraint) && return fct.constant == set.value
+    recompute_lc_extrema!(com, constraint, fct)
     return true
+end
+
+function changed!(com::CS.CoM, constraint::LinearConstraint, fct, set)
+    recompute_lc_extrema!(com, constraint, fct)
 end
 
 """
@@ -232,8 +238,7 @@ function prune_constraint!(
     search_space = com.search_space
     rhs = constraint.rhs
 
-    # compute max and min values for each index
-    recompute_lc_extrema!(com, constraint, fct)
+    # reuse calculated max and min values for each index
     maxs = constraint.maxs
     mins = constraint.mins
     pre_maxs = constraint.pre_maxs
@@ -530,7 +535,6 @@ function is_constraint_solved(
     fct::SAF{T},
     set::MOI.LessThan{T},
 ) where T
-    recompute_lc_extrema!(com, constraint, fct)
     sum_maxs = sum(constraint.maxs)
     return sum_maxs <= MOI.constant(set)
 end
@@ -551,7 +555,6 @@ function is_constraint_solved(
     fct::SAF{T},
     set::Strictly{T, MOI.LessThan{T}},
 ) where T
-    recompute_lc_extrema!(com, constraint, fct)
     sum_maxs = sum(constraint.maxs)
     return sum_maxs < MOI.constant(set)
 end
@@ -611,7 +614,6 @@ function is_constraint_violated(
         )
     end
     # check if it can be feasible using the minimum sum
-    recompute_lc_extrema!(com, constraint, fct)
     return !min_sum_feasible(com, sum(constraint.mins), set)
 end
 
@@ -629,4 +631,14 @@ function min_sum_feasible(com, min_sum, set::Strictly{T, MOI.LessThan{T}}) where
         return get_approx_discrete(min_sum) < get_approx_discrete(MOI.constant(set))
     end
     return min_sum <= MOI.constant(set) + com.options.atol
+end
+
+function reverse_pruning_constraint!(
+    com::CoM,
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::Union{MOI.LessThan, MOI.EqualTo, Strictly{T, MOI.LessThan{T}}},
+    backtrack_id::Int,
+) where {T <: Real}
+    recompute_lc_extrema!(com, constraint, fct)
 end

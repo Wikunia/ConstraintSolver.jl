@@ -73,6 +73,7 @@
     @test sort(CS.values(com.search_space[3])) == -4:5
 
     @test CS.fix!(com, com.search_space[constr_indices[3]], -4)
+    CS.changed!(com, constraint, constraint.fct, constraint.set)
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
     @test CS.value(com.search_space[1]) == -1
     @test CS.value(com.search_space[2]) == -1

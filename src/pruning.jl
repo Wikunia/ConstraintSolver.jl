@@ -72,6 +72,7 @@ function prune!(
                 inner_constraint = com.constraints[ci]
                 constraint_idxs_vec[inner_constraint.idx] =
                     open_possibilities(search_space, inner_constraint.indices)
+                    changed!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
             end
         end
     end
@@ -123,6 +124,7 @@ function prune!(
                         end
                         constraint_idxs_vec[inner_constraint.idx] =
                             open_possibilities(search_space, inner_constraint.indices)
+                        changed!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
                     end
                 end
             end
