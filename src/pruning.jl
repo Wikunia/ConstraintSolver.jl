@@ -62,20 +62,16 @@ function prune!(
     search_space = com.search_space
     prev_var_length = zeros(Int, length(search_space))
     constraint_idxs_vec = fill(N, length(com.constraints))
-    constraint_changed = zeros(Bool, length(com.constraints))
     # get all constraints which need to be called (only once)
     for var in search_space
         new_var_length = num_changes(var, com.c_step_nr)
         if new_var_length > 0 || all || initial_check
             prev_var_length[var.idx] = new_var_length
             for ci in com.subscription[var.idx]
-                constraint_changed[ci] && continue
                 com.constraints[ci].is_deactivated && continue
                 inner_constraint = com.constraints[ci]
-                constraint_changed[ci] = true
                 constraint_idxs_vec[inner_constraint.idx] =
                     open_possibilities(search_space, inner_constraint.indices)
-                changed!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
             end
         end
     end
@@ -94,8 +90,8 @@ function prune!(
         end
         constraint_idxs_vec[ci] = N
         constraint = com.constraints[ci]
-        constraint_changed[ci] = false
 
+        changed!(com, constraint, constraint.fct, constraint.set)
         feasible =
             prune_constraint!(com, constraint, constraint.fct, constraint.set; logs = false)
         if !pre_backtrack
@@ -126,9 +122,6 @@ function prune!(
                         end
                         constraint_idxs_vec[inner_constraint.idx] =
                         open_possibilities(search_space, inner_constraint.indices)
-                        constraint_changed[ci] && continue
-                        constraint_changed[ci] = true
-                        changed!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
                     end
                 end
             end
