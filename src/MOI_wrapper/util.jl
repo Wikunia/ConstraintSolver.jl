@@ -57,14 +57,16 @@ function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, Indicato
         get_indices(f[2:end]),
     )
 
-    inner_constraint = get_inner_constraint(f[2:end], inner_set, inner_set.set)
+    inner_constraint = get_inner_constraint(com, f[2:end], inner_set, inner_set.set)
+    complement_inner = get_complement_constraint(com, inner_constraint)
     indices = inner_internals.indices
+    activator_internals = get_activator_internals(A, indices)
     if inner_set isa ReifiedSet
         constraint =
-            ReifiedConstraint(inner_internals, A, inner_constraint, nothing, indices[1] in indices[2:end])
+            ReifiedConstraint(inner_internals, activator_internals, inner_constraint, complement_inner)
     else
         constraint =
-            IndicatorConstraint(inner_internals, A, inner_constraint, indices[1] in indices[2:end])
+            IndicatorConstraint(inner_internals, activator_internals, inner_constraint)
     end
 
     return constraint
