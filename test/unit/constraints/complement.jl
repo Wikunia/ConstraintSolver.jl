@@ -9,6 +9,7 @@
     constraint = com.constraints[1]
     @test CS.fix!(com, variables[constraint.indices[1]], 1; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[2]], 2; check_feasibility = false)
+    CS.changed!(com, constraint, constraint.fct, constraint.set)
     @test CS.is_constraint_solved(com, constraint, constraint.fct, constraint.set)
 
     #################
@@ -23,6 +24,7 @@
     constraint = com.constraints[1]
     @test CS.fix!(com, variables[constraint.indices[1]], 1; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[2]], 1; check_feasibility = false)
+    CS.changed!(com, constraint, constraint.fct, constraint.set)
     @test CS.is_constraint_solved(com, constraint, constraint.fct, constraint.set)
 
     #################
@@ -39,6 +41,7 @@
     xor_constraint = com.constraints[1].inner_constraint
     @test CS.fix!(com, variables[xor_constraint.indices[1]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[xor_constraint.indices[2]], 2; check_feasibility = false)
+    CS.changed!(com, xor_constraint, xor_constraint.fct, xor_constraint.set)
     @test CS.is_constraint_solved(com, xor_constraint, xor_constraint.fct, xor_constraint.set)
 
     #################
@@ -55,6 +58,7 @@
     xor_constraint = com.constraints[1].inner_constraint
     @test CS.fix!(com, variables[xor_constraint.indices[1]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[xor_constraint.indices[2]], 2; check_feasibility = false)
+    CS.changed!(com, xor_constraint, xor_constraint.fct, xor_constraint.set)
     @test CS.is_constraint_solved(com, xor_constraint, xor_constraint.fct, xor_constraint.set)
 
 
