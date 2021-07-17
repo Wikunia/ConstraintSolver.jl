@@ -1,4 +1,8 @@
 # ConstrainSolver.jl - Changelog
+
+## Unreleased
+- Allow variables as constraint like `a || !b` instead of `a == 1 || b == 0`. 
+  - **Attention** Does not check if variable is a binary variable
  
 ## v0.6.9 (17th of July 2021)
 - set activator to false when inner violated [PR #266](https://github.com/Wikunia/ConstraintSolver.jl/pull/266)

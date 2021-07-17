@@ -133,6 +133,29 @@ end
     end
 end
 
+@testset "all solutions variable as constraint" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_optimal_solutions"=>true))
+    @variable(m, a, Bin)
+    @variable(m, b, Bin)
+    @variable(m, c, Bin)
+    @constraint(m, a || b || !c)
+    optimize!(m)
+    
+    com = CS.get_inner_model(m)
+    nresults = JuMP.result_count(m)
+    results = Set{Tuple{Bool,Bool,Bool}}()
+    for i in 1:nresults
+        a_val, b_val, c_val = convert.(Bool, round.(JuMP.value.([a,b,c]; result=i)))
+        @test a_val || b_val || !c_val
+        push!(results, (a_val, b_val, c_val))
+    end
+    for i in [true, false], j in [true, false], k in [true, false]
+        if i || j || !k
+            @test (i,j, k) in results
+        end
+    end
+end
+
 #=
 @testset "all solutions combined" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_optimal_solutions"=>true))
