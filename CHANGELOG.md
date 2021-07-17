@@ -1,7 +1,7 @@
 # ConstrainSolver.jl - Changelog
  
-## Unreleased
-- set activator to false when inner violated
+## v0.6.9 (17th of July 2021)
+- set activator to false when inner violated [PR #266](https://github.com/Wikunia/ConstraintSolver.jl/pull/266)
 
 ## v0.6.8 (14th of June 2021)
 - support for xor and xnor constraints 
