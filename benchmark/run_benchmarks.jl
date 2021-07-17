@@ -1,6 +1,7 @@
 
 #!/usr/bin/env julia
 
+using Pkg
 using ArgParse
 
 function parse_commandline()
@@ -31,6 +32,9 @@ end
 
 
 if isinteractive() == false
+    Pkg.activate(".")
+    Pkg.instantiate()
+
     args = parse_commandline()
     using PkgBenchmark
     using ConstraintSolver, Cbc

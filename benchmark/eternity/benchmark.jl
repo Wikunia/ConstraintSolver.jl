@@ -28,7 +28,7 @@ function get_rotations(puzzle)
 end
 
 function solve_eternity(
-    fname = "eternity_7";
+    fname = "eternity_6x6";
     height = nothing,
     width = nothing,
     all_solutions = false,
@@ -52,12 +52,12 @@ function solve_eternity(
         "branch_strategy" => branch_strategy,
     ))
     if optimize
-        cbc_optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0)
+        glpk_optimizer = optimizer_with_attributes(GLPK.Optimizer, "msg_lev" => GLPK.GLP_MSG_OFF)
         m = Model(optimizer_with_attributes(
             CS.Optimizer,
             "logging" => [],
             "all_solutions" => all_solutions,
-            "lp_optimizer" => cbc_optimizer,
+            "lp_optimizer" => glpk_optimizer,
             "seed" => 1,
         ))
     end

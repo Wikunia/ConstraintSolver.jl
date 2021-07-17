@@ -55,13 +55,13 @@
         @test MOI.supports_constraint(
             optimizer,
             typeof(f),
-            CS.ReifiedSet{MOI.ACTIVATE_ON_ONE,MOI.LessThan},
+            CS.ReifiedSet{MOI.ACTIVATE_ON_ONE,MOI.ScalarAffineFunction{Float64},MOI.LessThan{Float64}},
         )
 
         @test MOI.supports_constraint(
             optimizer,
             MOI.VectorOfVariables,
-            CS.ReifiedSet{MOI.ACTIVATE_ON_ZERO,CS.AllDifferentSetInternal},
+            CS.ReifiedSet{MOI.ACTIVATE_ON_ZERO,MOI.VectorOfVariables,CS.AllDifferentSetInternal},
         )
 
         # TimeLimit

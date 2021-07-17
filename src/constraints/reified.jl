@@ -6,7 +6,7 @@ function init_constraint!(
     active = true
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
-    anti_constraint = constraint.anti_constraint
+    complement_constraint = constraint.complement_constraint
 
     variables = com.search_space
     rei_vidx = constraint.indices[1]
@@ -14,7 +14,7 @@ function init_constraint!(
 
     # check which methods that inner constraint supports
     set_impl_functions!(com, inner_constraint)
-    anti_constraint !== nothing && set_impl_functions!(com, anti_constraint)
+    complement_constraint !== nothing && set_impl_functions!(com, complement_constraint)
 
     if inner_constraint.impl.init
         feasible = init_constraint!(
@@ -22,7 +22,6 @@ function init_constraint!(
             inner_constraint,
             inner_constraint.fct,
             inner_constraint.set;
-            active = false,
         )
         # map the bounds to the indicator constraint
         constraint.bound_rhs = inner_constraint.bound_rhs
@@ -32,13 +31,12 @@ function init_constraint!(
         end
     end
 
-    if anti_constraint !== nothing && anti_constraint.impl.init
+    if complement_constraint !== nothing && complement_constraint.impl.init
         feasible = init_constraint!(
             com,
-            anti_constraint,
-            anti_constraint.fct,
-            anti_constraint.set;
-            active = false,
+            complement_constraint,
+            complement_constraint.fct,
+            complement_constraint.set;
         )
     end
     # still feasible
@@ -53,43 +51,52 @@ function prune_constraint!(
     logs = true,
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     # 1. if the inner constraint is solved then the reified variable can be set to activate_on
-    # 2. if the inner constraint is anti-solved (all fixed but don't fulfill) the reified variable can be set to !activate_on
+    # 2. if the inner constraint is infeasible the reified variable can be set to !activate_on
     # 3. if the reified constraint is active then prune can be called for the inner constraint
-    # 4. if the reified constraint is fixed to inactive one can "anti" prune
+    # 4. if the reified constraint is fixed to inactive one can complement prune
 
     variables = com.search_space
     rei_vidx = constraint.indices[1]
     inner_constraint = constraint.inner_constraint
-    anti_constraint = constraint.anti_constraint
+    complement_constraint = constraint.complement_constraint
     activate_on = Int(constraint.activate_on)
     activate_off = activate_on == 1 ? 0 : 1
 
-    # 1
-    if is_constraint_solved(
-        com,
-        inner_constraint,
-        inner_constraint.fct,
-        inner_constraint.set,
-    )
-        !fix!(com, variables[rei_vidx], activate_on) && return false
-        # 2
-    elseif all(isfixed(variables[vidx]) for vidx in inner_constraint.indices)
-        !fix!(com, variables[rei_vidx], activate_off) && return false
-        # 3
-    elseif issetto(variables[rei_vidx], activate_on)
+
+    # 3
+    if issetto(variables[rei_vidx], activate_on)
+        !activate_inner!(com, constraint) && return false
         return prune_constraint!(
             com,
             inner_constraint,
             inner_constraint.fct,
             inner_constraint.set,
         )
-    elseif issetto(variables[rei_vidx], activate_off) && anti_constraint !== nothing
+    # 4
+    elseif issetto(variables[rei_vidx], activate_off) && complement_constraint !== nothing
+        !activate_complement_inner!(com, constraint) && return false
         return prune_constraint!(
             com,
-            anti_constraint,
-            anti_constraint.fct,
-            anti_constraint.set,
+            complement_constraint,
+            complement_constraint.fct,
+            complement_constraint.set,
         )
+    # 1
+    elseif is_constraint_solved(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set,
+    )
+        !fix!(com, variables[rei_vidx], activate_on) && return false
+    # 2
+    elseif is_constraint_violated(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set,
+    )
+        !fix!(com, variables[rei_vidx], activate_off) && return false
     end
     return true
 end
@@ -201,115 +208,11 @@ function is_constraint_violated(
     return false
 end
 
-function update_best_bound_constraint!(
-    com::CS.CoM,
-    constraint::ReifiedConstraint,
-    fct::Union{MOI.VectorOfVariables,VAF{T}},
-    set::RS,
-    vidx::Int,
-    lb::Int,
-    ub::Int,
-) where {A,T<:Real,RS<:ReifiedSet{A}}
+function changed!(com::CS.CoM, constraint::ReifiedConstraint, fct, set)
     inner_constraint = constraint.inner_constraint
-    reified_vidx = constraint.indices[1]
-    search_space = com.search_space
-    reified_var = search_space[reified_vidx]
-    if inner_constraint.impl.update_best_bound
-        if CS.issetto(reified_var, Int(constraint.activate_on))
-            return update_best_bound_constraint!(
-                com,
-                inner_constraint,
-                inner_constraint.fct,
-                inner_constraint.set,
-                vidx,
-                lb,
-                ub,
-            )
-        else
-            # if not activated (for example in a different subtree) we reset the bounds
-            for rhs in constraint.bound_rhs
-                rhs.lb = typemin(Int64)
-                rhs.ub = typemax(Int64)
-            end
-        end
-    end
-    return true
-end
-
-function single_reverse_pruning_constraint!(
-    com::CoM,
-    constraint::ReifiedConstraint,
-    fct::Union{MOI.VectorOfVariables,VAF{T}},
-    set::RS,
-    var::Variable,
-    backtrack_idx::Int,
-) where {A,T<:Real,RS<:ReifiedSet{A}}
-    inner_constraint = constraint.inner_constraint
-    # the variable must be part of the inner constraint
-    if inner_constraint.impl.single_reverse_pruning &&
-       (var.idx != constraint.indices[1] || constraint.reified_in_inner)
-        single_reverse_pruning_constraint!(
-            com,
-            inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
-            var,
-            backtrack_idx,
-        )
-    end
-end
-
-function reverse_pruning_constraint!(
-    com::CoM,
-    constraint::ReifiedConstraint,
-    fct::Union{MOI.VectorOfVariables,VAF{T}},
-    set::RS,
-    backtrack_id::Int,
-) where {A,T<:Real,RS<:ReifiedSet{A}}
-    inner_constraint = constraint.inner_constraint
-    if inner_constraint.impl.reverse_pruning
-        reverse_pruning_constraint!(
-            com,
-            inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
-            backtrack_id,
-        )
-    end
-end
-
-function restore_pruning_constraint!(
-    com::CoM,
-    constraint::ReifiedConstraint,
-    fct::Union{MOI.VectorOfVariables,VAF{T}},
-    set::RS,
-    prune_steps::Union{Int,Vector{Int}},
-) where {A,T<:Real,RS<:ReifiedSet{A}}
-    inner_constraint = constraint.inner_constraint
-    if inner_constraint.impl.restore_pruning
-        restore_pruning_constraint!(
-            com,
-            inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
-            prune_steps,
-        )
-    end
-end
-
-function finished_pruning_constraint!(
-    com::CS.CoM,
-    constraint::ReifiedConstraint,
-    fct::Union{MOI.VectorOfVariables,VAF{T}},
-    set::RS,
-) where {A,T<:Real,RS<:ReifiedSet{A}}
-    inner_constraint = constraint.inner_constraint
-    if inner_constraint.impl.finished_pruning
-        finished_pruning_constraint!(
-            com,
-            inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
-        )
+    changed!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
+    if constraint.complement_constraint !== nothing
+        complement_constraint = constraint.complement_constraint 
+        changed!(com, complement_constraint, complement_constraint.fct, complement_constraint.set)
     end
 end

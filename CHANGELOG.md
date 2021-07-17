@@ -1,7 +1,27 @@
 # ConstrainSolver.jl - Changelog
  
-## Unreleased
+## v0.6.9 (17th of July 2021)
+- set activator to false when inner violated [PR #266](https://github.com/Wikunia/ConstraintSolver.jl/pull/266)
+
+## v0.6.8 (14th of June 2021)
+- support for xor and xnor constraints 
+- better bridge structure for boolean constraints
+
+## v0.6.7 (18th of March 2021) 
+- different data structure for saving variable changes for a speedup of ~10-25% in most instances [PR #260](https://github.com/Wikunia/ConstraintSolver.jl/pull/260)
+
+## v0.6.6 (8th of March 2021)
+- Bugfix: `binary` variables in `TableSet` might have failed because `init_vals` wasn't copied [PR #259](https://github.com/Wikunia/ConstraintSolver.jl/pull/259)
+- Refactoring constraints
+  - using `init_constraint!` and `activate_constraint!` [PR #257](https://github.com/Wikunia/ConstraintSolver.jl/pull/257)
+
+## v0.6.5 (15th of February 2021)
+- Bugfix in `Or` constraint outside indicator and reified when the constraint removes values when initialized
+- Bugfix in bool constraints for constraints that implement reverse pruning functions
+
+## v0.6.4 (13th of February 2021)
 - Bugfix in reified `still_feasible` when setting to inactive
+- Bugfix in alldifferent constraint when there is a gap in the values
 - Support for `And` constraints in the inner constraints of `Indicator` and `Reified`:
     i.e `b := { sum(x) >= 10 && x in CS.AllDifferentSet() }`
 - Support for `Or` constraints in the inner constraints of `Indicator` and `Reified`:
@@ -88,7 +108,7 @@
 - Support for indicator constraints
     - i.e. `@constraint(m, b => { x + y <= 10 })`
 
-## v0.1.7 (22th of May 2020)
+## v0.1.7 (22nd of May 2020)
 - Better feasibility and pruning in `==`
 - **Bugfixes:**
   - Correct set of change ptr in `EqualSet` for faster/correct pruning

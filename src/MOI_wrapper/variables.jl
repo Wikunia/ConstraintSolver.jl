@@ -57,9 +57,6 @@ end
 function MOI.add_variable(model::Optimizer)
     vidx = length(model.variable_info) + 1
     push!(model.variable_info, Variable(vidx))
-    changes = changes = Vector{Vector{Tuple{Symbol,Int,Int,Int}}}()
-    push!(changes, Vector{Tuple{Symbol,Int,Int,Int}}())
-    model.variable_info[vidx].changes = changes
     push!(model.inner.subscription, Int[])
     push!(model.inner.bt_infeasible, 0)
     push!(model.inner.var_in_obj, false)
@@ -116,7 +113,7 @@ function MOI.add_constraint(model::Optimizer, v::SVF, t::MOI.ZeroOne)
                        model.variable_info[vi.value].upper_bound
     values = collect(min_val:max_val)
     model.variable_info[vi.value].values = values
-    model.variable_info[vi.value].init_vals = values
+    model.variable_info[vi.value].init_vals = copy(values)
     model.variable_info[vi.value].init_val_to_index = 1:length(values)
     model.variable_info[vi.value].offset = 1
     model.variable_info[vi.value].indices = 1:length(values)

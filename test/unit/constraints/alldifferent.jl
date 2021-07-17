@@ -42,6 +42,7 @@
 
     # need to create a backtrack_vec to reverse pruning
     dummy_backtrack_obj = CS.BacktrackObj(com)
+    dummy_backtrack_obj.step_nr = 1
     push!(com.backtrack_vec, dummy_backtrack_obj)
     # reverse previous fix
     CS.reverse_pruning!(com, 1)
@@ -138,6 +139,36 @@ end
     @test CS.value(com.search_space[2]) == 0
     for ind in constr_indices[3:4]
         @test sort(CS.values(com.search_space[ind])) == [3, 7]
+    end
+end
+
+@testset "all different with huge gap in variables" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
+    @variable(m, 0 <= x[1:4] <= 3, Int)
+    @variable(m, 1000 <= y[1:4] <= 3000, Int)
+    @constraint(m, [x...,y...] in CS.AllDifferentSet())
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    constraint = get_constraints_by_type(com, CS.AllDifferentConstraint)[1]
+    constr_indices = constraint.indices
+    @test CS.is_constraint_solved(
+        constraint,
+        constraint.fct,
+        constraint.set,
+        [0, 1, 2, 3, 1000, 2000],
+    )
+    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+
+    @test CS.fix!(com, com.search_space[constr_indices[5]], 1000)
+    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    for ind in constr_indices[6:8]
+        @test sort(CS.values(com.search_space[ind])) == 1001:3000
+    end
+    @test CS.fix!(com, com.search_space[constr_indices[1]], 0)
+    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    for ind in constr_indices[2:4]
+        @test sort(CS.values(com.search_space[ind])) == 1:3
     end
 end
 

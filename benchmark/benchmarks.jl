@@ -10,12 +10,17 @@ const SUITE = BenchmarkGroup()
 
 dir = pkgdir(ConstraintSolver)
 include(joinpath(dir, "benchmark/sudoku/benchmark.jl"))
+include(joinpath(dir, "benchmark/sudoku/data/25x25_gecode.jl"))
 
 SUITE["sudoku"] = BenchmarkGroup(["alldifferent"])
 sudoku_grids = from_file(joinpath(dir, "benchmark/sudoku/data/top95.txt"))
+# compiling run to make sure...
+solve_sudoku(sudoku_grids[2])
 for i in 1:5:95
-    SUITE["sudoku"]["top95_$i"] = @benchmarkable solve_sudoku($sudoku_grids[$i]) seconds = 2
+    SUITE["sudoku"]["top95_$i"] = @benchmarkable solve_sudoku($sudoku_grids[$i]) seconds = 1
 end
+SUITE["sudoku"]["25x25_89"] = @benchmarkable solve_sudoku($sudoku25[89]) seconds = 25
+SUITE["sudoku"]["25x25_90"] = @benchmarkable solve_sudoku($sudoku25[90]) seconds = 25
 
 include(joinpath(dir, "benchmark/eternity/benchmark.jl"))
 
@@ -136,3 +141,13 @@ SUITE["scheduling"]["all_different_except_0_len10"] =
     @benchmarkable all_different_except_0(10) seconds = 10
 SUITE["scheduling"]["all_different_except_0_len12"] =
     @benchmarkable all_different_except_0(12) seconds = 15
+
+
+include(joinpath(dir, "benchmark/steiner/benchmark.jl"))
+
+SUITE["steiner"] = BenchmarkGroup(["reified", "and"])
+# compiling run
+steiner(3)
+SUITE["steiner"]["steiner_7"] =
+    @benchmarkable steiner(7) seconds = 5
+    

@@ -66,14 +66,18 @@ include("objective.jl")
 include("constraints.jl")
 
 include("constraints/all_different.jl")
+include("constraints/complement.jl")
 include("constraints/boolset.jl")
 include("constraints/and.jl")
 include("constraints/or.jl")
+include("constraints/xor.jl")
+include("constraints/xnor.jl")
 include("constraints/linear_constraints.jl")
 include("constraints/svc.jl")
 include("constraints/equal_set.jl")
 include("constraints/not_equal.jl")
 include("constraints/table.jl")
+include("constraints/activator_constraints.jl")
 include("constraints/indicator.jl")
 include("constraints/reified.jl")
 include("constraints/geqset.jl")
@@ -294,9 +298,6 @@ function addBacktrackObj2Backtrack_vec!(backtrack_vec, backtrack_obj, com::CS.Co
     @assert length(backtrack_vec) == backtrack_obj.idx
     add2priorityqueue(com, backtrack_obj)
 
-    for v in com.search_space
-        push!(v.changes, Vector{Tuple{Symbol,Int,Int,Int}}())
-    end
     create_log_node(com)
 end
 
@@ -576,7 +577,6 @@ function backtrack!(
         vidx = backtrack_obj.vidx
 
         com.c_backtrack_idx = backtrack_obj.idx
-
         checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
 
         # if backtracking was started

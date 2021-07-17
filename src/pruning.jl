@@ -63,9 +63,8 @@ function prune!(
     prev_var_length = zeros(Int, length(search_space))
     constraint_idxs_vec = fill(N, length(com.constraints))
     # get all constraints which need to be called (only once)
-    current_backtrack_id = com.c_backtrack_idx
     for var in search_space
-        new_var_length = length(var.changes[current_backtrack_id])
+        new_var_length = num_changes(var, com.c_step_nr)
         if new_var_length > 0 || all || initial_check
             prev_var_length[var.idx] = new_var_length
             for ci in com.subscription[var.idx]
@@ -79,8 +78,6 @@ function prune!(
 
     # while we haven't called every constraint
     while true
-        b_open_constraint = false
-        # will be changed or b_open_constraint => false
         open_pos, ci = get_next_prune_constraint(com, constraint_idxs_vec)
         # no open values => don't need to call again
         if open_pos == 0 && !initial_check
@@ -94,6 +91,7 @@ function prune!(
         constraint_idxs_vec[ci] = N
         constraint = com.constraints[ci]
 
+        changed!(com, constraint, constraint.fct, constraint.set)
         feasible =
             prune_constraint!(com, constraint, constraint.fct, constraint.set; logs = false)
         if !pre_backtrack
@@ -108,7 +106,7 @@ function prune!(
         # if we changed another variable increase the level of the constraints to call them later
         for vidx in constraint.indices
             var = search_space[vidx]
-            new_var_length = length(var.changes[current_backtrack_id])
+            new_var_length = num_changes(var, com.c_step_nr)
             if new_var_length > prev_var_length[var.idx]
                 prev_var_length[var.idx] = new_var_length
                 for ci in com.subscription[var.idx]
@@ -119,11 +117,11 @@ function prune!(
                         inner_constraint = com.constraints[ci]
                         # if initial check or don't add constraints => update only those which already have open possibilities
                         if (only_once || initial_check) &&
-                           constraint_idxs_vec[inner_constraint.idx] == N
+                            constraint_idxs_vec[inner_constraint.idx] == N
                             continue
                         end
                         constraint_idxs_vec[inner_constraint.idx] =
-                            open_possibilities(search_space, inner_constraint.indices)
+                        open_possibilities(search_space, inner_constraint.indices)
                     end
                 end
             end
@@ -140,8 +138,9 @@ Prune the search space based on a list of backtracking indices `prune_steps`.
 function restore_prune!(com::CS.CoM, prune_steps)
     search_space = com.search_space
     for backtrack_idx in prune_steps
+        step_nr = com.backtrack_vec[backtrack_idx].step_nr
         for var in search_space
-            for change in var.changes[backtrack_idx]
+            for change in view_changes(var, step_nr)
                 fct_symbol = change[1]
                 val = change[2]
                 if fct_symbol == :fix
@@ -204,18 +203,20 @@ Reverse the changes made by a specific backtrack object
 """
 function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
     com.c_backtrack_idx = backtrack_idx
+    step_nr = com.backtrack_vec[backtrack_idx].step_nr
     search_space = com.search_space
-    latest_changes = [var.changes[backtrack_idx] for var in search_space]
     for var in search_space
         v_idx = var.idx
-        for change in Iterators.reverse(latest_changes[v_idx])
-            single_reverse_pruning!(search_space, v_idx, change[4], change[3])
+        changes = var.changes.changes
+        ch_indices = var.changes.indices
+        for change_id in ch_indices[step_nr+1]-1:-1:ch_indices[step_nr]
+            single_reverse_pruning!(search_space, v_idx, changes[change_id][4], changes[change_id][3])
         end
     end
     subscriptions = com.subscription
     constraints = com.constraints
     for var in search_space
-        length(latest_changes[var.idx]) == 0 && continue
+        num_changes(var, step_nr) == 0 && continue
         var.idx > length(subscriptions) && continue
         @inbounds for ci in subscriptions[var.idx]
             constraint = constraints[ci]

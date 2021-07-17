@@ -1,68 +1,21 @@
-function init_constraint!(
-    com::CS.CoM,
-    constraint::OrConstraint,
-    fct,
-    set::OrSet;
-    active = true,
-)
-    set_impl_functions!(com,  constraint.lhs)
-    set_impl_functions!(com,  constraint.rhs)
-    lhs_feasible = true
-    if constraint.lhs.impl.init   
-        lhs_feasible = init_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set; active=active)
-    end
-    rhs_feasible = true
-    if constraint.rhs.impl.init   
-        rhs_feasible = init_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set; active=active)
-    end
-    return lhs_feasible || rhs_feasible
-end
-
-"""
-    is_constraint_solved(
-        constraint::OrConstraint,
-        fct,
-        set::OrSet,
-        values::Vector{Int},
-    )  
-
-Checks if at least one of the inner constraints is solved
-"""
-function is_constraint_solved(
-    constraint::OrConstraint,
-    fct,
-    set::OrSet,
-    values::Vector{Int},
-)
-    lhs_num_vars = get_num_vars(constraint.lhs.fct)
-    lhs_solved = is_constraint_solved(constraint.lhs, constraint.lhs.fct, constraint.lhs.set, values[1:lhs_num_vars])
-    lhs_solved && return true
-    rhs_num_vars = get_num_vars(constraint.rhs.fct)
-    rhs_solved = is_constraint_solved(constraint.rhs, constraint.rhs.fct, constraint.rhs.set, values[end-rhs_num_vars+1:end])
-    rhs_solved && return true
-end
-
 """
     function is_constraint_violated(
         com::CoM,
-        constraint::OrConstraint,
+        constraint::BoolConstraint,
         fct,
         set::OrSet,
     )
 
-Check if both inner constraints are violated already
+Check if both of the inner constraints are violated
 """
 function is_constraint_violated(
     com::CoM,
-    constraint::OrConstraint,
+    constraint::BoolConstraint,
     fct,
     set::OrSet,
 )
-    lhs_violated = is_constraint_violated(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
-    rhs_violated = is_constraint_violated(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
-    return lhs_violated && rhs_violated
+    return is_lhs_constraint_violated(com, constraint) && is_rhs_constraint_violated(com, constraint) 
 end
-
 
 """
     still_feasible(com::CoM, constraint::OrConstraint, fct, set::OrSet, vidx::Int, value::Int)
@@ -122,9 +75,11 @@ function prune_constraint!(
         return false
     end
     if lhs_violated
+        activate_rhs!(com, constraint)
         return prune_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set; logs=logs)
     end
     if rhs_violated
+        activate_lhs!(com, constraint)
         return prune_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set; logs=logs)
     end
     return true

@@ -11,7 +11,7 @@ Variable(vidx) = Variable(
     0,
     0,
     0,
-    Vector{Vector{Tuple{Symbol,Int,Int,Int}}}(),
+    VariableChanges(),
     false,
     false,
     false,
@@ -31,6 +31,7 @@ function ConstraintInternals(cidx::Int, fct, set, indices::Vector{Int})
         indices,
         Int[],
         ImplementedConstraintFunctions(),
+        false,
         false,
         false,
         Vector{BoundRhsVariable}(undef, 0),
@@ -108,6 +109,10 @@ function LinearConstraint(
         pre_maxs,
     )
     return lc
+end
+
+function ReifiedConstraint(std, act_std, inner_constraint, complement_constraint)
+    return ReifiedConstraint(std, act_std, inner_constraint, complement_constraint, false, 0)
 end
 
 """
@@ -189,4 +194,25 @@ function BacktrackObj(com::CS.CoM)
         zeros(length(com.search_space)),
         zeros(length(com.search_space)),
     )
+end
+
+function BoolConstraintInternals(lhs, rhs) 
+    return BoolConstraintInternals(false, 0, false, 0, lhs, rhs)
+end
+
+function XorConstraint(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+    return XorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_complement_constraint(com, lhs), get_complement_constraint(com, rhs))
+end
+
+function XNorConstraint(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+    return XNorConstraint(internals, BoolConstraintInternals(lhs, rhs), get_complement_constraint(com, lhs), get_complement_constraint(com, rhs))
+end
+
+for (set, bool_data) in BOOL_SET_TO_CONSTRAINT
+    get(bool_data, :specific_constraint, false) && continue
+    @eval begin
+        function $(bool_data.constraint)(com, internals::ConstraintInternals, lhs::Constraint, rhs::Constraint) 
+            return $(bool_data.constraint)(internals, BoolConstraintInternals(lhs, rhs))
+        end
+    end
 end

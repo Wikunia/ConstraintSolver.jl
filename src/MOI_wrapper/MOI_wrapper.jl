@@ -25,6 +25,7 @@ end
 include("util.jl")
 include("variables.jl")
 include("Bridges/util.jl")
+include("Bridges/complement.jl")
 include("Bridges/indicator.jl")
 include("Bridges/reified.jl")
 include("Bridges/strictly_greater_than.jl")
@@ -48,8 +49,16 @@ function Optimizer(; options...)
         CS.StrictlyGreaterToStrictlyLessBridge{options.solution_type}
     ]
     inner_bridges = greater2less_bridges
-    # have inner them inside the BoolBridge
-    push!(inner_bridges, CS.BoolBridge{options.solution_type, inner_bridges...})
+    for i in 1:length(inner_bridges)
+        push!(inner_bridges, CS.ComplementBridge{options.solution_type, inner_bridges[i]})
+    end
+    # the bool bridge supports all inner bridges
+    for i in 1:length(inner_bridges)
+        push!(inner_bridges, CS.BoolBridge{options.solution_type, inner_bridges[i]})
+    end
+    for i in 1:length(inner_bridges)
+        push!(inner_bridges, CS.ComplementBridge{options.solution_type, inner_bridges[i]})
+    end
   
     for inner_bridge in inner_bridges
         MOIB.add_bridge(lbo, inner_bridge)
@@ -136,7 +145,7 @@ function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
 end
 
 """
-    MOI.set(model::Optimizer, ::MOI.RawParameter, value)
+    MOI.set(model::Optimizer, ::MOI.TimeLimitSec, value)
 
 Set the time limit
 """

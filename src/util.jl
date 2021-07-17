@@ -104,8 +104,22 @@ end
 
 function is_constraint_solved(com::CS.CoM, constraint::Constraint, fct, set)
     variables = com.search_space
-    !all(isfixed(variables[var]) for var in constraint.indices) && return false
+    !all(isfixed(variables[ind]) for ind in constraint.indices) && return false
     values = CS.value.(variables[constraint.indices])
+    return is_constraint_solved(constraint, fct, set, values)
+end
+
+function is_constraint_solved_when_fixed(com::CS.CoM, constraint::Constraint, fct, set, vidx::Int, value::Int)
+    variables = com.search_space
+    !all(isfixed(variables[ind]) || variables[ind].idx == vidx for ind in constraint.indices) && return false
+    values = zeros(Int, length(constraint.indices))
+    for (i,ind) in enumerate(constraint.indices)
+        if ind != vidx
+            values[i] = CS.value(variables[ind])
+        else
+            values[i] = value
+        end 
+    end
     return is_constraint_solved(constraint, fct, set, values)
 end
 
@@ -121,6 +135,7 @@ end
         :pvals,
         :impl,
         :is_initialized,
+        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -139,6 +154,7 @@ end
         :pvals,
         :impl,
         :is_initialized,
+        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -147,6 +163,135 @@ end
         Core.setproperty!(c, s, v)
     end
 end
+
+#=
+    Access standard ActivatorConstraintInternals without using .act_std syntax
+=#
+@inline function Base.getproperty(c::ActivatorConstraint, s::Symbol)
+    if s in (
+        :idx,
+        :indices,
+        :fct,
+        :set,
+        :pvals,
+        :impl,
+        :is_initialized,
+        :is_activated,
+        :is_deactivated,
+        :bound_rhs,
+    )
+        Core.getproperty(Core.getproperty(c, :std), s)
+    elseif s in (
+        :activate_on,
+        :activator_in_inner,
+        :inner_activated,
+        :inner_activated_in_backtrack_idx,
+    )
+        Core.getproperty(Core.getproperty(c, :act_std), s)
+    else
+        getfield(c, s)
+    end
+end
+
+@inline function Base.setproperty!(c::ActivatorConstraint, s::Symbol, v)
+    if s in (
+        :idx,
+        :indices,
+        :fct,
+        :set,
+        :pvals,
+        :impl,
+        :is_initialized,
+        :is_activated,
+        :is_deactivated,
+        :bound_rhs,
+    )
+        Core.setproperty!(c.std, s, v)
+    elseif s in (
+        :activate_on,
+        :activator_in_inner,
+        :inner_activated,
+        :inner_activated_in_backtrack_idx,
+    )
+        Core.setproperty!(c.act_std, s, v)
+    else
+        Core.setproperty!(c, s, v)
+    end
+end
+
+#=
+    Access standard BoolConstraintInternals without using .bool_std syntax
+=#
+@inline function Base.getproperty(c::BoolConstraint, s::Symbol)
+    if s in (
+        :idx,
+        :indices,
+        :fct,
+        :set,
+        :pvals,
+        :impl,
+        :is_initialized,
+        :is_activated,
+        :is_deactivated,
+        :bound_rhs,
+    )
+        Core.getproperty(Core.getproperty(c, :std), s)
+    elseif s in (
+        :lhs_activated,
+        :lhs_activated_in_backtrack_idx,
+        :rhs_activated,
+        :rhs_activated_in_backtrack_idx,
+        :lhs,
+        :rhs
+    )
+        Core.getproperty(Core.getproperty(c, :bool_std), s)
+    else
+        getfield(c, s)
+    end
+end
+
+@inline function Base.setproperty!(c::BoolConstraint, s::Symbol, v)
+    if s in (
+        :idx,
+        :indices,
+        :fct,
+        :set,
+        :pvals,
+        :impl,
+        :is_initialized,
+        :is_activated,
+        :is_deactivated,
+        :bound_rhs,
+    )
+        Core.setproperty!(c.std, s, v)
+    elseif s in (
+        :lhs_activated,
+        :lhs_activated_in_backtrack_idx,
+        :rhs_activated,
+        :rhs_activated_in_backtrack_idx,
+        :lhs,
+        :rhs
+    )
+        Core.setproperty!(c.bool_std, s, v)
+    else
+        Core.setproperty!(c, s, v)
+    end
+end
+
+@inline function Base.getproperty(c::AbstractBoolSet, s::Symbol)
+    if s in (
+        :lhs_set,
+        :rhs_set,
+        :lhs_dimension,
+        :rhs_dimension,
+        :dimension,
+    )
+        Core.getproperty(Core.getproperty(c, :bsi), s)
+    else
+        getfield(c, s)
+    end
+end
+
 
 """
     Return whether the given LinearConstraint doesn't contain any variables i.e for 0 <= 0
@@ -157,27 +302,76 @@ end
 
 get_value(::Type{Val{i}}) where i = i
 
-function typeof_without_parmas(::AndSet)
-    return AndSet
+for bool_pair = BOOL_SET_TO_CONSTRAINT
+    bool_set = bool_pair.first
+    @eval typeof_without_params(::$bool_set) = $bool_set
+    @eval typeof_without_params(::Type{<:$bool_set}) = $bool_set
 end
 
-function typeof_without_parmas(::OrSet)
-    return OrSet
-end
-
-function get_constraint(fct, set)
+function get_constraint(com, fct, set)
     if fct isa SAF
-        return new_linear_constraint(fct, set)
+        return get_linear_constraint(fct, set)
     else
-        internals = create_interals(fct, set)
-        return init_constraint_struct(set, internals) 
+        internals = create_internals(fct, set)
+        return init_constraint_struct(com, set, internals) 
     end
 end
 
-function get_saf(fct::MOI.VectorAffineFunction)
-    MOI.ScalarAffineFunction([t.scalar_term for t in fct.terms], fct.constants[1])
+get_saf(fct::MOI.ScalarAffineFunction) = fct
+get_saf(fct::MOI.VectorAffineFunction) = MOI.ScalarAffineFunction([t.scalar_term for t in fct.terms], fct.constants[1])
+
+get_vov(fct::MOI.VectorOfVariables) = fct
+get_vov(fct::MOI.VectorAffineFunction) = MOI.VectorOfVariables([t.scalar_term.variable_index for t in fct.terms])
+
+"""
+    init_and_activate_constraint!(com, constraint, fct, set)
+
+Initializes and activates the constraint. Does **not** check whether the functions are implemented.
+"""
+function init_and_activate_constraint!(
+    com::CS.CoM,
+    constraint::Constraint,
+    fct,
+    set
+)
+    !init_constraint!(com, constraint, fct, set) && return false
+    constraint.is_initialized = true
+    !activate_constraint!(com, constraint, fct, set) && return false
+    constraint.is_activated = true
+    return true
 end
 
-function get_vov(fct::MOI.VectorAffineFunction)
-    return MOI.VectorOfVariables([t.scalar_term.variable_index for t in fct.terms])
+"""
+    push_to_changes!(v::Variable, tuple::Tuple{Symbol,Int,Int,Int})   
+
+Push a new change to the variable `v`. 
+"""
+function push_to_changes!(v::Variable, tuple::Tuple{Symbol,Int,Int,Int})
+    v.changes.indices[end] += 1
+    push!(v.changes.changes, tuple)
+    @assert v.changes.indices[end]-1 == length(v.changes.changes)
+end
+
+"""
+    num_changes(v::Variable, step_nr::Int)
+
+Return the number of changes that were done for `v` in `step_nr`.
+"""
+function num_changes(v::Variable, step_nr::Int)
+    return v.changes.indices[step_nr+1] - v.changes.indices[step_nr]
+end
+
+"""
+    view_changes(v::Variable, step_nr::Int) 
+
+Return a view of the changes made for `v` in `step_nr`
+"""
+function view_changes(v::Variable, step_nr::Int)
+    idx_begin = v.changes.indices[step_nr]
+    idx_end = v.changes.indices[step_nr+1]-1
+    return @views v.changes.changes[idx_begin:idx_end]
+end
+
+function changed!(com::CS.CoM, constraint::Constraint, fct, set)
+    return 
 end

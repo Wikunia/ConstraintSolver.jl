@@ -35,17 +35,24 @@ end
 """
 init_constraints!(com::CS.CoM; constraints=com.constraints)
 
-Initializes all `constraints` which implement the `init_constraint!` function.
+Initializes all `constraints` which implement the `init_constraint!` method.
+It also activates all constraints which implement the `activate_constraint!` method.
 Return if feasible after initalization
 """
 function init_constraints!(com::CS.CoM; constraints = com.constraints)
     feasible = true
     for constraint in constraints
+        constraint.is_deactivated && continue
         if constraint.impl.init
             feasible = init_constraint!(com, constraint, constraint.fct, constraint.set)
             !feasible && break
         end
         constraint.is_initialized = true
+        if constraint.impl.activate
+            feasible = activate_constraint!(com, constraint, constraint.fct, constraint.set)
+            !feasible && break
+        end
+        constraint.is_activated = true
     end
     return feasible
 end
@@ -83,6 +90,7 @@ function set_impl_functions!(com, constraint::Constraint)
         set_impl_update_best_bound!(constraint)
     end
     set_impl_init!(constraint)
+    set_impl_activate!(constraint)
     set_impl_update_init!(constraint)
     set_impl_finished_pruning!(constraint)
     set_impl_restore_pruning!(constraint)
@@ -101,7 +109,7 @@ function set_impl_functions!(com::CS.CoM; constraints = com.constraints)
 end
 
 """
-set_impl_init!(constraint::Constraint)
+    set_impl_init!(constraint::Constraint)
 Sets `std.impl.init` if the constraint type has a `init_constraint!` method
 """
 function set_impl_init!(constraint::Constraint)
@@ -110,6 +118,19 @@ function set_impl_init!(constraint::Constraint)
     c_set_type = typeof(constraint.set)
     if hasmethod(init_constraint!, (CS.CoM, c_type, c_fct_type, c_set_type))
         constraint.impl.init = true
+    end
+end
+
+"""
+    set_impl_activate!(constraint::Constraint)
+Sets `std.activate.init` if the constraint type has a `activate_constraint!` method
+"""
+function set_impl_activate!(constraint::Constraint)
+    c_type = typeof(constraint)
+    c_fct_type = typeof(constraint.fct)
+    c_set_type = typeof(constraint.set)
+    if hasmethod(activate_constraint!, (CS.CoM, c_type, c_fct_type, c_set_type))
+        constraint.impl.activate = true
     end
 end
 

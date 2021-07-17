@@ -41,6 +41,7 @@
 
     # need to create a backtrack_vec to reverse pruning
     dummy_backtrack_obj = CS.BacktrackObj(com)
+    dummy_backtrack_obj.step_nr = 1
     push!(com.backtrack_vec, dummy_backtrack_obj)
     # reverse previous fix
     CS.reverse_pruning!(com, 1)
@@ -72,6 +73,7 @@
     @test sort(CS.values(com.search_space[3])) == -4:5
 
     @test CS.fix!(com, com.search_space[constr_indices[3]], -4)
+    CS.changed!(com, constraint, constraint.fct, constraint.set)
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
     @test CS.value(com.search_space[1]) == -1
     @test CS.value(com.search_space[2]) == -1
