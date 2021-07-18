@@ -77,6 +77,7 @@ include("constraints/equal_to.jl")
 include("lp_solver.jl")
 
 include("steiner.jl")
+include("monks_and_doors.jl")
 include("stable_set.jl")
 include("small_special.jl")
 include("maximum_weight_matching.jl")

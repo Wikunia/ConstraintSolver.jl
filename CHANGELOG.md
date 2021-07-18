@@ -4,6 +4,9 @@
 - Allow variables as constraint like `a || !b` instead of `a == 1 || b == 0`. 
   - **Attention** Does not check if variable is a binary variable
  
+## Unreleased
+- Support for indicator/reified in indicator/reified (without bridges) [PR #251](https://github.com/Wikunia/ConstraintSolver.jl/pull/251)
+  
 ## v0.6.9 (17th of July 2021)
 - set activator to false when inner violated [PR #266](https://github.com/Wikunia/ConstraintSolver.jl/pull/266)
 
@@ -32,6 +35,9 @@
     i.e `b := { sum(x) >= 10 || x in CS.AllDifferentSet() }`
 - Support for `&&` and `||` outside of `Indicator` and `Reified`
   - i.e `sum(x) >= 10 || x in CS.AllDifferentSet()`
+- Basic support for `Indicator` inside of reified:
+  - i.e `@constraint(model, b1 := {b2 => { v == 1 }})`
+  - currently lacks support for bridges such that `v > 1` in the inner constraint will fail
 - Some general performance updates [PR #247](https://github.com/Wikunia/ConstraintSolver.jl/pull/247)
 
 ## v0.6.3 (17th of January 2021)

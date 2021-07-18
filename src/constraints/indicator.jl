@@ -12,7 +12,8 @@ function init_constraint!(
     com::CS.CoM,
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
-    set::IS,
+    set::IS;
+    active = true
 ) where {
     A,
     T<:Real,
@@ -37,7 +38,7 @@ function init_constraint!(
         # map the bounds to the indicator constraint
         constraint.bound_rhs = inner_constraint.bound_rhs
         # the indicator can't be activated if inner constraint is infeasible
-        if !feasible
+        if !feasible && active
             !rm!(com, indicator_var, Int(constraint.activate_on)) && return false
         end
     end
