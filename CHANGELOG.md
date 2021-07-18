@@ -1,10 +1,8 @@
 # ConstrainSolver.jl - Changelog
 
 ## Unreleased
-- Allow variables as constraint like `a || !b` instead of `a == 1 || b == 0`. 
+- Allow variables as constraint like `a || !b` instead of `a == 1 || b == 0`. [PR #267](https://github.com/Wikunia/ConstraintSolver.jl/pull/267)
   - **Attention** Does not check if variable is a binary variable
- 
-## Unreleased
 - Support for indicator/reified in indicator/reified (without bridges) [PR #251](https://github.com/Wikunia/ConstraintSolver.jl/pull/251)
   
 ## v0.6.9 (17th of July 2021)
