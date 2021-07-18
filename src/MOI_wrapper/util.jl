@@ -48,6 +48,34 @@ function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, Indicato
     return init_constraint_struct(com, set.set, inner_internals)
 end
 
+"""
+    get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, IndicatorSet}, inner_set::Union{ReifiedSet{A}, IndicatorSet{A}, MOI.IndicatorSet{A}}) where {A,T<:Real}
+
+Create the inner constraint when the inner constraint is a reified or indicator constraint as well.
+"""
+function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, IndicatorSet}, inner_set::Union{ReifiedSet{A}, IndicatorSet{A}, MOI.IndicatorSet{A}}) where {A,T<:Real}
+    f = MOIU.eachscalar(func)
+    inner_internals = ConstraintInternals(
+        0,
+        f[2:end],
+        set.set,
+        get_indices(f[2:end]),
+    )
+
+    inner_constraint = get_inner_constraint(com, f[2:end], inner_set, inner_set.set)
+    complement_inner = get_complement_constraint(com, inner_constraint)
+    indices = inner_internals.indices
+    activator_internals = get_activator_internals(A, indices)
+    if inner_set isa ReifiedSet
+        constraint =
+            ReifiedConstraint(inner_internals, activator_internals, inner_constraint, complement_inner)
+    else
+        constraint =
+            IndicatorConstraint(inner_internals, activator_internals, inner_constraint)
+    end
+    return constraint
+end
+
 function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, IndicatorSet, MOI.IndicatorSet}, inner_set::MOI.AbstractScalarSet) where {T<:Real}
     inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
     inner_constant = func.constants[2]
