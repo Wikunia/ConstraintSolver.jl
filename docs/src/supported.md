@@ -96,6 +96,9 @@ The following list shows constraints that are implemented and those which are pl
   - [X] for everything that is supported by indicator constraints
 - Boolean constraints
   - i.e `@constraint(m, x + y >= 12 || 2x + y <= 7)`
+  - allows binary variables without writing ` == 1` or ` == 0` 
+    - one can write something like `a || !b` 
+    - **Attention:** Does not check whether `a` and `b` are actually binary variables
 - Element constraints
   - [ ] 1D array with constant values 
     - i.e `T = [12,87,42,1337]` `T[y] == z` with `y` and `z` being variables [#213](https://github.com/Wikunia/ConstraintSolver.jl/pull/213)
