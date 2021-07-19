@@ -876,22 +876,22 @@
         # M3 #= 1 #<=> (M1 #/\ M2)
         # @constraint(model, m3 := { m1 + m2 == 2})
         # @constraint(model, m3 := { m1 == 1 && m2 == 1})
-        @constraint(model, m3 := { m1 == 1 && m2 == 1})
+        @constraint(model, m3 := { m1 && m2})
     
         #  Monk 4: Doors A and B are both exits.
         # M4 #= 1 #<=> (A #/\ B)
         # @constraint(model, m4 := { da + db == 2})
-        @constraint(model, m4 := { da == 1 && db == 1})
+        @constraint(model, m4 := { da && db })
     
         #  Monk 5: Doors A and C are both exits.
         # M5 #= 1 #<=> (A #/\ C)
         # @constraint(model, m5 := { da + dc == 2})
-        @constraint(model, m5 := { da == 1 && dc == 1})
+        @constraint(model, m5 := { da && dc })
     
         #  Monk 6: Either Monk 4 or Monk 5 is telling the truth.
         # M6 #= 1 #<=> (M4 #\/ M5)
         # @constraint(model, m6 := { m4 + m5 == 1})
-        @constraint(model, m6 := { m4 == 1 || m5 == 1})
+        @constraint(model, m6 := { m4 || m5 })
     
         #  Monk 7: If Monk 3 is telling the truth, so is Monk 6.
         # M7 #= 1 #<=> (M3 #=> M6)
@@ -903,7 +903,7 @@
         # M8 #= 1 #<=> ((M7 #/\ M8) #=> (M1))
         b1 = @variable(model, binary=true)
         # @constraint(model, b1 := {m7 + m8 == 2})
-        @constraint(model, b1 := {m7 == 1 && [m7,m8] in CS.TableSet([1 1; 2 2; 3 3;])})
+        @constraint(model, b1 := {m7 && [m7,m8] in CS.TableSet([1 1; 2 2; 3 3;])})
         @constraint(model, m8 := {b1 <= m1})
     
         # Exactly one door is an exit.
