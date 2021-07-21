@@ -82,7 +82,9 @@ The following list shows constraints that are implemented and those which are pl
   - [X] `>`
 - [X] All different
   - `@constraint(m, [x,y,z] in CS.AllDifferentSet())`
+  - `@constraint(m, [x,y+2,x+y] in CS.AllDifferentSet())`
 - [X] `TableSet` constraint [#130](https://github.com/Wikunia/ConstraintSolver.jl/pull/130)
+  - also with `VectorAffineFunction` i.e `[x,y+2,x+y] in CS.TableSet(...)`
 - Indicator constraints [#167](https://github.com/Wikunia/ConstraintSolver.jl/pull/167)
   - i.e `@constraint(m, b => {x + y >= 12})`
   - [X] for affine inner constraints

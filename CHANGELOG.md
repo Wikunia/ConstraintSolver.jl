@@ -4,7 +4,11 @@
 - Allow variables as constraint like `a || !b` instead of `a == 1 || b == 0`. [PR #267](https://github.com/Wikunia/ConstraintSolver.jl/pull/267)
   - **Attention** Does not check if variable is a binary variable
 - Support for indicator/reified in indicator/reified (without bridges) [PR #251](https://github.com/Wikunia/ConstraintSolver.jl/pull/251)
-  
+- Support for VectorAffineFunction in TableSet/AllDifferentSet 
+  - i.e `[x[i]+i for i in 1:n] in CS.AllDifferentSet()` 
+  - `[x,y,10] in CS.TableSet(...)`
+  - see [issue #235](https://github.com/Wikunia/ConstraintSolver.jl/issues/235) for in-depth examples  
+
 ## v0.6.9 (17th of July 2021)
 - set activator to false when inner violated [PR #266](https://github.com/Wikunia/ConstraintSolver.jl/pull/266)
 
