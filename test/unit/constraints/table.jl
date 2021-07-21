@@ -162,3 +162,39 @@ end
     @test CS.fix!(com, variables[constraint.indices[2]], 2; check_feasibility = false)
     @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
 end
+
+
+@testset "all modulo" begin 
+    function modulo(m, x, y, z)
+        lbx = !(x isa Integer)  ? round(Int, JuMP.lower_bound(x)) : x
+        ubx = !(x isa Integer) ? round(Int, JuMP.upper_bound(x)) : x
+        lby = !(y isa Integer) ? round(Int, JuMP.lower_bound(y)) : y
+        uby = !(y isa Integer) ? round(Int, JuMP.upper_bound(y)) : y
+    
+        table =  transpose(reduce(hcat,[ [i,j,i % j] for i in lbx:ubx, j in lby:uby if j != 0]))
+        @constraint(m, [x, y, z] in CS.TableSet(table))
+    end   
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_solutions" => true))
+    @variable(m, 1 <= x[1:2] <= 10, Int)
+    modulo(m,x[1],2,x[2])
+    optimize!(m)
+
+    @show JuMP.termination_status(m) == MOI.OPTIMAL
+    nresults = JuMP.result_count(m)
+    results = Set{Tuple{Int,Int}}()
+    for i in 1:nresults
+        xv = convert.(Int, round.(JuMP.value.(x; result=i)))
+        @test xv[1] % 2 == xv[2] 
+        push!(results, (xv[1], xv[2]))
+    end
+
+    found_nr = 0
+    for i in 1:10, j in 1:10
+        if i % 2 == j 
+            @test (i,j) in results
+            found_nr += 1
+        end
+    end
+    @test found_nr == nresults
+end
