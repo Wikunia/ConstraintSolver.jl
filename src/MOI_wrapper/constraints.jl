@@ -44,9 +44,21 @@ MOI.supports_constraint(
 
 MOI.supports_constraint(
     ::Optimizer,
+    ::Type{VAF{T}},
+    ::Type{AllDifferentSetInternal},
+) where {T <: Real} = true
+
+MOI.supports_constraint(
+    ::Optimizer,
     ::Type{MOI.VectorOfVariables},
     ::Type{TableSetInternal},
 ) = true
+
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{VAF{T}},
+    ::Type{TableSetInternal},
+) where {T <: Real} = true
 
 MOI.supports_constraint(
     ::Optimizer,
@@ -291,6 +303,43 @@ function MOI.add_constraint(
 end
 
 """
+    function MOI.add_constraint(
+        model::Optimizer,
+        vaf::VAF{T},
+        set::Union{AllDifferentSetInternal, TableSetInternal},
+    ) where T
+
+`VectorAffineFunction` constraint for `AllDifferentSet` or `TableSet` to support for things like 
+`[a+1, b+2, c+3] in CS.AllDifferentSet()` or
+`[a, b, 4] in TableSet(...)`
+"""
+function MOI.add_constraint(
+    model::Optimizer,
+    vaf::VAF{T},
+    set::Union{AllDifferentSetInternal, TableSetInternal},
+) where T
+    fs = MOIU.eachscalar(vaf)
+    variables = Vector{MOI.VariableIndex}(undef, length(fs))
+    for (i,f) in enumerate(fs)
+        # we need to create a new variable and SAF constraint when it's not a SVF
+        if !is_svf(f)
+            vidx = MOI.add_variable(model)
+            variables[i] = vidx
+            min_val, max_val = get_extrema(model, f)
+            svf = MOI.SingleVariable(vidx)
+            MOI.add_constraint(model, svf, MOI.Integer())
+            MOI.add_constraint(model, svf, MOI.Interval(min_val, max_val))
+            new_constraint_fct = MOIU.operate(-, T, f, svf)
+            MOI.add_constraint(model, new_constraint_fct, MOI.EqualTo(0.0))
+        else
+            variables[i] = f.terms[1].variable_index
+        end
+    end
+    ci = MOI.add_constraint(model, MOI.VectorOfVariables(variables), set)
+    return MOI.ConstraintIndex{VAF{T},typeof(set)}(ci.value) 
+end
+
+"""
     MOI.add_constraint(
         model::Optimizer,
         vars::MOI.AbstractFunction,
@@ -326,10 +375,10 @@ function MOI.add_constraint(
 
     if length(func.terms) == 1
         vidx = func.terms[1].variable_index.value
-        val = convert(Int, set.value / func.terms[1].coefficient)
+        val = convert(Int, (set.value - func.constant) / func.terms[1].coefficient)
         push!(model.inner.init_fixes, (vidx, val))
         return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(0)
-    elseif length(func.terms) == 2 && set.value == zero(T)
+    elseif length(func.terms) == 2 && set.value == zero(T) && func.constant == zero(T)
         if func.terms[1].coefficient == -func.terms[2].coefficient
             # we have the form a == b
             vecOfvar = MOI.VectorOfVariables([
