@@ -180,7 +180,7 @@ end
     modulo(m,x[1],2,x[2])
     optimize!(m)
 
-    @show JuMP.termination_status(m) == MOI.OPTIMAL
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
     nresults = JuMP.result_count(m)
     results = Set{Tuple{Int,Int}}()
     for i in 1:nresults
@@ -192,6 +192,41 @@ end
     found_nr = 0
     for i in 1:10, j in 1:10
         if i % 2 == j 
+            @test (i,j) in results
+            found_nr += 1
+        end
+    end
+    @test found_nr == nresults
+end
+
+@testset "vector affine" begin 
+    function modulo_affine(m, x, y, z)
+        lbx = !(x isa Integer)  ? round(Int, JuMP.lower_bound(x)) : x
+        ubx = !(x isa Integer) ? round(Int, JuMP.upper_bound(x)) : x
+        lby = !(y isa Integer) ? round(Int, JuMP.lower_bound(y)) : y
+        uby = !(y isa Integer) ? round(Int, JuMP.upper_bound(y)) : y
+    
+        table =  transpose(reduce(hcat,[ [i,j,i % j] for i in lbx:2*ubx, j in lby:uby if j != 0]))
+        @constraint(m, [x+z, y, 2x-z] in CS.TableSet(table))
+    end   
+
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_solutions" => true))
+    @variable(m, 1 <= x[1:2] <= 10, Int)
+    modulo_affine(m,x[1],2,x[2])
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    nresults = JuMP.result_count(m)
+    results = Set{Tuple{Int,Int}}()
+    for i in 1:nresults
+        xv = convert.(Int, round.(JuMP.value.(x; result=i)))
+        @test (xv[1]+xv[2]) % 2 == 2*xv[1]-xv[2] 
+        push!(results, (xv[1], xv[2]))
+    end
+
+    found_nr = 0
+    for i in 1:10, j in 1:10
+        if (i+j) % 2 == 2*i-j 
             @test (i,j) in results
             found_nr += 1
         end
