@@ -52,6 +52,11 @@
         indicator_set = MOI.IndicatorSet{MOI.ACTIVATE_ON_ONE}(MOI.EqualTo(9.0))
         @test MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
 
+        indicator_set = CS.IndicatorSet{MOI.ACTIVATE_ON_ONE, typeof(f)}(CS.AllDifferentSetInternal(2))
+        @test !MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
+        indicator_set = CS.IndicatorSet{MOI.ACTIVATE_ON_ZERO, typeof(f)}(CS.TableSetInternal(2, [1 2; ]))
+        @test !MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
+
         @test MOI.supports_constraint(
             optimizer,
             typeof(f),
