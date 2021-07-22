@@ -93,6 +93,8 @@ The following list shows constraints that are implemented and those which are pl
   - [X] Allow `||` inside the inner constraint i.e `@constraint(m, b => {x + y >= 12 || 2x + y <= 7})`
   - [-] Have `Indicator` and `Reified` inside one another
     - this is only supported for simple cases i.e bridge support is missing
+  - [ ] `VectorAffineFunction` in `AllDifferentSet` or `TableSet` 
+    - Please open an issue if needed for a problem. Probably not too hard to add
 - Reified constraints [#171](https://github.com/Wikunia/ConstraintSolver.jl/pull/171)
   - i.e `@constraint(m, b := {x + y >= 12})`
   - [X] for everything that is supported by indicator constraints

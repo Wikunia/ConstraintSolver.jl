@@ -92,13 +92,17 @@ function MOI.supports_constraint(
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
 
+supports_inner_constraint(optimizer::Optimizer, func, set) = MOI.supports_constraint(optimizer, func, set)
+supports_inner_constraint(optimizer::Optimizer, func::Type{VAF{T}}, ::Type{AllDifferentSetInternal}) where T = false
+supports_inner_constraint(optimizer::Optimizer, func::Type{VAF{T}}, ::Type{TableSetInternal}) where T = false
+
 function MOI.supports_constraint(
     optimizer::Optimizer,
     func::Type{<:MOI.AbstractFunction},
     set::Type{OS},
 ) where {A,F,IS,OS<:CS.IndicatorSet{A,F,IS}}
     !(A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO) && return false
-    return MOI.supports_constraint(optimizer, F, IS)
+    return supports_inner_constraint(optimizer, F, IS)
 end
 
 function MOI.supports_constraint(
@@ -107,7 +111,7 @@ function MOI.supports_constraint(
     set::Type{OS}
 ) where {A,F,IS,OS<:CS.ReifiedSet{A,F,IS}}
     !(A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO) && return false
-    return MOI.supports_constraint(optimizer, F, IS)
+    return supports_inner_constraint(optimizer, F, IS)
 end
 
 function MOI.supports_constraint(
