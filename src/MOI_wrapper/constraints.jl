@@ -327,6 +327,10 @@ function MOI.add_constraint(
     for (i,f) in enumerate(fs)
         # we need to create a new variable and SAF constraint when it's not a SVF
         if !is_svf(f)
+            discrete, non_continuous_value = is_discrete_saf(f)
+            if !discrete
+                throw(DomainError(non_continuous_value, "The constant and all coefficients need to be discrete"))
+            end
             vidx = MOI.add_variable(model)
             variables[i] = vidx
             min_val, max_val = get_extrema(model, f)

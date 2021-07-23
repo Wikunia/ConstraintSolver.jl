@@ -128,3 +128,11 @@ function get_extrema(model::Optimizer, saf::MOI.ScalarAffineFunction{T}) where T
     end
     return min_val, max_val
 end
+
+function is_discrete_saf(saf::MOI.ScalarAffineFunction{T}) where T 
+    !isapprox(saf.constant, round(saf.constant)) && return false, saf.constant
+    for term in saf.terms 
+        !isapprox(term.coefficient, round(term.coefficient)) && return false, term.coefficient
+    end
+    return true, 0
+end

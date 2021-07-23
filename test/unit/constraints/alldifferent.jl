@@ -223,3 +223,16 @@ end
         @test allunique([x_val[i] - i for i in 1:n])
     end
 end
+
+@testset "domainerror due to term not discrete " begin 
+    n = 8
+    model = Model(optimizer_with_attributes(CS.Optimizer, "all_optimal_solutions"=>true, "logging"=>[]))
+
+    @variable(model, 1 <= x[1:n] <= n, Int)
+    @constraint(model, x in CS.AllDifferentSet())
+    # 1.5 not allowed
+    @constraint(model, [1.5*x[i] + i for i in 1:n] in CS.AllDifferentSet())
+    @constraint(model, [x[i] - i for i in 1:n] in CS.AllDifferentSet())
+
+    @test_throws DomainError optimize!(model)
+end
