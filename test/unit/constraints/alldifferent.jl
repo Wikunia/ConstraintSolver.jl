@@ -199,3 +199,40 @@ end
     @test CS.fix!(com, variables[2], 2; check_feasibility = false)
     @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
 end
+
+@testset "all 8queens solutions" begin 
+    n = 8
+    model = Model(optimizer_with_attributes(CS.Optimizer, "all_optimal_solutions"=>true, "logging"=>[]))
+
+    @variable(model, 1 <= x[1:n] <= n, Int)
+    @constraint(model, x in CS.AllDifferentSet())
+    @constraint(model, [x[i] + i for i in 1:n] in CS.AllDifferentSet())
+    @constraint(model, [x[i] - i for i in 1:n] in CS.AllDifferentSet())
+
+    optimize!(model)
+
+    status = JuMP.termination_status(model)
+
+    @test status == MOI.OPTIMAL
+    num_sols = MOI.get(model, MOI.ResultCount())
+    @test num_sols == 92
+    for sol in 1:num_sols
+        x_val = convert.(Integer,JuMP.value.(x; result=sol))
+        @test allunique(x_val)
+        @test allunique([x_val[i] + i for i in 1:n])
+        @test allunique([x_val[i] - i for i in 1:n])
+    end
+end
+
+@testset "domainerror due to term not discrete " begin 
+    n = 8
+    model = Model(optimizer_with_attributes(CS.Optimizer, "all_optimal_solutions"=>true, "logging"=>[]))
+
+    @variable(model, 1 <= x[1:n] <= n, Int)
+    @constraint(model, x in CS.AllDifferentSet())
+    # 1.5 not allowed
+    @constraint(model, [1.5*x[i] + i for i in 1:n] in CS.AllDifferentSet())
+    @constraint(model, [x[i] - i for i in 1:n] in CS.AllDifferentSet())
+
+    @test_throws DomainError optimize!(model)
+end

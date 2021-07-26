@@ -99,3 +99,40 @@ end
 function get_activator_internals(A, indices)
     ActivatorConstraintInternals(A, indices[1] in indices[2:end], false, 0)
 end
+
+"""
+    saf_is_svf(saf::MOI.ScalarAffineFunction)
+
+Checks if a `ScalarAffineFunction` can be represented as a `SingleVariable`.
+This can be used for example when having a `VectorAffineFunction` in `AllDifferentSet` constraint when the decision 
+has to be made whether a new constraint + variable has to be created.
+"""
+function is_svf(saf::MOI.ScalarAffineFunction)
+    !iszero(saf.constant) && return false
+    length(saf.terms) != 1 && return false
+    !isone(saf.terms[1].coefficient) && return false
+    return true
+end
+
+function get_extrema(model::Optimizer, saf::MOI.ScalarAffineFunction{T}) where T
+    min_val = saf.constant
+    max_val = saf.constant
+    for term in saf.terms 
+        if term.coefficient < 0
+            min_val += term.coefficient*model.variable_info[term.variable_index.value].upper_bound
+            max_val += term.coefficient*model.variable_info[term.variable_index.value].lower_bound
+        else
+            min_val += term.coefficient*model.variable_info[term.variable_index.value].lower_bound
+            max_val += term.coefficient*model.variable_info[term.variable_index.value].upper_bound
+        end
+    end
+    return min_val, max_val
+end
+
+function is_discrete_saf(saf::MOI.ScalarAffineFunction{T}) where T 
+    !isapprox(saf.constant, round(saf.constant)) && return false, saf.constant
+    for term in saf.terms 
+        !isapprox(term.coefficient, round(term.coefficient)) && return false, term.coefficient
+    end
+    return true, 0
+end
