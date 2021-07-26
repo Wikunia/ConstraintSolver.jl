@@ -1,7 +1,7 @@
 name = "ConstraintSolver"
 uuid = "e0e52ebd-5523-408d-9ca3-7641f1cd1405"
 authors = ["Ole Kröger <o.kroeger@opensourc.es>"]
-version = "0.6.9"
+version = "0.6.10"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
