@@ -1,4 +1,5 @@
 using Test
+using ConstraintProgrammingExtensions
 using ConstraintSolver
 using JSON
 using Random
@@ -6,6 +7,7 @@ using MathOptInterface, JuMP, Cbc, GLPK, Combinatorics
 using ReferenceTests
 using LinearAlgebra
 
+const CPE = ConstraintProgrammingExtensions
 const MOI = MathOptInterface
 const CS = ConstraintSolver
 const MOIU = MOI.Utilities

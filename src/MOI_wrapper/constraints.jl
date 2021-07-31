@@ -1,11 +1,9 @@
 """
 JuMP constraints
 """
-sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
+sense_to_set(::Function, ::Val{:!=}) = CPE.DifferentFrom(0.0)
 sense_to_set(::Function, ::Val{:<}) = Strictly(MOI.LessThan(0.0))
 sense_to_set(::Function, ::Val{:>}) = Strictly(MOI.GreaterThan(0.0))
-
-MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
 
 include("indicator.jl")
 include("reified.jl")
@@ -63,7 +61,7 @@ MOI.supports_constraint(
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{SAF{T}},
-    ::Type{NotEqualTo{T}},
+    ::Type{CPE.DifferentFrom{T}},
 ) where {T<:Real} = true
 
 # Don't directly support StrictlyGreaterThan => use a bridge
@@ -228,8 +226,8 @@ function get_complement_constraint(com, constraint::LinearConstraint{T}) where T
         complement_set = MOI.LessThan(-set.set.upper)
     elseif constraint.set isa MOI.EqualTo
         complement_fct = copy(constraint.fct)
-        complement_set = NotEqualTo(set.value)
-    elseif constraint.set isa NotEqualTo
+        complement_set = CPE.DifferentFrom(set.value)
+    elseif constraint.set isa CPE.DifferentFrom
         complement_fct = copy(constraint.fct)
         complement_set = MOI.EqualTo(set.value)
     end
@@ -481,7 +479,7 @@ end
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},
-    set::NotEqualTo{T},
+    set::CPE.DifferentFrom{T},
 ) where {T<:Real}
     com = model.inner
     com.info.n_constraint_types.notequal += 1
@@ -499,14 +497,14 @@ function MOI.add_constraint(
                 changes = false,
             )
         end
-        return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(0)
+        return MOI.ConstraintIndex{SAF{T},CPE.DifferentFrom{T}}(0)
     end
 
     lc = new_linear_constraint(model.inner, func, set)
 
     add_constraint!(model, lc)
 
-    return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(length(com.constraints))
+    return MOI.ConstraintIndex{SAF{T},CPE.DifferentFrom{T}}(length(com.constraints))
 end
 function MOI.add_constraint(
     model::Optimizer,

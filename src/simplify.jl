@@ -23,7 +23,7 @@ function simplify!(com)
             end
         elseif isa(constraint.fct, SAF) && isa(constraint.set, MOI.EqualTo)
             b_equal_to = true
-        elseif isa(constraint.fct, SAF) && isa(constraint.set, CS.NotEqualTo)
+        elseif isa(constraint.fct, SAF) && isa(constraint.set, CPE.DifferentFrom)
             b_not_equal_to = true
         elseif isa(constraint, SingleVariableConstraint) &&
                isa(constraint.set, MOI.LessThan)
@@ -127,7 +127,7 @@ function simplify_not_equal_to_cliques(com)
     for constraint_idx in 1:length(com.constraints)
         constraint = com.constraints[constraint_idx]
 
-        if isa(constraint.set, CS.NotEqualTo) && length(constraint.indices) == 2
+        if isa(constraint.set, CPE.DifferentFrom) && length(constraint.indices) == 2
             if constraint.fct.terms[1].coefficient ==
                -constraint.fct.terms[2].coefficient &&
                abs(constraint.fct.terms[1].coefficient) == 1

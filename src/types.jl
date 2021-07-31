@@ -153,11 +153,6 @@ JuMP.moi_set(::GeqSet, dim) = GeqSetInternal(dim)
 struct AllEqual <: JuMP.AbstractVectorSet end
 JuMP.moi_set(::AllEqual, dim) = CPE.AllEqual(dim)
 
-struct NotEqualTo{T} <: MOI.AbstractScalarSet
-    value::T
-end
-Base.copy(N::NotEqualTo) = NotEqualTo(N.value)
-
 # From https://github.com/dourouc05/ConstraintProgrammingExtensions.jl
 """
     Strictly{S <: Union{LessThan{T}, GreaterThan{T}}}

@@ -34,7 +34,7 @@
         @test MOI.supports_constraint(
             optimizer,
             MOI.ScalarAffineFunction{Float64},
-            CS.NotEqualTo{Float64},
+            CPE.DifferentFrom{Float64},
         )
 
         f = MOI.VectorAffineFunction(
