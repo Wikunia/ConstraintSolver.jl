@@ -1,4 +1,4 @@
-function init_constraint_struct(com, ::EqualSetInternal, internals)
+function init_constraint_struct(com, ::CPE.AllEqual, internals)
     EqualConstraint(internals, ones(Int, length(internals.indices)))
 end
 
@@ -6,7 +6,7 @@ function activate_constraint!(
     com::CS.CoM,
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
-    set::CS.EqualSetInternal
+    set::CS.CPE.AllEqual
 )
     indices = constraint.indices
     search_space = com.search_space
@@ -45,7 +45,7 @@ function apply_changes!(
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::EqualSetInternal; logs = true)
+    prune_constraint!(com::CS.CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::CPE.AllEqual; logs = true)
 
 Reduce the number of possibilities given the equality constraint which sets all variables in `MOI.VectorOfVariables` to the same value.
 Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
@@ -54,7 +54,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
-    set::EqualSetInternal;
+    set::CPE.AllEqual;
     logs = true,
 )
     indices = constraint.indices
@@ -138,7 +138,7 @@ end
     finished_pruning_constraint!(com::CS.CoM,
         constraint::EqualConstraint,
         fct::MOI.VectorOfVariables,
-        set::EqualSetInternal)
+        set::CPE.AllEqual)
 
 Reset the first_ptrs to one for the next pruning step
 """
@@ -146,14 +146,14 @@ function finished_pruning_constraint!(
     com::CS.CoM,
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
-    set::EqualSetInternal,
+    set::CPE.AllEqual,
 )
 
     constraint.first_ptrs .= 1
 end
 
 """
-    still_feasible(com::CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::EqualSetInternal, vidx::Int, value::Int)
+    still_feasible(com::CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::CPE.AllEqual, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled.
 """
@@ -161,7 +161,7 @@ function still_feasible(
     com::CoM,
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
-    set::EqualSetInternal,
+    set::CPE.AllEqual,
     vidx::Int,
     value::Int,
 )
@@ -179,7 +179,7 @@ end
 function is_constraint_solved(
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
-    set::EqualSetInternal,
+    set::CPE.AllEqual,
     values::Vector{Int},
 )
     return all(v -> v == values[1], values)
@@ -190,7 +190,7 @@ end
         com::CoM,
         constraint::EqualConstraint,
         fct::MOI.VectorOfVariables,
-        set::EqualSetInternal
+        set::CPE.AllEqual
     )
 
 Checks if the constraint is violated as it is currently set. This can happen inside an
@@ -200,7 +200,7 @@ function is_constraint_violated(
     com::CoM,
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
-    set::EqualSetInternal,
+    set::CPE.AllEqual,
 )
     found_first_val = false
     first_val = 0

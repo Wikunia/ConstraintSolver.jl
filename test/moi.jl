@@ -7,7 +7,7 @@
             MOI.VectorOfVariables,
             CS.CPE.AllDifferent,
         )
-        @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.EqualSetInternal)
+        @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.CPE.AllEqual)
         @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.TableSetInternal)
         @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.ZeroOne)
         @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.Integer)

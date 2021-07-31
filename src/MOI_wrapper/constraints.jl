@@ -34,7 +34,7 @@ MOI.supports_constraint(
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
-    ::Type{EqualSetInternal},
+    ::Type{CPE.AllEqual},
 ) = true
 MOI.supports_constraint(
     ::Optimizer,
@@ -299,7 +299,7 @@ function MOI.add_constraint(
         com.info.n_constraint_types.alldifferent += 1
     elseif set isa TableSetInternal
         com.info.n_constraint_types.table += 1
-    elseif set isa EqualSetInternal
+    elseif set isa CPE.AllEqual
         com.info.n_constraint_types.equality += 1
     end
 
@@ -397,7 +397,7 @@ function MOI.add_constraint(
             internals = ConstraintInternals(
                 length(com.constraints) + 1,
                 vecOfvar,
-                CS.EqualSetInternal(2),
+                CS.CPE.AllEqual(2),
                 Int[v.value for v in vecOfvar.variables],
             )
             constraint = EqualConstraint(internals, ones(Int, 2))

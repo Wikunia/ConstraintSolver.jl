@@ -150,13 +150,8 @@ Base.copy(G::GeqSetInternal) = GeqSetInternal(G.dimension)
 struct GeqSet <: JuMP.AbstractVectorSet end
 JuMP.moi_set(::GeqSet, dim) = GeqSetInternal(dim)
 
-struct EqualSetInternal <: MOI.AbstractVectorSet
-    dimension::Int
-end
-Base.copy(E::EqualSetInternal) = EqualSetInternal(E.dimension)
-
-struct EqualSet <: JuMP.AbstractVectorSet end
-JuMP.moi_set(::EqualSet, dim) = EqualSetInternal(dim)
+struct AllEqual <: JuMP.AbstractVectorSet end
+JuMP.moi_set(::AllEqual, dim) = CPE.AllEqual(dim)
 
 struct NotEqualTo{T} <: MOI.AbstractScalarSet
     value::T

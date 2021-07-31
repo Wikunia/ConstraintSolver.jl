@@ -2,7 +2,8 @@
 
 ## Unreleased (v0.7)
 - Using [ConstraintProgrammingExtensions.jl](https://github.com/dourouc05/ConstraintProgrammingExtensions.jl)
-  - Using `AllDifferent` instead of `AllDifferentSet`
+  - `AllDifferent` instead of `AllDifferentSet`
+  - `AllEqual` instead of `EqualSet`
   - 
 
 ## v0.6.10 (26th of July 2021)
@@ -125,17 +126,17 @@
 ## v0.1.7 (22nd of May 2020)
 - Better feasibility and pruning in `==`
 - **Bugfixes:**
-  - Correct set of change ptr in `EqualSet` for faster/correct pruning
+  - Correct set of change ptr in `AllEqual` for faster/correct pruning
   - Call to `isapprox_discrete` in `eq_sum`
   - Fixed threshold rounding
 
 ## v0.1.6 (11th of May 2020)
 - Reduction of memory allocations in `TableConstraint`
-- Pruning in `EqualSet`
+- Pruning in `AllEqual`
 
 ## v0.1.5 (6th of May 2020)
 - **Bugfixes:**
-  - EqualSet feasibility: Check if other vars have value + no memory allocation
+  - AllEqual feasibility: Check if other vars have value + no memory allocation
   - Call `call_finished_pruning!(com)` after second `prune!` before backtracking
 
 ## v0.1.4 (6th of May 2020)
