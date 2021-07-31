@@ -298,11 +298,3 @@ function finished_pruning_constraint!(
         end
     end
 end
-
-
-function changed!(com::CS.CoM, constraint::BoolConstraint, fct, set)
-    lhs = constraint.lhs
-    changed!(com, lhs, lhs.fct, lhs.set)
-    rhs = constraint.rhs
-    changed!(com, rhs, rhs.fct, rhs.set)
-end

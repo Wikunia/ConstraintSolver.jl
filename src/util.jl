@@ -371,7 +371,3 @@ function view_changes(v::Variable, step_nr::Int)
     idx_end = v.changes.indices[step_nr+1]-1
     return @views v.changes.changes[idx_begin:idx_end]
 end
-
-function changed!(com::CS.CoM, constraint::Constraint, fct, set)
-    return 
-end

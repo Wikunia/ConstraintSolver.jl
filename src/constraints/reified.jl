@@ -207,12 +207,3 @@ function is_constraint_violated(
     end
     return false
 end
-
-function changed!(com::CS.CoM, constraint::ReifiedConstraint, fct, set)
-    inner_constraint = constraint.inner_constraint
-    changed!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
-    if constraint.complement_constraint !== nothing
-        complement_constraint = constraint.complement_constraint 
-        changed!(com, complement_constraint, complement_constraint.fct, complement_constraint.set)
-    end
-end

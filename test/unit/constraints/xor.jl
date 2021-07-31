@@ -148,7 +148,6 @@ end
     xor_constraint = com.constraints[1].inner_constraint
     @test CS.fix!(com, variables[xor_constraint.indices[1]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[xor_constraint.indices[2]], 2; check_feasibility = false)
-    CS.changed!(com, xor_constraint, xor_constraint.fct, xor_constraint.set)
     @test CS.is_constraint_violated(com, xor_constraint, xor_constraint.fct, xor_constraint.set)
 
     ##################
@@ -181,7 +180,6 @@ end
 
     constr_indices = constraint.indices
     @test CS.fix!(com, variables[constraint.indices[3]], 0; check_feasibility = false)
-    CS.changed!(com, constraint, constraint.fct, constraint.set)
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
     @test sort(CS.values(m, x[1])) == [3,4,5]
 end

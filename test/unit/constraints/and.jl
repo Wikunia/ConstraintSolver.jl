@@ -162,7 +162,6 @@ end
 
     constr_indices = constraint.indices
     @test CS.fix!(com, variables[constraint.indices[3]], 0; check_feasibility = false)
-    CS.changed!(com, constraint, constraint.fct, constraint.set)
     @test !CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 end
 

@@ -91,7 +91,6 @@ function prune!(
         constraint_idxs_vec[ci] = N
         constraint = com.constraints[ci]
 
-        changed!(com, constraint, constraint.fct, constraint.set)
         feasible =
             prune_constraint!(com, constraint, constraint.fct, constraint.set; logs = false)
         if !pre_backtrack

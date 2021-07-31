@@ -165,7 +165,6 @@ end
 
     constr_indices = constraint.indices
     @test CS.fix!(com, variables[constraint.indices[2]], 0; check_feasibility = false)
-    CS.changed!(com, constraint, constraint.fct, constraint.set)
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
     for v in 0:2
         @test !CS.has(variables[constraint.indices[3]], v)
@@ -185,7 +184,6 @@ end
 
     constr_indices = constraint.indices
     @test CS.fix!(com, variables[constraint.indices[2]], 0; check_feasibility = false)
-    CS.changed!(com, constraint, constraint.fct, constraint.set)
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
     for v in 0:2
         @test !CS.has(variables[constraint.indices[4]], v)

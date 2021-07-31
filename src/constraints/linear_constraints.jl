@@ -116,10 +116,6 @@ function init_constraint!(
     return true
 end
 
-function changed!(com::CS.CoM, constraint::LinearConstraint, fct, set)
-    recompute_lc_extrema!(com, constraint, fct)
-end
-
 """
     get_new_extrema_and_sum(search_space, vidx, i, terms, full_min, full_max, pre_mins, pre_maxs)
 
