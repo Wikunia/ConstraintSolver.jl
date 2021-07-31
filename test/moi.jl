@@ -5,7 +5,7 @@
         @test MOI.supports_constraint(
             optimizer,
             MOI.VectorOfVariables,
-            CS.AllDifferentSetInternal,
+            CS.CPE.AllDifferent,
         )
         @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.EqualSetInternal)
         @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.TableSetInternal)
@@ -52,7 +52,7 @@
         indicator_set = MOI.IndicatorSet{MOI.ACTIVATE_ON_ONE}(MOI.EqualTo(9.0))
         @test MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
 
-        indicator_set = CS.IndicatorSet{MOI.ACTIVATE_ON_ONE, typeof(f)}(CS.AllDifferentSetInternal(2))
+        indicator_set = CS.IndicatorSet{MOI.ACTIVATE_ON_ONE, typeof(f)}(CS.CPE.AllDifferent(2))
         @test !MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
         indicator_set = CS.IndicatorSet{MOI.ACTIVATE_ON_ZERO, typeof(f)}(CS.TableSetInternal(2, [1 2; ]))
         @test !MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
@@ -66,7 +66,7 @@
         @test MOI.supports_constraint(
             optimizer,
             MOI.VectorOfVariables,
-            CS.ReifiedSet{MOI.ACTIVATE_ON_ZERO,MOI.VectorOfVariables,CS.AllDifferentSetInternal},
+            CS.ReifiedSet{MOI.ACTIVATE_ON_ZERO,MOI.VectorOfVariables,CS.CPE.AllDifferent},
         )
 
         # TimeLimit
@@ -90,7 +90,7 @@
         @assert MOI.supports_constraint(
             optimizer,
             MOI.VectorOfVariables,
-            CS.AllDifferentSetInternal,
+            CS.CPE.AllDifferent,
         )
 
         x1 = MOI.add_constrained_variable(optimizer, MOI.ZeroOne())
@@ -112,7 +112,7 @@
         MOI.add_constraint(
             optimizer,
             MOI.VectorOfVariables([x1[1], x2[1], x3[1]]),
-            CS.AllDifferentSetInternal(3),
+            CS.CPE.AllDifferent(3),
         )
 
         MOI.optimize!(optimizer)

@@ -500,15 +500,15 @@
             end
         end
         for rc in 1:n
-            @constraint(m, x[rc, :] in CS.AllDifferentSet())
-            @constraint(m, x[:, rc] in CS.AllDifferentSet())
+            @constraint(m, x[rc, :] in CS.AllDifferent())
+            @constraint(m, x[:, rc] in CS.AllDifferent())
         end
         for br in 0:(g - 1)
             for bc in 0:(g - 1)
                 @constraint(
                     m,
                     vec(x[(br * g + 1):((br + 1) * g), (bc * g + 1):((bc + 1) * g)]) in
-                    CS.AllDifferentSet()
+                    CS.AllDifferent()
                 )
             end
         end
@@ -545,15 +545,15 @@
             end
         end
         for rc in 1:n
-            @constraint(m, x[rc, :] in CS.AllDifferentSet())
-            @constraint(m, x[:, rc] in CS.AllDifferentSet())
+            @constraint(m, x[rc, :] in CS.AllDifferent())
+            @constraint(m, x[:, rc] in CS.AllDifferent())
         end
         for br in 0:(g - 1)
             for bc in 0:(g - 1)
                 @constraint(
                     m,
                     vec(x[(br * g + 1):((br + 1) * g), (bc * g + 1):((bc + 1) * g)]) in
-                    CS.AllDifferentSet()
+                    CS.AllDifferent()
                 )
             end
         end

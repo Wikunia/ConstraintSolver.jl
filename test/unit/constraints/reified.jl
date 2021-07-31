@@ -117,7 +117,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b, Bin)
     @variable(m, -5 <= x[1:5] <= 5, Int)
-    @constraint(m, b := {x in CS.AllDifferentSet()})
+    @constraint(m, b := {x in CS.AllDifferent()})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -132,7 +132,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b, Bin)
     @variable(m, -5 <= x[1:5] <= 5, Int)
-    @constraint(m, b := {x in CS.AllDifferentSet()})
+    @constraint(m, b := {x in CS.AllDifferent()})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -147,7 +147,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b, Bin)
     @variable(m, -5 <= x[1:5] <= 5, Int)
-    @constraint(m, b := {x in CS.AllDifferentSet()})
+    @constraint(m, b := {x in CS.AllDifferent()})
     optimize!(m)
     com = CS.get_inner_model(m)
 

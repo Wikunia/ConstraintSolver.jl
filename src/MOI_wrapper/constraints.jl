@@ -39,13 +39,13 @@ MOI.supports_constraint(
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
-    ::Type{AllDifferentSetInternal},
+    ::Type{CPE.AllDifferent},
 ) = true
 
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{VAF{T}},
-    ::Type{AllDifferentSetInternal},
+    ::Type{CPE.AllDifferent},
 ) where {T <: Real} = true
 
 MOI.supports_constraint(
@@ -93,7 +93,7 @@ function MOI.supports_constraint(
 end
 
 supports_inner_constraint(optimizer::Optimizer, func, set) = MOI.supports_constraint(optimizer, func, set)
-supports_inner_constraint(optimizer::Optimizer, func::Type{VAF{T}}, ::Type{AllDifferentSetInternal}) where T = false
+supports_inner_constraint(optimizer::Optimizer, func::Type{VAF{T}}, ::Type{CPE.AllDifferent}) where T = false
 supports_inner_constraint(optimizer::Optimizer, func::Type{VAF{T}}, ::Type{TableSetInternal}) where T = false
 
 function MOI.supports_constraint(
@@ -295,7 +295,7 @@ function MOI.add_constraint(
     constraint = init_constraint_struct(com, set, internals)
 
     add_constraint!(model, constraint)
-    if set isa AllDifferentSetInternal
+    if set isa CPE.AllDifferent
         com.info.n_constraint_types.alldifferent += 1
     elseif set isa TableSetInternal
         com.info.n_constraint_types.table += 1
@@ -310,17 +310,17 @@ end
     function MOI.add_constraint(
         model::Optimizer,
         vaf::VAF{T},
-        set::Union{AllDifferentSetInternal, TableSetInternal},
+        set::Union{CPE.AllDifferent, TableSetInternal},
     ) where T
 
 `VectorAffineFunction` constraint for `AllDifferentSet` or `TableSet` to support for things like 
-`[a+1, b+2, c+3] in CS.AllDifferentSet()` or
+`[a+1, b+2, c+3] in CS.AllDifferent()` or
 `[a, b, 4] in TableSet(...)`
 """
 function MOI.add_constraint(
     model::Optimizer,
     vaf::VAF{T},
-    set::Union{AllDifferentSetInternal, TableSetInternal},
+    set::Union{CPE.AllDifferent, TableSetInternal},
 ) where T
     fs = MOIU.eachscalar(vaf)
     variables = Vector{MOI.VariableIndex}(undef, length(fs))

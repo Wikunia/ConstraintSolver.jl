@@ -123,13 +123,8 @@ end
 Integers(vals::Union{UnitRange{Int},StepRange{Int,Int}}) = Integers(collect(vals))
 Base.copy(I::Integers) = Integers(I.values)
 
-struct AllDifferentSetInternal <: MOI.AbstractVectorSet
-    dimension::Int
-end
-Base.copy(A::AllDifferentSetInternal) = AllDifferentSetInternal(A.dimension)
-
-struct AllDifferentSet <: JuMP.AbstractVectorSet end
-JuMP.moi_set(::AllDifferentSet, dim) = AllDifferentSetInternal(dim)
+struct AllDifferent <: JuMP.AbstractVectorSet end
+JuMP.moi_set(::AllDifferent, dim) = CPE.AllDifferent(dim)
 
 struct TableSetInternal <: MOI.AbstractVectorSet
     dimension::Int

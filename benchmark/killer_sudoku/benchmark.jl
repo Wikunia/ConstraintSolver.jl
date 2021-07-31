@@ -34,7 +34,7 @@ function solve_killer_sudoku(filename; special = false, branch_strategy=:Auto)
             MOI.add_constraint(
                 m,
                 [x[ind[1]][ind[2]][1] for ind in s.indices],
-                CS.AllDifferentSetInternal(length(s.indices)),
+                CS.CPE.AllDifferent(length(s.indices)),
             )
         end
     end
@@ -44,14 +44,14 @@ function solve_killer_sudoku(filename; special = false, branch_strategy=:Auto)
         MOI.add_constraint(
             m,
             MOI.VectorOfVariables([x[r][c][1] for c in 1:9]),
-            CS.AllDifferentSetInternal(9),
+            CS.CPE.AllDifferent(9),
         )
     end
     for c in 1:9
         MOI.add_constraint(
             m,
             MOI.VectorOfVariables([x[r][c][1] for r in 1:9]),
-            CS.AllDifferentSetInternal(9),
+            CS.CPE.AllDifferent(9),
         )
     end
     variables = [MOI.VariableIndex(0) for _ in 1:9]
@@ -62,7 +62,7 @@ function solve_killer_sudoku(filename; special = false, branch_strategy=:Auto)
                 variables[variables_i] = x[i][j][1]
                 variables_i += 1
             end
-            MOI.add_constraint(m, variables, CS.AllDifferentSetInternal(9))
+            MOI.add_constraint(m, variables, CS.CPE.AllDifferent(9))
         end
     end
 

@@ -1,11 +1,16 @@
 # ConstrainSolver.jl - Changelog
 
+## Unreleased (v0.7)
+- Using [ConstraintProgrammingExtensions.jl](https://github.com/dourouc05/ConstraintProgrammingExtensions.jl)
+  - Using `AllDifferent` instead of `AllDifferentSet`
+  - 
+
 ## v0.6.10 (26th of July 2021)
 - Allow variables as constraint like `a || !b` instead of `a == 1 || b == 0`. [PR #267](https://github.com/Wikunia/ConstraintSolver.jl/pull/267)
   - **Attention** Does not check if variable is a binary variable
 - Support for indicator/reified in indicator/reified (without bridges) [PR #251](https://github.com/Wikunia/ConstraintSolver.jl/pull/251)
 - Support for VectorAffineFunction in TableSet/AllDifferentSet 
-  - i.e `[x[i]+i for i in 1:n] in CS.AllDifferentSet()` 
+  - i.e `[x[i]+i for i in 1:n] in CS.AllDifferent()` 
   - `[x,y,10] in CS.TableSet(...)`
   - see [issue #235](https://github.com/Wikunia/ConstraintSolver.jl/issues/235) for in-depth examples  
 
@@ -32,11 +37,11 @@
 - Bugfix in reified `still_feasible` when setting to inactive
 - Bugfix in alldifferent constraint when there is a gap in the values
 - Support for `And` constraints in the inner constraints of `Indicator` and `Reified`:
-    i.e `b := { sum(x) >= 10 && x in CS.AllDifferentSet() }`
+    i.e `b := { sum(x) >= 10 && x in CS.AllDifferent() }`
 - Support for `Or` constraints in the inner constraints of `Indicator` and `Reified`:
-    i.e `b := { sum(x) >= 10 || x in CS.AllDifferentSet() }`
+    i.e `b := { sum(x) >= 10 || x in CS.AllDifferent() }`
 - Support for `&&` and `||` outside of `Indicator` and `Reified`
-  - i.e `sum(x) >= 10 || x in CS.AllDifferentSet()`
+  - i.e `sum(x) >= 10 || x in CS.AllDifferent()`
 - Basic support for `Indicator` inside of reified:
   - i.e `@constraint(model, b1 := {b2 => { v == 1 }})`
   - currently lacks support for bridges such that `v > 1` in the inner constraint will fail

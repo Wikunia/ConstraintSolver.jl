@@ -15,7 +15,7 @@
         end
 
         a, b, c, d, e, f, g, h, i, j = x
-        @constraint(model, x in CS.AllDifferentSet())
+        @constraint(model, x in CS.AllDifferent())
         @constraint(model, v[1] == 10000 * a + 1000 * b + 100 * c + 10 * d + e) # ABCDE
         @constraint(model, v[2] == 10000 * f + 1000 * g + 100 * h + 10 * i + j) # FGHIJ
 

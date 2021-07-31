@@ -220,7 +220,7 @@
         @constraint(model, sum(x[6:10]) <= 15)
         # disallow x[1] = 11 and x[2] == 12
         @constraint(model, 1.5 * x[1] + 2 * x[2] != 40.5)
-        @constraint(model, x in CS.AllDifferentSet())
+        @constraint(model, x in CS.AllDifferent())
 
         @objective(model, Max, sum(x))
         optimize!(model)
@@ -250,7 +250,7 @@
         @constraint(model, sum(x[6:10]) <= 15)
         # disallow x[1] = 11 and x[2] == 12
         @constraint(model, 1.5 * x[1] + 2 * x[2] != 40.5)
-        @constraint(model, x in CS.AllDifferentSet())
+        @constraint(model, x in CS.AllDifferent())
 
         @objective(model, Max, sum(x))
         optimize!(model)
@@ -283,7 +283,7 @@
         @constraint(model, sum(x[6:10]) <= 15)
         # disallow x[1] = 11 and x[2] == 12
         @constraint(model, 1.5 * x[1] + 2 * x[2] != 40.5)
-        @constraint(model, x in CS.AllDifferentSet())
+        @constraint(model, x in CS.AllDifferent())
 
         @objective(model, Max, sum(x))
         optimize!(model)

@@ -53,13 +53,13 @@ for r=1:9, c=1:9
 end
 
 for rc = 1:9
-    @constraint(m, x[rc,:] in CS.AllDifferentSet())
-    @constraint(m, x[:,rc] in CS.AllDifferentSet())
+    @constraint(m, x[rc,:] in CS.AllDifferent())
+    @constraint(m, x[:,rc] in CS.AllDifferent())
 end
 
 for br=0:2
     for bc=0:2
-        @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferentSet())
+        @constraint(m, vec(x[br*3+1:(br+1)*3,bc*3+1:(bc+1)*3]) in CS.AllDifferent())
     end
 end
 
