@@ -231,3 +231,14 @@ function is_constraint_violated(
     end
     return false
 end
+
+function changed_var!(
+    com::CS.CoM,
+    constraint::IndicatorConstraint,
+    fct,
+    set,
+    vidx::Int
+) where {T<:Real}
+    inner_constraint = constraint.inner_constraint
+    changed_var!(com, inner_constraint, inner_constraint.fct, inner_constraint.set, vidx)
+end

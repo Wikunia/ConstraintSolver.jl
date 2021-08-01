@@ -404,6 +404,7 @@ mutable struct ConstraintInternals{
     idx::Int
     fct::FCT
     set::SET
+    vidx_to_idx::Dict{Int,Int}
     indices::Vector{Int}
     pvals::Vector{Int}
     impl::ImplementedConstraintFunctions
@@ -483,6 +484,7 @@ end
 
 mutable struct LinearConstraint{T<:Real} <: Constraint
     std::ConstraintInternals
+    currently_pruning::Bool # whether this constraint is currently in pruning 
     in_all_different::Bool
     is_strict::Bool # for differentiate between < and <=
     is_equal::Bool # for ==
@@ -542,8 +544,8 @@ mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <
     act_std::ActivatorConstraintInternals
     inner_constraint::C
     complement_constraint::AC
-    complement_inner_constraint::Bool
-    complement_inner_constraint_in_backtrack_idx::Int
+    complement_activated::Bool
+    complement_activated_in_backtrack_idx::Int
 end
 
 #====================================================================================

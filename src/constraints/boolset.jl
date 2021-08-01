@@ -298,3 +298,16 @@ function finished_pruning_constraint!(
         end
     end
 end
+
+function changed_var!(
+    com::CS.CoM,
+    constraint::BoolConstraint,
+    fct,
+    set,
+    vidx::Int
+) where {T<:Real}
+    lhs = constraint.lhs 
+    changed_var!(com, lhs, lhs.fct, lhs.set, vidx)
+    rhs = constraint.rhs 
+    changed_var!(com, rhs, rhs.fct, rhs.set, vidx)
+end

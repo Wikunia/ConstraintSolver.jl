@@ -91,6 +91,7 @@ function rm!(
         end
         changes && push_to_changes!(v, (:rm, x, 0, 1))
     end
+    notify_constraints_var_changed!(com, v.idx)
     return true
 end
 
@@ -108,6 +109,7 @@ function fix!(com::CS.CoM, v::CS.Variable, x::Int; changes = true, check_feasibi
     v.first_ptr = vidx
     v.min = x
     v.max = x
+    notify_constraints_var_changed!(com, v.idx)
     return true
 end
 

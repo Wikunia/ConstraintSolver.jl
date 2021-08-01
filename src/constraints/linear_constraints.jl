@@ -181,6 +181,49 @@ function recompute_lc_extrema!(
 end
 
 """
+    changed_var!(
+        com::CS.CoM,
+        constraint::LinearConstraint,
+        fct::SAF{T},
+        set,
+        vidx::Int
+    ) where {T<:Real}
+
+Update constraint.maxs, mins, pre_maxs and pre_mins for the changed var
+"""
+function changed_var!(
+    com::CS.CoM,
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set,
+    vidx::Int
+) where {T<:Real}
+    constraint.currently_pruning && return
+    if get(constraint.vidx_to_idx, vidx, nothing) === nothing
+        return
+    end
+    search_space = com.search_space
+    maxs = constraint.maxs
+    mins = constraint.mins
+    pre_maxs = constraint.pre_maxs
+    pre_mins = constraint.pre_mins
+
+    idx = constraint.vidx_to_idx[vidx]
+    if fct.terms[idx].coefficient >= 0
+        max_val = search_space[vidx].max * fct.terms[idx].coefficient
+        min_val = search_space[vidx].min * fct.terms[idx].coefficient
+    else
+        min_val = search_space[vidx].max * fct.terms[idx].coefficient
+        max_val = search_space[vidx].min * fct.terms[idx].coefficient
+    end
+    maxs[idx] = max_val
+    mins[idx] = min_val
+    pre_maxs[idx] = max_val
+    pre_mins[idx] = min_val
+end
+
+
+"""
     get_fixed_rhs(com::CS.CoM, constraint::Constraint)
 
 Compute the fixed rhs based on all already fixed variables
@@ -217,13 +260,26 @@ function set_new_extrema(i, pre_mins, pre_maxs, new_min, new_max)
     return changed
 end
 
+function prune_constraint!(
+    com::CS.CoM,
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::Union{MOI.LessThan, MOI.EqualTo, Strictly{T, MOI.LessThan{T}}};
+    logs = true,
+) where {T<:Real}
+    constraint.currently_pruning = true
+    isfeasible = _prune_constraint!(com, constraint, fct, set; logs=logs)
+    constraint.currently_pruning = false
+    return isfeasible
+end
+
 """
-    prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}; logs = true) where T <: Real
+    _prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set::MOI.EqualTo{T}; logs = true) where T <: Real
 
 Reduce the number of possibilities given the equality `LinearConstraint` .
 Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
 """
-function prune_constraint!(
+function _prune_constraint!(
     com::CS.CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
@@ -635,6 +691,6 @@ function reverse_pruning_constraint!(
     fct::SAF{T},
     set::Union{MOI.LessThan, MOI.EqualTo, Strictly{T, MOI.LessThan{T}}},
     backtrack_id::Int,
-) where {T <: Real}
+) where {T <: Real} 
     recompute_lc_extrema!(com, constraint, fct)
 end

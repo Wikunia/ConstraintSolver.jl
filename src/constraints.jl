@@ -294,3 +294,23 @@ function get_two_unfixed(com::CS.CoM, constraint::Constraint)
     end
     return local_vidx_1, vidx_1, local_vidx_2, vidx_2
 end
+
+"""
+    notify_constraints_var_changed!(com, vidx::Int)
+
+Notify all constraints that the domain of `vidx` changed. Calls [`changed_var!`](@ref)
+"""
+function notify_constraints_var_changed!(com::CS.CoM, vidx::Int)
+    constraints =  com.constraints
+    for ci in com.subscription[vidx]
+        constraint = constraints[ci]
+        changed_var!(com, constraint, constraint.fct, constraint.set, vidx)
+    end
+end
+
+"""
+    changed_var!(com::CS.CoM, connstraint::Constraint, fct, set, vidx)
+
+This method needs to be implemented by the constraint when it needs to update something when a variable changed
+"""
+changed_var!(com::CS.CoM, constraint::Constraint, fct, set, vidx) = nothing

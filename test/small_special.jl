@@ -584,6 +584,7 @@
         ))
         @variable(model, b >= 1, Bin)
         @variable(model, 0 <= x[1:4] <= 5, Int)
+        @constraint(model, x[1] <= x[3])
         @constraint(model, b => {sum([0.4,0.5,0.7,0.8] .* x) > 9})
         @objective(model, Min, sum([0.4,0.5,0.7,0.8] .* x))
         optimize!(model)
