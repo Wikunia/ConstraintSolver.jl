@@ -2,8 +2,8 @@
 JuMP constraints
 """
 sense_to_set(::Function, ::Val{:!=}) = CPE.DifferentFrom(0.0)
-sense_to_set(::Function, ::Val{:<}) = Strictly(MOI.LessThan(0.0))
-sense_to_set(::Function, ::Val{:>}) = Strictly(MOI.GreaterThan(0.0))
+sense_to_set(::Function, ::Val{:<}) = CPE.Strictly(MOI.LessThan(0.0))
+sense_to_set(::Function, ::Val{:>}) = CPE.Strictly(MOI.GreaterThan(0.0))
 
 include("indicator.jl")
 include("reified.jl")
@@ -68,7 +68,7 @@ MOI.supports_constraint(
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{SAF{T}},
-    ::Type{Strictly{T, MOI.LessThan{T}}},
+    ::Type{CPE.Strictly{MOI.LessThan{T}, T}},
 ) where {T<:Real} = true
 
 function MOI.supports_constraint(
@@ -84,7 +84,7 @@ function MOI.supports_constraint(
     func::Type{VAF{T}},
     set::Type{OS},
 ) where {A,T<:Real,IS<:MOI.AbstractScalarSet,OS<:MOI.IndicatorSet{A,IS}}
-    if IS <: MOI.GreaterThan || IS <: Strictly{T, MOI.GreaterThan{T}}
+    if IS <: MOI.GreaterThan || IS <: CPE.Strictly{MOI.GreaterThan{T}}
         return false
     end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
@@ -220,8 +220,8 @@ function get_complement_constraint(com, constraint::LinearConstraint{T}) where T
     complement_set = nothing
     if constraint.set isa MOI.LessThan
         complement_fct = MOIU.operate(-, T, constraint.fct)
-        complement_set = Strictly(MOI.LessThan(-set.upper))
-    elseif constraint.set isa Strictly{T, MOI.LessThan{T}}
+        complement_set = CPE.Strictly(MOI.LessThan(-set.upper))
+    elseif constraint.set isa CPE.Strictly{MOI.LessThan{T}, T}
         complement_fct = MOIU.operate(-, T, constraint.fct)
         complement_set = MOI.LessThan(-set.set.upper)
     elseif constraint.set isa MOI.EqualTo
@@ -509,7 +509,7 @@ end
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},
-    set::Strictly{T, MOI.LessThan{T}},
+    set::CPE.Strictly{MOI.LessThan{T}},
 ) where {T<:Real}
     check_inbounds(model, func)
 

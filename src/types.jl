@@ -153,23 +153,6 @@ JuMP.moi_set(::GeqSet, dim) = GeqSetInternal(dim)
 struct AllEqual <: JuMP.AbstractVectorSet end
 JuMP.moi_set(::AllEqual, dim) = CPE.AllEqual(dim)
 
-# From https://github.com/dourouc05/ConstraintProgrammingExtensions.jl
-"""
-    Strictly{S <: Union{LessThan{T}, GreaterThan{T}}}
-
-Converts an inequality set to a set with the same inequality made strict.
-For example, while `LessThan(1)` corresponds to the inequality `x <= 1`,
-`Strictly(LessThan(1))` corresponds to the inequality `x < 1`.
-"""
-struct Strictly{T, S <: Union{MOI.LessThan{T}, MOI.GreaterThan{T}}} <: MOI.AbstractScalarSet
-    set::S
-end
-
-Base.copy(set::Strictly{T,S}) where {T,S} = Strictly{T,S}(copy(set.set))
-MOI.constant(set::Strictly{S}) where S = MOI.constant(set.set)
-MOIU.shift_constant(set::Strictly{S}, offset::T) where {S, T} =
-    typeof(set)(MOIU.shift_constant(set.set, offset))
-
 #====================================================================================
 ====================== TYPES FOR TRAVERSING ========================================
 ====================================================================================#
