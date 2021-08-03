@@ -827,4 +827,7 @@ function solve!(com::CS.CoM)
     end
 end
 
+@deprecate AllDifferentSet AllDifferent false
+@deprecate EqualSet AllEqual false
+
 end # module

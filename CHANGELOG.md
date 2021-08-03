@@ -4,7 +4,6 @@
 - Using [ConstraintProgrammingExtensions.jl](https://github.com/dourouc05/ConstraintProgrammingExtensions.jl)
   - `AllDifferent` instead of `AllDifferentSet`
   - `AllEqual` instead of `EqualSet`
-  - 
 
 ## v0.6.10 (26th of July 2021)
 - Allow variables as constraint like `a || !b` instead of `a == 1 || b == 0`. [PR #267](https://github.com/Wikunia/ConstraintSolver.jl/pull/267)
