@@ -46,7 +46,7 @@ function main(pname; time_limit = 1800)
     @variable(m, 0 <= pd[1:height, 1:width] <= ncolors, Int)
     @variable(m, 0 <= pl[1:height, 1:width] <= ncolors, Int)
 
-    @constraint(m, p[:] in CS.AllDifferentSet())
+    @constraint(m, p[:] in CS.AllDifferent())
     for i in 1:height, j in 1:width
         @constraint(
             m,

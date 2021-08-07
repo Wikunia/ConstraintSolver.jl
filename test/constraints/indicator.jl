@@ -130,8 +130,8 @@
         @variable(m, 0 <= y <= 1, Int)
         @variable(m, a, Bin)
         @constraint(m, x + y <= 1)
-        @constraint(m, [a, x] in CS.AllDifferentSet())
-        @constraint(m, a => {[a, x, y] in CS.AllDifferentSet()})
+        @constraint(m, [a, x] in CS.AllDifferent())
+        @constraint(m, a => {[a, x, y] in CS.AllDifferent()})
         @objective(m, Max, a)
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.OPTIMAL
@@ -155,8 +155,8 @@
         @variable(m, 0 <= y <= 1, Int)
         @variable(m, a, Bin)
         @constraint(m, x + y <= 1)
-        @constraint(m, [a, x] in CS.AllDifferentSet())
-        @constraint(m, a => {[x, y] in CS.AllDifferentSet()})
+        @constraint(m, [a, x] in CS.AllDifferent())
+        @constraint(m, a => {[x, y] in CS.AllDifferent()})
         @objective(m, Max, a)
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.OPTIMAL
@@ -174,8 +174,8 @@
         @variable(m, 0 <= y <= 1, Int)
         @variable(m, a, Bin)
         @constraint(m, x + y <= 1)
-        @constraint(m, [a, x] in CS.AllDifferentSet())
-        @constraint(m, !a => {[x, y] in CS.AllDifferentSet()})
+        @constraint(m, [a, x] in CS.AllDifferent())
+        @constraint(m, !a => {[x, y] in CS.AllDifferent()})
         @objective(m, Min, a)
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.OPTIMAL

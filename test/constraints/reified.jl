@@ -72,7 +72,7 @@
         @variable(m, x, CS.Integers([1, 2, 4]))
         @variable(m, y, CS.Integers([2, 3, 4]))
         @variable(m, b, Bin)
-        @constraint(m, b := {[x, y] in CS.AllDifferentSet()})
+        @constraint(m, b := {[x, y] in CS.AllDifferent()})
         @objective(m, Max, 0.9 * b + x + y)
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.OPTIMAL
@@ -89,7 +89,7 @@
         @variable(m, x, CS.Integers([1, 2, 4]))
         @variable(m, y, CS.Integers([1, 2, 3, 4]))
         @variable(m, b, Bin)
-        @constraint(m, !b := {[x, y] in CS.AllDifferentSet()})
+        @constraint(m, !b := {[x, y] in CS.AllDifferent()})
         @objective(m, Min, 0.9 * b + x + y)
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.OPTIMAL
@@ -106,7 +106,7 @@
         @variable(m, x, CS.Integers([1, 2, 4]))
         @variable(m, y, CS.Integers([2, 4]))
         @variable(m, b, Bin)
-        @constraint(m, b := {[x, y] in CS.AllDifferentSet()})
+        @constraint(m, b := {[x, y] in CS.AllDifferent()})
         @objective(m, Max, 5b + x + y)
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.OPTIMAL

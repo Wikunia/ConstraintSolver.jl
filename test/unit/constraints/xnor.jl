@@ -78,7 +78,7 @@
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
-    @constraint(m, b := {!((sum(x) > 3) ⊻ (x in CS.AllDifferentSet()))})
+    @constraint(m, b := {!((sum(x) > 3) ⊻ (x in CS.AllDifferent()))})
     optimize!(m)
     com = CS.get_inner_model(m)
 

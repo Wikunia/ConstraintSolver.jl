@@ -403,8 +403,8 @@
         @constraint(m, south_carolina != georgia)
         @constraint(m, georgia != florida)
 
-        # test for EqualSet constraint
-        @constraint(m, [california, new_york, florida] in CS.EqualSet())
+        # test for AllEqual constraint
+        @constraint(m, [california, new_york, florida] in CS.AllEqual())
 
         @constraint(m, max_color .>= states)
 

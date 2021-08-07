@@ -1,7 +1,7 @@
-@testset "EqualSet" begin
+@testset "AllEqual" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:3] <= 5, Int)
-    @constraint(m, x in CS.EqualSet())
+    @constraint(m, x in CS.AllEqual())
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -58,7 +58,7 @@
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:3] <= 5, Int)
-    @constraint(m, x in CS.EqualSet())
+    @constraint(m, x in CS.AllEqual())
     optimize!(m)
     com = CS.get_inner_model(m)
     constraint = com.constraints[1]
@@ -78,7 +78,7 @@
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:3] <= 5, Int)
-    @constraint(m, x in CS.EqualSet())
+    @constraint(m, x in CS.AllEqual())
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -109,7 +109,7 @@ end
 @testset "equalset is_constraint_violated test" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:5] <= 5, Int)
-    @constraint(m, x in CS.EqualSet())
+    @constraint(m, x in CS.AllEqual())
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -122,7 +122,7 @@ end
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:5] <= 5, Int)
-    @constraint(m, x in CS.EqualSet())
+    @constraint(m, x in CS.AllEqual())
     optimize!(m)
     com = CS.get_inner_model(m)
 

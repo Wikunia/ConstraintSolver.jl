@@ -30,15 +30,15 @@ end
 
         # sudoku constraints
         for rc in 1:9
-            @constraint(m, x[rc, :] in CS.AllDifferentSet())
-            @constraint(m, x[:, rc] in CS.AllDifferentSet())
+            @constraint(m, x[rc, :] in CS.AllDifferent())
+            @constraint(m, x[:, rc] in CS.AllDifferent())
         end
         for br in 0:2
             for bc in 0:2
                 @constraint(
                     m,
                     vec(x[(br * 3 + 1):((br + 1) * 3), (bc * 3 + 1):((bc + 1) * 3)]) in
-                    CS.AllDifferentSet()
+                    CS.AllDifferent()
                 )
             end
         end
@@ -66,20 +66,20 @@ end
 
         for s in sums
             @constraint(m, sum([x[ind[1], ind[2]] for ind in s.indices]) == s.result)
-            @constraint(m, [x[ind[1], ind[2]] for ind in s.indices] in CS.AllDifferentSet())
+            @constraint(m, [x[ind[1], ind[2]] for ind in s.indices] in CS.AllDifferent())
         end
 
         # sudoku constraints
         for rc in 1:9
-            @constraint(m, x[rc, :] in CS.AllDifferentSet())
-            @constraint(m, x[:, rc] in CS.AllDifferentSet())
+            @constraint(m, x[rc, :] in CS.AllDifferent())
+            @constraint(m, x[:, rc] in CS.AllDifferent())
         end
         for br in 0:2
             for bc in 0:2
                 @constraint(
                     m,
                     vec(x[(br * 3 + 1):((br + 1) * 3), (bc * 3 + 1):((bc + 1) * 3)]) in
-                    CS.AllDifferentSet()
+                    CS.AllDifferent()
                 )
             end
         end

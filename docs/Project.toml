@@ -1,4 +1,5 @@
 [deps]
+ConstraintProgrammingExtensions = "b65d079e-ed98-51d9-b0db-edee61a5c5f8"
 ConstraintSolver = "e0e52ebd-5523-408d-9ca3-7641f1cd1405"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"

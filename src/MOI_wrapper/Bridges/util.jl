@@ -1,7 +1,7 @@
 #=
     Support for >= and >
 =#
-const UnionGT{T} = Union{Strictly{T, MOI.GreaterThan{T}}, MOI.GreaterThan{T}}
+const UnionGT{T} = Union{CPE.Strictly{MOI.GreaterThan{T}, T}, MOI.GreaterThan{T}}
 
 function supports_concreteB(concrete_B)
     added_constraints = MOIB.added_constraint_types(concrete_B)

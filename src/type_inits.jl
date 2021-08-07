@@ -70,7 +70,7 @@ function LinearConstraint(
     # get common type for rhs and coeffs
     # use the first value (can be .upper, .lower, .value) and subtract left constant
     rhs = -fct.constant
-    if isa(set, Union{MOI.EqualTo,CS.NotEqualTo})
+    if isa(set, Union{MOI.EqualTo,CPE.DifferentFrom})
         rhs += set.value
     elseif isa(set, MOI.LessThan)
         rhs += set.upper

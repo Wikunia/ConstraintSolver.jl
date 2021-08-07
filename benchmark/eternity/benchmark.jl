@@ -73,7 +73,7 @@ function solve_eternity(
         @variable(m, b[1:height, 1:width], Bin)
     end
 
-    @constraint(m, p[:] in CS.AllDifferentSet())
+    @constraint(m, p[:] in CS.AllDifferent())
     for i in 1:height, j in 1:width
         if indicator
             @constraint(

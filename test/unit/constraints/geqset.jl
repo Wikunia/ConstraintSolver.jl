@@ -1,4 +1,4 @@
-@testset "EqualSet" begin
+@testset "AllEqual" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= y <= 5, Int)
     @variable(m, -5 <= x[1:2] <= 5, Int)
