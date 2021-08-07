@@ -1,6 +1,6 @@
 # ConstrainSolver.jl - Changelog
 
-## Unreleased (v0.7)
+## v0.7.0 (7th of August 2021)
 - Using [ConstraintProgrammingExtensions.jl](https://github.com/dourouc05/ConstraintProgrammingExtensions.jl)
   - `AllDifferent` instead of `AllDifferentSet`
   - `AllEqual` instead of `EqualSet`
