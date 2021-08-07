@@ -25,7 +25,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:4] <= 5, Int)
     @constraint(m, sum(x) == 10)
-    @constraint(m, x[3:4] in CS.AllDifferentSet())
+    @constraint(m, x[3:4] in CS.AllDifferent())
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -44,8 +44,8 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:4] <= 5, Int)
     @constraint(m, sum(x) == 10)
-    @constraint(m, x[1:3] in CS.AllDifferentSet())
-    @constraint(m, [x[2], x[4]] in CS.AllDifferentSet())
+    @constraint(m, x[1:3] in CS.AllDifferent())
+    @constraint(m, [x[2], x[4]] in CS.AllDifferent())
     optimize!(m)
     com = CS.get_inner_model(m)
 

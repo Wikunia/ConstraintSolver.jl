@@ -42,14 +42,14 @@ function solve_sudoku(grid)
         MOI.add_constraint(
             m,
             MOI.VectorOfVariables([x[r][c][1] for c in 1:side_len]),
-            CS.AllDifferentSetInternal(side_len),
+            CS.CPE.AllDifferent(side_len),
         )
     end
     for c in 1:side_len
         MOI.add_constraint(
             m,
             MOI.VectorOfVariables([x[r][c][1] for r in 1:side_len]),
-            CS.AllDifferentSetInternal(side_len),
+            CS.CPE.AllDifferent(side_len),
         )
     end
     variables = [MOI.VariableIndex(0) for _ in 1:side_len]
@@ -60,7 +60,7 @@ function solve_sudoku(grid)
                 variables[variables_i] = x[i][j][1]
                 variables_i += 1
             end
-            MOI.add_constraint(m, variables, CS.AllDifferentSetInternal(side_len))
+            MOI.add_constraint(m, variables, CS.CPE.AllDifferent(side_len))
         end
     end
 

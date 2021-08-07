@@ -1,7 +1,7 @@
 @testset "reified fixed to 1 or constraint violated or solved?" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, 0 <= x[1:2] <= 5, Int)
-    @constraint(m, x in CS.AllDifferentSet() || sum(x) > 2 || x[1] > 1)
+    @constraint(m, x in CS.AllDifferent() || sum(x) > 2 || x[1] > 1)
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -16,7 +16,7 @@
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
-    @constraint(m, b := {x in CS.AllDifferentSet() || sum(x) <= 2 || 2x[1]+2x[2] > 8})
+    @constraint(m, b := {x in CS.AllDifferent() || sum(x) <= 2 || 2x[1]+2x[2] > 8})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -31,7 +31,7 @@
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
-    @constraint(m, b := {x in CS.AllDifferentSet() || sum(x) > 2})
+    @constraint(m, b := {x in CS.AllDifferent() || sum(x) > 2})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -47,7 +47,7 @@
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
-    @constraint(m, b := {sum(x) > 2 || x in CS.AllDifferentSet()})
+    @constraint(m, b := {sum(x) > 2 || x in CS.AllDifferent()})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -63,7 +63,7 @@
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
-    @constraint(m, b := {x in CS.AllDifferentSet() || sum(x) <= 2})
+    @constraint(m, b := {x in CS.AllDifferent() || sum(x) <= 2})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -78,7 +78,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
-    @constraint(m, b => {x in CS.AllDifferentSet() || sum(x) > 2 || x[1] > 1 })
+    @constraint(m, b => {x in CS.AllDifferent() || sum(x) > 2 || x[1] > 1 })
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -93,7 +93,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
-    @constraint(m, b => {x in CS.AllDifferentSet() || sum(x) <= 2 || 2x[1]+2x[2] > 8})
+    @constraint(m, b => {x in CS.AllDifferent() || sum(x) <= 2 || 2x[1]+2x[2] > 8})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -108,7 +108,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
-    @constraint(m, b => {x in CS.AllDifferentSet() || sum(x) > 2})
+    @constraint(m, b => {x in CS.AllDifferent() || sum(x) > 2})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -124,7 +124,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
-    @constraint(m, b => {sum(x) > 2 || x in CS.AllDifferentSet()})
+    @constraint(m, b => {sum(x) > 2 || x in CS.AllDifferent()})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -140,7 +140,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
-    @constraint(m, b => {x in CS.AllDifferentSet() || sum(x) <= 2})
+    @constraint(m, b => {x in CS.AllDifferent() || sum(x) <= 2})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -195,7 +195,7 @@ end
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
     @variable(m, 0 <= y <= 5, Int)
-    @constraint(m, b := { x in CS.AllDifferentSet() || y < 1}) 
+    @constraint(m, b := { x in CS.AllDifferent() || y < 1}) 
     optimize!(m)
 
     com = CS.get_inner_model(m)
@@ -215,7 +215,7 @@ end
     @variable(m, b >= 1, Bin)
     @variable(m, 0 <= x[1:2] <= 5, Int)
     @variable(m, 0 <= y <= 5, Int)
-    @constraint(m, b := { y < 1 || x in CS.AllDifferentSet()}) 
+    @constraint(m, b := { y < 1 || x in CS.AllDifferent()}) 
     optimize!(m)
 
     com = CS.get_inner_model(m)

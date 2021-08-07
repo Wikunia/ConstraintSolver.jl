@@ -20,6 +20,7 @@ using JuMP:
     termination_status
 import JuMP.sense_to_set
 import JuMP
+import ConstraintProgrammingExtensions
 using LightGraphs
 using MathOptInterface
 using MatrixNetworks
@@ -27,6 +28,8 @@ using Random
 using Statistics
 using StatsBase
 using StatsFuns
+
+const CPE = ConstraintProgrammingExtensions
 
 const CS = ConstraintSolver
 const CS_RNG = MersenneTwister(1)
@@ -74,7 +77,7 @@ include("constraints/xor.jl")
 include("constraints/xnor.jl")
 include("constraints/linear_constraints.jl")
 include("constraints/svc.jl")
-include("constraints/equal_set.jl")
+include("constraints/all_equal.jl")
 include("constraints/not_equal.jl")
 include("constraints/table.jl")
 include("constraints/activator_constraints.jl")
@@ -669,7 +672,7 @@ function set_in_all_different!(com::CS.CoM; constraints = com.constraints)
                 intersects = intersect(subscriptions_idxs...)
 
                 for i in intersects
-                    if isa(com.constraints[i].set, AllDifferentSetInternal)
+                    if isa(com.constraints[i].set, CPE.AllDifferent)
                         constraint.in_all_different = true
                         push!(com.constraints[i].sub_constraint_idxs, constraint.idx)
                     end
@@ -823,5 +826,8 @@ function solve!(com::CS.CoM)
         return :NotSolved
     end
 end
+
+@deprecate AllDifferentSet AllDifferent false
+@deprecate EqualSet AllEqual false
 
 end # module

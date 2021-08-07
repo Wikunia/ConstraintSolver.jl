@@ -1,11 +1,9 @@
 """
 JuMP constraints
 """
-sense_to_set(::Function, ::Val{:!=}) = NotEqualTo(0.0)
-sense_to_set(::Function, ::Val{:<}) = Strictly(MOI.LessThan(0.0))
-sense_to_set(::Function, ::Val{:>}) = Strictly(MOI.GreaterThan(0.0))
-
-MOIU.shift_constant(set::NotEqualTo, value) = NotEqualTo(set.value + value)
+sense_to_set(::Function, ::Val{:!=}) = CPE.DifferentFrom(0.0)
+sense_to_set(::Function, ::Val{:<}) = CPE.Strictly(MOI.LessThan(0.0))
+sense_to_set(::Function, ::Val{:>}) = CPE.Strictly(MOI.GreaterThan(0.0))
 
 include("indicator.jl")
 include("reified.jl")
@@ -34,18 +32,18 @@ MOI.supports_constraint(
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
-    ::Type{EqualSetInternal},
+    ::Type{CPE.AllEqual},
 ) = true
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
-    ::Type{AllDifferentSetInternal},
+    ::Type{CPE.AllDifferent},
 ) = true
 
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{VAF{T}},
-    ::Type{AllDifferentSetInternal},
+    ::Type{CPE.AllDifferent},
 ) where {T <: Real} = true
 
 MOI.supports_constraint(
@@ -63,14 +61,14 @@ MOI.supports_constraint(
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{SAF{T}},
-    ::Type{NotEqualTo{T}},
+    ::Type{CPE.DifferentFrom{T}},
 ) where {T<:Real} = true
 
 # Don't directly support StrictlyGreaterThan => use a bridge
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{SAF{T}},
-    ::Type{Strictly{T, MOI.LessThan{T}}},
+    ::Type{CPE.Strictly{MOI.LessThan{T}, T}},
 ) where {T<:Real} = true
 
 function MOI.supports_constraint(
@@ -86,14 +84,14 @@ function MOI.supports_constraint(
     func::Type{VAF{T}},
     set::Type{OS},
 ) where {A,T<:Real,IS<:MOI.AbstractScalarSet,OS<:MOI.IndicatorSet{A,IS}}
-    if IS <: MOI.GreaterThan || IS <: Strictly{T, MOI.GreaterThan{T}}
+    if IS <: MOI.GreaterThan || IS <: CPE.Strictly{MOI.GreaterThan{T}}
         return false
     end
     return A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO
 end
 
 supports_inner_constraint(optimizer::Optimizer, func, set) = MOI.supports_constraint(optimizer, func, set)
-supports_inner_constraint(optimizer::Optimizer, func::Type{VAF{T}}, ::Type{AllDifferentSetInternal}) where T = false
+supports_inner_constraint(optimizer::Optimizer, func::Type{VAF{T}}, ::Type{CPE.AllDifferent}) where T = false
 supports_inner_constraint(optimizer::Optimizer, func::Type{VAF{T}}, ::Type{TableSetInternal}) where T = false
 
 function MOI.supports_constraint(
@@ -222,14 +220,14 @@ function get_complement_constraint(com, constraint::LinearConstraint{T}) where T
     complement_set = nothing
     if constraint.set isa MOI.LessThan
         complement_fct = MOIU.operate(-, T, constraint.fct)
-        complement_set = Strictly(MOI.LessThan(-set.upper))
-    elseif constraint.set isa Strictly{T, MOI.LessThan{T}}
+        complement_set = CPE.Strictly(MOI.LessThan(-set.upper))
+    elseif constraint.set isa CPE.Strictly{MOI.LessThan{T}, T}
         complement_fct = MOIU.operate(-, T, constraint.fct)
         complement_set = MOI.LessThan(-set.set.upper)
     elseif constraint.set isa MOI.EqualTo
         complement_fct = copy(constraint.fct)
-        complement_set = NotEqualTo(set.value)
-    elseif constraint.set isa NotEqualTo
+        complement_set = CPE.DifferentFrom(set.value)
+    elseif constraint.set isa CPE.DifferentFrom
         complement_fct = copy(constraint.fct)
         complement_set = MOI.EqualTo(set.value)
     end
@@ -295,11 +293,11 @@ function MOI.add_constraint(
     constraint = init_constraint_struct(com, set, internals)
 
     add_constraint!(model, constraint)
-    if set isa AllDifferentSetInternal
+    if set isa CPE.AllDifferent
         com.info.n_constraint_types.alldifferent += 1
     elseif set isa TableSetInternal
         com.info.n_constraint_types.table += 1
-    elseif set isa EqualSetInternal
+    elseif set isa CPE.AllEqual
         com.info.n_constraint_types.equality += 1
     end
 
@@ -310,17 +308,17 @@ end
     function MOI.add_constraint(
         model::Optimizer,
         vaf::VAF{T},
-        set::Union{AllDifferentSetInternal, TableSetInternal},
+        set::Union{CPE.AllDifferent, TableSetInternal},
     ) where T
 
 `VectorAffineFunction` constraint for `AllDifferentSet` or `TableSet` to support for things like 
-`[a+1, b+2, c+3] in CS.AllDifferentSet()` or
+`[a+1, b+2, c+3] in CS.AllDifferent()` or
 `[a, b, 4] in TableSet(...)`
 """
 function MOI.add_constraint(
     model::Optimizer,
     vaf::VAF{T},
-    set::Union{AllDifferentSetInternal, TableSetInternal},
+    set::Union{CPE.AllDifferent, TableSetInternal},
 ) where T
     fs = MOIU.eachscalar(vaf)
     variables = Vector{MOI.VariableIndex}(undef, length(fs))
@@ -397,7 +395,7 @@ function MOI.add_constraint(
             internals = ConstraintInternals(
                 length(com.constraints) + 1,
                 vecOfvar,
-                CS.EqualSetInternal(2),
+                CS.CPE.AllEqual(2),
                 Int[v.value for v in vecOfvar.variables],
             )
             constraint = EqualConstraint(internals, ones(Int, 2))
@@ -481,7 +479,7 @@ end
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},
-    set::NotEqualTo{T},
+    set::CPE.DifferentFrom{T},
 ) where {T<:Real}
     com = model.inner
     com.info.n_constraint_types.notequal += 1
@@ -499,19 +497,19 @@ function MOI.add_constraint(
                 changes = false,
             )
         end
-        return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(0)
+        return MOI.ConstraintIndex{SAF{T},CPE.DifferentFrom{T}}(0)
     end
 
     lc = new_linear_constraint(model.inner, func, set)
 
     add_constraint!(model, lc)
 
-    return MOI.ConstraintIndex{SAF{T},NotEqualTo{T}}(length(com.constraints))
+    return MOI.ConstraintIndex{SAF{T},CPE.DifferentFrom{T}}(length(com.constraints))
 end
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},
-    set::Strictly{T, MOI.LessThan{T}},
+    set::CPE.Strictly{MOI.LessThan{T}},
 ) where {T<:Real}
     check_inbounds(model, func)
 

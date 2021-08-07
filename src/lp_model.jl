@@ -22,7 +22,7 @@ function create_lp_model!(model)
             typeof(constraint.set),
         )
             MOI.add_constraint(lp_backend, constraint.fct, constraint.set)
-        elseif constraint.set isa Strictly # transform a < into a <= by changing the rhs
+        elseif constraint.set isa CPE.Strictly # transform a < into a <= by changing the rhs
             if MOI.supports_constraint(
                 model.options.lp_optimizer.optimizer_constructor(),
                 typeof(constraint.fct),

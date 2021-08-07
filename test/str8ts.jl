@@ -70,11 +70,11 @@ function solve_str8ts(
 
     for r in 1:9
         variables = [x[r, c] for c = 1:9 if white[r, c] == 1 || grid[r, c] != 0]
-        @constraint(m, variables in CS.AllDifferentSet())
+        @constraint(m, variables in CS.AllDifferent())
     end
     for c in 1:9
         variables = [x[r, c] for r = 1:9 if white[r, c] == 1 || grid[r, c] != 0]
-        @constraint(m, variables in CS.AllDifferentSet())
+        @constraint(m, variables in CS.AllDifferent())
     end
 
     for straight in straights

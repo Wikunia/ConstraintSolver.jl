@@ -8,6 +8,7 @@ literature/
 extra/
 test/logs/
 docs/build/
+docs/Manifest.toml
 benchmark/**/results
 instances
 **/nohup.out
