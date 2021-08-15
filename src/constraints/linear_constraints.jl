@@ -270,7 +270,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::Union{MOI.LessThan, MOI.EqualTo, Strictly{T, MOI.LessThan{T}}};
+    set::Union{MOI.LessThan, MOI.EqualTo, CPE.Strictly{MOI.LessThan{T}}};
     logs = true,
 ) where {T<:Real}
     constraint.currently_pruning = true
