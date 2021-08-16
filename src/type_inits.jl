@@ -118,7 +118,7 @@ function LinearConstraint(
 end
 
 function ReifiedConstraint(std, act_std, inner_constraint, complement_constraint)
-    return ReifiedConstraint(std, act_std, inner_constraint, complement_constraint, false, 0)
+    return ReifiedConstraint(std, act_std, inner_constraint, complement_constraint, false, 0, false)
 end
 
 """

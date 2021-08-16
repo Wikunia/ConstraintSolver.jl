@@ -97,7 +97,7 @@ function get_inner_constraint(com, vars::MOI.VectorOfVariables, set::Union{Reifi
 end
 
 function get_activator_internals(A, indices)
-    ActivatorConstraintInternals(A, indices[1] in indices[2:end], false, 0)
+    ActivatorConstraintInternals(A, indices[1] in indices[2:end], false, 0, false)
 end
 
 """

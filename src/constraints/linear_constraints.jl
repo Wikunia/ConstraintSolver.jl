@@ -694,3 +694,13 @@ function reverse_pruning_constraint!(
 ) where {T <: Real} 
     recompute_lc_extrema!(com, constraint, fct)
 end
+
+function activate_constraint!(
+    com::CoM,
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::Union{MOI.LessThan, MOI.EqualTo, CPE.Strictly{MOI.LessThan{T}}},
+) where {T <: Real} 
+    recompute_lc_extrema!(com, constraint, fct)
+    return true
+end

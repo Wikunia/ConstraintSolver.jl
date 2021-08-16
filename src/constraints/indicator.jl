@@ -82,6 +82,7 @@ function prune_constraint!(
     # check if active
     CS.value(indicator_var) != Int(constraint.activate_on) && return true
     !activate_inner!(com, constraint) && return false
+    constraint.inner_pruned = true
     return prune_constraint!(
         com,
         inner_constraint,

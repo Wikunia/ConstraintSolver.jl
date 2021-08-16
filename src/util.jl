@@ -188,6 +188,7 @@ end
         :activator_in_inner,
         :inner_activated,
         :inner_activated_in_backtrack_idx,
+        :inner_pruned,
     )
         Core.getproperty(Core.getproperty(c, :act_std), s)
     else
@@ -214,6 +215,7 @@ end
         :activator_in_inner,
         :inner_activated,
         :inner_activated_in_backtrack_idx,
+        :inner_pruned,
     )
         Core.setproperty!(c.act_std, s, v)
     else

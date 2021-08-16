@@ -65,6 +65,7 @@ function prune_constraint!(
 
     # 3
     if issetto(variables[rei_vidx], activate_on)
+        constraint.inner_pruned = true
         !activate_inner!(com, constraint) && return false
         return prune_constraint!(
             com,
@@ -74,6 +75,7 @@ function prune_constraint!(
         )
     # 4
     elseif issetto(variables[rei_vidx], activate_off) && complement_constraint !== nothing
+        constraint.complement_pruned = true
         !activate_complement_inner!(com, constraint) && return false
         return prune_constraint!(
             com,

@@ -499,6 +499,7 @@ mutable struct ActivatorConstraintInternals
     activator_in_inner::Bool
     inner_activated::Bool
     inner_activated_in_backtrack_idx::Int
+    inner_pruned::Bool
 end
 
 mutable struct IndicatorConstraint{C<:Constraint} <: ActivatorConstraint
@@ -514,6 +515,7 @@ mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <
     complement_constraint::AC
     complement_activated::Bool
     complement_activated_in_backtrack_idx::Int
+    complement_pruned::Bool
 end
 
 #====================================================================================
