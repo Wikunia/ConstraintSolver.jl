@@ -220,28 +220,24 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
         var.idx > length(subscriptions) && continue
         @inbounds for ci in subscriptions[var.idx]
             constraint = constraints[ci]
-            if constraint.impl.single_reverse_pruning
-                single_reverse_pruning_constraint!(
-                    com,
-                    constraint,
-                    constraint.fct,
-                    constraint.set,
-                    var,
-                    backtrack_idx,
-                )
-            end
-        end
-    end
-    for constraint in constraints
-        if constraint.impl.reverse_pruning
-            reverse_pruning_constraint!(
+            single_reverse_pruning_constraint!(
                 com,
                 constraint,
                 constraint.fct,
                 constraint.set,
+                var,
                 backtrack_idx,
             )
         end
+    end
+    for constraint in constraints
+        reverse_pruning_constraint!(
+            com,
+            constraint,
+            constraint.fct,
+            constraint.set,
+            backtrack_idx,
+        )
     end
     com.c_backtrack_idx = com.backtrack_vec[backtrack_idx].parent_idx
 end

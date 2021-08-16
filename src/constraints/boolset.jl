@@ -113,16 +113,8 @@ function init_lhs_and_rhs!(
     fct,
     set::AbstractBoolSet;
 )
-    set_impl_functions!(com,  constraint.lhs)
-    set_impl_functions!(com,  constraint.rhs)
-    lhs_feasible = true
-    if constraint.lhs.impl.init   
-        lhs_feasible = init_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
-    end
-    rhs_feasible = true
-    if constraint.rhs.impl.init   
-        rhs_feasible = init_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
-    end
+    lhs_feasible = init_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
+    rhs_feasible = init_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
     # check only for && constraint if both are feasible
     if set isa AndSet
         return lhs_feasible && rhs_feasible
@@ -175,7 +167,7 @@ Saves at which stage it was activated.
 """
 function activate_lhs!(com, constraint::BoolConstraint)
     lhs = constraint.lhs
-    if !constraint.lhs_activated && lhs.impl.activate 
+    if !constraint.lhs_activated
         !activate_constraint!(com, lhs, lhs.fct, lhs.set) && return false
         constraint.lhs_activated = true
         constraint.lhs_activated_in_backtrack_idx = com.c_backtrack_idx
@@ -191,7 +183,7 @@ Saves at which stage it was activated.
 """
 function activate_rhs!(com, constraint::BoolConstraint)
     rhs = constraint.rhs
-    if !constraint.rhs_activated && rhs.impl.activate 
+    if !constraint.rhs_activated
         !activate_constraint!(com, rhs, rhs.fct, rhs.set) && return false
         constraint.rhs_activated = true
         constraint.rhs_activated_in_backtrack_idx = com.c_backtrack_idx
@@ -212,7 +204,7 @@ function single_reverse_pruning_constraint!(
     for inner_constraint in (constraint.lhs, constraint.rhs)
         # the variable must be part of the inner constraint
         # Todo: Speed up the `in` here
-        if inner_constraint.impl.single_reverse_pruning && var.idx in inner_constraint.indices
+        if var.idx in inner_constraint.indices
             single_reverse_pruning_constraint!(
                 com,
                 inner_constraint,
@@ -245,15 +237,13 @@ function reverse_pruning_constraint!(
     end
 
     for inner_constraint in (constraint.lhs, constraint.rhs)
-        if inner_constraint.impl.reverse_pruning
-            reverse_pruning_constraint!(
-                com,
-                inner_constraint,
-                inner_constraint.fct,
-                inner_constraint.set,
-                backtrack_id,
-            )
-        end
+        reverse_pruning_constraint!(
+            com,
+            inner_constraint,
+            inner_constraint.fct,
+            inner_constraint.set,
+            backtrack_id,
+        )
     end
 end
 
@@ -267,15 +257,13 @@ function restore_pruning_constraint!(
     T<:Real,
 }
     for inner_constraint in (constraint.lhs, constraint.rhs)
-        if inner_constraint.impl.restore_pruning
-            restore_pruning_constraint!(
-                com,
-                inner_constraint,
-                inner_constraint.fct,
-                inner_constraint.set,
-                prune_steps,
-            )
-        end
+        restore_pruning_constraint!(
+            com,
+            inner_constraint,
+            inner_constraint.fct,
+            inner_constraint.set,
+            prune_steps,
+        )
     end
 end
 
@@ -288,14 +276,12 @@ function finished_pruning_constraint!(
     T<:Real,
 }
     for inner_constraint in (constraint.lhs, constraint.rhs)
-        if inner_constraint.impl.finished_pruning
-            finished_pruning_constraint!(
-                com,
-                inner_constraint,
-                inner_constraint.fct,
-                inner_constraint.set,
-            )
-        end
+        finished_pruning_constraint!(
+            com,
+            inner_constraint,
+            inner_constraint.fct,
+            inner_constraint.set,
+        )
     end
 end
 
