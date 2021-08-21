@@ -77,7 +77,6 @@ function update_best_bound_constraint!(
             rhs.ub = typemax(Int64)
         end
     end
-    return true
 end
 
 function single_reverse_pruning_constraint!(
