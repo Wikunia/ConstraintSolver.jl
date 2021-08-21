@@ -123,7 +123,7 @@ function reverse_pruning_constraint!(
             constraint.complement_activated_in_backtrack_idx = 0
         end
         complement_constraint = constraint.complement_constraint
-        if complement_constraint !== nothing && complement_constraint.impl.reverse_pruning
+        if complement_constraint !== nothing
             reverse_pruning_constraint!(
                 com,
                 complement_constraint,

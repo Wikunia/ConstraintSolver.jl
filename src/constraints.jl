@@ -78,7 +78,7 @@ end
 """
 call_finished_pruning!(com)
 
-Call `finished_pruning_constraint!` for every constraint which implements that function as saved in `constraint.impl.finished_pruning`
+Call `finished_pruning_constraint!` for every constraint.
 """
 function call_finished_pruning!(com)
     for constraint in com.constraints
@@ -89,7 +89,7 @@ end
 """
 call_restore_pruning!(com, prune_steps)
 
-Call `call_restore_pruning!` for every constraint which implements that function as saved in `constraint.impl.restore_pruning`
+Call `call_restore_pruning!` for every constraint.
 """
 function call_restore_pruning!(com, prune_steps)
     for constraint in com.constraints
