@@ -12,26 +12,20 @@ function init_constraint!(
     rei_vidx = constraint.indices[1]
     rei_var = variables[rei_vidx]
 
-    # check which methods that inner constraint supports
-    set_impl_functions!(com, inner_constraint)
-    complement_constraint !== nothing && set_impl_functions!(com, complement_constraint)
-
-    if inner_constraint.impl.init
-        feasible = init_constraint!(
-            com,
-            inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set;
-        )
-        # map the bounds to the indicator constraint
-        constraint.bound_rhs = inner_constraint.bound_rhs
-        # the reified variable can't be activated if inner constraint is infeasible
-        if !feasible && active
-            !rm!(com, rei_var, Int(constraint.activate_on)) && return false
-        end
+    feasible = init_constraint!(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set;
+    )
+    # map the bounds to the indicator constraint
+    constraint.bound_rhs = inner_constraint.bound_rhs
+    # the reified variable can't be activated if inner constraint is infeasible
+    if !feasible && active
+        !rm!(com, rei_var, Int(constraint.activate_on)) && return false
     end
 
-    if complement_constraint !== nothing && complement_constraint.impl.init
+    if complement_constraint !== nothing
         feasible = init_constraint!(
             com,
             complement_constraint,

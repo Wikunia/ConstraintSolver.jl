@@ -25,22 +25,17 @@ function init_constraint!(
     indicator_var = search_space[indicator_vidx]
     inner_constraint = constraint.inner_constraint
 
-    # check which methods that inner constraint supports
-    set_impl_functions!(com, inner_constraint)
-
-    if inner_constraint.impl.init
-        feasible = init_constraint!(
-            com,
-            inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set
-        )
-        # map the bounds to the indicator constraint
-        constraint.bound_rhs = inner_constraint.bound_rhs
-        # the indicator can't be activated if inner constraint is infeasible
-        if !feasible && active
-            !rm!(com, indicator_var, Int(constraint.activate_on)) && return false
-        end
+    feasible = init_constraint!(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set
+    )
+    # map the bounds to the indicator constraint
+    constraint.bound_rhs = inner_constraint.bound_rhs
+    # the indicator can't be activated if inner constraint is infeasible
+    if !feasible && active
+        !rm!(com, indicator_var, Int(constraint.activate_on)) && return false
     end
     # still feasible
     return true

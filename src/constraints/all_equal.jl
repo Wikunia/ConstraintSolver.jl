@@ -2,6 +2,8 @@ function init_constraint_struct(com, ::CPE.AllEqual, internals)
     EqualConstraint(internals, ones(Int, length(internals.indices)))
 end
 
+implements_activate(::Type{EqualConstraint}, ::Type{MOI.VectorOfVariables}, ::Type{CS.CPE.AllEqual}) = true
+
 function activate_constraint!(
     com::CS.CoM,
     constraint::EqualConstraint,

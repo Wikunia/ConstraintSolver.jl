@@ -375,7 +375,6 @@ mutable struct ConstraintInternals{
     vidx_to_idx::Dict{Int,Int}
     indices::Vector{Int}
     pvals::Vector{Int}
-    impl::ImplementedConstraintFunctions
     is_initialized::Bool
     is_activated::Bool
     is_deactivated::Bool # can be deactivated if it's absorbed by other constraints

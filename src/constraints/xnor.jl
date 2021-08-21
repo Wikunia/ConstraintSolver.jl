@@ -7,16 +7,10 @@ function init_constraint!(
     !init_lhs_and_rhs!(com, constraint, fct, set) && return false
 
     if constraint.complement_lhs !== nothing 
-        set_impl_functions!(com, constraint.complement_lhs)
-        if constraint.complement_lhs.impl.init   
-            init_constraint!(com, constraint.complement_lhs, constraint.complement_lhs.fct, constraint.complement_lhs.set)
-        end
+        init_constraint!(com, constraint.complement_lhs, constraint.complement_lhs.fct, constraint.complement_lhs.set)
     end
     if constraint.complement_rhs !== nothing
-        set_impl_functions!(com, constraint.complement_rhs)
-        if constraint.complement_rhs.impl.init   
-            init_constraint!(com, constraint.complement_rhs, constraint.complement_rhs.fct, constraint.complement_rhs.set)
-        end
+        init_constraint!(com, constraint.complement_rhs, constraint.complement_rhs.fct, constraint.complement_rhs.set)
     end
     return true
 end
@@ -152,10 +146,10 @@ function prune_constraint!(
 
     # if one is violated complement prune the other
     # Todo implement for activated complement constraints
-    if lhs_violated && constraint.complement_rhs !== nothing && !constraint.complement_rhs.impl.activate 
+    if lhs_violated && constraint.complement_rhs !== nothing && !implements_activate(typeof(constraint.complement_rhs), typeof(constraint.complement_rhs.fct), typeof(constraint.complement_rhs.set))
         return prune_constraint!(com, constraint.complement_rhs, constraint.complement_rhs.fct, constraint.complement_rhs.set; logs=logs)
     end
-    if rhs_violated && constraint.complement_lhs !== nothing && !constraint.complement_lhs.impl.activate 
+    if rhs_violated && constraint.complement_lhs !== nothing && !implements_activate(typeof(constraint.complement_lhs), typeof(constraint.complement_lhs.fct), typeof(constraint.complement_lhs.set))
         return prune_constraint!(com, constraint.complement_lhs, constraint.complement_lhs.fct, constraint.complement_lhs.set; logs=logs)
     end
    

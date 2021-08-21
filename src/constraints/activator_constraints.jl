@@ -6,7 +6,7 @@ Saves at which stage it was activated.
 """
 function activate_inner!(com, constraint::ActivatorConstraint)
     inner_constraint = constraint.inner_constraint
-    if !constraint.inner_activated && inner_constraint.impl.activate 
+    if !constraint.inner_activated
         !activate_constraint!(com, inner_constraint, inner_constraint.fct, inner_constraint.set) && return false
         constraint.inner_activated = true
         constraint.inner_activated_in_backtrack_idx = com.c_backtrack_idx
@@ -22,7 +22,7 @@ Saves at which stage it was activated.
 """
 function activate_complement_inner!(com, constraint::ActivatorConstraint)
     complement_constraint = constraint.complement_constraint
-    if !constraint.complement_activated && complement_constraint.impl.activate 
+    if !constraint.complement_activated && implements_activate(typeof(complement_constraint), typeof(complement_constraint.fct), typeof(complement_constraint.set)) 
         !activate_constraint!(com, complement_constraint, complement_constraint.fct, complement_constraint.set) && return false
         constraint.complement_activated = true
         constraint.complement_activated_in_backtrack_idx = com.c_backtrack_idx
@@ -60,26 +60,23 @@ function update_best_bound_constraint!(
     activator_vidx = constraint.indices[1]
     search_space = com.search_space
     activator_var = search_space[activator_vidx]
-    if inner_constraint.impl.update_best_bound
-        if CS.issetto(activator_var, Int(constraint.activate_on))
-            return update_best_bound_constraint!(
-                com,
-                inner_constraint,
-                inner_constraint.fct,
-                inner_constraint.set,
-                vidx,
-                lb,
-                ub,
-            )
-        else
-            # if not activated (for example in a different subtree) we reset the bounds
-            for rhs in constraint.bound_rhs
-                rhs.lb = typemin(Int64)
-                rhs.ub = typemax(Int64)
-            end
+    if CS.issetto(activator_var, Int(constraint.activate_on))
+        return update_best_bound_constraint!(
+            com,
+            inner_constraint,
+            inner_constraint.fct,
+            inner_constraint.set,
+            vidx,
+            lb,
+            ub,
+        )
+    else
+        # if not activated (for example in a different subtree) we reset the bounds
+        for rhs in constraint.bound_rhs
+            rhs.lb = typemin(Int64)
+            rhs.ub = typemax(Int64)
         end
     end
-    return true
 end
 
 function single_reverse_pruning_constraint!(
@@ -94,8 +91,7 @@ function single_reverse_pruning_constraint!(
 }
     inner_constraint = constraint.inner_constraint
     # the variable must be part of the inner constraint
-    if inner_constraint.impl.single_reverse_pruning &&
-       (var.idx != constraint.indices[1] || constraint.activator_in_inner)
+    if (var.idx != constraint.indices[1] || constraint.activator_in_inner)
         single_reverse_pruning_constraint!(
             com,
             inner_constraint,
@@ -140,16 +136,14 @@ function reverse_pruning_constraint!(
     end
 
     inner_constraint = constraint.inner_constraint
-    if inner_constraint.impl.reverse_pruning
-        reverse_pruning_constraint!(
-            com,
-            inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
-            backtrack_id,
-        )
-        constraint.inner_pruned = false
-    end
+    reverse_pruning_constraint!(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set,
+        backtrack_id,
+    )
+    constraint.inner_pruned = false
 end
 
 function restore_pruning_constraint!(
@@ -162,15 +156,13 @@ function restore_pruning_constraint!(
     T<:Real,
 }
     inner_constraint = constraint.inner_constraint
-    if inner_constraint.impl.restore_pruning
-        restore_pruning_constraint!(
-            com,
-            inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
-            prune_steps,
-        )
-    end
+    restore_pruning_constraint!(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set,
+        prune_steps,
+    )
 end
 
 function finished_pruning_constraint!(
@@ -182,12 +174,10 @@ function finished_pruning_constraint!(
     T<:Real,
 }
     inner_constraint = constraint.inner_constraint
-    if inner_constraint.impl.finished_pruning
-        finished_pruning_constraint!(
-            com,
-            inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
-        )
-    end
+    finished_pruning_constraint!(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set,
+    )
 end

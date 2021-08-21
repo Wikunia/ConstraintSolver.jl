@@ -35,18 +35,11 @@ function ConstraintInternals(cidx::Int, fct, set, indices::Vector{Int})
         vidx_to_idx,
         indices,
         Int[],
-        ImplementedConstraintFunctions(),
         false,
         false,
         false,
         Vector{BoundRhsVariable}(undef, 0),
     )
-end
-
-function ImplementedConstraintFunctions()
-    return ImplementedConstraintFunctions([
-        false for f in fieldnames(ImplementedConstraintFunctions)
-    ]...)
 end
 
 function LinearConstraint(
