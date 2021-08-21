@@ -725,8 +725,6 @@ function solve!(com::CS.CoM)
     com.branch_strategy = get_branch_strategy(; options = options)
     com.branch_split = get_branch_split(; options = options)
 
-    set_impl_functions!(com)
-
     if :Info in com.options.logging
         print_info(com)
     end
@@ -749,7 +747,6 @@ function solve!(com::CS.CoM)
         added_con_idxs = simplify!(com)
         if length(added_con_idxs) > 0
             set_in_all_different!(com; constraints = com.constraints[added_con_idxs])
-            set_impl_functions!(com; constraints = com.constraints[added_con_idxs])
             !init_constraints!(com; constraints = com.constraints[added_con_idxs]) &&
                 return :Infeasible
             !update_init_constraints!(com; constraints = com.constraints[added_con_idxs]) &&

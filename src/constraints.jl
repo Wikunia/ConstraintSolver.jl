@@ -43,15 +43,12 @@ function init_constraints!(com::CS.CoM; constraints = com.constraints)
     feasible = true
     for constraint in constraints
         constraint.is_deactivated && continue
-        if constraint.impl.init
-            feasible = init_constraint!(com, constraint, constraint.fct, constraint.set)
-            !feasible && break
-        end
+        feasible = init_constraint!(com, constraint, constraint.fct, constraint.set)
+        !feasible && break
         constraint.is_initialized = true
-        if constraint.impl.activate
-            feasible = activate_constraint!(com, constraint, constraint.fct, constraint.set)
-            !feasible && break
-        end
+
+        feasible = activate_constraint!(com, constraint, constraint.fct, constraint.set)
+        !feasible && break
         constraint.is_activated = true
     end
     return feasible
@@ -66,165 +63,16 @@ Return if feasible after the update of the initalization
 function update_init_constraints!(com::CS.CoM; constraints = com.constraints)
     feasible = true
     for constraint in com.constraints
-        if constraint.impl.update_init
-            feasible = update_init_constraint!(
-                com,
-                constraint,
-                constraint.fct,
-                constraint.set,
-                constraints,
-            )
-            !feasible && break
-        end
+        feasible = update_init_constraint!(
+            com,
+            constraint,
+            constraint.fct,
+            constraint.set,
+            constraints,
+        )
+        !feasible && break
     end
     return feasible
-end
-
-"""
-set_impl_functions!(com, constraint::Constraint)
-
-Set std.impl.[] for each constraint
-"""
-function set_impl_functions!(com, constraint::Constraint)
-    if com.sense != MOI.FEASIBILITY_SENSE
-        set_impl_update_best_bound!(constraint)
-    end
-    set_impl_init!(constraint)
-    set_impl_activate!(constraint)
-    set_impl_update_init!(constraint)
-    set_impl_finished_pruning!(constraint)
-    set_impl_restore_pruning!(constraint)
-    set_impl_reverse_pruning!(constraint)
-end
-
-"""
-set_impl_functions!(com::CS.CoM)
-
-Set std.impl.[] for each constraint
-"""
-function set_impl_functions!(com::CS.CoM; constraints = com.constraints)
-    for constraint in constraints
-        set_impl_functions!(com, constraint)
-    end
-end
-
-"""
-    set_impl_init!(constraint::Constraint)
-Sets `std.impl.init` if the constraint type has a `init_constraint!` method
-"""
-function set_impl_init!(constraint::Constraint)
-    c_type = typeof(constraint)
-    c_fct_type = typeof(constraint.fct)
-    c_set_type = typeof(constraint.set)
-    if hasmethod(init_constraint!, (CS.CoM, c_type, c_fct_type, c_set_type))
-        constraint.impl.init = true
-    end
-end
-
-"""
-    set_impl_activate!(constraint::Constraint)
-Sets `std.activate.init` if the constraint type has a `activate_constraint!` method
-"""
-function set_impl_activate!(constraint::Constraint)
-    c_type = typeof(constraint)
-    c_fct_type = typeof(constraint.fct)
-    c_set_type = typeof(constraint.set)
-    if hasmethod(activate_constraint!, (CS.CoM, c_type, c_fct_type, c_set_type))
-        constraint.impl.activate = true
-    end
-end
-
-"""
-set_impl_update_init!(constraint::Constraint)
-Sets `std.impl.update_init` if the constraint type has a `update_init_constraint!` method
-"""
-function set_impl_update_init!(constraint::Constraint)
-    c_type = typeof(constraint)
-    c_fct_type = typeof(constraint.fct)
-    c_set_type = typeof(constraint.set)
-    if hasmethod(
-        update_init_constraint!,
-        (CS.CoM, c_type, c_fct_type, c_set_type, Vector{<:Constraint}),
-    )
-        constraint.impl.update_init = true
-    end
-end
-
-"""
-set_impl_update_best_bound!(constraint::Constraint)
-
-Sets `update_best_bound` if the constraint type has a `update_best_bound_constraint!` method
-"""
-function set_impl_update_best_bound!(constraint::Constraint)
-    c_type = typeof(constraint)
-    c_fct_type = typeof(constraint.fct)
-    c_set_type = typeof(constraint.set)
-    if hasmethod(
-        update_best_bound_constraint!,
-        (CS.CoM, c_type, c_fct_type, c_set_type, Int, Int, Int),
-    )
-        constraint.impl.update_best_bound = true
-    else # just to be sure => set it to false otherwise
-        constraint.impl.update_best_bound = false
-    end
-end
-
-"""
-set_impl_reverse_pruning!(constraint::Constraint)
-Sets `std.impl.single_reverse_pruning` and `std.impl.reverse_pruning`
-if `single_reverse_pruning_constraint!`, `reverse_pruning_constraint!` are implemented for `constraint`.
-"""
-function set_impl_reverse_pruning!(constraint::Constraint)
-    c_type = typeof(constraint)
-    c_fct_type = typeof(constraint.fct)
-    c_set_type = typeof(constraint.set)
-    if hasmethod(
-        single_reverse_pruning_constraint!,
-        (CS.CoM, c_type, c_fct_type, c_set_type, CS.Variable, Int),
-    )
-        constraint.impl.single_reverse_pruning = true
-    else # just to be sure => set it to false otherwise
-        constraint.impl.single_reverse_pruning = false
-    end
-
-    if hasmethod(reverse_pruning_constraint!, (CS.CoM, c_type, c_fct_type, c_set_type, Int))
-        constraint.impl.reverse_pruning = true
-    else # just to be sure => set it to false otherwise
-        constraint.impl.reverse_pruning = false
-    end
-end
-
-"""
-set_impl_finished_pruning!(constraint::Constraint)
-Sets `std.impl.finished_pruning` if `finished_pruning_constraint!`  is implemented for `constraint`.
-"""
-function set_impl_finished_pruning!(constraint::Constraint)
-    c_type = typeof(constraint)
-    c_fct_type = typeof(constraint.fct)
-    c_set_type = typeof(constraint.set)
-    if hasmethod(finished_pruning_constraint!, (CS.CoM, c_type, c_fct_type, c_set_type))
-        constraint.impl.finished_pruning = true
-    else # just to be sure => set it to false otherwise
-        constraint.impl.finished_pruning = false
-    end
-end
-
-"""
-set_impl_restore_pruning!(constraint::Constraint)
-Sets `std.impl.restore_pruning` if `restore_pruning_constraint!`  is implemented for the `constraint`.
-"""
-function set_impl_restore_pruning!(constraint::Constraint)
-    c_type = typeof(constraint)
-    c_fct_type = typeof(constraint.fct)
-    c_set_type = typeof(constraint.set)
-    if hasmethod(
-        restore_pruning_constraint!,
-        (CS.CoM, c_type, c_fct_type, c_set_type, Union{Int,Vector{Int}}),
-    )
-        constraint.impl.restore_pruning = true
-    else # just to be sure => set it to false otherwise
-        constraint.impl.restore_pruning = false
-    end
 end
 
 """
@@ -234,9 +82,7 @@ Call `finished_pruning_constraint!` for every constraint which implements that f
 """
 function call_finished_pruning!(com)
     for constraint in com.constraints
-        if constraint.impl.finished_pruning
-            finished_pruning_constraint!(com, constraint, constraint.fct, constraint.set)
-        end
+        finished_pruning_constraint!(com, constraint, constraint.fct, constraint.set)
     end
 end
 
@@ -247,15 +93,13 @@ Call `call_restore_pruning!` for every constraint which implements that function
 """
 function call_restore_pruning!(com, prune_steps)
     for constraint in com.constraints
-        if constraint.impl.restore_pruning
-            restore_pruning_constraint!(
-                com,
-                constraint,
-                constraint.fct,
-                constraint.set,
-                prune_steps,
-            )
-        end
+        restore_pruning_constraint!(
+            com,
+            constraint,
+            constraint.fct,
+            constraint.set,
+            prune_steps,
+        )
     end
 end
 
@@ -294,3 +138,172 @@ function get_two_unfixed(com::CS.CoM, constraint::Constraint)
     end
     return local_vidx_1, vidx_1, local_vidx_2, vidx_2
 end
+
+"""
+    init_constraint!(
+        com::CS.CoM,
+        constraint::Constraint,
+        fct,
+        set
+    )
+
+Fallback for `init_constraint!`. 
+This function needs to be implemented if the constraint needs to be initialized for example to check 
+certain things only ones or initialize some data structures.
+[`activate_constraint!`](@ref) needs to be used when variables should be pruned on initialization as `init_constraint!`
+even gets called when the constraint itself isn't active i.e inside an `or` constraint.
+
+Return whether the constraint is feasible or not. 
+"""
+function init_constraint!(
+    com::CS.CoM,
+    constraint::Constraint,
+    fct,
+    set
+)
+    return true
+end
+
+"""
+    implements_activate(::Type{<:ConstraintType}, ::Type{<:FctType}, ::Type{<:SetType})
+
+Fallback for `implements_activate`. 
+
+Return whether [`activate_constraint!`](@ref) is implemented
+"""
+implements_activate(::Type{<:Constraint}, ::Type{<:Any}, ::Type{<:Any}) = false
+
+"""
+    activate_constraint!(::CS.CoM, ::Constraint, fct, set)
+
+Fallback for `activate_constraint!`. 
+If this gets implemented please also implement [`implements_activate`](@ref).
+
+This function will get called if the constraint gets activated by an indicator or reifed constraint as an example.
+Can be used to prune variables that aren't possible without fixing anything further simply by being active.
+
+Return whether the constraint is feasible.
+"""
+function activate_constraint!(::CS.CoM, ::Constraint, fct, set)
+    return true
+end
+
+"""
+    finished_pruning_constraint!(::CS.CoM, ::Constraint, fct, set)
+
+Fallback for `finished_pruning_constraint!`. 
+This function will get called after all pruning steps in one node. 
+Can be used to change some data structure but no further pruning should be done here.
+
+Return `nothing`
+"""
+function finished_pruning_constraint!(::CS.CoM, ::Constraint, fct, set)
+    nothing
+end
+
+"""
+    reverse_pruning_constraint!(::CS.CoM, ::Constraint, fct, set, backtrack_id)
+
+Fallback for `reverse_pruning_constraint!`. 
+This function will get called when a specific pruning step with id `backtrack_id` needs to get reversed.
+Should only be implemented when the data structure of the constraint needs to be updated. 
+All variables are updated automatically anyway.
+See also [`single_reverse_pruning_constraint!`](@ref) to change the data structure based on a single variable.
+
+Return `nothing`
+"""
+function reverse_pruning_constraint!(
+    com::CoM,
+    constraint::Constraint,
+    fct,
+    set,
+    backtrack_id,
+)
+    nothing
+end
+
+"""
+    single_reverse_pruning_constraint!(::CS.CoM, ::Constraint, fct, set, variable, backtrack_id)
+
+Fallback for `single_reverse_pruning_constraint!`. 
+This function will get called when a specific pruning step with id `backtrack_id` needs to get reversed.
+In contrast to [`reverse_pruning_constraint!`](@ref) however this function will be called for each variable individually and is called 
+before [`reverse_pruning_constraint!`](@ref).
+Should only be implemented when the data structure of the constraint needs to be updated. 
+All variables are updated automatically anyway.
+
+Return `nothing`
+"""
+function single_reverse_pruning_constraint!(
+    ::CoM,
+    ::Constraint,
+    fct,
+    set,
+    variable,
+    backtrack_idx,
+)
+    nothing
+end
+
+"""
+    restore_pruning_constraint!(::CS.CoM, ::Constraint, fct, set, prune_steps)
+
+Fallback for `restore_pruning_constraint!`. 
+This function will get called when pruning steps will be restored. `prune_steps` is a vector.
+If the data structure of the constraint needs to be updated to reflect the data it had at the last `prune_step` this function needs 
+to be implemented.
+
+Return `nothing`
+"""
+function restore_pruning_constraint!(
+    ::CoM,
+    ::Constraint,
+    fct,
+    set,
+    prune_steps,
+)
+    nothing
+end
+
+"""
+    update_best_bound_constraint!(::CS.CoM, ::Constraint, fct, set, vidx, lb, ub)
+
+Fallback for `update_best_bound_constraint!`. 
+This function will get called when a new objective bound gets computed.
+If the constraint needs to change variables inside the underlying LP this function should be used to update those variables.
+
+Return `nothing`
+"""
+function update_best_bound_constraint!(
+    com::CS.CoM,
+    constraint::Constraint,
+    fct,
+    set,
+    vidx,
+    lb,
+    ub,
+)
+    nothing
+end
+
+"""
+update_init_constraint!(::CS.CoM, ::Constraint, fct, set, constraints)
+
+Fallback for `update_init_constraint!`. 
+This function is called when new constraints are added due to presolve processes. 
+It gets called with all new constraints. 
+Normally it shouldn't be necessary to implement as constraints should be independent of each other.
+Sometimes however this seems to make sense :D 
+
+Return whether the constraint is feasible.
+"""
+function update_init_constraint!(
+    com::CS.CoM,
+    constraint::Constraint,
+    fct,
+    set,
+    constraints,
+)
+    return true
+end
+
