@@ -146,10 +146,10 @@ function prune_constraint!(
 
     # if one is violated complement prune the other
     # Todo implement for activated complement constraints
-    if lhs_violated && constraint.complement_rhs !== nothing
+    if lhs_violated && constraint.complement_rhs !== nothing && !implements_activate(typeof(constraint.complement_rhs), typeof(constraint.complement_rhs.fct), typeof(constraint.complement_rhs.set))
         return prune_constraint!(com, constraint.complement_rhs, constraint.complement_rhs.fct, constraint.complement_rhs.set; logs=logs)
     end
-    if rhs_violated && constraint.complement_lhs !== nothing
+    if rhs_violated && constraint.complement_lhs !== nothing && !implements_activate(typeof(constraint.complement_lhs), typeof(constraint.complement_lhs.fct), typeof(constraint.complement_lhs.set))
         return prune_constraint!(com, constraint.complement_lhs, constraint.complement_lhs.fct, constraint.complement_lhs.set; logs=logs)
     end
    

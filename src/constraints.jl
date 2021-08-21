@@ -208,3 +208,5 @@ function update_init_constraint!(
 )
     return true
 end
+
+implements_activate(::Type{<:Constraint}, ::Type{<:Any}, ::Type{<:Any}) = false
