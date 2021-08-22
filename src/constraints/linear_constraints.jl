@@ -278,7 +278,6 @@ function _prune_constraint!(
     logs = false,
 ) where {T<:Real}
     constraint.currently_pruning = true
-    recompute_lc_extrema!(com, constraint, fct)
     isfeasible = _prune_constraint_actual!(com, constraint, fct, set; logs=logs)
     constraint.currently_pruning = false
     return isfeasible

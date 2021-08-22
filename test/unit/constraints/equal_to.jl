@@ -114,6 +114,7 @@ end
 
 
     # feasible but remove -3 and 3
+    CS.set_first_node_call!(constraint, true)
     @test CS.prune_constraint!(com, constraint)
     for ind in constr_indices
         @test sort(CS.values(com.search_space[ind])) == [1, 2]
