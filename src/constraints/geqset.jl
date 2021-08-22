@@ -44,12 +44,12 @@ function update_init_constraint!(
 end
 
 """
-    prune_constraint!(
+    _prune_constraint!(
         com::CS.CoM,
         constraint::GeqSetConstraint,
         fct::MOI.VectorOfVariables,
         set::GeqSetInternal;
-        logs = true
+        logs = false
     )
 
 Prune the constraint with:
@@ -57,12 +57,12 @@ Prune the constraint with:
 - Remove values bigger than the allowed maximum from `X`
 - Set the lower bound of `a` even higher if there fully included `AllDifferentConstraints` allow it
 """
-function prune_constraint!(
+function _prune_constraint!(
     com::CS.CoM,
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,
     set::GeqSetInternal;
-    logs = true,
+    logs = false,
 )
     # find the maximum of the minima
     max_val = -typemax(Int)
@@ -103,7 +103,7 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(
+    _still_feasible(
         com::CoM,
         constraint::GeqSetConstraint,
         fct::MOI.VectorOfVariables,
@@ -114,7 +114,7 @@ end
 
 Check if the constraint is still feasible when setting vidx to value
 """
-function still_feasible(
+function _still_feasible(
     com::CoM,
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,
@@ -130,7 +130,8 @@ function still_feasible(
 end
 
 """
-    is_constraint_solved(
+    _is_constraint_solved(
+        com,
         constraint::GeqSetConstraint,
         fct::MOI.VectorOfVariables,
         set::GeqSetInternal,
@@ -139,7 +140,8 @@ end
 
 Return true if `values` fulfills the constraint
 """
-function is_constraint_solved(
+function _is_constraint_solved(
+    com,
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,
     set::GeqSetInternal,
@@ -153,7 +155,7 @@ function is_constraint_solved(
 end
 
 """
-    is_constraint_violated(
+    _is_constraint_violated(
         com::CoM,
         constraint::GeqSetConstraint,
         fct::MOI.VectorOfVariables,
@@ -163,7 +165,7 @@ end
 Checks if the constraint is violated as it is currently set. This can happen inside an
 inactive reified or indicator constraint.
 """
-function is_constraint_violated(
+function _is_constraint_violated(
     com::CoM,
     constraint::GeqSetConstraint,
     fct::MOI.VectorOfVariables,

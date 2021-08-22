@@ -47,17 +47,17 @@ function apply_changes!(
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::CPE.AllEqual; logs = true)
+    _prune_constraint!(com::CS.CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::CPE.AllEqual; logs = false)
 
 Reduce the number of possibilities given the equality constraint which sets all variables in `MOI.VectorOfVariables` to the same value.
 Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
 """
-function prune_constraint!(
+function _prune_constraint!(
     com::CS.CoM,
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
     set::CPE.AllEqual;
-    logs = true,
+    logs = false,
 )
     indices = constraint.indices
 
@@ -155,11 +155,11 @@ function finished_pruning_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::CPE.AllEqual, vidx::Int, value::Int)
+    _still_feasible(com::CoM, constraint::EqualConstraint, fct::MOI.VectorOfVariables, set::CPE.AllEqual, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled.
 """
-function still_feasible(
+function _still_feasible(
     com::CoM,
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
@@ -178,7 +178,8 @@ function still_feasible(
     return true
 end
 
-function is_constraint_solved(
+function _is_constraint_solved(
+    com,
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,
     set::CPE.AllEqual,
@@ -188,7 +189,7 @@ function is_constraint_solved(
 end
 
 """
-    is_constraint_violated(
+    _is_constraint_violated(
         com::CoM,
         constraint::EqualConstraint,
         fct::MOI.VectorOfVariables,
@@ -198,7 +199,7 @@ end
 Checks if the constraint is violated as it is currently set. This can happen inside an
 inactive reified or indicator constraint.
 """
-function is_constraint_violated(
+function _is_constraint_violated(
     com::CoM,
     constraint::EqualConstraint,
     fct::MOI.VectorOfVariables,

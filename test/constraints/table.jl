@@ -157,8 +157,6 @@
         feasible = CS.prune_constraint!(
             com,
             constraint,
-            MOI.VectorOfVariables([x, y, z]),
-            CS.TableSetInternal(3, table),
         )
         @test feasible
         # the 3 should be removed from z
@@ -203,8 +201,6 @@
         feasible = CS.prune_constraint!(
             com,
             constraint,
-            MOI.VectorOfVariables([x, y, z]),
-            CS.TableSetInternal(3, table),
         )
         @test feasible
         # only 5:9 should be allowed for x but no other changes
@@ -261,8 +257,6 @@
         feasible = CS.prune_constraint!(
             com,
             constraint,
-            MOI.VectorOfVariables([x, y, z]),
-            CS.TableSetInternal(3, table),
         )
 
         words_after_prune = copy(constraint.current.words)
@@ -356,16 +350,12 @@
         feasible = CS.prune_constraint!(
             com,
             constraint,
-            MOI.VectorOfVariables([x, y, z]),
-            CS.TableSetInternal(3, table),
         )
         @test feasible
 
         feasible = CS.prune_constraint!(
             com,
             constraint2,
-            MOI.VectorOfVariables([x, y, z]),
-            CS.TableSetInternal(3, table2),
         )
         @test feasible
 
@@ -470,24 +460,18 @@
         feasible = CS.prune_constraint!(
             com,
             constraint,
-            MOI.VectorOfVariables([x, y, z]),
-            CS.TableSetInternal(3, table),
         )
         @test feasible
 
         feasible = CS.prune_constraint!(
             com,
             constraint2,
-            MOI.VectorOfVariables([y, z, a]),
-            CS.TableSetInternal(3, table2),
         )
         @test feasible
 
         feasible = CS.prune_constraint!(
             com,
             constraint3,
-            MOI.VectorOfVariables([y, z, a]),
-            CS.TableSetInternal(3, table3),
         )
         @test feasible
 

@@ -9,7 +9,7 @@
     constraint = com.constraints[1]
     @test CS.fix!(com, variables[constraint.indices[1]], 1; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[2]], 2; check_feasibility = false)
-    @test CS.is_constraint_solved(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_solved(com, constraint)
 
     #################
 
@@ -23,7 +23,7 @@
     constraint = com.constraints[1]
     @test CS.fix!(com, variables[constraint.indices[1]], 1; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[2]], 1; check_feasibility = false)
-    @test CS.is_constraint_solved(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_solved(com, constraint)
 
     #################
 
@@ -39,7 +39,7 @@
     xor_constraint = com.constraints[1].inner_constraint
     @test CS.fix!(com, variables[xor_constraint.indices[1]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[xor_constraint.indices[2]], 2; check_feasibility = false)
-    @test CS.is_constraint_solved(com, xor_constraint, xor_constraint.fct, xor_constraint.set)
+    @test CS.is_constraint_solved(com, xor_constraint)
 
     #################
 
@@ -55,7 +55,7 @@
     xor_constraint = com.constraints[1].inner_constraint
     @test CS.fix!(com, variables[xor_constraint.indices[1]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[xor_constraint.indices[2]], 2; check_feasibility = false)
-    @test CS.is_constraint_solved(com, xor_constraint, xor_constraint.fct, xor_constraint.set)
+    @test CS.is_constraint_solved(com, xor_constraint)
 
 
     ############################### 
@@ -72,7 +72,7 @@
     xor_constraint = com.constraints[1].inner_constraint
     @test CS.fix!(com, variables[xor_constraint.indices[1]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[xor_constraint.indices[2]], 4; check_feasibility = false)
-    @test !CS.is_constraint_solved(com, xor_constraint, xor_constraint.fct, xor_constraint.set)
+    @test !CS.is_constraint_solved(com, xor_constraint)
 
     ##################
 
@@ -87,7 +87,7 @@
     constraint = com.constraints[1]
     @test CS.fix!(com, variables[constraint.indices[2]], 3; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[3]], 1; check_feasibility = false)
-    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_violated(com, constraint)
 
 
     ##################
@@ -103,7 +103,7 @@
     constraint = com.constraints[1]
     @test CS.fix!(com, variables[constraint.indices[2]], 3; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[3]], 2; check_feasibility = false)
-    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_violated(com, constraint)
 end
 
 @testset "complement constraint still feasible" begin
@@ -120,7 +120,7 @@ end
     complement_constraint = com.constraints[1].inner_constraint
 
     constr_indices = complement_constraint.indices
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
-    @test CS.still_feasible(com, complement_constraint, complement_constraint.fct, complement_constraint.set, complement_constraint.indices[1], 1)
-    @test !CS.still_feasible(com, complement_constraint, complement_constraint.fct, complement_constraint.set, complement_constraint.indices[1], 2)
+    @test CS.prune_constraint!(com, constraint)
+    @test CS.still_feasible(com, complement_constraint, complement_constraint.indices[1], 1)
+    @test !CS.still_feasible(com, complement_constraint, complement_constraint.indices[1], 2)
 end

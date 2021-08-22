@@ -1,3 +1,16 @@
+function set_first_node_call!(constraint::XorConstraint, val::Bool)
+    constraint.first_node_call = val
+    set_first_node_call!(constraint.lhs, val)
+    set_first_node_call!(constraint.rhs, val)
+    if constraint.complement_lhs !== nothing
+        constraint.complement_lhs.first_node_call = val
+        set_first_node_call!(constraint.complement_lhs, val)
+    end
+    if constraint.complement_rhs !== nothing
+        set_first_node_call!(constraint.complement_rhs, val)
+    end
+end
+
 function init_constraint!(
     com::CS.CoM,
     constraint::XorConstraint,
@@ -16,7 +29,7 @@ function init_constraint!(
 end
 
 """
-    function is_constraint_violated(
+    function _is_constraint_violated(
         com::CoM,
         constraint::BoolConstraint,
         fct,
@@ -25,7 +38,7 @@ end
 
 Check if both of the inner constraints are violated or whether both are solved
 """
-function is_constraint_violated(
+function _is_constraint_violated(
     com::CoM,
     constraint::BoolConstraint,
     fct,
@@ -33,18 +46,18 @@ function is_constraint_violated(
 )
     both_violated = is_lhs_constraint_violated(com, constraint) && is_rhs_constraint_violated(com, constraint) 
     both_violated && return true
-    lhs_solved = is_constraint_solved(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
-    rhs_solved = is_constraint_solved(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
+    lhs_solved = is_constraint_solved(com, constraint.lhs)
+    rhs_solved = is_constraint_solved(com, constraint.rhs)
     return lhs_solved && rhs_solved
 end
 
 """
-    still_feasible(com::CoM, constraint::XorConstraint, fct, set::XorSet, vidx::Int, value::Int)
+    _still_feasible(com::CoM, constraint::XorConstraint, fct, set::XorSet, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `vidx` to `value`.
 **Attention:** This assumes that it isn't violated before.
 """
-function still_feasible(
+function _still_feasible(
     com::CoM,
     constraint::XorConstraint,
     fct,
@@ -52,7 +65,7 @@ function still_feasible(
     vidx::Int,
     value::Int,
 )
-    lhs_violated = is_constraint_violated(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
+    lhs_violated = is_constraint_violated(com, constraint.lhs)
     lhs_feasible = !lhs_violated
     lhs_solved = false
     if lhs_feasible
@@ -62,12 +75,12 @@ function still_feasible(
         lhs_indices = constraint.lhs.indices
         for i in 1:length(lhs_indices)
             if lhs_indices[i] == vidx
-                lhs_feasible = still_feasible(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set, vidx, value)
+                lhs_feasible = still_feasible(com, constraint.lhs, vidx, value)
                 break
             end
         end
     end
-    rhs_violated = is_constraint_violated(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
+    rhs_violated = is_constraint_violated(com, constraint.rhs)
     rhs_feasible = !rhs_violated
     rhs_solved = false
     if rhs_feasible
@@ -77,7 +90,7 @@ function still_feasible(
         rhs_indices = constraint.rhs.indices
         for i in 1:length(rhs_indices)
             if rhs_indices[i] == vidx
-                rhs_feasible = still_feasible(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set, vidx, value) 
+                rhs_feasible = still_feasible(com, constraint.rhs, vidx, value) 
                 break
             end
         end
@@ -94,26 +107,26 @@ function still_feasible(
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::XorConstraint, fct, set::XorSet; logs = true)
+    _prune_constraint!(com::CS.CoM, constraint::XorConstraint, fct, set::XorSet; logs = false)
 
 Reduce the number of possibilities given the `XorConstraint` by pruning both parts
 Return whether still feasible
 """
-function prune_constraint!(
+function _prune_constraint!(
     com::CS.CoM,
     constraint::XorConstraint,
     fct,
     set::XorSet;
-    logs = true,
+    logs = false,
 )
-    lhs_violated = is_constraint_violated(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
-    rhs_violated = is_constraint_violated(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
+    lhs_violated = is_constraint_violated(com, constraint.lhs)
+    rhs_violated = is_constraint_violated(com, constraint.rhs)
     if lhs_violated && rhs_violated
         return false
     end
     # check if one is already solved
-    lhs_solved = is_constraint_solved(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
-    rhs_solved = is_constraint_solved(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
+    lhs_solved = is_constraint_solved(com, constraint.lhs)
+    rhs_solved = is_constraint_solved(com, constraint.rhs)
     if lhs_solved && rhs_solved
         return false
     end
@@ -121,21 +134,21 @@ function prune_constraint!(
     # if one is solved => complement prune the other
     # Todo implement for activated complement constraints
     if lhs_solved && constraint.complement_rhs !== nothing
-        return prune_constraint!(com, constraint.complement_rhs, constraint.complement_rhs.fct, constraint.complement_rhs.set; logs=logs)
+        return prune_constraint!(com, constraint.complement_rhs; logs=logs)
     end
     if rhs_solved && constraint.complement_lhs !== nothing
-        return prune_constraint!(com, constraint.complement_lhs, constraint.complement_lhs.fct, constraint.complement_lhs.set; logs=logs)
+        return prune_constraint!(com, constraint.complement_lhs; logs=logs)
     end
 
     # if both aren't solved yet we only prune if one is violated
     if !lhs_solved && !rhs_solved
         if lhs_violated
             activate_rhs!(com, constraint)
-            return prune_constraint!(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set; logs=logs)
+            return prune_constraint!(com, constraint.rhs; logs=logs)
         end
         if rhs_violated
             activate_lhs!(com, constraint)
-            return prune_constraint!(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set; logs=logs)
+            return prune_constraint!(com, constraint.lhs; logs=logs)
         end
     end
    

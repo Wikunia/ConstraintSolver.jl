@@ -75,6 +75,10 @@ function prune!(
             end
         end
     end
+    for constraint in com.constraints
+        set_first_node_call!(constraint, true)
+    end
+
 
     # while we haven't called every constraint
     while true
@@ -92,7 +96,7 @@ function prune!(
         constraint = com.constraints[ci]
 
         feasible =
-            prune_constraint!(com, constraint, constraint.fct, constraint.set; logs = false)
+            prune_constraint!(com, constraint; logs = false)
         if !pre_backtrack
             com.info.in_backtrack_calls += 1
         else

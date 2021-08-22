@@ -102,13 +102,6 @@ function arr2dict(arr)
     return d
 end
 
-function is_constraint_solved(com::CS.CoM, constraint::Constraint, fct, set)
-    variables = com.search_space
-    !all(isfixed(variables[ind]) for ind in constraint.indices) && return false
-    values = CS.value.(variables[constraint.indices])
-    return is_constraint_solved(constraint, fct, set, values)
-end
-
 function is_constraint_solved_when_fixed(com::CS.CoM, constraint::Constraint, fct, set, vidx::Int, value::Int)
     variables = com.search_space
     !all(isfixed(variables[ind]) || variables[ind].idx == vidx for ind in constraint.indices) && return false
@@ -120,7 +113,7 @@ function is_constraint_solved_when_fixed(com::CS.CoM, constraint::Constraint, fc
             values[i] = value
         end 
     end
-    return is_constraint_solved(constraint, fct, set, values)
+    return is_constraint_solved(com, constraint, values)
 end
 
 #=
@@ -132,6 +125,7 @@ end
         :indices,
         :fct,
         :set,
+        :first_node_call,
         :vidx_to_idx,
         :pvals,
         :is_initialized,
@@ -151,6 +145,7 @@ end
         :indices,
         :fct,
         :set,
+        :first_node_call,
         :vidx_to_idx,
         :pvals,
         :is_initialized,
@@ -173,6 +168,8 @@ end
         :indices,
         :fct,
         :set,
+        :first_node_call,
+        :vidx_to_idx,
         :pvals,
         :is_initialized,
         :is_activated,
@@ -185,7 +182,6 @@ end
         :activator_in_inner,
         :inner_activated,
         :inner_activated_in_backtrack_idx,
-        :inner_pruned,
     )
         Core.getproperty(Core.getproperty(c, :act_std), s)
     else
@@ -199,6 +195,8 @@ end
         :indices,
         :fct,
         :set,
+        :first_node_call,
+        :vidx_to_idx,
         :pvals,
         :is_initialized,
         :is_activated,
@@ -211,7 +209,6 @@ end
         :activator_in_inner,
         :inner_activated,
         :inner_activated_in_backtrack_idx,
-        :inner_pruned,
     )
         Core.setproperty!(c.act_std, s, v)
     else
@@ -228,6 +225,8 @@ end
         :indices,
         :fct,
         :set,
+        :first_node_call,
+        :vidx_to_idx,
         :pvals,
         :is_initialized,
         :is_activated,
@@ -255,6 +254,8 @@ end
         :indices,
         :fct,
         :set,
+        :first_node_call,
+        :vidx_to_idx,
         :pvals,
         :is_initialized,
         :is_activated,

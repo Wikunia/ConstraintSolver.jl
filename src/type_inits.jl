@@ -32,6 +32,7 @@ function ConstraintInternals(cidx::Int, fct, set, indices::Vector{Int})
         cidx,
         fct,
         set,
+        true,
         vidx_to_idx,
         indices,
         Int[],
@@ -111,7 +112,7 @@ function LinearConstraint(
 end
 
 function ReifiedConstraint(std, act_std, inner_constraint, complement_constraint)
-    return ReifiedConstraint(std, act_std, inner_constraint, complement_constraint, false, 0, false)
+    return ReifiedConstraint(std, act_std, inner_constraint, complement_constraint, false, 0)
 end
 
 """

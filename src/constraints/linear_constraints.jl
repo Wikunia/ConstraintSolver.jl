@@ -116,6 +116,10 @@ function init_constraint!(
     return true
 end
 
+function first_node_call!(com::CS.CoM, constraint::LinearConstraint, fct, set)
+    recompute_lc_extrema!(com, constraint, fct)
+end
+
 """
     get_new_extrema_and_sum(search_space, vidx, i, terms, full_min, full_max, pre_mins, pre_maxs)
 
@@ -261,30 +265,31 @@ function set_new_extrema(i, pre_mins, pre_maxs, new_min, new_max)
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set; logs = true) where T <: Real
+    _prune_constraint!(com::CS.CoM, constraint::LinearConstraint, fct::SAF{T}, set; logs = false) where T <: Real
 
 Reduce the number of possibilities given the `LinearConstraint` .
 Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
 """
-function prune_constraint!(
-    com::CS.CoM,
-    constraint::LinearConstraint,
-    fct::SAF{T},
-    set::Union{MOI.LessThan, MOI.EqualTo, CPE.Strictly{MOI.LessThan{T}}};
-    logs = true,
-) where {T<:Real}
-    constraint.currently_pruning = true
-    isfeasible = _prune_constraint!(com, constraint, fct, set; logs=logs)
-    constraint.currently_pruning = false
-    return isfeasible
-end
-
 function _prune_constraint!(
     com::CS.CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
     set::Union{MOI.LessThan, MOI.EqualTo, CPE.Strictly{MOI.LessThan{T}}};
-    logs = true,
+    logs = false,
+) where {T<:Real}
+    constraint.currently_pruning = true
+    recompute_lc_extrema!(com, constraint, fct)
+    isfeasible = _prune_constraint_actual!(com, constraint, fct, set; logs=logs)
+    constraint.currently_pruning = false
+    return isfeasible
+end
+
+function _prune_constraint_actual!(
+    com::CS.CoM,
+    constraint::LinearConstraint,
+    fct::SAF{T},
+    set::Union{MOI.LessThan, MOI.EqualTo, CPE.Strictly{MOI.LessThan{T}}};
+    logs = false,
 ) where {T<:Real}
     indices = constraint.indices
     search_space = com.search_space
@@ -497,12 +502,12 @@ function prune_is_equal_two_var!(com::CS.CoM,
 end
 
 """
-    still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T},
+    _still_feasible(com::CoM, constraint::LinearConstraint, fct::SAF{T},
                    set::MOI.EqualTo{T}, vidx::Int, val::Int) where T <: Real
 
 Return whether setting `search_space[vidx]` to `val` is still feasible given `constraint`.
 """
-function still_feasible(
+function _still_feasible(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
@@ -572,16 +577,16 @@ function still_feasible(
 end
 
 """
-    is_constraint_solved(
+    _is_constraint_solved(
         com::CS.CoM,
         constraint::LinearConstraint,
         fct::SAF{T},
         set::MOI.LessThan{T},
     )
 
-    Check if the constraint is fulfilled even though not all variables are set
+Check if the constraint is fulfilled even though not all variables are set
 """
-function is_constraint_solved(
+function _is_constraint_solved(
     com::CS.CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
@@ -592,7 +597,7 @@ function is_constraint_solved(
 end
 
 """
-    is_constraint_solved(
+    _is_constraint_solved(
         com::CS.CoM,
         constraint::LinearConstraint,
         fct::SAF{T},
@@ -601,7 +606,7 @@ end
 
     Check if the constraint is fulfilled even though not all variables are set
 """
-function is_constraint_solved(
+function _is_constraint_solved(
     com::CS.CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
@@ -611,7 +616,8 @@ function is_constraint_solved(
     return sum_maxs < MOI.constant(set)
 end
 
-function is_constraint_solved(
+function _is_constraint_solved(
+    com,
     constraint::LinearConstraint,
     fct::SAF{T},
     set::MOI.EqualTo{T},
@@ -620,7 +626,8 @@ function is_constraint_solved(
     return sum(values .* constraint.coeffs) + fct.constant ≈ set.value
 end
 
-function is_constraint_solved(
+function _is_constraint_solved(
+    com,
     constraint::LinearConstraint,
     fct::SAF{T},
     set::MOI.LessThan{T},
@@ -630,7 +637,8 @@ function is_constraint_solved(
 end
 
 
-function is_constraint_solved(
+function _is_constraint_solved(
+    com,
     constraint::LinearConstraint,
     fct::SAF{T},
     set::CPE.Strictly{MOI.LessThan{T}},
@@ -641,7 +649,7 @@ end
 
 
 """
-    is_constraint_violated(
+    _is_constraint_violated(
         com::CoM,
         constraint::LinearConstraint,
         fct::SAF{T},
@@ -651,7 +659,7 @@ end
 Checks if the constraint is violated as it is currently set. This can happen inside an
 inactive reified or indicator constraint.
 """
-function is_constraint_violated(
+function _is_constraint_violated(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
@@ -659,9 +667,8 @@ function is_constraint_violated(
 ) where {T<:Real}
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(
+            com,
             constraint,
-            fct,
-            set,
             CS.value.(com.search_space[constraint.indices]),
         )
     end
@@ -683,16 +690,6 @@ function min_sum_feasible(com, min_sum, set::CPE.Strictly{MOI.LessThan{T}}) wher
         return get_approx_discrete(min_sum) < get_approx_discrete(MOI.constant(set))
     end
     return min_sum <= MOI.constant(set) + com.options.atol
-end
-
-function reverse_pruning_constraint!(
-    com::CoM,
-    constraint::LinearConstraint,
-    fct::SAF{T},
-    set::Union{MOI.LessThan, MOI.EqualTo, CPE.Strictly{MOI.LessThan{T}}},
-    backtrack_id::Int,
-) where {T <: Real} 
-    recompute_lc_extrema!(com, constraint, fct)
 end
 
 function activate_constraint!(

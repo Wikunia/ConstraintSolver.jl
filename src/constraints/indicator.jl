@@ -1,3 +1,9 @@
+function set_first_node_call!(constraint::IndicatorConstraint, val::Bool)
+    constraint.first_node_call = val
+    set_first_node_call!(constraint.inner_constraint, val)
+end
+
+
 """
     init_constraint!(
         com::CS.CoM,
@@ -42,12 +48,12 @@ function init_constraint!(
 end
 
 """
-    prune_constraint!(
+    _prune_constraint!(
         com::CS.CoM,
         constraint::IndicatorConstraint,
         fct::Union{MOI.VectorOfVariables, VAF{T}},
         set::IS;
-        logs = true,
+        logs = false,
     ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
 
 Prune the search space given the indicator constraint. An indicator constraint is of the form `b => {x + y == 2}`.
@@ -55,12 +61,12 @@ Where the constraint in `{ }` is currently a linear constraint.
 
 Return whether the search space is still feasible.
 """
-function prune_constraint!(
+function _prune_constraint!(
     com::CS.CoM,
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
     set::IS;
-    logs = true,
+    logs = false,
 ) where {
     A,
     T<:Real,
@@ -77,18 +83,15 @@ function prune_constraint!(
     # check if active
     CS.value(indicator_var) != Int(constraint.activate_on) && return true
     !activate_inner!(com, constraint) && return false
-    constraint.inner_pruned = true
     return prune_constraint!(
         com,
         inner_constraint,
-        inner_constraint.fct,
-        inner_constraint.set;
         logs = logs,
     )
 end
 
 """
-    still_feasible(
+    _still_feasible(
         com::CoM,
         constraint::IndicatorConstraint,
         fct::Union{MOI.VectorOfVariables, VAF{T}},
@@ -99,7 +102,7 @@ end
 
 Return whether the search space is still feasible when setting `search_space[vidx]` to value.
 """
-function still_feasible(
+function _still_feasible(
     com::CoM,
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
@@ -130,23 +133,20 @@ function still_feasible(
     violated = is_constraint_violated(
         com,
         inner_constraint,
-        inner_constraint.fct,
-        inner_constraint.set,
     )
     violated && return false
     # otherwise check if feasible when setting vidx to val
     return still_feasible(
         com,
         inner_constraint,
-        inner_constraint.fct,
-        inner_constraint.set,
         vidx,
         val,
     )
 end
 
 """
-    is_constraint_solved(
+    _is_constraint_solved(
+        com,
         constraint::IndicatorConstraint,
         fct::Union{MOI.VectorOfVariables, VAF{T}},
         set::IS,
@@ -155,7 +155,8 @@ end
 
 Return whether given `values` the constraint is fulfilled.
 """
-function is_constraint_solved(
+function _is_constraint_solved(
+    com,
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
     set::IS,
@@ -169,9 +170,8 @@ function is_constraint_solved(
     if values[1] == Int(constraint.activate_on)
         inner_constraint = constraint.inner_constraint
         return is_constraint_solved(
+            com,
             inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
             values[2:end],
         )
     end
@@ -179,7 +179,7 @@ function is_constraint_solved(
 end
 
 """
-    is_constraint_violated(
+    _is_constraint_violated(
         com::CoM,
         constraint::IndicatorConstraint,
         fct::Union{MOI.VectorOfVariables,VAF{T}},
@@ -194,7 +194,7 @@ end
 Checks if the constraint is violated as it is currently set. This can happen inside an
 inactive reified or indicator constraint.
 """
-function is_constraint_violated(
+function _is_constraint_violated(
     com::CoM,
     constraint::IndicatorConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
@@ -207,9 +207,8 @@ function is_constraint_violated(
 }
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(
+            com,
             constraint,
-            fct,
-            set,
             [CS.value(var) for var in com.search_space[constraint.indices]],
         )
     end
@@ -221,8 +220,6 @@ function is_constraint_violated(
         return is_constraint_violated(
             com,
             inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
         )
     end
     return false

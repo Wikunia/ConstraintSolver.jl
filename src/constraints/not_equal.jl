@@ -1,15 +1,15 @@
 """
-    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::CPE.DifferentFrom{T}; logs = true) where T <: Real
+    _prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::CPE.DifferentFrom{T}; logs = false) where T <: Real
 
 Reduce the number of possibilities given the not equal constraint.
 Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
 """
-function prune_constraint!(
+function _prune_constraint!(
     com::CS.CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
     set::CPE.DifferentFrom{T};
-    logs = true,
+    logs = false,
 ) where {T<:Real}
     indices = constraint.indices
 
@@ -48,11 +48,11 @@ function prune_constraint!(
 end
 
 """
-still_feasible(com::CoM, constraint::LinearConstraint, fct::MOI.ScalarAffineFunction{T}, set::CPE.DifferentFrom{T}, vidx::Int, value::Int) where T <: Real
+    _still_feasible(com::CoM, constraint::LinearConstraint, fct::MOI.ScalarAffineFunction{T}, set::CPE.DifferentFrom{T}, vidx::Int, value::Int) where T <: Real
 
 Return whether the `not_equal` constraint can be still fulfilled.
 """
-function still_feasible(
+function _still_feasible(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
@@ -90,7 +90,8 @@ function still_feasible(
     return true
 end
 
-function is_constraint_solved(
+function _is_constraint_solved(
+    com,
     constraint::LinearConstraint,
     fct::SAF{T},
     set::CPE.DifferentFrom{T},
@@ -103,7 +104,7 @@ function is_constraint_solved(
 end
 
 """
-    is_constraint_violated(
+    _is_constraint_violated(
         com::CoM,
         constraint::LinearConstraint,
         fct::SAF{T},
@@ -113,7 +114,7 @@ end
 Checks if the constraint is violated as it is currently set. This can happen inside an
 inactive reified or indicator constraint.
 """
-function is_constraint_violated(
+function _is_constraint_violated(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
@@ -121,9 +122,8 @@ function is_constraint_violated(
 ) where {T<:Real}
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(
+            com,
             constraint,
-            fct,
-            set,
             [CS.value(var) for var in com.search_space[constraint.indices]],
         )
     end

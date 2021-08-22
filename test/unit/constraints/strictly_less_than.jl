@@ -8,23 +8,19 @@
     com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 1])
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 2])
+    @test  CS.is_constraint_solved(com, constraint, [1, 1, 1])
+    @test !CS.is_constraint_solved(com, constraint, [1, 1, 2])
 
     constr_indices = constraint.indices
     @test !CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         6,
     )
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         5,
     )
@@ -33,8 +29,6 @@
     @test !CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         5,
     )
@@ -51,8 +45,6 @@
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         5,
     )
@@ -67,13 +59,13 @@
     constraint = com.constraints[1]
     constr_indices = constraint.indices
 
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint)
     @test sort(CS.values(com.search_space[1])) == -1:5
     @test sort(CS.values(com.search_space[2])) == -1:5
     @test sort(CS.values(com.search_space[3])) == -5:5 # 6 not possible
 
     @test CS.fix!(com, com.search_space[constr_indices[3]], 5)
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint)
     @test CS.value(com.search_space[1]) == -1
     @test CS.value(com.search_space[2]) == -1
     @test CS.value(com.search_space[3]) == 5
@@ -92,8 +84,8 @@
     constraint = com.constraints[1]
     @test constraint.rhs ≈ 3
     @test constraint.strict_rhs ≈ 3.999
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 1])
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 2])
+    @test  CS.is_constraint_solved(com, constraint, [1, 1, 1])
+    @test !CS.is_constraint_solved(com, constraint, [1, 1, 2])
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -1 <= x <= 5, Int)
@@ -106,8 +98,8 @@
     constraint = com.constraints[1]
     @test constraint.rhs ≈ 4
     @test constraint.strict_rhs ≈ 4.1
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 1])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 2])
+    @test CS.is_constraint_solved(com, constraint, [1, 1, 1])
+    @test CS.is_constraint_solved(com, constraint, [1, 1, 2])
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -1 <= x <= 5, Int)
@@ -119,8 +111,8 @@
 
     constraint = com.constraints[1]
     @test constraint.strict_rhs ≈ 4.1
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 1])
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 2])
+    @test  CS.is_constraint_solved(com, constraint, [1, 1, 1])
+    @test !CS.is_constraint_solved(com, constraint, [1, 1, 2])
 end
 
 @testset "StrictlyGreaterThan (bridged)" begin
@@ -133,24 +125,20 @@ end
     com = CS.get_inner_model(m)
 
     constraint = com.constraints[1]
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [-1, 1, 1])
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [-1, 1, 2])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [-1, 2, 2])
+    @test !CS.is_constraint_solved(com, constraint, [-1, 1, 1])
+    @test !CS.is_constraint_solved(com, constraint, [-1, 1, 2])
+    @test  CS.is_constraint_solved(com, constraint, [-1, 2, 2])
 
     constr_indices = constraint.indices
     @test !CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         -6,
     )
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         -5,
     )
@@ -159,8 +147,6 @@ end
     @test !CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         -5,
     )
@@ -177,8 +163,6 @@ end
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         -5,
     )
@@ -193,13 +177,13 @@ end
     constraint = com.constraints[1]
     constr_indices = constraint.indices
 
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint)
     @test sort(CS.values(com.search_space[1])) == -5:1
     @test sort(CS.values(com.search_space[2])) == -1:5
     @test sort(CS.values(com.search_space[3])) == -5:6 # -6 not possible
 
     @test CS.fix!(com, com.search_space[constr_indices[3]], -5)
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint)
     @test CS.value(com.search_space[1]) == -5
     @test CS.value(com.search_space[2]) == 5
     @test CS.value(com.search_space[3]) == -5
@@ -218,9 +202,9 @@ end
     constraint = com.constraints[1]
     @test constraint.rhs ≈ -4
     @test constraint.strict_rhs ≈ -3.999
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 1])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 2])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 3])
+    @test !CS.is_constraint_solved(com, constraint, [1, 1, 1])
+    @test  CS.is_constraint_solved(com, constraint, [1, 1, 2])
+    @test  CS.is_constraint_solved(com, constraint, [1, 1, 3])
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -1 <= x <= 5, Int)
@@ -233,8 +217,8 @@ end
     constraint = com.constraints[1]
     @test constraint.rhs ≈ -5
     @test constraint.strict_rhs ≈ -4.1
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 1])
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 2])
+    @test !CS.is_constraint_solved(com, constraint, [1, 1, 1])
+    @test !CS.is_constraint_solved(com, constraint, [1, 1, 2])
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -1 <= x <= 5, Int)
@@ -246,8 +230,8 @@ end
 
     constraint = com.constraints[1]
     @test constraint.strict_rhs ≈ -4.1
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 1])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 3])
+    @test !CS.is_constraint_solved(com, constraint, [1, 1, 1])
+    @test  CS.is_constraint_solved(com, constraint, [1, 1, 3])
 end
 
 @testset "StrictlyGreaterThan with LP solver" begin
@@ -265,8 +249,8 @@ end
     constraint = com.constraints[1]
     @test constraint.rhs ≈ -4.2
     @test constraint.strict_rhs ≈ -4.1
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 1])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 1, 3])
+    @test !CS.is_constraint_solved(com, constraint, [1, 1, 1])
+    @test  CS.is_constraint_solved(com, constraint, [1, 1, 3])
 end
 
 @testset "strictly less than is_constraint_violated test" begin
@@ -281,7 +265,7 @@ end
     variables = com.search_space
     @test CS.fix!(com, variables[constraint.indices[1]], 5; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[2]], 2; check_feasibility = false)
-    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_violated(com, constraint)
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:2] <= 5, Int)
@@ -293,7 +277,7 @@ end
 
     variables = com.search_space
     @test CS.fix!(com, variables[constraint.indices[1]], 5; check_feasibility = false)
-    @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test !CS.is_constraint_violated(com, constraint)
 end
 
 @testset "constraint without variables" begin

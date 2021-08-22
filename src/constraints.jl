@@ -327,3 +327,69 @@ function update_init_constraint!(
     return true
 end
 
+set_first_node_call!(constraint::Constraint, val::Bool) = constraint.first_node_call = val
+
+function prune_constraint!(
+    com::CS.CoM,
+    constraint::Constraint;
+    logs = false
+)
+    check_first_node_call!(com, constraint)
+    feasible = _prune_constraint!(com, constraint, constraint.fct, constraint.set; logs = logs)
+    constraint.first_node_call = false
+    return feasible
+end
+
+function still_feasible(
+    com::CoM,
+    constraint::Constraint,
+    vidx::Int,
+    value::Int,
+)
+    check_first_node_call!(com, constraint)
+    feasible = _still_feasible(com, constraint, constraint.fct, constraint.set, vidx, value)
+    constraint.first_node_call = false
+    return feasible
+end
+
+function is_constraint_violated(
+    com::CoM,
+    constraint::Constraint,
+)
+    check_first_node_call!(com, constraint)
+    violated = _is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    constraint.first_node_call = false
+    return violated
+end
+
+function is_constraint_solved(com::CS.CoM, constraint::Constraint)
+    check_first_node_call!(com, constraint)
+    solved = _is_constraint_solved(com, constraint, constraint.fct, constraint.set)
+    constraint.first_node_call = false
+    return solved
+end
+
+function _is_constraint_solved(com::CS.CoM, constraint::Constraint, fct, set)
+    variables = com.search_space
+    !all(isfixed(variables[ind]) for ind in constraint.indices) && return false
+    values = CS.value.(variables[constraint.indices])
+    return _is_constraint_solved(com, constraint, constraint.fct, constraint.set, values)
+end
+
+function is_constraint_solved(
+    com::CS.CoM,
+    constraint::Constraint,
+    values::Vector{Int},
+)
+    check_first_node_call!(com, constraint)
+    solved = _is_constraint_solved(com, constraint, constraint.fct, constraint.set, values)
+    constraint.first_node_call = false
+    return solved
+end
+
+function check_first_node_call!(com, constraint::Constraint)
+    !constraint.first_node_call && return 
+    first_node_call!(com, constraint, constraint.fct, constraint.set)
+end
+
+first_node_call!(::CS.CoM, ::Constraint, fct, set) = nothing

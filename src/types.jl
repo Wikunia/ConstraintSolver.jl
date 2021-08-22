@@ -372,13 +372,14 @@ mutable struct ConstraintInternals{
     idx::Int
     fct::FCT
     set::SET
+    first_node_call::Bool # true inside prune_constraint! when it's the first prune of the node
     vidx_to_idx::Dict{Int,Int}
     indices::Vector{Int}
     pvals::Vector{Int}
     is_initialized::Bool
-    is_activated::Bool
+    is_activated::Bool # whether the constraint is currently active i.e can be inactive when the activator isn't true
     is_deactivated::Bool # can be deactivated if it's absorbed by other constraints
-    bound_rhs::Vector{BoundRhsVariable}# should be set if `update_best_bound` is true
+    bound_rhs::Vector{BoundRhsVariable} # should be set if `update_best_bound` is true
 end
 
 #====================================================================================
@@ -498,7 +499,6 @@ mutable struct ActivatorConstraintInternals
     activator_in_inner::Bool
     inner_activated::Bool
     inner_activated_in_backtrack_idx::Int
-    inner_pruned::Bool
 end
 
 mutable struct IndicatorConstraint{C<:Constraint} <: ActivatorConstraint
@@ -514,7 +514,6 @@ mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <
     complement_constraint::AC
     complement_activated::Bool
     complement_activated_in_backtrack_idx::Int
-    complement_pruned::Bool
 end
 
 #====================================================================================

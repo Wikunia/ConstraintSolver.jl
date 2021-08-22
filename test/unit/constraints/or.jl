@@ -9,7 +9,7 @@
     constraint = com.constraints[1]
     @test CS.fix!(com, variables[constraint.indices[1]], 1; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[2]], 1; check_feasibility = false)
-    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_violated(com, constraint)
 
     #################
 
@@ -24,7 +24,7 @@
     constraint = com.constraints[1]
     @test CS.fix!(com, variables[constraint.indices[2]], 2; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[3]], 2; check_feasibility = false)
-    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_violated(com, constraint)
 
     #################
 
@@ -40,7 +40,7 @@
     or_constraint = com.constraints[1].inner_constraint
     @test CS.fix!(com, variables[or_constraint.indices[1]], 1; check_feasibility = false)
     @test CS.fix!(com, variables[or_constraint.indices[2]], 1; check_feasibility = false)
-    @test CS.is_constraint_violated(com, or_constraint, or_constraint.fct, or_constraint.set)
+    @test CS.is_constraint_violated(com, or_constraint)
 
     ############################### 
 
@@ -56,7 +56,7 @@
     or_constraint = com.constraints[1].inner_constraint
     @test CS.fix!(com, variables[or_constraint.indices[1]], 1; check_feasibility = false)
     @test CS.fix!(com, variables[or_constraint.indices[2]], 1; check_feasibility = false)
-    @test CS.is_constraint_violated(com, or_constraint, or_constraint.fct, or_constraint.set)
+    @test CS.is_constraint_violated(com, or_constraint)
 
     ##################
 
@@ -71,7 +71,7 @@
     constraint = com.constraints[1]
     @test CS.fix!(com, variables[constraint.indices[2]], 1; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[3]], 1; check_feasibility = false)
-    @test CS.is_constraint_solved(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_solved(com, constraint)
 end
 
 @testset "Indicator fixed to 1 or constraint violated or solved?" begin
@@ -86,7 +86,7 @@ end
     constraint = com.constraints[1]
     @test CS.fix!(com, variables[constraint.indices[2]], 1; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[3]], 1; check_feasibility = false)
-    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_violated(com, constraint)
 
     #################
 
@@ -101,7 +101,7 @@ end
     constraint = com.constraints[1]
     @test CS.fix!(com, variables[constraint.indices[2]], 2; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[3]], 2; check_feasibility = false)
-    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_violated(com, constraint)
 
     #################
 
@@ -117,7 +117,7 @@ end
     or_constraint = com.constraints[1].inner_constraint
     @test CS.fix!(com, variables[or_constraint.indices[1]], 1; check_feasibility = false)
     @test CS.fix!(com, variables[or_constraint.indices[2]], 1; check_feasibility = false)
-    @test CS.is_constraint_violated(com, or_constraint, or_constraint.fct, or_constraint.set)
+    @test CS.is_constraint_violated(com, or_constraint)
 
     ############################### 
 
@@ -133,7 +133,7 @@ end
     or_constraint = com.constraints[1].inner_constraint
     @test CS.fix!(com, variables[or_constraint.indices[1]], 1; check_feasibility = false)
     @test CS.fix!(com, variables[or_constraint.indices[2]], 1; check_feasibility = false)
-    @test CS.is_constraint_violated(com, or_constraint, or_constraint.fct, or_constraint.set)
+    @test CS.is_constraint_violated(com, or_constraint)
 
     ##################
 
@@ -148,7 +148,7 @@ end
     constraint = com.constraints[1]
     @test CS.fix!(com, variables[constraint.indices[2]], 1; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[3]], 1; check_feasibility = false)
-    @test CS.is_constraint_solved(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_solved(com, constraint)
 end
 
 @testset "reified or constraint prune_constraint!" begin
@@ -165,7 +165,7 @@ end
 
     constr_indices = constraint.indices
     @test CS.fix!(com, variables[constraint.indices[2]], 0; check_feasibility = false)
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint)
     for v in 0:2
         @test !CS.has(variables[constraint.indices[3]], v)
     end
@@ -184,7 +184,7 @@ end
 
     constr_indices = constraint.indices
     @test CS.fix!(com, variables[constraint.indices[2]], 0; check_feasibility = false)
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint)
     for v in 0:2
         @test !CS.has(variables[constraint.indices[4]], v)
     end
@@ -208,7 +208,7 @@ end
     constr_indices = or_constraint.indices
     @test CS.fix!(com, variables[constraint.indices[2]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[3]], 0; check_feasibility = false)
-    @test !CS.still_feasible(com, or_constraint, or_constraint.fct, or_constraint.set, constr_indices[3], 1)
+    @test !CS.still_feasible(com, or_constraint, constr_indices[3], 1)
 
     # swap lhs and rhs
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
@@ -228,5 +228,5 @@ end
     constr_indices = or_constraint.indices
     @test CS.fix!(com, variables[constr_indices[2]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[3]], 0; check_feasibility = false)
-    @test !CS.still_feasible(com, or_constraint, or_constraint.fct, or_constraint.set, constr_indices[1], 1)
+    @test !CS.still_feasible(com, or_constraint, constr_indices[1], 1)
 end

@@ -3,17 +3,17 @@
 =#
 
 """
-prune_constraint!(com::CS.CoM, constraint::CS.SingleVariableConstraint, fct::MOI.ScalarAffineFunction{T}, set::LessThan{T}; logs = true) where T <: Real
+    _prune_constraint!(com::CS.CoM, constraint::CS.SingleVariableConstraint, fct::MOI.ScalarAffineFunction{T}, set::LessThan{T}; logs = false) where T <: Real
 
 Support for constraints of the form a <= b where a and b are single variables.
 This function removes values which aren't possible based on this constraint.
 """
-function prune_constraint!(
+function _prune_constraint!(
     com::CS.CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
     set::MOI.LessThan;
-    logs = true,
+    logs = false,
 ) where {T<:Real}
     lhs = constraint.lhs
     rhs = constraint.rhs
@@ -24,11 +24,18 @@ function prune_constraint!(
 end
 
 """
-    less_than(com::CoM, constraint::CS.SingleVariableConstraint, vidx::Int, val::Int)
+    _still_feasible(
+        com::CoM,
+        constraint::CS.SingleVariableConstraint,
+        fct::SAF{T},
+        set::MOI.LessThan,
+        vidx::Int,
+        val::Int,
+    ) where {T<:Real}
 
 Checks whether setting an `vidx` to `val` fulfills `constraint`
 """
-function still_feasible(
+function _still_feasible(
     com::CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
@@ -54,7 +61,8 @@ function still_feasible(
     end
 end
 
-function is_constraint_solved(
+function _is_constraint_solved(
+    com,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},
     set::MOI.LessThan,
@@ -65,7 +73,7 @@ end
 
 
 """
-    is_constraint_violated(
+    _is_constraint_violated(
         com::CoM,
         constraint::CS.SingleVariableConstraint,
         fct::SAF{T},
@@ -75,7 +83,7 @@ end
 Checks if the constraint is violated as it is currently set. This can happen inside an
 inactive reified or indicator constraint.
 """
-function is_constraint_violated(
+function _is_constraint_violated(
     com::CoM,
     constraint::CS.SingleVariableConstraint,
     fct::SAF{T},

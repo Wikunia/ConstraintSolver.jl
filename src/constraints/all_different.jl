@@ -206,17 +206,17 @@ function update_best_bound_constraint!(
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::CPE.AllDifferent; logs = true)
+    _prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::CPE.AllDifferent; logs = false)
 
 Reduce the number of possibilities given the `AllDifferentConstraint`.
 Return whether still feasible and throws a warning if infeasible and `logs` is set to `true`
 """
-function prune_constraint!(
+function _prune_constraint!(
     com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::CPE.AllDifferent;
-    logs = true,
+    logs = false,
 )
     indices = constraint.indices
     pvals = constraint.pvals
@@ -436,12 +436,12 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::CPE.AllDifferent, vidx::Int, value::Int)
+    _still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::CPE.AllDifferent, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `vidx` to `value`.
 **Attention:** This assumes that it isn't violated before.
 """
-function still_feasible(
+function _still_feasible(
     com::CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
@@ -461,7 +461,8 @@ function still_feasible(
     return true
 end
 
-function is_constraint_solved(
+function _is_constraint_solved(
+    com,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
     set::CPE.AllDifferent,
@@ -471,7 +472,7 @@ function is_constraint_solved(
 end
 
 """
-    is_constraint_violated(
+    _is_constraint_violated(
         com::CoM,
         constraint::AllDifferentConstraint,
         fct::MOI.VectorOfVariables,
@@ -481,7 +482,7 @@ end
 Checks if the constraint is violated as it is currently set. This can happen inside an
 inactive reified or indicator constraint.
 """
-function is_constraint_violated(
+function _is_constraint_violated(
     com::CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,

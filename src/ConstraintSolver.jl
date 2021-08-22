@@ -118,7 +118,7 @@ function fulfills_constraints(com::CS.CoM, vidx, value)
         # only call if the function got initialized already
         if constraint.is_initialized
             feasible =
-                still_feasible(com, constraint, constraint.fct, constraint.set, vidx, value)
+                still_feasible(com, constraint, vidx, value)
             !feasible && break
         end
     end

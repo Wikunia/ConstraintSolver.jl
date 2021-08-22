@@ -1,3 +1,11 @@
+function set_first_node_call!(constraint::ReifiedConstraint, val::Bool)
+    constraint.first_node_call = val
+    set_first_node_call!(constraint.inner_constraint, val)
+    if constraint.complement_constraint !== nothing
+        set_first_node_call!(constraint.complement_constraint, val)
+    end
+end
+
 function init_constraint!(
     com::CS.CoM,
     constraint::ReifiedConstraint,
@@ -37,12 +45,12 @@ function init_constraint!(
     return true
 end
 
-function prune_constraint!(
+function _prune_constraint!(
     com::CS.CoM,
     constraint::ReifiedConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
     set::RS;
-    logs = true,
+    logs = false,
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     # 1. if the inner constraint is solved then the reified variable can be set to activate_on
     # 2. if the inner constraint is infeasible the reified variable can be set to !activate_on
@@ -59,45 +67,35 @@ function prune_constraint!(
 
     # 3
     if issetto(variables[rei_vidx], activate_on)
-        constraint.inner_pruned = true
         !activate_inner!(com, constraint) && return false
         return prune_constraint!(
             com,
             inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
         )
     # 4
     elseif issetto(variables[rei_vidx], activate_off) && complement_constraint !== nothing
-        constraint.complement_pruned = true
         !activate_complement_inner!(com, constraint) && return false
         return prune_constraint!(
             com,
             complement_constraint,
-            complement_constraint.fct,
-            complement_constraint.set,
         )
     # 1
     elseif is_constraint_solved(
         com,
         inner_constraint,
-        inner_constraint.fct,
-        inner_constraint.set,
     )
         !fix!(com, variables[rei_vidx], activate_on) && return false
     # 2
     elseif is_constraint_violated(
         com,
         inner_constraint,
-        inner_constraint.fct,
-        inner_constraint.set,
     )
         !fix!(com, variables[rei_vidx], activate_off) && return false
     end
     return true
 end
 
-function still_feasible(
+function _still_feasible(
     com::CS.CoM,
     constraint::ReifiedConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
@@ -117,15 +115,11 @@ function still_feasible(
         violated = is_constraint_violated(
             com,
             inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
         )
         violated && return false
         return still_feasible(
             com,
             inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
             vidx,
             val,
         )
@@ -138,9 +132,8 @@ function still_feasible(
                 for i in inner_constraint.indices
             ]
             return !is_constraint_solved(
+                com,
                 inner_constraint,
-                inner_constraint.fct,
-                inner_constraint.set,
                 values,
             )
         end
@@ -148,7 +141,8 @@ function still_feasible(
     return true
 end
 
-function is_constraint_solved(
+function _is_constraint_solved(
+    com,
     constraint::ReifiedConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
     set::RS,
@@ -157,15 +151,14 @@ function is_constraint_solved(
     activate_on = Int(constraint.activate_on)
     inner_constraint = constraint.inner_constraint
     return is_constraint_solved(
+        com,
         inner_constraint,
-        inner_constraint.fct,
-        inner_constraint.set,
         values[2:end],
     ) == (values[1] == activate_on)
 end
 
 """
-    is_constraint_violated(
+    _is_constraint_violated(
         com::CoM,
         constraint::ReifiedConstraint,
         fct::Union{MOI.VectorOfVariables,VAF{T}},
@@ -175,7 +168,7 @@ end
 Checks if the constraint is violated as it is currently set. This can happen inside an
 inactive reified or indicator constraint.
 """
-function is_constraint_violated(
+function _is_constraint_violated(
     com::CoM,
     constraint::ReifiedConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
@@ -183,9 +176,8 @@ function is_constraint_violated(
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(
+            com,
             constraint,
-            fct,
-            set,
             [CS.value(var) for var in com.search_space[constraint.indices]],
         )
     end
@@ -197,8 +189,6 @@ function is_constraint_violated(
         return is_constraint_violated(
             com,
             inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set,
         )
     end
     return false

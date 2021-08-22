@@ -131,7 +131,6 @@ function reverse_pruning_constraint!(
                 complement_constraint.set,
                 backtrack_id,
             )
-            constraint.complement_pruned = false
         end
     end
 
@@ -143,7 +142,6 @@ function reverse_pruning_constraint!(
         inner_constraint.set,
         backtrack_id,
     )
-    constraint.inner_pruned = false
 end
 
 function restore_pruning_constraint!(
