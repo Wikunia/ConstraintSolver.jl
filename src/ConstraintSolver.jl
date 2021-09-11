@@ -381,6 +381,13 @@ Return if simple removable is still feasible
 """
 function set_bounds!(com, backtrack_obj)
     vidx = backtrack_obj.vidx
+
+    # set all first node calls to true as there might have been a reverse pruning 
+    # Todo: Actually only do this when there was reverse pruning...
+    for constraint in com.constraints
+        set_first_node_call!(constraint, true)
+    end
+
     !remove_above!(com, com.search_space[vidx], backtrack_obj.ub) && return false
     !remove_below!(com, com.search_space[vidx], backtrack_obj.lb) && return false
     return true
@@ -757,6 +764,13 @@ function solve!(com::CS.CoM)
 
     options.no_prune && return :NotSolved
 
+    # set for all constraints that a new round of pruning is initialized 
+    # therefore every constraint should know that when it is called 
+    # it will be the first time in a new round
+    for constraint in com.constraints
+        set_first_node_call!(constraint, true)
+    end
+
     # check if all feasible even if for example everything is fixed
     feasible = prune!(com; pre_backtrack = true, initial_check = true)
     # finished pruning will be called in second call a few lines down...
@@ -780,6 +794,11 @@ function solve!(com::CS.CoM)
         push!(com.solutions, new_sol_obj)
         return :Solved
     end
+
+    for constraint in com.constraints
+        set_first_node_call!(constraint, true)
+    end
+
     feasible = prune!(com; pre_backtrack = true)
     call_finished_pruning!(com)
 

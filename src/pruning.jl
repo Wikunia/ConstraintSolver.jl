@@ -75,10 +75,6 @@ function prune!(
             end
         end
     end
-    for constraint in com.constraints
-        set_first_node_call!(constraint, true)
-    end
-
 
     # while we haven't called every constraint
     while true
