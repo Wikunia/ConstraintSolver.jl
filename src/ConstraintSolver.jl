@@ -214,13 +214,15 @@ end
 
 Change the state of the search space given the current position in the tree (`from_nidx`) and the index we want
 to change to (`to_nidx`)
+Return whether reverse_pruning! was called
 """
 function checkout_from_to!(com::CS.CoM, from_nidx::Int, to_nidx::Int)
     backtrack_vec = com.backtrack_vec
     from = backtrack_vec[from_nidx]
     to = backtrack_vec[to_nidx]
+    # if the parent of to is the current node then we don't have to do anything
     if to.parent_idx == from.idx
-        return
+        return false 
     end
     reverse_pruning!(com, from.idx)
 
@@ -237,7 +239,7 @@ function checkout_from_to!(com::CS.CoM, from_nidx::Int, to_nidx::Int)
             depth -= 1
         end
         if parent_nidx == to.parent_idx
-            return
+            return true
         else
             from = parent
         end
@@ -256,7 +258,7 @@ function checkout_from_to!(com::CS.CoM, from_nidx::Int, to_nidx::Int)
         to = parent
         if backtrack_vec[prune_steps[1]].parent_idx == from.parent_idx
             !isempty(prune_steps) && restore_prune!(com, prune_steps)
-            return
+            return true
         end
     end
     @assert from.depth == to.depth
@@ -271,6 +273,7 @@ function checkout_from_to!(com::CS.CoM, from_nidx::Int, to_nidx::Int)
     end
 
     !isempty(prune_steps) && restore_prune!(com, prune_steps)
+    return true
 end
 
 """
@@ -374,18 +377,19 @@ function add2backtrack_vec!(
 end
 
 """
-    set_bounds!(com, backtrack_obj)
+    set_bounds!(com, backtrack_obj, needed_reverse_prune::Bool)
 
 Set lower/upper bounds for the current variable index `backtrack_obj.vidx`.
 Return if simple removable is still feasible
 """
-function set_bounds!(com, backtrack_obj)
+function set_bounds!(com, backtrack_obj, needed_reverse_prune::Bool)
     vidx = backtrack_obj.vidx
 
     # set all first node calls to true as there might have been a reverse pruning 
-    # Todo: Actually only do this when there was reverse pruning...
-    for constraint in com.constraints
-        set_first_node_call!(constraint, true)
+    if needed_reverse_prune
+        for constraint in com.constraints
+            set_first_node_call!(constraint, true)
+        end
     end
 
     !remove_above!(com, com.search_space[vidx], backtrack_obj.ub) && return false
@@ -450,9 +454,11 @@ If last id is not 0 then changes from last_id to new_id and sets `com.c_backtrac
 function checkout_new_node!(com::CS.CoM, last_id, new_id)
     if last_id != 0
         com.c_backtrack_idx = 0
-        checkout_from_to!(com, last_id, new_id)
+        needed_reverse_prune = checkout_from_to!(com, last_id, new_id)
         com.c_backtrack_idx = new_id
+        return needed_reverse_prune
     end
+    return false
 end
 
 """
@@ -587,7 +593,7 @@ function backtrack!(
         vidx = backtrack_obj.vidx
 
         com.c_backtrack_idx = backtrack_obj.idx
-        checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
+        needed_reverse_prune = checkout_new_node!(com, last_backtrack_id, backtrack_obj.idx)
 
         # if backtracking was started
         # => remove all values which are root infeasible
@@ -609,7 +615,7 @@ function backtrack!(
         last_backtrack_id = backtrack_obj.idx
 
         # limit the variable bounds
-        if !set_bounds!(com, backtrack_obj)
+        if !set_bounds!(com, backtrack_obj, needed_reverse_prune)
             update_log_node!(com, last_backtrack_id; feasible = false)
             continue
         end
