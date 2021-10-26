@@ -176,7 +176,6 @@ function get_next_node(
     backtrack_vec::Vector{BacktrackObj{T}},
     sorting,
 ) where {T<:Real}
-    found = false
     obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
     backtrack_obj = backtrack_vec[1]
 
@@ -184,29 +183,14 @@ function get_next_node(
     if com.sense == MOI.FEASIBILITY_SENSE || !sorting
         return get_first_open(backtrack_vec)
     end
-    # sort for objective
-    # don't actually sort => just get the best backtrack idx
-    # the one with the best bound and if same best bound choose the one with higher depth
-    l = 0
-    best_fac_bound = typemax(Int)
-    best_depth = 0
-    for i in 1:length(backtrack_vec)
-        bo = backtrack_vec[i]
-        if bo.status == :Open
-            if obj_factor * bo.best_bound < best_fac_bound ||
-               (obj_factor * bo.best_bound == best_fac_bound && bo.depth > best_depth)
-                l = i
-                best_depth = bo.depth
-                best_fac_bound = obj_factor * bo.best_bound
-            end
-        end
-    end
 
-    if l != 0
-        backtrack_obj = backtrack_vec[l]
-        found = true
-    end
-    return found, backtrack_obj
+    isempty(com.backtrack_pq) && return false, backtrack_obj
+    
+    # get the one with best objective using the priority queue
+    backtrack_idx, _ = peek(com.backtrack_pq)
+    backtrack_obj = backtrack_vec[backtrack_idx]
+
+    return true, backtrack_obj
 end
 
 """
@@ -223,19 +207,17 @@ function get_next_node(
     backtrack_vec::Vector{BacktrackObj{T}},
     sorting,
 ) where {T<:Real}
-    obj_factor = com.sense == MOI.MIN_SENSE ? 1 : -1
     backtrack_obj = backtrack_vec[1]
 
     # if sorting is set to false
     if !sorting
         return get_first_open(backtrack_vec)
-    end # sort for depth
-    # don't actually sort => just get the best backtrack idx
-    # the one with the highest depth and if same choose better bound
+    end 
+    
     isempty(com.backtrack_pq) && return false, backtrack_obj
-
+    
+    # get the one with highest depth using the priority queue
     backtrack_idx, _ = peek(com.backtrack_pq)
-
     backtrack_obj = backtrack_vec[backtrack_idx]
 
     return true, backtrack_obj
