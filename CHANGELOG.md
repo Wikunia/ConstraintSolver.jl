@@ -1,6 +1,6 @@
 # ConstrainSolver.jl - Changelog
 
-## v0.7.1 (27th of October 2021)
+## v0.7.1 (1st of November 2021)
 - Using priority queue also for `BFS` problems [PR #274](https://github.com/Wikunia/ConstraintSolver.jl/pull/274)
 
 ## v0.7.0 (7th of August 2021)
