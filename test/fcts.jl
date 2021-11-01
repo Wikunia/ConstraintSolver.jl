@@ -611,7 +611,7 @@
             found, bo = CS.get_next_node(com, com.backtrack_vec, true)
             @test found
             @test bo.idx == order[i]
-            bo.status = :Closed
+            CS.close_node!(com, bo.idx)
         end
     end
 

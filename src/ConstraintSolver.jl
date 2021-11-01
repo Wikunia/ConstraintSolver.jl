@@ -413,10 +413,19 @@ function add_new_solution!(
         if com.best_sol == com.best_bound && !find_more_solutions
             return true
         end
-        # set all nodes to :Worse if they can't achieve a better solution
-        for bo in backtrack_vec
-            if bo.status == :Open && obj_factor * bo.best_bound >= obj_factor * com.best_sol
-                bo.status = :Worse
+        # decide which nodes to close
+        com.options.all_solutions && return false
+        if com.options.all_optimal_solutions
+            for bo in backtrack_vec
+                if bo.status == :Open && obj_factor * bo.best_bound > obj_factor * com.best_sol
+                    close_node!(com, bo.idx)
+                end
+            end
+        else # full bound
+            for bo in backtrack_vec
+                if bo.status == :Open && obj_factor * bo.best_bound >= obj_factor * com.best_sol
+                    close_node!(com, bo.idx)
+                end
             end
         end
     else # if new solution was found but it's worse
