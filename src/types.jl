@@ -1,27 +1,3 @@
-# TableLogger
-
-mutable struct TableCol
-    id::Symbol
-    name::String
-    type::DataType
-    width::Int
-    alignment::Symbol # :left, :center, :right
-    b_format::Bool
-end
-
-mutable struct TableEntry{T}
-    col_id::Symbol
-    value::T
-end
-
-mutable struct TableSetup
-    cols::Vector{TableCol}
-    col_idx::Dict{Symbol,Int}
-    new_row_criteria::Bool
-    diff_criteria::Dict{Symbol,Any}
-    last_row::Vector{TableEntry}
-end
-
 # SolverOptions
 mutable struct ActivityOptions
     decay::Float64
@@ -31,7 +7,7 @@ end
 
 mutable struct SolverOptions
     logging::Vector{Symbol}
-    table::TableSetup
+    table::TableLogger.Table
     time_limit::Float64 # time limit in backtracking in seconds
     seed::Int
     traverse_strategy::Symbol

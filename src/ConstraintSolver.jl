@@ -28,6 +28,7 @@ using Random
 using Statistics
 using StatsBase
 using StatsFuns
+using TableLogger
 
 const CPE = ConstraintProgrammingExtensions
 
@@ -51,7 +52,6 @@ const VAR_TYPES = Union{MOI.ZeroOne,MOI.Integer}
 include("types.jl")
 const CoM = ConstraintSolverModel
 
-include("tablelogger.jl")
 include("options.jl")
 
 
@@ -420,18 +420,27 @@ function add_new_solution!(
         new_sol_obj = Solution(new_sol, CS.value.(com.search_space), backtrack_obj.idx)
         push!(com.solutions, new_sol_obj)
         com.best_sol = new_sol
-        log_table && (last_table_row = update_table_log(com, backtrack_vec; force = true))
+        log_table && update_table_log(com, backtrack_vec)
         if com.best_sol == com.best_bound && !find_more_solutions
             return true
         end
-        # set all nodes to :Worse if they can't achieve a better solution
-        for bo in backtrack_vec
-            if bo.status == :Open && obj_factor * bo.best_bound >= obj_factor * com.best_sol
-                bo.status = :Worse
+        # decide which nodes to close
+        com.options.all_solutions && return false
+        if com.options.all_optimal_solutions
+            for bo in backtrack_vec
+                if bo.status == :Open && obj_factor * bo.best_bound > obj_factor * com.best_sol
+                    close_node!(com, bo.idx)
+                end
+            end
+        else # full bound
+            for bo in backtrack_vec
+                if bo.status == :Open && obj_factor * bo.best_bound >= obj_factor * com.best_sol
+                    close_node!(com, bo.idx)
+                end
             end
         end
     else # if new solution was found but it's worse
-        log_table && (last_table_row = update_table_log(com, backtrack_vec; force = true))
+        log_table && update_table_log(com, backtrack_vec)
         if com.options.all_solutions
             new_sol_obj = Solution(new_sol, CS.value.(com.search_space), backtrack_obj.idx)
             push!(com.solutions, new_sol_obj)
@@ -551,7 +560,7 @@ function backtrack!(
 
     find_more_solutions = com.options.all_solutions || com.options.all_optimal_solutions
 
-    log_table && println(get_header(com.options.table))
+    log_table && print_header(com.options.table)
 
     backtrack_vec = com.backtrack_vec
 
@@ -630,7 +639,7 @@ function backtrack!(
         cb_finished_pruning(com)
 
         if log_table
-            last_table_row = update_table_log(com, backtrack_vec)
+            update_table_log(com, backtrack_vec)
         end
 
         branch_var = get_next_branch_variable(com)

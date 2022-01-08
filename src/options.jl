@@ -31,15 +31,14 @@ const POSSIBLE_OPTIONS = Dict(
 
 function SolverOptions()
     logging = [:Info, :Table]
-    table = TableSetup(
-        [
-            CS.TableCol(:open_nodes, "#Open", Int, 10, :center),
-            CS.TableCol(:closed_nodes, "#Closed", Int, 10, :center),
-            CS.TableCol(:incumbent, "Incumbent", Float64, 20, :center),
-            CS.TableCol(:best_bound, "Best Bound", Float64, 20, :center),
-            CS.TableCol(:duration, "Time [s]", Float64, 10, :center),
-        ],
-        Dict(:min_diff_duration => 5.0),
+
+    table = init_log_table(
+            (id=:open_nodes, name="#Open", width=10),
+            (id=:closed_nodes, name="#Closed", width=10),
+            (id=:incumbent, name="Incumbent", width=20),
+            (id=:best_bound, name="Best Bound", width=20),
+            (id=:duration, name="Time [s]", width=10);
+            alignment=:center
     )
     seed = 1
     traverse_strategy = :Auto
