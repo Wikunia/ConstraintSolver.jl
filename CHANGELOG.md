@@ -1,6 +1,6 @@
 # ConstrainSolver.jl - Changelog
 
-## v0.8.0 (not yet released)
+## v0.8.0 (8th of January 2022)
 - Using [TableLogger.jl](https://github.com/Wikunia/TableLogger.jl)
 - Only support Julia v1.6 and above
 ## v0.7.1 (1st of November 2021)
