@@ -70,7 +70,7 @@ end
 
 Push the new information to the TableLogger and if `force` produce a new line otherwise the TableLogger decides
 """
-function update_table_log(com::CS.CoM, backtrack_vec; force = false)
+function update_table_log(com::CS.CoM, backtrack_vec)
     table = com.options.table
     open_nodes = count(n -> n.status == :Open, backtrack_vec)
     # -1 for dummy node
@@ -78,15 +78,13 @@ function update_table_log(com::CS.CoM, backtrack_vec; force = false)
     best_bound = com.best_bound
     incumbent = length(com.solutions) == 0 ? "-" : com.best_sol
     duration = time() - com.start_time
-    push_to_table!(
-        table;
-        force = force,
-        open_nodes = open_nodes,
-        closed_nodes = closed_nodes,
-        incumbent = incumbent,
-        best_bound = best_bound,
-        duration = duration,
-    )
+
+    set_value!(table, :open_nodes, Diff10(open_nodes))
+    set_value!(table, :closed_nodes, Diff10(closed_nodes))
+    set_value!(table, :incumbent, incumbent)
+    set_value!(table, :best_bound, best_bound)
+    set_value!(table, :duration, Diff5(duration))
+    print_line(table; force=false)
 end
 
 """
@@ -133,7 +131,6 @@ end
         :fct,
         :set,
         :pvals,
-        :impl,
         :is_initialized,
         :is_activated,
         :is_deactivated,
@@ -152,7 +149,6 @@ end
         :fct,
         :set,
         :pvals,
-        :impl,
         :is_initialized,
         :is_activated,
         :is_deactivated,
@@ -174,7 +170,6 @@ end
         :fct,
         :set,
         :pvals,
-        :impl,
         :is_initialized,
         :is_activated,
         :is_deactivated,
@@ -200,7 +195,6 @@ end
         :fct,
         :set,
         :pvals,
-        :impl,
         :is_initialized,
         :is_activated,
         :is_deactivated,
@@ -229,7 +223,6 @@ end
         :fct,
         :set,
         :pvals,
-        :impl,
         :is_initialized,
         :is_activated,
         :is_deactivated,
@@ -257,7 +250,6 @@ end
         :fct,
         :set,
         :pvals,
-        :impl,
         :is_initialized,
         :is_activated,
         :is_deactivated,
@@ -381,4 +373,8 @@ function view_changes(v::Variable, step_nr::Int)
     idx_begin = v.changes.indices[step_nr]
     idx_end = v.changes.indices[step_nr+1]-1
     return @views v.changes.changes[idx_begin:idx_end]
+end
+
+function changed!(com::CS.CoM, constraint::Constraint, fct, set)
+    return 
 end

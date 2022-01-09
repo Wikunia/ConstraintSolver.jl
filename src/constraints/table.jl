@@ -145,6 +145,8 @@ function init_constraint!(
     return true
 end
 
+implements_activate(::Type{TableConstraint}, ::Type{MOI.VectorOfVariables}, ::Type{TableSetInternal}) = true
+
 function activate_constraint!(
     com::CS.CoM,
     constraint::TableConstraint,

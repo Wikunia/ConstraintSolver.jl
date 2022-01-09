@@ -1,7 +1,7 @@
 @testset "alldifferent" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:10] <= 5, Int)
-    @constraint(m, x in CS.AllDifferentSet())
+    @constraint(m, x in CS.AllDifferent())
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -103,7 +103,7 @@ end
 @testset "all different with gap in variables" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, x[1:4], CS.Integers([-5, -2, 3, 0, 7]))
-    @constraint(m, x in CS.AllDifferentSet())
+    @constraint(m, x in CS.AllDifferent())
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -146,7 +146,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, 0 <= x[1:4] <= 3, Int)
     @variable(m, 1000 <= y[1:4] <= 3000, Int)
-    @constraint(m, [x...,y...] in CS.AllDifferentSet())
+    @constraint(m, [x...,y...] in CS.AllDifferent())
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -175,7 +175,7 @@ end
 @testset "all different is_constraint_violated test" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:10] <= 5, Int)
-    @constraint(m, x in CS.AllDifferentSet())
+    @constraint(m, x in CS.AllDifferent())
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -188,7 +188,7 @@ end
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:10] <= 5, Int)
-    @constraint(m, x in CS.AllDifferentSet())
+    @constraint(m, x in CS.AllDifferent())
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -198,4 +198,41 @@ end
     @test CS.fix!(com, variables[1], 1; check_feasibility = false)
     @test CS.fix!(com, variables[2], 2; check_feasibility = false)
     @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+end
+
+@testset "all 8queens solutions" begin 
+    n = 8
+    model = Model(optimizer_with_attributes(CS.Optimizer, "all_optimal_solutions"=>true, "logging"=>[]))
+
+    @variable(model, 1 <= x[1:n] <= n, Int)
+    @constraint(model, x in CS.AllDifferent())
+    @constraint(model, [x[i] + i for i in 1:n] in CS.AllDifferent())
+    @constraint(model, [x[i] - i for i in 1:n] in CS.AllDifferent())
+
+    optimize!(model)
+
+    status = JuMP.termination_status(model)
+
+    @test status == MOI.OPTIMAL
+    num_sols = MOI.get(model, MOI.ResultCount())
+    @test num_sols == 92
+    for sol in 1:num_sols
+        x_val = convert.(Integer,JuMP.value.(x; result=sol))
+        @test allunique(x_val)
+        @test allunique([x_val[i] + i for i in 1:n])
+        @test allunique([x_val[i] - i for i in 1:n])
+    end
+end
+
+@testset "domainerror due to term not discrete " begin 
+    n = 8
+    model = Model(optimizer_with_attributes(CS.Optimizer, "all_optimal_solutions"=>true, "logging"=>[]))
+
+    @variable(model, 1 <= x[1:n] <= n, Int)
+    @constraint(model, x in CS.AllDifferent())
+    # 1.5 not allowed
+    @constraint(model, [1.5*x[i] + i for i in 1:n] in CS.AllDifferent())
+    @constraint(model, [x[i] - i for i in 1:n] in CS.AllDifferent())
+
+    @test_throws DomainError optimize!(model)
 end

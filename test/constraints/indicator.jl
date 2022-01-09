@@ -130,8 +130,8 @@
         @variable(m, 0 <= y <= 1, Int)
         @variable(m, a, Bin)
         @constraint(m, x + y <= 1)
-        @constraint(m, [a, x] in CS.AllDifferentSet())
-        @constraint(m, a => {[a, x, y] in CS.AllDifferentSet()})
+        @constraint(m, [a, x] in CS.AllDifferent())
+        @constraint(m, a => {[a, x, y] in CS.AllDifferent()})
         @objective(m, Max, a)
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.OPTIMAL
@@ -155,8 +155,8 @@
         @variable(m, 0 <= y <= 1, Int)
         @variable(m, a, Bin)
         @constraint(m, x + y <= 1)
-        @constraint(m, [a, x] in CS.AllDifferentSet())
-        @constraint(m, a => {[x, y] in CS.AllDifferentSet()})
+        @constraint(m, [a, x] in CS.AllDifferent())
+        @constraint(m, a => {[x, y] in CS.AllDifferent()})
         @objective(m, Max, a)
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.OPTIMAL
@@ -174,8 +174,8 @@
         @variable(m, 0 <= y <= 1, Int)
         @variable(m, a, Bin)
         @constraint(m, x + y <= 1)
-        @constraint(m, [a, x] in CS.AllDifferentSet())
-        @constraint(m, !a => {[x, y] in CS.AllDifferentSet()})
+        @constraint(m, [a, x] in CS.AllDifferent())
+        @constraint(m, !a => {[x, y] in CS.AllDifferent()})
         @objective(m, Min, a)
         optimize!(m)
         @test JuMP.termination_status(m) == MOI.OPTIMAL
@@ -269,5 +269,109 @@
         @test JuMP.value(y) ≈ 9.0
         com = CS.get_inner_model(m)
         @test is_solved(com)
+    end
+
+    @testset "indicator in indicator" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "all_solutions"=> true,
+            "logging" => [],
+        ))
+        @variable(m, a, Bin)
+        @variable(m, b, Bin)
+        @variable(m, c, Bin)
+        @constraint(m, a => { b => { c == 1}})
+        optimize!(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        com = CS.get_inner_model(m)
+        nresults = JuMP.result_count(m)
+        results = Set{Tuple{Bool,Bool,Bool}}()
+        for i in 1:nresults
+            aval,bval,cval = convert.(Bool, round.(JuMP.value.([a,b,c]; result=i)))
+            if aval && bval
+                @test cval
+            end
+            push!(results, (aval, bval, cval))
+        end
+        for av in [false, true], bv in [false, true], cv in [false, true]
+            if !av || !bv
+                @test (av,bv,cv) in results
+            elseif av && bv && cv
+                @test (av,bv,cv) in results
+            end
+        end
+    end
+
+    @testset "reified in indicator" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "all_solutions"=> true,
+            "logging" => [],
+        ))
+        @variable(m, a, Bin)
+        @variable(m, b, Bin)
+        @variable(m, c, Bin)
+        @constraint(m, a => { b := { c == 1}})
+        optimize!(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        com = CS.get_inner_model(m)
+        nresults = JuMP.result_count(m)
+        results = Set{Tuple{Bool,Bool,Bool}}()
+        for i in 1:nresults
+            aval,bval,cval = convert.(Bool, round.(JuMP.value.([a,b,c]; result=i)))
+            if aval 
+                @test (bval && cval) || (!bval && !cval)
+            end
+            push!(results, (aval, bval, cval))
+        end
+        for av in [false, true], bv in [false, true], cv in [false, true]
+            if !av 
+                @test (av,bv,cv) in results
+            elseif (bv && cv) || (!bv && !cv)
+                @test (av,bv,cv) in results
+            end
+        end
+    end
+
+    @testset "reified in reified in indicator" begin
+        m = Model(optimizer_with_attributes(
+            CS.Optimizer,
+            "all_solutions"=> true,
+            "logging" => [],
+        ))
+        @variable(m, a, Bin)
+        @variable(m, b, Bin)
+        @variable(m, c, Bin)
+        @variable(m, d, Bin)
+        @constraint(m, a => { b := { c := {d == 1}}})
+        optimize!(m)
+        @test JuMP.termination_status(m) == MOI.OPTIMAL
+        com = CS.get_inner_model(m)
+        nresults = JuMP.result_count(m)
+        results = Set{Tuple{Bool,Bool,Bool,Bool}}()
+        for i in 1:nresults
+            aval,bval,cval,dval = convert.(Bool, round.(JuMP.value.([a,b,c,d]; result=i)))
+            if aval 
+                if bval 
+                    @test (cval && dval) || (!cval && !dval)
+                else
+                    @test (dval && !cval) || (!dval && cval)
+                end 
+            end
+            push!(results, (aval, bval, cval, dval))
+        end
+        for av in [false, true], bv in [false, true], cv in [false, true], dv in [false, true]
+            if !av 
+                @test (av,bv,cv,dv) in results
+            else
+                if bv 
+                    if (cv && dv) || (!cv && !dv)
+                        @test (av,bv,cv,dv) in results
+                    end
+                elseif (dv && !cv) || (!dv && cv)
+                    @test (av,bv,cv,dv) in results
+                end
+            end
+        end
     end
 end

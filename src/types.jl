@@ -1,27 +1,3 @@
-# TableLogger
-
-mutable struct TableCol
-    id::Symbol
-    name::String
-    type::DataType
-    width::Int
-    alignment::Symbol # :left, :center, :right
-    b_format::Bool
-end
-
-mutable struct TableEntry{T}
-    col_id::Symbol
-    value::T
-end
-
-mutable struct TableSetup
-    cols::Vector{TableCol}
-    col_idx::Dict{Symbol,Int}
-    new_row_criteria::Bool
-    diff_criteria::Dict{Symbol,Any}
-    last_row::Vector{TableEntry}
-end
-
 # SolverOptions
 mutable struct ActivityOptions
     decay::Float64
@@ -31,7 +7,7 @@ end
 
 mutable struct SolverOptions
     logging::Vector{Symbol}
-    table::TableSetup
+    table::TableLogger.Table
     time_limit::Float64 # time limit in backtracking in seconds
     seed::Int
     traverse_strategy::Symbol
@@ -124,13 +100,8 @@ end
 Integers(vals::Union{UnitRange{Int},StepRange{Int,Int}}) = Integers(collect(vals))
 Base.copy(I::Integers) = Integers(I.values)
 
-struct AllDifferentSetInternal <: MOI.AbstractVectorSet
-    dimension::Int
-end
-Base.copy(A::AllDifferentSetInternal) = AllDifferentSetInternal(A.dimension)
-
-struct AllDifferentSet <: JuMP.AbstractVectorSet end
-JuMP.moi_set(::AllDifferentSet, dim) = AllDifferentSetInternal(dim)
+struct AllDifferent <: JuMP.AbstractVectorSet end
+JuMP.moi_set(::AllDifferent, dim) = CPE.AllDifferent(dim)
 
 struct Element1DConstInner <: MOI.AbstractVectorSet
     dimension::Int
@@ -167,35 +138,8 @@ Base.copy(G::GeqSetInternal) = GeqSetInternal(G.dimension)
 struct GeqSet <: JuMP.AbstractVectorSet end
 JuMP.moi_set(::GeqSet, dim) = GeqSetInternal(dim)
 
-struct EqualSetInternal <: MOI.AbstractVectorSet
-    dimension::Int
-end
-Base.copy(E::EqualSetInternal) = EqualSetInternal(E.dimension)
-
-struct EqualSet <: JuMP.AbstractVectorSet end
-JuMP.moi_set(::EqualSet, dim) = EqualSetInternal(dim)
-
-struct NotEqualTo{T} <: MOI.AbstractScalarSet
-    value::T
-end
-Base.copy(N::NotEqualTo) = NotEqualTo(N.value)
-
-# From https://github.com/dourouc05/ConstraintProgrammingExtensions.jl
-"""
-    Strictly{S <: Union{LessThan{T}, GreaterThan{T}}}
-
-Converts an inequality set to a set with the same inequality made strict.
-For example, while `LessThan(1)` corresponds to the inequality `x <= 1`,
-`Strictly(LessThan(1))` corresponds to the inequality `x < 1`.
-"""
-struct Strictly{T, S <: Union{MOI.LessThan{T}, MOI.GreaterThan{T}}} <: MOI.AbstractScalarSet
-    set::S
-end
-
-Base.copy(set::Strictly{T,S}) where {T,S} = Strictly{T,S}(copy(set.set))
-MOI.constant(set::Strictly{S}) where S = MOI.constant(set.set)
-MOIU.shift_constant(set::Strictly{S}, offset::T) where {S, T} =
-    typeof(set)(MOIU.shift_constant(set.set, offset))
+struct AllEqual <: JuMP.AbstractVectorSet end
+JuMP.moi_set(::AllEqual, dim) = CPE.AllEqual(dim)
 
 #====================================================================================
 ====================== TYPES FOR TRAVERSING ========================================
@@ -419,7 +363,6 @@ mutable struct ConstraintInternals{
     set::SET
     indices::Vector{Int}
     pvals::Vector{Int}
-    impl::ImplementedConstraintFunctions
     is_initialized::Bool
     is_activated::Bool
     is_deactivated::Bool # can be deactivated if it's absorbed by other constraints

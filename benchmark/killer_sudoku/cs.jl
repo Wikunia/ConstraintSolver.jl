@@ -43,7 +43,7 @@ function solve_all(filenames; benchmark = false, single_times = true)
                 0.0,
             )
             MOI.add_constraint(m, saf, MOI.EqualTo(convert(Float64, s.result)))
-            # MOI.add_constraint(m, [x[ind[1]][ind[2]][1] for ind in s.indices], CS.AllDifferentSetInternal(length(s.indices)))
+            # MOI.add_constraint(m, [x[ind[1]][ind[2]][1] for ind in s.indices], CS.CPE.AllDifferent(length(s.indices)))
         end
 
         # sudoku constraints

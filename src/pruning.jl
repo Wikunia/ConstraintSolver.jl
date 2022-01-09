@@ -78,8 +78,6 @@ function prune!(
 
     # while we haven't called every constraint
     while true
-        b_open_constraint = false
-        # will be changed or b_open_constraint => false
         open_pos, ci = get_next_prune_constraint(com, constraint_idxs_vec)
         # no open values => don't need to call again
         if open_pos == 0 && !initial_check
@@ -93,6 +91,7 @@ function prune!(
         constraint_idxs_vec[ci] = N
         constraint = com.constraints[ci]
 
+        changed!(com, constraint, constraint.fct, constraint.set)
         feasible =
             prune_constraint!(com, constraint, constraint.fct, constraint.set; logs = false)
         if !pre_backtrack
@@ -118,11 +117,11 @@ function prune!(
                         inner_constraint = com.constraints[ci]
                         # if initial check or don't add constraints => update only those which already have open possibilities
                         if (only_once || initial_check) &&
-                           constraint_idxs_vec[inner_constraint.idx] == N
+                            constraint_idxs_vec[inner_constraint.idx] == N
                             continue
                         end
                         constraint_idxs_vec[inner_constraint.idx] =
-                            open_possibilities(search_space, inner_constraint.indices)
+                        open_possibilities(search_space, inner_constraint.indices)
                     end
                 end
             end
@@ -221,28 +220,24 @@ function reverse_pruning!(com::CS.CoM, backtrack_idx::Int)
         var.idx > length(subscriptions) && continue
         @inbounds for ci in subscriptions[var.idx]
             constraint = constraints[ci]
-            if constraint.impl.single_reverse_pruning
-                single_reverse_pruning_constraint!(
-                    com,
-                    constraint,
-                    constraint.fct,
-                    constraint.set,
-                    var,
-                    backtrack_idx,
-                )
-            end
-        end
-    end
-    for constraint in constraints
-        if constraint.impl.reverse_pruning
-            reverse_pruning_constraint!(
+            single_reverse_pruning_constraint!(
                 com,
                 constraint,
                 constraint.fct,
                 constraint.set,
+                var,
                 backtrack_idx,
             )
         end
+    end
+    for constraint in constraints
+        reverse_pruning_constraint!(
+            com,
+            constraint,
+            constraint.fct,
+            constraint.set,
+            backtrack_idx,
+        )
     end
     com.c_backtrack_idx = com.backtrack_vec[backtrack_idx].parent_idx
 end

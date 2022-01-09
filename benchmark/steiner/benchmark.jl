@@ -43,7 +43,7 @@ function steiner(n)
         for j in i + 1:nb
             b = @variable(model, [1:n], Bin)
             for k in 1:n 
-                @constraint(model, b[k] := { x[i,k] == 1 && x[j,k] == 1 })
+                @constraint(model, b[k] := { x[i,k] && x[j,k] })
             end
             @constraint(model, sum(b) <= 1)
         end

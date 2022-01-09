@@ -166,10 +166,10 @@ function solve_us_graph_coloring(; num_colors = 8, equality = false, branch_stra
     @constraint(m, south_carolina != georgia)
     @constraint(m, georgia != florida)
 
-    # test for EqualSet constraint
+    # test for AllEqual constraint
     if equality
-        @constraint(m, [california, new_york, florida] in CS.EqualSet())
-        @constraint(m, [maryland, alabama, wisconsin, south_carolina] in CS.EqualSet())
+        @constraint(m, [california, new_york, florida] in CS.AllEqual())
+        @constraint(m, [maryland, alabama, wisconsin, south_carolina] in CS.AllEqual())
     end
 
     @constraint(m, max_color .>= states)

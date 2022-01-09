@@ -1,4 +1,5 @@
 using Test
+using ConstraintProgrammingExtensions
 using ConstraintSolver
 using JSON
 using Random
@@ -6,6 +7,7 @@ using MathOptInterface, JuMP, Cbc, GLPK, Combinatorics
 using ReferenceTests
 using LinearAlgebra
 
+const CPE = ConstraintProgrammingExtensions
 const MOI = MathOptInterface
 const CS = ConstraintSolver
 const MOIU = MOI.Utilities
@@ -78,6 +80,7 @@ include("constraints/element1Dconst.jl")
 include("lp_solver.jl")
 
 include("steiner.jl")
+include("monks_and_doors.jl")
 include("stable_set.jl")
 include("small_special.jl")
 include("maximum_weight_matching.jl")

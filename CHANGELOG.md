@@ -2,7 +2,30 @@
  
 ## Unreleased
 - Support for element constraints with a constant array like `T[y] == z`
-  
+
+## v0.8.0 (8th of January 2022)
+- Using [TableLogger.jl](https://github.com/Wikunia/TableLogger.jl)
+- Only support Julia v1.6 and above
+## v0.7.1 (1st of November 2021)
+- Using priority queue also for `BFS` problems [PR #274](https://github.com/Wikunia/ConstraintSolver.jl/pull/274)
+
+## v0.7.0 (7th of August 2021)
+- Using [ConstraintProgrammingExtensions.jl](https://github.com/dourouc05/ConstraintProgrammingExtensions.jl)
+  - `AllDifferent` instead of `AllDifferentSet`
+  - `AllEqual` instead of `EqualSet`
+
+## v0.6.10 (26th of July 2021)
+- Allow variables as constraint like `a || !b` instead of `a == 1 || b == 0`. [PR #267](https://github.com/Wikunia/ConstraintSolver.jl/pull/267)
+  - **Attention** Does not check if variable is a binary variable
+- Support for indicator/reified in indicator/reified (without bridges) [PR #251](https://github.com/Wikunia/ConstraintSolver.jl/pull/251)
+- Support for VectorAffineFunction in TableSet/AllDifferentSet 
+  - i.e `[x[i]+i for i in 1:n] in CS.AllDifferent()` 
+  - `[x,y,10] in CS.TableSet(...)`
+  - see [issue #235](https://github.com/Wikunia/ConstraintSolver.jl/issues/235) for in-depth examples  
+
+## v0.6.9 (17th of July 2021)
+- set activator to false when inner violated [PR #266](https://github.com/Wikunia/ConstraintSolver.jl/pull/266)
+
 ## v0.6.8 (14th of June 2021)
 - support for xor and xnor constraints 
 - better bridge structure for boolean constraints
@@ -23,11 +46,14 @@
 - Bugfix in reified `still_feasible` when setting to inactive
 - Bugfix in alldifferent constraint when there is a gap in the values
 - Support for `And` constraints in the inner constraints of `Indicator` and `Reified`:
-    i.e `b := { sum(x) >= 10 && x in CS.AllDifferentSet() }`
+    i.e `b := { sum(x) >= 10 && x in CS.AllDifferent() }`
 - Support for `Or` constraints in the inner constraints of `Indicator` and `Reified`:
-    i.e `b := { sum(x) >= 10 || x in CS.AllDifferentSet() }`
+    i.e `b := { sum(x) >= 10 || x in CS.AllDifferent() }`
 - Support for `&&` and `||` outside of `Indicator` and `Reified`
-  - i.e `sum(x) >= 10 || x in CS.AllDifferentSet()`
+  - i.e `sum(x) >= 10 || x in CS.AllDifferent()`
+- Basic support for `Indicator` inside of reified:
+  - i.e `@constraint(model, b1 := {b2 => { v == 1 }})`
+  - currently lacks support for bridges such that `v > 1` in the inner constraint will fail
 - Some general performance updates [PR #247](https://github.com/Wikunia/ConstraintSolver.jl/pull/247)
 
 ## v0.6.3 (17th of January 2021)
@@ -108,17 +134,17 @@
 ## v0.1.7 (22nd of May 2020)
 - Better feasibility and pruning in `==`
 - **Bugfixes:**
-  - Correct set of change ptr in `EqualSet` for faster/correct pruning
+  - Correct set of change ptr in `AllEqual` for faster/correct pruning
   - Call to `isapprox_discrete` in `eq_sum`
   - Fixed threshold rounding
 
 ## v0.1.6 (11th of May 2020)
 - Reduction of memory allocations in `TableConstraint`
-- Pruning in `EqualSet`
+- Pruning in `AllEqual`
 
 ## v0.1.5 (6th of May 2020)
 - **Bugfixes:**
-  - EqualSet feasibility: Check if other vars have value + no memory allocation
+  - AllEqual feasibility: Check if other vars have value + no memory allocation
   - Call `call_finished_pruning!(com)` after second `prune!` before backtracking
 
 ## v0.1.4 (6th of May 2020)

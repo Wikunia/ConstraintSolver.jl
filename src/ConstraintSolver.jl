@@ -20,6 +20,7 @@ using JuMP:
     termination_status
 import JuMP.sense_to_set
 import JuMP
+import ConstraintProgrammingExtensions
 using LightGraphs
 using MathOptInterface
 using MatrixNetworks
@@ -27,6 +28,9 @@ using Random
 using Statistics
 using StatsBase
 using StatsFuns
+using TableLogger
+
+const CPE = ConstraintProgrammingExtensions
 
 const CS = ConstraintSolver
 const CS_RNG = MersenneTwister(1)
@@ -48,7 +52,6 @@ const VAR_TYPES = Union{MOI.ZeroOne,MOI.Integer}
 include("types.jl")
 const CoM = ConstraintSolverModel
 
-include("tablelogger.jl")
 include("options.jl")
 
 
@@ -74,7 +77,7 @@ include("constraints/xor.jl")
 include("constraints/xnor.jl")
 include("constraints/linear_constraints.jl")
 include("constraints/svc.jl")
-include("constraints/equal_set.jl")
+include("constraints/all_equal.jl")
 include("constraints/not_equal.jl")
 include("constraints/table.jl")
 include("constraints/activator_constraints.jl")
@@ -407,18 +410,27 @@ function add_new_solution!(
         new_sol_obj = Solution(new_sol, CS.value.(com.search_space), backtrack_obj.idx)
         push!(com.solutions, new_sol_obj)
         com.best_sol = new_sol
-        log_table && (last_table_row = update_table_log(com, backtrack_vec; force = true))
+        log_table && update_table_log(com, backtrack_vec)
         if com.best_sol == com.best_bound && !find_more_solutions
             return true
         end
-        # set all nodes to :Worse if they can't achieve a better solution
-        for bo in backtrack_vec
-            if bo.status == :Open && obj_factor * bo.best_bound >= obj_factor * com.best_sol
-                bo.status = :Worse
+        # decide which nodes to close
+        com.options.all_solutions && return false
+        if com.options.all_optimal_solutions
+            for bo in backtrack_vec
+                if bo.status == :Open && obj_factor * bo.best_bound > obj_factor * com.best_sol
+                    close_node!(com, bo.idx)
+                end
+            end
+        else # full bound
+            for bo in backtrack_vec
+                if bo.status == :Open && obj_factor * bo.best_bound >= obj_factor * com.best_sol
+                    close_node!(com, bo.idx)
+                end
             end
         end
     else # if new solution was found but it's worse
-        log_table && (last_table_row = update_table_log(com, backtrack_vec; force = true))
+        log_table && update_table_log(com, backtrack_vec)
         if com.options.all_solutions
             new_sol_obj = Solution(new_sol, CS.value.(com.search_space), backtrack_obj.idx)
             push!(com.solutions, new_sol_obj)
@@ -536,7 +548,7 @@ function backtrack!(
 
     find_more_solutions = com.options.all_solutions || com.options.all_optimal_solutions
 
-    log_table && println(get_header(com.options.table))
+    log_table && print_header(com.options.table)
 
     backtrack_vec = com.backtrack_vec
 
@@ -615,7 +627,7 @@ function backtrack!(
         cb_finished_pruning(com)
 
         if log_table
-            last_table_row = update_table_log(com, backtrack_vec)
+            update_table_log(com, backtrack_vec)
         end
 
         branch_var = get_next_branch_variable(com)
@@ -670,7 +682,7 @@ function set_in_all_different!(com::CS.CoM; constraints = com.constraints)
                 intersects = intersect(subscriptions_idxs...)
 
                 for i in intersects
-                    if isa(com.constraints[i].set, AllDifferentSetInternal)
+                    if isa(com.constraints[i].set, CPE.AllDifferent)
                         constraint.in_all_different = true
                         push!(com.constraints[i].sub_constraint_idxs, constraint.idx)
                     end
@@ -723,8 +735,6 @@ function solve!(com::CS.CoM)
     com.branch_strategy = get_branch_strategy(; options = options)
     com.branch_split = get_branch_split(; options = options)
 
-    set_impl_functions!(com)
-
     if :Info in com.options.logging
         print_info(com)
     end
@@ -747,7 +757,6 @@ function solve!(com::CS.CoM)
         added_con_idxs = simplify!(com)
         if length(added_con_idxs) > 0
             set_in_all_different!(com; constraints = com.constraints[added_con_idxs])
-            set_impl_functions!(com; constraints = com.constraints[added_con_idxs])
             !init_constraints!(com; constraints = com.constraints[added_con_idxs]) &&
                 return :Infeasible
             !update_init_constraints!(com; constraints = com.constraints[added_con_idxs]) &&
@@ -824,5 +833,8 @@ function solve!(com::CS.CoM)
         return :NotSolved
     end
 end
+
+@deprecate AllDifferentSet AllDifferent false
+@deprecate EqualSet AllEqual false
 
 end # module

@@ -117,7 +117,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b, Bin)
     @variable(m, -5 <= x[1:5] <= 5, Int)
-    @constraint(m, b := {x in CS.AllDifferentSet()})
+    @constraint(m, b := {x in CS.AllDifferent()})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -132,7 +132,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b, Bin)
     @variable(m, -5 <= x[1:5] <= 5, Int)
-    @constraint(m, b := {x in CS.AllDifferentSet()})
+    @constraint(m, b := {x in CS.AllDifferent()})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -147,7 +147,7 @@ end
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b, Bin)
     @variable(m, -5 <= x[1:5] <= 5, Int)
-    @constraint(m, b := {x in CS.AllDifferentSet()})
+    @constraint(m, b := {x in CS.AllDifferent()})
     optimize!(m)
     com = CS.get_inner_model(m)
 
@@ -194,7 +194,7 @@ end
 
     constraint = com.constraints[1]
     complement_constraint = constraint.complement_constraint
-    @test complement_constraint.set == CS.Strictly(MOI.LessThan(-10.0))
+    @test complement_constraint.set == CPE.Strictly(MOI.LessThan(-10.0))
     @test all(term.coefficient == -1 for term in complement_constraint.fct.terms)
     @test complement_constraint.fct.constant == 0
 
@@ -218,7 +218,7 @@ end
 
     constraint = com.constraints[1]
     complement_constraint = constraint.complement_constraint
-    @test complement_constraint.set == CS.NotEqualTo(10.0)
+    @test complement_constraint.set == CPE.DifferentFrom(10.0)
     @test all(term.coefficient == 1 for term in complement_constraint.fct.terms)
     @test complement_constraint.fct.constant == 0
 
@@ -254,6 +254,7 @@ end
     @test CS.fix!(com, variables[constr_indices[1]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[2]], 0; check_feasibility = false)
     @test CS.fix!(com, variables[constr_indices[3]], 5; check_feasibility = false)
+    CS.changed!(com, constraint, constraint.fct, constraint.set)
     # should prune complement
     @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
 

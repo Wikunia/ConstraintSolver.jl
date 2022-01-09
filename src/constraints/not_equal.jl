@@ -1,5 +1,5 @@
 """
-    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::NotEqualTo{T}; logs = true) where T <: Real
+    prune_constraint!(com::CS.CoM, constraint::BasicConstraint, fct::SAF{T}, set::CPE.DifferentFrom{T}; logs = true) where T <: Real
 
 Reduce the number of possibilities given the not equal constraint.
 Return if still feasible and throw a warning if infeasible and `logs` is set to `true`
@@ -8,7 +8,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::NotEqualTo{T};
+    set::CPE.DifferentFrom{T};
     logs = true,
 ) where {T<:Real}
     indices = constraint.indices
@@ -48,7 +48,7 @@ function prune_constraint!(
 end
 
 """
-still_feasible(com::CoM, constraint::LinearConstraint, fct::MOI.ScalarAffineFunction{T}, set::NotEqualTo{T}, vidx::Int, value::Int) where T <: Real
+still_feasible(com::CoM, constraint::LinearConstraint, fct::MOI.ScalarAffineFunction{T}, set::CPE.DifferentFrom{T}, vidx::Int, value::Int) where T <: Real
 
 Return whether the `not_equal` constraint can be still fulfilled.
 """
@@ -56,7 +56,7 @@ function still_feasible(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::NotEqualTo{T},
+    set::CPE.DifferentFrom{T},
     vidx::Int,
     value::Int,
 ) where {T<:Real}
@@ -93,7 +93,7 @@ end
 function is_constraint_solved(
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::NotEqualTo{T},
+    set::CPE.DifferentFrom{T},
     values::Vector{Int},
 ) where {T<:Real}
 
@@ -107,7 +107,7 @@ end
         com::CoM,
         constraint::LinearConstraint,
         fct::SAF{T},
-        set::NotEqualTo{T},
+        set::CPE.DifferentFrom{T},
     ) where {T<:Real}
 
 Checks if the constraint is violated as it is currently set. This can happen inside an
@@ -117,7 +117,7 @@ function is_constraint_violated(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},
-    set::NotEqualTo{T},
+    set::CPE.DifferentFrom{T},
 ) where {T<:Real}
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(

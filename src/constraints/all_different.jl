@@ -1,7 +1,7 @@
 include("all_different/bipartite.jl")
 include("all_different/scc.jl")
 
-function init_constraint_struct(com, ::AllDifferentSetInternal, internals)
+function init_constraint_struct(com, ::CPE.AllDifferent, internals)
     AllDifferentConstraint(
         internals,
         Int[], # pval_mapping will be filled later
@@ -16,7 +16,7 @@ function init_constraint_struct(com, ::AllDifferentSetInternal, internals)
 end
 
 """
-    init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal)
+    init_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::CPE.AllDifferent)
 
 Initialize the AllDifferentConstraint by filling matching_init
 """
@@ -24,7 +24,7 @@ function init_constraint!(
     com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSetInternal
+    set::CPE.AllDifferent
 )
     pvals = constraint.pvals
     nindices = length(constraint.indices)
@@ -161,7 +161,7 @@ end
     update_best_bound_constraint!(com::CS.CoM,
         constraint::AllDifferentConstraint,
         fct::MOI.VectorOfVariables,
-        set::AllDifferentSetInternal,
+        set::CPE.AllDifferent,
         vidx::Int,
         lb::Int,
         ub::Int
@@ -176,7 +176,7 @@ function update_best_bound_constraint!(
     com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSetInternal,
+    set::CPE.AllDifferent,
     vidx::Int,
     lb::Int,
     ub::Int,
@@ -206,7 +206,7 @@ function update_best_bound_constraint!(
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal; logs = true)
+    prune_constraint!(com::CS.CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::CPE.AllDifferent; logs = true)
 
 Reduce the number of possibilities given the `AllDifferentConstraint`.
 Return whether still feasible and throws a warning if infeasible and `logs` is set to `true`
@@ -215,7 +215,7 @@ function prune_constraint!(
     com::CS.CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSetInternal;
+    set::CPE.AllDifferent;
     logs = true,
 )
     indices = constraint.indices
@@ -436,7 +436,7 @@ function prune_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::AllDifferentSetInternal, vidx::Int, value::Int)
+    still_feasible(com::CoM, constraint::AllDifferentConstraint, fct::MOI.VectorOfVariables, set::CPE.AllDifferent, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `vidx` to `value`.
 **Attention:** This assumes that it isn't violated before.
@@ -445,7 +445,7 @@ function still_feasible(
     com::CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSetInternal,
+    set::CPE.AllDifferent,
     vidx::Int,
     value::Int,
 )
@@ -464,7 +464,7 @@ end
 function is_constraint_solved(
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSetInternal,
+    set::CPE.AllDifferent,
     values::Vector{Int},
 )
     return allunique(values)
@@ -475,7 +475,7 @@ end
         com::CoM,
         constraint::AllDifferentConstraint,
         fct::MOI.VectorOfVariables,
-        set::AllDifferentSetInternal
+        set::CPE.AllDifferent
     )
 
 Checks if the constraint is violated as it is currently set. This can happen inside an
@@ -485,7 +485,7 @@ function is_constraint_violated(
     com::CoM,
     constraint::AllDifferentConstraint,
     fct::MOI.VectorOfVariables,
-    set::AllDifferentSetInternal,
+    set::CPE.AllDifferent,
 )
     return !allunique(
         CS.value(var) for var in com.search_space[constraint.indices] if isfixed(var)

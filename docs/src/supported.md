@@ -81,19 +81,28 @@ The following list shows constraints that are implemented and those which are pl
   - [X] `<`
   - [X] `>`
 - [X] All different
-  - `@constraint(m, [x,y,z] in CS.AllDifferentSet())`
+  - `@constraint(m, [x,y,z] in CS.AllDifferent())`
+  - `@constraint(m, [x,y+2,x+y] in CS.AllDifferent())`
 - [X] `TableSet` constraint [#130](https://github.com/Wikunia/ConstraintSolver.jl/pull/130)
+  - also with `VectorAffineFunction` i.e `[x,y+2,x+y] in CS.TableSet(...)`
 - Indicator constraints [#167](https://github.com/Wikunia/ConstraintSolver.jl/pull/167)
   - i.e `@constraint(m, b => {x + y >= 12})`
   - [X] for affine inner constraints
   - [X] for all types of inner constraints
   - [X] Allow `&&` inside the inner constraint i.e `@constraint(m, b => {x + y >= 12 && 2x + y <= 7})`
   - [X] Allow `||` inside the inner constraint i.e `@constraint(m, b => {x + y >= 12 || 2x + y <= 7})`
+  - [-] Have `Indicator` and `Reified` inside one another
+    - this is only supported for simple cases i.e bridge support is missing
+  - [ ] `VectorAffineFunction` in `AllDifferentSet` or `TableSet` 
+    - Please open an issue if needed for a problem. Probably not too hard to add
 - Reified constraints [#171](https://github.com/Wikunia/ConstraintSolver.jl/pull/171)
   - i.e `@constraint(m, b := {x + y >= 12})`
   - [X] for everything that is supported by indicator constraints
 - Boolean constraints
   - i.e `@constraint(m, x + y >= 12 || 2x + y <= 7)`
+  - allows binary variables without writing ` == 1` or ` == 0` 
+    - one can write something like `a || !b` 
+    - **Attention:** Does not check whether `a` and `b` are actually binary variables
 - Element constraints
   - [X] 1D array with constant values 
     - i.e `T = [12,87,42,1337]` `T[y] == z` with `y` and `z` being variables [#213](https://github.com/Wikunia/ConstraintSolver.jl/pull/213)

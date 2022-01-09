@@ -2,7 +2,8 @@ function init_constraint!(
     com::CS.CoM,
     constraint::ReifiedConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
-    set::RS,
+    set::RS;
+    active = true
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     inner_constraint = constraint.inner_constraint
     complement_constraint = constraint.complement_constraint
@@ -11,26 +12,20 @@ function init_constraint!(
     rei_vidx = constraint.indices[1]
     rei_var = variables[rei_vidx]
 
-    # check which methods that inner constraint supports
-    set_impl_functions!(com, inner_constraint)
-    complement_constraint !== nothing && set_impl_functions!(com, complement_constraint)
-
-    if inner_constraint.impl.init
-        feasible = init_constraint!(
-            com,
-            inner_constraint,
-            inner_constraint.fct,
-            inner_constraint.set;
-        )
-        # map the bounds to the indicator constraint
-        constraint.bound_rhs = inner_constraint.bound_rhs
-        # the reified variable can't be activated if inner constraint is infeasible
-        if !feasible
-            !rm!(com, rei_var, Int(constraint.activate_on)) && return false
-        end
+    feasible = init_constraint!(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set;
+    )
+    # map the bounds to the indicator constraint
+    constraint.bound_rhs = inner_constraint.bound_rhs
+    # the reified variable can't be activated if inner constraint is infeasible
+    if !feasible && active
+        !rm!(com, rei_var, Int(constraint.activate_on)) && return false
     end
 
-    if complement_constraint !== nothing && complement_constraint.impl.init
+    if complement_constraint !== nothing
         feasible = init_constraint!(
             com,
             complement_constraint,
@@ -50,7 +45,7 @@ function prune_constraint!(
     logs = true,
 ) where {A,T<:Real,RS<:ReifiedSet{A}}
     # 1. if the inner constraint is solved then the reified variable can be set to activate_on
-    # 2. if the complement of the inner constraint is solved (all fixed but don't fulfill) the reified variable can be set to !activate_on
+    # 2. if the inner constraint is infeasible the reified variable can be set to !activate_on
     # 3. if the reified constraint is active then prune can be called for the inner constraint
     # 4. if the reified constraint is fixed to inactive one can complement prune
 
@@ -61,19 +56,9 @@ function prune_constraint!(
     activate_on = Int(constraint.activate_on)
     activate_off = activate_on == 1 ? 0 : 1
 
-    # 1
-    if is_constraint_solved(
-        com,
-        inner_constraint,
-        inner_constraint.fct,
-        inner_constraint.set,
-    )
-        !fix!(com, variables[rei_vidx], activate_on) && return false
-        # 2
-    elseif all(isfixed(variables[vidx]) for vidx in inner_constraint.indices)
-        !fix!(com, variables[rei_vidx], activate_off) && return false
-        # 3
-    elseif issetto(variables[rei_vidx], activate_on)
+
+    # 3
+    if issetto(variables[rei_vidx], activate_on)
         !activate_inner!(com, constraint) && return false
         return prune_constraint!(
             com,
@@ -81,6 +66,7 @@ function prune_constraint!(
             inner_constraint.fct,
             inner_constraint.set,
         )
+    # 4
     elseif issetto(variables[rei_vidx], activate_off) && complement_constraint !== nothing
         !activate_complement_inner!(com, constraint) && return false
         return prune_constraint!(
@@ -89,6 +75,22 @@ function prune_constraint!(
             complement_constraint.fct,
             complement_constraint.set,
         )
+    # 1
+    elseif is_constraint_solved(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set,
+    )
+        !fix!(com, variables[rei_vidx], activate_on) && return false
+    # 2
+    elseif is_constraint_violated(
+        com,
+        inner_constraint,
+        inner_constraint.fct,
+        inner_constraint.set,
+    )
+        !fix!(com, variables[rei_vidx], activate_off) && return false
     end
     return true
 end
@@ -198,4 +200,13 @@ function is_constraint_violated(
         )
     end
     return false
+end
+
+function changed!(com::CS.CoM, constraint::ReifiedConstraint, fct, set)
+    inner_constraint = constraint.inner_constraint
+    changed!(com, inner_constraint, inner_constraint.fct, inner_constraint.set)
+    if constraint.complement_constraint !== nothing
+        complement_constraint = constraint.complement_constraint 
+        changed!(com, complement_constraint, complement_constraint.fct, complement_constraint.set)
+    end
 end

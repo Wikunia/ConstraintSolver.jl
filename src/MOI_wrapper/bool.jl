@@ -25,8 +25,35 @@ function _build_bool_constraint(
     )
 end
 
+"""
+    transform_binary_expr(sym::Symbol)
+
+Transform a symbol to a constraint of the form Symbol == 1
+"""
+function transform_binary_expr(sym::Symbol)
+    return :($sym == 1) 
+end
+
+"""
+    transform_binary_expr(expr::Expr)
+
+Transform a ! (symbol) to a constraint of the form Symbol == 0
+or x[...] to x[...] == 1 
+"""
+function transform_binary_expr(expr::Expr)
+    if expr.head == :ref
+        expr = :($expr == 1)
+    elseif expr.head == :call && expr.args[1] == :! && (expr.args[2] isa Symbol || expr.args[2].head == :ref)
+        expr = :($(expr.args[2]) == 0)
+    end
+    return expr
+end
+
 function parse_bool_constraint(_error, bool_val::BOOL_VALS, lhs, rhs)
     _error1 = deepcopy(_error)
+    # allow a || b instead of a == 1 || b == 1
+    lhs = transform_binary_expr(lhs)
+    
     lhs_vectorized, lhs_parsecode, lhs_buildcall =
         JuMP.parse_constraint_expr(_error, lhs)
 
@@ -34,6 +61,7 @@ function parse_bool_constraint(_error, bool_val::BOOL_VALS, lhs, rhs)
         _error("`$(lhs)` should be non vectorized. There is currently no vectorized support for `and` constraints. Please open an issue at ConstraintSolver.jl")
     end
 
+    rhs = transform_binary_expr(rhs)
     rhs_vectorized, rhs_parsecode, rhs_buildcall =
         JuMP.parse_constraint_expr(_error1, rhs)
 
