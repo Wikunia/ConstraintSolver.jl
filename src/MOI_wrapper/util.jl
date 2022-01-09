@@ -37,7 +37,7 @@ end
 
 Create the inner constraint of a reified or indicator constraint
 """
-function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, IndicatorSet}, inner_set::MOI.AbstractVectorSet) where {T<:Real}
+function get_inner_constraint(com, func::VAF{T}, set::Union{Reified, Indicator}, inner_set::MOI.AbstractVectorSet) where {T<:Real}
     f = MOIU.eachscalar(func)
     inner_internals = ConstraintInternals(
         0,
@@ -49,11 +49,11 @@ function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, Indicato
 end
 
 """
-    get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, IndicatorSet}, inner_set::Union{ReifiedSet{A}, IndicatorSet{A}, MOI.IndicatorSet{A}}) where {A,T<:Real}
+    get_inner_constraint(com, func::VAF{T}, set::Union{Reified, Indicator}, inner_set::Union{Reified{A}, Indicator{A}, MOI.Indicator{A}}) where {A,T<:Real}
 
 Create the inner constraint when the inner constraint is a reified or indicator constraint as well.
 """
-function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, IndicatorSet}, inner_set::Union{ReifiedSet{A}, IndicatorSet{A}, MOI.IndicatorSet{A}}) where {A,T<:Real}
+function get_inner_constraint(com, func::VAF{T}, set::Union{Reified, Indicator}, inner_set::Union{Reified{A}, Indicator{A}, MOI.Indicator{A}}) where {A,T<:Real}
     f = MOIU.eachscalar(func)
     inner_internals = ConstraintInternals(
         0,
@@ -66,7 +66,7 @@ function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, Indicato
     complement_inner = get_complement_constraint(com, inner_constraint)
     indices = inner_internals.indices
     activator_internals = get_activator_internals(A, indices)
-    if inner_set isa ReifiedSet
+    if inner_set isa Reified
         constraint =
             ReifiedConstraint(inner_internals, activator_internals, inner_constraint, complement_inner)
     else
@@ -76,7 +76,7 @@ function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, Indicato
     return constraint
 end
 
-function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, IndicatorSet, MOI.IndicatorSet}, inner_set::MOI.AbstractScalarSet) where {T<:Real}
+function get_inner_constraint(com, func::VAF{T}, set::Union{Reified, Indicator, MOI.Indicator}, inner_set::MOI.AbstractScalarSet) where {T<:Real}
     inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
     inner_constant = func.constants[2]
     inner_set = set.set
@@ -86,7 +86,7 @@ function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, Indicato
     return get_linear_constraint(inner_func, inner_set)
 end
 
-function get_inner_constraint(com, vars::MOI.VectorOfVariables, set::Union{ReifiedSet, IndicatorSet}, inner_set)
+function get_inner_constraint(com, vars::MOI.VectorOfVariables, set::Union{Reified, Indicator}, inner_set)
     inner_internals = ConstraintInternals(
         0,
         MOI.VectorOfVariables(vars.variables[2:end]),
@@ -101,13 +101,13 @@ function get_activator_internals(A, indices)
 end
 
 """
-    saf_is_svf(saf::MOI.ScalarAffineFunction)
+    is_vi(saf::MOI.ScalarAffineFunction)
 
-Checks if a `ScalarAffineFunction` can be represented as a `SingleVariable`.
+Checks if a `ScalarAffineFunction` can be represented as a `VariableIndex`.
 This can be used for example when having a `VectorAffineFunction` in `AllDifferentSet` constraint when the decision 
 has to be made whether a new constraint + variable has to be created.
 """
-function is_svf(saf::MOI.ScalarAffineFunction)
+function is_vi(saf::MOI.ScalarAffineFunction)
     !iszero(saf.constant) && return false
     length(saf.terms) != 1 && return false
     !isone(saf.terms[1].coefficient) && return false

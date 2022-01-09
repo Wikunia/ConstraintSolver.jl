@@ -5,10 +5,10 @@ struct StrictlyGreaterToStrictlyLessBridge{
 } <: MOIBC.FlipSignBridge{T,CPE.Strictly{MOI.GreaterThan{T},T},CPE.Strictly{MOI.LessThan{T}, T},F,G}
     constraint::CI{F,CPE.Strictly{MOI.LessThan{T}, T}}
 end
-function MOIBC.map_set(::Type{<:StrictlyGreaterToStrictlyLessBridge}, set::CPE.Strictly{MOI.GreaterThan{T}, T}) where T
+function MOIB.map_set(::Type{<:StrictlyGreaterToStrictlyLessBridge}, set::CPE.Strictly{MOI.GreaterThan{T}, T}) where T
     return CPE.Strictly(MOI.LessThan(-set.set.lower))
 end
-function MOIBC.inverse_map_set(::Type{<:StrictlyGreaterToStrictlyLessBridge}, set::CPE.Strictly{MOI.LessThan{T}, T}) where T
+function MOIB.inverse_map_set(::Type{<:StrictlyGreaterToStrictlyLessBridge}, set::CPE.Strictly{MOI.LessThan{T}, T}) where T
     return CPE.Strictly(MOI.GreaterThan(-set.set.upper))
 end
 function MOIBC.concrete_bridge_type(

@@ -92,7 +92,7 @@ function combine_options(options)
         if !in(kv[1], fieldnames(SolverOptions))
             @error "The option $(kv[1]) doesn't exist."
         else
-            moi_key = MOI.RawParameter(string(kv[1]))
+            moi_key = MOI.RawOptimizerAttribute(string(kv[1]))
             if is_possible_option_value(moi_key, kv[2])
                 options_dict[kv[1]] = kv[2]
             else
@@ -113,7 +113,7 @@ function combine_options(options)
     return defaults
 end
 
-function is_possible_option_value(option_param::MOI.RawParameter, value)
+function is_possible_option_value(option_param::MOI.RawOptimizerAttribute, value)
     option = Symbol(option_param.name)
     if haskey(POSSIBLE_OPTIONS, option)
         return value in POSSIBLE_OPTIONS[option]

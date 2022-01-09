@@ -39,7 +39,6 @@ const MOIB = MathOptInterface.Bridges
 const MOIBC = MathOptInterface.Bridges.Constraint
 const MOIU = MOI.Utilities
 
-const SVF = MOI.SingleVariable
 const SAF = MOI.ScalarAffineFunction
 const VAF = MOI.VectorAffineFunction
 

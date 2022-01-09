@@ -45,7 +45,7 @@ end
 
 function MOIBC.bridge_constraint(bridge::Type{<:BoolBridge{T, B, F1, F2, S1, S2}}, model, fct, set::CS.AbstractBoolSet) where {T, B, F1, F2, S1, S2}
     new_fct = map_function(bridge, fct, set)
-    new_set = MOIBC.map_set(bridge, set)
+    new_set = MOIB.map_set(bridge, set)
     return BoolBridge{T,B,F1,F2,S1,S2}(MOI.add_constraint(model, new_fct, new_set))
 end
 
@@ -90,7 +90,7 @@ function get_mapped_fct(
     if direct_support
         return fct
     else
-        return MOIBC.map_function(inner_bridge, fct)
+        return MOIB.map_function(inner_bridge, fct)
     end
 end
 
@@ -103,7 +103,7 @@ function get_mapped_set(
     if direct_support
         return set
     else
-        return MOIBC.map_set(inner_bridge, set)
+        return MOIB.map_set(inner_bridge, set)
     end
 end
 
@@ -213,34 +213,34 @@ end
 
 ##########################
 
-function MOIBC.map_set(
+function MOIB.map_set(
     bridge::Type{<:BoolBridge{T, B}},
     set::CS.AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
 ) where {T,B,F1,F2,F1dim,F2dim,S1<:AbstractBoolSet,S2<:AbstractBoolSet}
-    lhs_set = MOIBC.map_set(bridge, set.lhs_set)
-    rhs_set = MOIBC.map_set(bridge, set.rhs_set)
+    lhs_set = MOIB.map_set(bridge, set.lhs_set)
+    rhs_set = MOIB.map_set(bridge, set.rhs_set)
     return typeof_without_params(set){F1,F2}(lhs_set, rhs_set)
 end
 
-function MOIBC.map_set(
+function MOIB.map_set(
     bridge::Type{<:BoolBridge{T, B}},
     set::CS.AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
 ) where {T,B,F1,F2,F1dim,F2dim,S1<:AbstractBoolSet,S2}
-    lhs_set = MOIBC.map_set(bridge, set.lhs_set)
+    lhs_set = MOIB.map_set(bridge, set.lhs_set)
     rhs_set = get_mapped_set(B, F2, S2, set.rhs_set)
     return typeof_without_params(set){F1,F2}(lhs_set, rhs_set)
 end
 
-function MOIBC.map_set(
+function MOIB.map_set(
     bridge::Type{<:BoolBridge{T, B}},
     set::CS.AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
 ) where {T,B,F1,F2,F1dim,F2dim,S1,S2<:AbstractBoolSet}
     lhs_set = get_mapped_set(B, F1, S1, set.lhs_set)
-    rhs_set = MOIBC.map_set(bridge, set.rhs_set)
+    rhs_set = MOIB.map_set(bridge, set.rhs_set)
     return typeof_without_params(set){F1,F2}(lhs_set, rhs_set)
 end
 
-function MOIBC.map_set(
+function MOIB.map_set(
     bridge::Type{<:BoolBridge{T, B}},
     set::CS.AbstractBoolSet{F1,F2,F1dim,F2dim,S1,S2}
 ) where {T,B,F1,F2,F1dim,F2dim,S1,S2}  

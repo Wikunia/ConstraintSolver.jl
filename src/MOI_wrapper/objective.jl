@@ -1,5 +1,5 @@
 MOI.supports(::Optimizer, ::MOI.ObjectiveSense) = true
-MOI.supports(::Optimizer, ::MOI.ObjectiveFunction{SVF}) = true
+MOI.supports(::Optimizer, ::MOI.ObjectiveFunction{VI}) = true
 MOI.supports(::Optimizer, ::MOI.ObjectiveFunction{SAF{T}}) where {T<:Real} = true
 
 """
@@ -12,7 +12,7 @@ function MOI.set(model::Optimizer, ::MOI.ObjectiveSense, sense::MOI.Optimization
     return
 end
 
-function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction, func::SVF)
+function MOI.set(model::Optimizer, ::MOI.ObjectiveFunction, func::VI)
     check_inbounds(model, func)
     model.inner.var_in_obj[func.variable.value] = true
     model.inner.objective =

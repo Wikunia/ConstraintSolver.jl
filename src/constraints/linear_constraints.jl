@@ -26,7 +26,7 @@ function get_rhs_from_strictly(com::CS.CoM, constraint::LinearConstraint,
 
         if !MOI.supports_constraint(
             com.options.lp_optimizer.optimizer_constructor(),
-            SVF, MOI.Integer
+            VI, MOI.Integer
         ) || !MOI.supports_constraint(
             com.options.lp_optimizer.optimizer_constructor(),
             typeof(constraint.fct),

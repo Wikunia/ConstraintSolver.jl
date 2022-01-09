@@ -45,28 +45,28 @@
             ],
             [0.0, 0.0],
         )
-        indicator_set = MOI.IndicatorSet{MOI.ACTIVATE_ON_ONE}(MOI.LessThan(9.0))
+        indicator_set = MOI.Indicator{MOI.ACTIVATE_ON_ONE}(MOI.LessThan(9.0))
         @test MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
-        indicator_set = MOI.IndicatorSet{MOI.ACTIVATE_ON_ONE}(MOI.GreaterThan(9.0))
+        indicator_set = MOI.Indicator{MOI.ACTIVATE_ON_ONE}(MOI.GreaterThan(9.0))
         @test MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
-        indicator_set = MOI.IndicatorSet{MOI.ACTIVATE_ON_ONE}(MOI.EqualTo(9.0))
+        indicator_set = MOI.Indicator{MOI.ACTIVATE_ON_ONE}(MOI.EqualTo(9.0))
         @test MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
 
-        indicator_set = CS.IndicatorSet{MOI.ACTIVATE_ON_ONE, typeof(f)}(CS.CPE.AllDifferent(2))
+        indicator_set = CS.Indicator{MOI.ACTIVATE_ON_ONE, typeof(f)}(CS.CPE.AllDifferent(2))
         @test !MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
-        indicator_set = CS.IndicatorSet{MOI.ACTIVATE_ON_ZERO, typeof(f)}(CS.TableSetInternal(2, [1 2; ]))
+        indicator_set = CS.Indicator{MOI.ACTIVATE_ON_ZERO, typeof(f)}(CS.TableSetInternal(2, [1 2; ]))
         @test !MOI.supports_constraint(optimizer, typeof(f), typeof(indicator_set))
 
         @test MOI.supports_constraint(
             optimizer,
             typeof(f),
-            CS.ReifiedSet{MOI.ACTIVATE_ON_ONE,MOI.ScalarAffineFunction{Float64},MOI.LessThan{Float64}},
+            CS.Reified{MOI.ACTIVATE_ON_ONE,MOI.ScalarAffineFunction{Float64},MOI.LessThan{Float64}},
         )
 
         @test MOI.supports_constraint(
             optimizer,
             MOI.VectorOfVariables,
-            CS.ReifiedSet{MOI.ACTIVATE_ON_ZERO,MOI.VectorOfVariables,CS.CPE.AllDifferent},
+            CS.Reified{MOI.ACTIVATE_ON_ZERO,MOI.VectorOfVariables,CS.CPE.AllDifferent},
         )
 
         # TimeLimit
@@ -80,7 +80,7 @@
             MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
         )
 
-        @test MOI.supports(optimizer, MOI.RawParameter("backtrack"))
+        @test MOI.supports(optimizer, MOI.RawOptimizerAttribute("backtrack"))
 
         @test MOI.get(optimizer, MOI.ObjectiveSense()) == MOI.FEASIBILITY_SENSE
     end
@@ -137,12 +137,12 @@
         x = MOI.add_constrained_variable(optimizer, MOI.Interval(1.0, 2.0))
         @test_logs (:error, r"Upper bound .* exists") MOI.add_constraint(
             optimizer,
-            MOI.SingleVariable(MOI.VariableIndex(1)),
+            MOI.VariableIndex(1),
             MOI.LessThan(2.0),
         )
         @test_logs (:error, r"Lower bound .* exists") MOI.add_constraint(
             optimizer,
-            MOI.SingleVariable(MOI.VariableIndex(1)),
+            MOI.VariableIndex(1),
             MOI.GreaterThan(1.0),
         )
 

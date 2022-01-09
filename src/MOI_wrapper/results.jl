@@ -31,6 +31,6 @@ function set_status!(model::Optimizer, status::Symbol)
     end
 end
 
-function MOI.get(model::Optimizer, ::MOI.SolveTime)
+function MOI.get(model::Optimizer, ::MOI.SolveTimeSec)
     return model.inner.solve_time
 end

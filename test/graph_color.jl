@@ -202,7 +202,7 @@
             @test status == MOI.OPTIMAL
             @test com.best_sol == 4 == JuMP.objective_value(m) == JuMP.objective_bound(m)
             @test maximum([JuMP.value(var) for var in states]) == 4 == JuMP.value(max_color)
-            @test 0 <= MOI.get(m, MOI.SolveTime()) < 5
+            @test 0 <= MOI.get(m, MOI.SolveTimeSec()) < 5
         end
         return com, m
     end
@@ -216,7 +216,7 @@
         @test info_1.pre_backtrack_calls == info_2.pre_backtrack_calls
         @test JuMP.termination_status(m1) == MOI.TIME_LIMIT
         # can take longer as preprocessing takes time
-        @test 0 <= MOI.get(m1, MOI.SolveTime()) < 0.1
+        @test 0 <= MOI.get(m1, MOI.SolveTimeSec()) < 0.1
     end
 
 

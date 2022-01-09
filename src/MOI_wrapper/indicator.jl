@@ -5,11 +5,11 @@ function JuMP._build_indicator_constraint(
     _error::Function,
     variable::JuMP.AbstractVariableRef,
     constraint::JuMP.VectorConstraint,
-    ::Type{MOI.IndicatorSet{A}},
+    ::Type{MOI.Indicator{A}},
 ) where {A}
     S = typeof(constraint.set)
     F = typeof(JuMP.moi_function(constraint))
-    set = CS.IndicatorSet{A,F,S}(constraint.set, 1 + length(constraint.func))
+    set = CS.Indicator{A,F,S}(constraint.set, 1 + length(constraint.func))
     if constraint.func isa Vector{VariableRef}
         vov = JuMP.VariableRef[variable]
     else

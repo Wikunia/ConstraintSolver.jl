@@ -25,7 +25,7 @@ end
 """
     map_function(bridge, fct, set)
 
-Default for when set is not needed so return `MOIBC.map_function(bridge, fct)`
+Default for when set is not needed so return `MOIB.map_function(bridge, fct)`
 If the set is needed a specific method should be implemented
 """
 function map_function(
@@ -33,7 +33,7 @@ function map_function(
     fct,
     set
 )
-    MOIBC.map_function(bridge, fct)
+    MOIB.map_function(bridge, fct)
 end
 
 """

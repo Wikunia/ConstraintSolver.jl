@@ -50,7 +50,7 @@ end
 
 function MOIBC.bridge_constraint(::Type{<:ComplementBridge{T, B, F, S}}, model, fct, set) where {T, B, F, S}
     new_fct = map_function(B, fct, set.set)
-    new_inner_set = MOIBC.map_set(B, set.set)
+    new_inner_set = MOIB.map_set(B, set.set)
     new_set = CS.ComplementSet{F}(new_inner_set)
     if (new_fct isa SAF) && F <: SAF
         new_fct = get_saf(new_fct)
@@ -66,17 +66,17 @@ function map_function(
     return map_function(B, fct, set.set)
 end
 
-function MOIBC.map_function(
+function MOIB.map_function(
     bridge::Type{<:ComplementBridge{T, B}},
     fct,
 ) where {T,B}
-    return MOIBC.map_function(B, fct)
+    return MOIB.map_function(B, fct)
 end
 
-function MOIBC.map_set(
+function MOIB.map_set(
     bridge::Type{<:ComplementBridge{T, B}},
     set::ComplementSet{F},
 ) where {T,B,F}
-    mapped_set = MOIBC.map_set(B, set.set)
+    mapped_set = MOIB.map_set(B, set.set)
     return ComplementSet{F}(mapped_set)
 end
