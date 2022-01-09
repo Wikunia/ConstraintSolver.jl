@@ -254,6 +254,7 @@ function reverse_pruning_constraint!(
     set::Element1DConstInner,
     backtrack_id::Int,
 )
+    constraint.is_deactivated && return
     calculate_zSupp!(constraint, set)
 end
 
