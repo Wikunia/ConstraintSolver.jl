@@ -100,13 +100,6 @@ function arr2dict(arr)
     return d
 end
 
-function is_constraint_solved(com::CS.CoM, constraint::Constraint, fct, set)
-    variables = com.search_space
-    !all(isfixed(variables[ind]) for ind in constraint.indices) && return false
-    values = CS.value.(variables[constraint.indices])
-    return is_constraint_solved(constraint, fct, set, values)
-end
-
 function is_constraint_solved_when_fixed(com::CS.CoM, constraint::Constraint, fct, set, vidx::Int, value::Int)
     variables = com.search_space
     !all(isfixed(variables[ind]) || variables[ind].idx == vidx for ind in constraint.indices) && return false
@@ -118,7 +111,7 @@ function is_constraint_solved_when_fixed(com::CS.CoM, constraint::Constraint, fc
             values[i] = value
         end 
     end
-    return is_constraint_solved(constraint, fct, set, values)
+    return is_constraint_solved(com, constraint, values)
 end
 
 #=
@@ -130,6 +123,8 @@ end
         :indices,
         :fct,
         :set,
+        :first_node_call,
+        :vidx_to_idx,
         :pvals,
         :is_initialized,
         :is_activated,
@@ -148,6 +143,8 @@ end
         :indices,
         :fct,
         :set,
+        :first_node_call,
+        :vidx_to_idx,
         :pvals,
         :is_initialized,
         :is_activated,
@@ -169,6 +166,8 @@ end
         :indices,
         :fct,
         :set,
+        :first_node_call,
+        :vidx_to_idx,
         :pvals,
         :is_initialized,
         :is_activated,
@@ -194,6 +193,8 @@ end
         :indices,
         :fct,
         :set,
+        :first_node_call,
+        :vidx_to_idx,
         :pvals,
         :is_initialized,
         :is_activated,
@@ -222,6 +223,8 @@ end
         :indices,
         :fct,
         :set,
+        :first_node_call,
+        :vidx_to_idx,
         :pvals,
         :is_initialized,
         :is_activated,
@@ -249,6 +252,8 @@ end
         :indices,
         :fct,
         :set,
+        :first_node_call,
+        :vidx_to_idx,
         :pvals,
         :is_initialized,
         :is_activated,
@@ -362,8 +367,4 @@ function view_changes(v::Variable, step_nr::Int)
     idx_begin = v.changes.indices[step_nr]
     idx_end = v.changes.indices[step_nr+1]-1
     return @views v.changes.changes[idx_begin:idx_end]
-end
-
-function changed!(com::CS.CoM, constraint::Constraint, fct, set)
-    return 
 end

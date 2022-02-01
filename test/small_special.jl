@@ -584,16 +584,17 @@
         ))
         @variable(model, b >= 1, Bin)
         @variable(model, 0 <= x[1:4] <= 5, Int)
-        @constraint(model, b => {sum([0.4,0.5,0.7,0.8] .* x) > 9})
-        @objective(model, Min, sum([0.4,0.5,0.7,0.8] .* x))
+        @constraint(model, x[1] <= x[3])
+        @constraint(model, b => {sum([0.47,0.501,0.75,0.82] .* x) > 9})
+        @objective(model, Min, sum([0.47,0.501,0.75,0.82] .* x))
         optimize!(model)
         CS.get_inner_model(model)
         @test JuMP.termination_status(model) == MOI.OPTIMAL
-        @test JuMP.objective_value(model) ≈ 9.1
-        @test JuMP.value(x[1]) ≈ 2.0
+        @test JuMP.objective_value(model) ≈ 9.003
+        @test JuMP.value(x[1]) ≈ 1.0
         @test JuMP.value(x[2]) ≈ 3.0
-        @test JuMP.value(x[3]) ≈ 4.0
-        @test JuMP.value(x[4]) ≈ 5.0
+        @test JuMP.value(x[3]) ≈ 5.0
+        @test JuMP.value(x[4]) ≈ 4.0
     end
 
     @testset "AllDifferent except 0" begin

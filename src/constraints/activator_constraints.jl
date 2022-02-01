@@ -22,10 +22,10 @@ Saves at which stage it was activated.
 """
 function activate_complement_inner!(com, constraint::ActivatorConstraint)
     complement_constraint = constraint.complement_constraint
-    if !constraint.complement_inner_constraint
+    if !constraint.complement_activated && implements_activate(typeof(complement_constraint), typeof(complement_constraint.fct), typeof(complement_constraint.set)) 
         !activate_constraint!(com, complement_constraint, complement_constraint.fct, complement_constraint.set) && return false
-        constraint.complement_inner_constraint = true
-        constraint.complement_inner_constraint_in_backtrack_idx = com.c_backtrack_idx
+        constraint.complement_activated = true
+        constraint.complement_activated_in_backtrack_idx = com.c_backtrack_idx
     end
     return true
 end
@@ -118,9 +118,19 @@ function reverse_pruning_constraint!(
         constraint.inner_activated_in_backtrack_idx = 0
     end
     if constraint isa ReifiedConstraint 
-        if constraint.complement_inner_constraint && backtrack_id == constraint.complement_inner_constraint_in_backtrack_idx
-            constraint.complement_inner_constraint = false
-            constraint.complement_inner_constraint_in_backtrack_idx = 0
+        if constraint.complement_activated && backtrack_id == constraint.complement_activated_in_backtrack_idx
+            constraint.complement_activated = false
+            constraint.complement_activated_in_backtrack_idx = 0
+        end
+        complement_constraint = constraint.complement_constraint
+        if complement_constraint !== nothing
+            reverse_pruning_constraint!(
+                com,
+                complement_constraint,
+                complement_constraint.fct,
+                complement_constraint.set,
+                backtrack_id,
+            )
         end
     end
 

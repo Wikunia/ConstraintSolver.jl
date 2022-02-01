@@ -1,3 +1,9 @@
+function set_first_node_call!(constraint::BoolConstraint, val::Bool)
+    constraint.first_node_call = val
+    set_first_node_call!(constraint.lhs, val)
+    set_first_node_call!(constraint.rhs, val)
+end
+
 function init_constraint_struct(com, set::AbstractBoolSet{F1,F2}, internals) where {F1,F2}
     f = MOIU.eachscalar(internals.fct)
 
@@ -123,7 +129,8 @@ function init_lhs_and_rhs!(
 end
 
 """
-    is_constraint_solved(
+    _is_constraint_solved(
+        com,
         constraint::BoolConstraint,
         fct,
         set::AbstractBoolSet,
@@ -132,31 +139,32 @@ end
 
 Check if the constraint is solved gived the `values`
 """
-function is_constraint_solved(
+function _is_constraint_solved(
+    com,
     constraint::BoolConstraint,
     fct,
     set::AbstractBoolSet,
     values::Vector{Int},
 )
-    apply_bool_operator(typeof(set), lhs_solved, rhs_solved, constraint, values)
+    apply_bool_operator(typeof(set), lhs_solved, rhs_solved, com, constraint, values)
 end
 
-function lhs_solved(constraint::BoolConstraint, values::Vector{Int})
+function lhs_solved(com, constraint::BoolConstraint, values::Vector{Int})
     lhs_num_vars = get_num_vars(constraint.lhs.fct)
-    return is_constraint_solved(constraint.lhs, constraint.lhs.fct, constraint.lhs.set, values[1:lhs_num_vars])
+    return is_constraint_solved(com, constraint.lhs, values[1:lhs_num_vars])
 end
 
-function rhs_solved(constraint::BoolConstraint, values::Vector{Int})
+function rhs_solved(com, constraint::BoolConstraint, values::Vector{Int})
     rhs_num_vars = get_num_vars(constraint.rhs.fct)
-    return is_constraint_solved(constraint.rhs, constraint.rhs.fct, constraint.rhs.set, values[end-rhs_num_vars+1:end])
+    return is_constraint_solved(com, constraint.rhs, values[end-rhs_num_vars+1:end])
 end
 
 function is_lhs_constraint_violated(com, constraint)
-    is_constraint_violated(com, constraint.lhs, constraint.lhs.fct, constraint.lhs.set)
+    is_constraint_violated(com, constraint.lhs)
 end
 
 function is_rhs_constraint_violated(com, constraint)
-    is_constraint_violated(com, constraint.rhs, constraint.rhs.fct, constraint.rhs.set)
+    is_constraint_violated(com, constraint.rhs)
 end
 
 """
@@ -285,10 +293,15 @@ function finished_pruning_constraint!(
     end
 end
 
-
-function changed!(com::CS.CoM, constraint::BoolConstraint, fct, set)
-    lhs = constraint.lhs
-    changed!(com, lhs, lhs.fct, lhs.set)
-    rhs = constraint.rhs
-    changed!(com, rhs, rhs.fct, rhs.set)
+function changed_var!(
+    com::CS.CoM,
+    constraint::BoolConstraint,
+    fct,
+    set,
+    vidx::Int
+) where {T<:Real}
+    lhs = constraint.lhs 
+    changed_var!(com, lhs, lhs.fct, lhs.set, vidx)
+    rhs = constraint.rhs 
+    changed_var!(com, rhs, rhs.fct, rhs.set, vidx)
 end

@@ -8,24 +8,20 @@
     com = CS.get_inner_model(m)
     constraint = get_constraints_by_type(com, CS.IndicatorConstraint)[1]
 
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 2])
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 3])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [0, 2, 3])
+    @test  CS.is_constraint_solved(com, constraint, [1, 2, 2])
+    @test !CS.is_constraint_solved(com, constraint, [1, 2, 3])
+    @test  CS.is_constraint_solved(com, constraint, [0, 2, 3])
 
     constr_indices = constraint.indices
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[2],
         -3,
     )
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         1,
     )
@@ -35,8 +31,6 @@
     @test !CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         -3,
     )
@@ -52,20 +46,18 @@
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         -3,
     )
 
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint)
     for ind in constr_indices[2:3]
         @test sort(CS.values(com.search_space[ind])) == [-3, 1, 2, 3]
     end
     @test sort(CS.values(com.search_space[1])) == [0, 1]
     # feasible but remove -3
     @test CS.fix!(com, com.search_space[constr_indices[1]], 1)
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint)
     for ind in constr_indices[2:3]
         @test sort(CS.values(com.search_space[ind])) == [1, 2, 3]
     end
@@ -96,7 +88,7 @@ end
         4;
         check_feasibility = false,
     )
-    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_violated(com, constraint)
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b, Bin)
@@ -121,7 +113,7 @@ end
         3;
         check_feasibility = false,
     )
-    @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test !CS.is_constraint_violated(com, constraint)
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, b, Bin)
@@ -146,5 +138,5 @@ end
         4;
         check_feasibility = false,
     )
-    @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test !CS.is_constraint_violated(com, constraint)
 end

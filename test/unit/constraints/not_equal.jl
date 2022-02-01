@@ -8,23 +8,19 @@
 
     # doesn't check the length
     # 1+2+1 + constant (1) == 5
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 1])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2, 2])
+    @test !CS.is_constraint_solved(com, constraint, [1, 2, 1])
+    @test  CS.is_constraint_solved(com, constraint, [1, 2, 2])
 
     constr_indices = constraint.indices
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[1],
         -3,
     )
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[1],
         1,
     )
@@ -33,8 +29,6 @@
     @test !CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         1,
     )
@@ -50,8 +44,6 @@
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[3],
         1,
     )
@@ -66,7 +58,7 @@
 
     CS.fix!(com, com.search_space[constr_indices[1]], 2)
     CS.fix!(com, com.search_space[constr_indices[2]], 1)
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint)
     @test sort(CS.values(com.search_space[constr_indices[3]])) == [-3, 2, 3]
 end
 
@@ -82,7 +74,7 @@ end
     variables = com.search_space
     @test CS.fix!(com, variables[constraint.indices[1]], 5; check_feasibility = false)
     @test CS.fix!(com, variables[constraint.indices[2]], 2; check_feasibility = false)
-    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_violated(com, constraint)
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, -5 <= x[1:2] <= 5, Int)
@@ -94,5 +86,5 @@ end
 
     variables = com.search_space
     @test CS.fix!(com, variables[constraint.indices[1]], 5; check_feasibility = false)
-    @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test !CS.is_constraint_violated(com, constraint)
 end

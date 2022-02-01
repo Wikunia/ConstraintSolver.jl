@@ -348,12 +348,14 @@ mutable struct ConstraintInternals{
     idx::Int
     fct::FCT
     set::SET
+    first_node_call::Bool # true inside prune_constraint! when it's the first prune of the node
+    vidx_to_idx::Dict{Int,Int}
     indices::Vector{Int}
     pvals::Vector{Int}
     is_initialized::Bool
-    is_activated::Bool
+    is_activated::Bool # whether the constraint is currently active i.e can be inactive when the activator isn't true
     is_deactivated::Bool # can be deactivated if it's absorbed by other constraints
-    bound_rhs::Vector{BoundRhsVariable}# should be set if `update_best_bound` is true
+    bound_rhs::Vector{BoundRhsVariable} # should be set if `update_best_bound` is true
 end
 
 #====================================================================================
@@ -426,6 +428,7 @@ end
 
 mutable struct LinearConstraint{T<:Real} <: Constraint
     std::ConstraintInternals
+    currently_pruning::Bool # whether this constraint is currently in pruning 
     in_all_different::Bool
     is_strict::Bool # for differentiate between < and <=
     is_equal::Bool # for ==
@@ -485,8 +488,8 @@ mutable struct ReifiedConstraint{C<:Constraint, AC<:Union{Constraint,Nothing}} <
     act_std::ActivatorConstraintInternals
     inner_constraint::C
     complement_constraint::AC
-    complement_inner_constraint::Bool
-    complement_inner_constraint_in_backtrack_idx::Int
+    complement_activated::Bool
+    complement_activated_in_backtrack_idx::Int
 end
 
 #====================================================================================

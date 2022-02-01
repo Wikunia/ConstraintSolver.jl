@@ -10,16 +10,14 @@
     @test constraint isa CS.SingleVariableConstraint
 
     # doesn't check the length
-    @test !CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [3, 2])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [2, 2])
-    @test CS.is_constraint_solved(constraint, constraint.fct, constraint.set, [1, 2])
+    @test !CS.is_constraint_solved(com, constraint, [3, 2])
+    @test  CS.is_constraint_solved(com, constraint, [2, 2])
+    @test  CS.is_constraint_solved(com, constraint, [1, 2])
 
     constr_indices = constraint.indices
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[2],
         -5,
     )
@@ -27,16 +25,12 @@
     @test !CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[1],
         4,
     )
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[1],
         3,
     )
@@ -52,8 +46,6 @@
     @test CS.still_feasible(
         com,
         constraint,
-        constraint.fct,
-        constraint.set,
         constr_indices[1],
         4,
     )
@@ -67,12 +59,12 @@
     constraint = com.constraints[1]
 
     # feasible and no changes
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint)
     for ind in constr_indices
         @test sort(CS.values(com.search_space[ind])) == -5:5
     end
     @test CS.fix!(com, com.search_space[constr_indices[2]], 4)
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint)
     @test sort(CS.values(com.search_space[1])) == -5:4
 
 
@@ -86,7 +78,7 @@
 
     # Should be synced to the other variables
     @test CS.remove_above!(com, com.search_space[constr_indices[2]], 1)
-    @test CS.prune_constraint!(com, constraint, constraint.fct, constraint.set)
+    @test CS.prune_constraint!(com, constraint)
     for ind in constr_indices
         @test sort(CS.values(com.search_space[ind])) == -5:1
     end
@@ -104,7 +96,7 @@ end
 
     variables = com.search_space
     @test CS.fix!(com, variables[constraint.indices[1]], 5; check_feasibility = false)
-    @test CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test CS.is_constraint_violated(com, constraint)
 
     m = Model(optimizer_with_attributes(CS.Optimizer, "no_prune" => true, "logging" => []))
     @variable(m, 0 <= x <= 5, Int)
@@ -117,5 +109,5 @@ end
 
     variables = com.search_space
     @test CS.fix!(com, variables[constraint.indices[1]], 3; check_feasibility = false)
-    @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
+    @test !CS.is_constraint_violated(com, constraint)
 end

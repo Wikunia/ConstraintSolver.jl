@@ -264,17 +264,17 @@ function filter_domains(com::CoM, constraint::TableConstraint)
 end
 
 """
-    prune_constraint!(com::CS.CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal; logs = true)
+    _prune_constraint!(com::CS.CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal; logs = false)
 
 Reduce the number of possibilities given the `TableConstraint`.
 Return whether still feasible and throws a warning if infeasible and `logs` is set to `true`
 """
-function prune_constraint!(
+function _prune_constraint!(
     com::CS.CoM,
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
     set::TableSetInternal;
-    logs = true,
+    logs = false,
 )
     current = constraint.current
     indices = constraint.indices
@@ -331,11 +331,11 @@ function finished_pruning_constraint!(
 end
 
 """
-    still_feasible(com::CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal, vidx::Int, value::Int)
+    _still_feasible(com::CoM, constraint::TableConstraint, fct::MOI.VectorOfVariables, set::TableSetInternal, vidx::Int, value::Int)
 
 Return whether the constraint can be still fulfilled when setting a variable with index `vidx` to `value`.
 """
-function still_feasible(
+function _still_feasible(
     com::CoM,
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
@@ -551,19 +551,19 @@ function restore_pruning_constraint!(
     empty!(constraint.changed_vars)
 end
 
-function is_constraint_solved(
+function _is_constraint_solved(
+    com,
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
     set::TableSetInternal,
     values::Vector{Int},
 )
-
     table = set.table
     return findfirst(ri -> table[ri, :] == values, 1:size(table)[1]) !== nothing
 end
 
 """
-    is_constraint_violated(
+    _is_constraint_violated(
         com::CoM,
         constraint::TableConstraint,
         fct::MOI.VectorOfVariables,
@@ -573,7 +573,7 @@ end
 Checks if the constraint is violated as it is currently set. This can happen inside an
 inactive reified or indicator constraint.
 """
-function is_constraint_violated(
+function _is_constraint_violated(
     com::CoM,
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
@@ -581,9 +581,8 @@ function is_constraint_violated(
 )
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(
+            com,
             constraint,
-            fct,
-            set,
             [CS.value(var) for var in com.search_space[constraint.indices]],
         )
     end

@@ -24,10 +24,16 @@ MatchingInit() = MatchingInit(0, Int[], Int[], Int[], Int[], Int[], Int[], Bool[
 SCCInit() = SCCInit(Int[], Int[], Int[], Bool[], Int[])
 
 function ConstraintInternals(cidx::Int, fct, set, indices::Vector{Int})
+    vidx_to_idx = Dict{Int, Int}()
+    for (idx,vidx) in enumerate(indices)
+        vidx_to_idx[vidx] = idx
+    end
     return ConstraintInternals(
         cidx,
         fct,
         set,
+        true,
+        vidx_to_idx,
         indices,
         Int[],
         false,
@@ -89,6 +95,7 @@ function LinearConstraint(
     # the rhs is filled in init_constraint
     lc = LinearConstraint(
         internals,
+        false,
         in_all_different,
         is_strict,
         is_equal,
