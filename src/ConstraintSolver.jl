@@ -136,32 +136,11 @@ function set_pvals!(com::CS.CoM, constraint::Constraint)
     # nothing to do i.e x <= x will be x-x <= 0 => 0 <= 0 without variables
     length(indices) == 0 && return
     variables = Variable[v for v in com.search_space[indices]]
-    pvals_intervals = Vector{NamedTuple}()
-    push!(pvals_intervals, (from = variables[1].lower_bound, to = variables[1].upper_bound))
-    for i in 1:length(indices)
-        extra_from = variables[i].min
-        extra_to = variables[i].max
-        comp_inside = false
-        for cpvals in pvals_intervals
-            if extra_from >= cpvals.from && extra_to <= cpvals.to
-                # completely inside the interval already
-                comp_inside = true
-                break
-            elseif extra_from >= cpvals.from && extra_from <= cpvals.to
-                extra_from = cpvals.to + 1
-            elseif extra_to <= cpvals.to && extra_to >= cpvals.from
-                extra_to = cpvals.from - 1
-            end
-        end
-        if !comp_inside && extra_to >= extra_from
-            push!(pvals_intervals, (from = extra_from, to = extra_to))
-        end
+    pvals_set = Set{Int}()
+    for variable in variables
+        union!(pvals_set, values(variable))
     end
-    pvals = collect((pvals_intervals[1].from):(pvals_intervals[1].to))
-    for interval in pvals_intervals[2:end]
-        pvals = vcat(pvals, collect((interval.from):(interval.to)))
-    end
-    constraint.pvals = pvals
+    constraint.pvals = collect(pvals_set)
     if constraint isa IndicatorConstraint || constraint isa ReifiedConstraint
         set_pvals!(com, constraint.inner_constraint)
     end
@@ -770,7 +749,6 @@ function solve!(com::CS.CoM)
     # check if all feasible even if for example everything is fixed
     feasible = prune!(com; pre_backtrack = true, initial_check = true)
     # finished pruning will be called in second call a few lines down...
-
 
     if !feasible
         com.solve_time = time() - com.start_time
