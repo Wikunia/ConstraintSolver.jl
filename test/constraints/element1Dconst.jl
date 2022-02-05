@@ -41,7 +41,7 @@ end
     for i in 1:length(c)
         @constraint(m, c[idx[i]] == val[i])
     end
-    @constraint(m, idx in CS.AllDifferentSet())
+    @constraint(m, idx in CS.AllDifferent())
     optimize!(m)
     @test JuMP.termination_status(m) == MOI.OPTIMAL
     vals = convert.(Int, JuMP.value.(val))
@@ -163,12 +163,12 @@ end
     @test convert(Int, JuMP.value(idx)) == 3
 end
 
-@testset "element in or oustide activator constraint" begin
+@testset "element in OrConstraint outside activator constraint" begin
     m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
     c = collect(1:5)
     crev = reverse(c)
     @variable(m, 1 <= idx <= length(c), Int)
-    @constraint(m, c[idx] == crev[idx] && idx <= 2 || idx >= 4)
+    @constraint(m, (c[idx] == crev[idx] && idx <= 2) || idx >= 4)
     @objective(m, Min, idx)
     optimize!(m)
 
@@ -179,11 +179,56 @@ end
     c = collect(1:5)
     crev = reverse(c)
     @variable(m, 1 <= idx <= length(c), Int)
-    @constraint(m, idx <= 2 || idx >= 2 && c[idx] == crev[idx])
+    @constraint(m, idx <= 2 || (idx >= 2 && c[idx] == crev[idx]))
     @objective(m, Max, idx)
     optimize!(m)
 
     @test JuMP.termination_status(m) == MOI.OPTIMAL
     @test convert(Int, JuMP.value(idx)) == 3
 end
+
+@testset "element in AndConstraint outside activator constraint" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => []))
+    c1 = [1,2,3,4,5,6,7]
+    c2 = [1,3,2,4,6,5,7]
+    @variable(m, 1 <= idx <= length(c1), Int)
+    @constraint(m, (c1[idx] == c2[idx] && idx != 7))
+    @objective(m, Max, idx)
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test convert(Int, JuMP.value(idx)) == 4
+end
+
+@testset "Element in XorConstraint inside activator" begin 
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_optimal_solutions" => true))
+    c1 = [1,2,3,4,5,6,7]
+    c2 = [1,3,2,4,6,5,7]
+    @variable(m, b, Bin)
+    @variable(m, 1 <= idx <= length(c1), Int)
+    @constraint(m, b := { (c1[idx] == c2[idx]) ⊻ (idx != 6)})
+    @objective(m, Max, idx+b)
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test convert(Int, JuMP.value(idx)) == 7
+    @test convert(Int, JuMP.value(b)) == 0
+    @test JuMP.result_count(m) == 1
+
+    # minimize
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging" => [], "all_optimal_solutions" => true))
+    c1 = [1,2,3,4,5,6,7]
+    c2 = [1,3,2,4,6,5,7]
+    @variable(m, b, Bin)
+    @variable(m, 1 <= idx <= length(c1), Int)
+    @constraint(m, b := { (c1[idx] == c2[idx]) ⊻ (idx == 1)})
+    @objective(m, Min, idx)
+    optimize!(m)
+
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    @test convert(Int, JuMP.value(idx)) == 1
+    @test convert(Int, JuMP.value(b)) == 0
+    @test JuMP.result_count(m) == 1
+end
+
 end

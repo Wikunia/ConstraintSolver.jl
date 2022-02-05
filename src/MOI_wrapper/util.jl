@@ -96,6 +96,11 @@ function get_inner_constraint(com, vars::MOI.VectorOfVariables, set::Union{Reifi
     return init_constraint_struct(com, set.set, inner_internals)
 end
 
+"""
+    get_bool_constraint_fct_set(T, constraint::BoolConstraint, lhs_fct, lhs_set, rhs_fct, rhs_set)
+
+Create the fct and set of a [`BoolConstraint`](@ref) which combines the left hand side with the right hand side.
+"""
 function get_bool_constraint_fct_set(T, constraint::BoolConstraint, lhs_fct, lhs_set, rhs_fct, rhs_set)
     BS = typeof_without_params(constraint.set)
     fct = MOIU.operate(vcat, T, lhs_fct, rhs_fct)
@@ -103,7 +108,7 @@ function get_bool_constraint_fct_set(T, constraint::BoolConstraint, lhs_fct, lhs
     return fct, set
 end
 
-function find_element_var_and_combine(T, constraint, element_constraint, element_var)
+function find_element_var_and_combine(T, constraint::BoolConstraint, element_constraint, element_var)
     lhs = constraint.lhs
     rhs = constraint.rhs
     if element_var in lhs.indices
@@ -158,10 +163,9 @@ function move_element_constraint(model)
         element_var = element_cons.indices[1]
 
         # check if the element var only appears in indicator or reified constraints
-        # Todo check if in or constraint
         only_inside = true
         for constraint in constraints[subscriptions[element_var]]
-            # if not inside indicator or reified and not the current constraint that we check
+            # if not inside indicator, reified or OrConstraint and not the current constraint that we check
             if !(constraint isa ActivatorConstraint) && !(constraint isa OrConstraint) && constraint.idx != element_cons.idx
                 only_inside = false
             end
