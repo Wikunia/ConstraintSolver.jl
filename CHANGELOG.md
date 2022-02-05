@@ -5,9 +5,11 @@
 
 ## v0.8.1 (5th of February 2022)
 - bugfix when using `CS.Integers` together with an alldifferent constraint. [PR #283](https://github.com/Wikunia/ConstraintSolver.jl/pull/283)
+
 ## v0.8.0 (8th of January 2022)
 - Using [TableLogger.jl](https://github.com/Wikunia/TableLogger.jl)
 - Only support Julia v1.6 and above
+
 ## v0.7.1 (1st of November 2021)
 - Using priority queue also for `BFS` problems [PR #274](https://github.com/Wikunia/ConstraintSolver.jl/pull/274)
 
