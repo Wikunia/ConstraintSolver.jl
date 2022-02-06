@@ -132,7 +132,6 @@ end
         :set,
         :pvals,
         :is_initialized,
-        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -150,7 +149,6 @@ end
         :set,
         :pvals,
         :is_initialized,
-        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -171,7 +169,6 @@ end
         :set,
         :pvals,
         :is_initialized,
-        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -196,7 +193,6 @@ end
         :set,
         :pvals,
         :is_initialized,
-        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -224,7 +220,6 @@ end
         :set,
         :pvals,
         :is_initialized,
-        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -251,7 +246,6 @@ end
         :set,
         :pvals,
         :is_initialized,
-        :is_activated,
         :is_deactivated,
         :bound_rhs,
     )
@@ -329,7 +323,6 @@ function init_and_activate_constraint!(
     !init_constraint!(com, constraint, fct, set) && return false
     constraint.is_initialized = true
     !activate_constraint!(com, constraint, fct, set) && return false
-    constraint.is_activated = true
     return true
 end
 

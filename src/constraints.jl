@@ -49,7 +49,6 @@ function init_constraints!(com::CS.CoM; constraints = com.constraints)
 
         feasible = activate_constraint!(com, constraint, constraint.fct, constraint.set)
         !feasible && break
-        constraint.is_activated = true
     end
     return feasible
 end
