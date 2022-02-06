@@ -236,3 +236,18 @@ end
 
     @test_throws DomainError optimize!(model)
 end
+
+@testset "CS.Integers in AllDifferent" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "logging"=>[]))
+    @variable(m, 0 <= x[1:3] <= 20, Int)
+    @constraint(m, x[1] in CS.Integers([3,5]))
+    @constraint(m, x[2] in CS.Integers([3,5]))
+    @constraint(m, x in CS.AllDifferent())
+    optimize!(m)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    vals = convert.(Int, JuMP.value.(x))
+    @test allunique(vals)
+    @test vals[1] in [3,5]
+    @test vals[2] in [3,5]
+    @test vals[3] in collect(0:20)
+end
