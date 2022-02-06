@@ -79,7 +79,7 @@ function update_best_bound_constraint!(
     end
 end
 
-function single_reverse_pruning_constraint!(
+function _single_reverse_pruning_constraint!(
     com::CoM,
     constraint::ActivatorConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
@@ -103,7 +103,7 @@ function single_reverse_pruning_constraint!(
     end
 end
 
-function reverse_pruning_constraint!(
+function _reverse_pruning_constraint!(
     com::CoM,
     constraint::ActivatorConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},

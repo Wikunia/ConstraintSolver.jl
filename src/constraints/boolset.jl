@@ -200,7 +200,7 @@ function activate_rhs!(com, constraint::BoolConstraint)
     return true
 end
 
-function single_reverse_pruning_constraint!(
+function _single_reverse_pruning_constraint!(
     com::CoM,
     constraint::BoolConstraint,
     fct::VAF{T},
@@ -226,7 +226,7 @@ function single_reverse_pruning_constraint!(
     end
 end
 
-function reverse_pruning_constraint!(
+function _reverse_pruning_constraint!(
     com::CoM,
     constraint::BoolConstraint,
     fct::VAF{T},

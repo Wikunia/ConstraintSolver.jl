@@ -42,8 +42,6 @@ function activate_constraint!(
     set::Element1DConstInner;
 )
     # Assume z == T[y]
-    pvals = constraint.pvals
-
     y = constraint.y
     z = constraint.z
     T = set.array
@@ -238,7 +236,7 @@ function finished_pruning_constraint!(
 end
 
 """
-    reverse_pruning_constraint!(
+    _reverse_pruning_constraint!(
         com::CoM,
         constraint::Element1DConstConstraint,
         fct::MOI.VectorOfVariables,
@@ -247,14 +245,13 @@ end
 
 Is called after `single_reverse_pruning_constraint!`.
 """
-function reverse_pruning_constraint!(
+function _reverse_pruning_constraint!(
     com::CoM,
     constraint::Element1DConstConstraint,
     fct::MOI.VectorOfVariables,
     set::Element1DConstInner,
     backtrack_id::Int,
 )
-    constraint.is_deactivated && return
     calculate_zSupp!(constraint, set)
 end
 
