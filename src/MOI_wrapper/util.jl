@@ -150,8 +150,9 @@ end
     move_element_constraint(model)
 
 If there are element constraints which are only used inside of an indicator or reified constraint
-=> combine them with `&&` and deactivate the previously added element constraint
+=> combine them with xnor and deactivate the previously added element constraint
     this is to avoid filtering based on this element constraint when the inner constraint isn't active
+For more see: https://github.com/Wikunia/ConstraintSolver.jl/pull/213#issuecomment-860954185
 """
 function move_element_constraint(model)
     com = model.inner
@@ -201,13 +202,6 @@ function move_element_constraint(model)
             end
         end
     end
-
-    #=
-    for constraint in com.constraints
-        constraint.is_deactivated && continue
-        @show typeof(constraint)
-    end
-    =#
 end
 
 function get_activator_internals(A, indices)
