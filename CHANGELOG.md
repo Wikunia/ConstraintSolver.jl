@@ -1,10 +1,17 @@
 # ConstrainSolver.jl - Changelog
+ 
+## v0.8.2 (6th of February 2022)
+- Support for element constraints with a constant array like `T[y] == z`
+  - **This is experimental** Quite some stuff that might go wrong when combining it inside an indicator, reified or boolean constraint.
+    - If you find any problems please open an issue. I release it to get more feedback get this more tested. I plan on refactoring this quite a bit later.
 
 ## v0.8.1 (5th of February 2022)
 - bugfix when using `CS.Integers` together with an alldifferent constraint. [PR #283](https://github.com/Wikunia/ConstraintSolver.jl/pull/283)
+
 ## v0.8.0 (8th of January 2022)
 - Using [TableLogger.jl](https://github.com/Wikunia/TableLogger.jl)
 - Only support Julia v1.6 and above
+
 ## v0.7.1 (1st of November 2021)
 - Using priority queue also for `BFS` problems [PR #274](https://github.com/Wikunia/ConstraintSolver.jl/pull/274)
 

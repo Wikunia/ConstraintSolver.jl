@@ -75,6 +75,7 @@ mutable struct NumberConstraintTypes
     inequality::Int
     notequal::Int
     alldifferent::Int
+    element::Int
     table::Int
     indicator::Int
     reified::Int
@@ -101,6 +102,17 @@ Base.copy(I::Integers) = Integers(I.values)
 
 struct AllDifferent <: JuMP.AbstractVectorSet end
 JuMP.moi_set(::AllDifferent, dim) = CPE.AllDifferent(dim)
+
+struct Element1DConstInner <: MOI.AbstractVectorSet
+    dimension::Int
+    array::Vector{Int}
+end
+Base.copy(E::Element1DConstInner) = Element1DConstInner(E.dimension, E.array)
+
+struct Element1DConst <: JuMP.AbstractVectorSet 
+    array::Vector{Int}
+end
+JuMP.moi_set(E::Element1DConst, dim) = Element1DConstInner(dim, E.array)
 
 struct TableSetInternal <: MOI.AbstractVectorSet
     dimension::Int
@@ -266,6 +278,8 @@ struct Reified{A,F,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
     set::S
     dimension::Int
 end
+
+ReifiedSet{A,F}(set::S) where {A,F,S} = ReifiedSet{A,F,S}(set, 1+MOI.dimension(set))
 Base.copy(R::Reified{A,F,S}) where {A,F,S} = Reified{A,F,S}(R.set, R.dimension)
 
 abstract type AbstractBoolSet{
@@ -351,7 +365,6 @@ mutable struct ConstraintInternals{
     indices::Vector{Int}
     pvals::Vector{Int}
     is_initialized::Bool
-    is_activated::Bool
     is_deactivated::Bool # can be deactivated if it's absorbed by other constraints
     bound_rhs::Vector{BoundRhsVariable}# should be set if `update_best_bound` is true
 end
@@ -380,6 +393,15 @@ mutable struct AllDifferentConstraint <: Constraint
     scc_init::SCCInit
     # corresponds to `in_all_different`: Saves the constraint idxs where all variables are part of this alldifferent constraint
     sub_constraint_idxs::Vector{Int}
+end
+
+mutable struct Element1DConstConstraint <: Constraint
+    std::ConstraintInternals
+    zSupp::Vector{Int} # number of possibilities for setting z (in z == T[y])
+    z::Variable
+    y::Variable
+    z_changes_ptr::Int # the start pointer for checking z.changes
+    y_changes_ptr::Int # the start pointer for checking z.changes
 end
 
 abstract type BoolConstraint{C1<:Constraint,C2<:Constraint} <: Constraint end

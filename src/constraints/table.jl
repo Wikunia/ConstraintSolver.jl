@@ -7,7 +7,7 @@ function init_constraint_struct(com, ::TableSetInternal, internals)
         internals,
         RSparseBitSet(),
         TableSupport(), # will be filled in init_constraint!
-        Int[], # will be changes later as it needs the number of words
+        Int[], # will be changed later as it needs the number of words
         TableResidues(),
         Vector{TableBacktrackInfo}(),
         Int[], # changed_vars
@@ -411,7 +411,7 @@ function update_best_bound_constraint!(
 end
 
 """
-    single_reverse_pruning_constraint!(
+    _single_reverse_pruning_constraint!(
         com::CoM,
         constraint::TableConstraint,
         fct::MOI.VectorOfVariables,
@@ -425,7 +425,7 @@ A single reverse pruning step for the TableConstraint.
 Add the removed values to the mask and in `reverse_pruning_constraint` the corresponding table rows
 will be reactivated.
 """
-function single_reverse_pruning_constraint!(
+function _single_reverse_pruning_constraint!(
     com::CoM,
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,
@@ -480,7 +480,7 @@ function reset_residues!(com, constraint::TableConstraint)
 end
 
 """
-    reverse_pruning_constraint!(
+    _reverse_pruning_constraint!(
         com::CoM,
         constraint::TableConstraint,
         fct::MOI.VectorOfVariables,
@@ -489,7 +489,7 @@ end
 
 Is called after `single_reverse_pruning_constraint!`.
 """
-function reverse_pruning_constraint!(
+function _reverse_pruning_constraint!(
     com::CoM,
     constraint::TableConstraint,
     fct::MOI.VectorOfVariables,

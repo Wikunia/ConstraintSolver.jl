@@ -122,7 +122,7 @@ function still_feasible(
     else
         val != Int(constraint.activate_on) && return true
     end
-
+    
     # if activating or activated check the inner constraint
     inner_constraint = constraint.inner_constraint
     # check if already violated

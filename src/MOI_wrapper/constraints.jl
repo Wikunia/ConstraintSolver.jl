@@ -5,6 +5,7 @@ operator_to_set(::Function, ::Val{:!=}) = CPE.DifferentFrom(0.0)
 operator_to_set(::Function, ::Val{:<}) = CPE.Strictly(MOI.LessThan(0.0))
 operator_to_set(::Function, ::Val{:>}) = CPE.Strictly(MOI.GreaterThan(0.0))
 
+include("element.jl")
 include("indicator.jl")
 include("reified.jl")
 include("bool.jl")
@@ -34,6 +35,7 @@ MOI.supports_constraint(
     ::Type{MOI.VectorOfVariables},
     ::Type{CPE.AllEqual},
 ) = true
+
 MOI.supports_constraint(
     ::Optimizer,
     ::Type{MOI.VectorOfVariables},
@@ -45,6 +47,12 @@ MOI.supports_constraint(
     ::Type{VAF{T}},
     ::Type{CPE.AllDifferent},
 ) where {T <: Real} = true
+
+MOI.supports_constraint(
+    ::Optimizer,
+    ::Type{MOI.VectorOfVariables},
+    ::Type{Element1DConstInner},
+) = true
 
 MOI.supports_constraint(
     ::Optimizer,
@@ -299,6 +307,8 @@ function MOI.add_constraint(
         com.info.n_constraint_types.table += 1
     elseif set isa CPE.AllEqual
         com.info.n_constraint_types.equality += 1
+    elseif set isa Element1DConstInner
+        com.info.n_constraint_types.element += 1
     end
 
     return MOI.ConstraintIndex{MOI.VectorOfVariables,typeof(set)}(length(com.constraints))
@@ -577,7 +587,7 @@ function MOI.add_constraint(
     set::IS,
 ) where {T,A,F,S<:MOI.AbstractVectorSet,IS<:CS.Indicator{A,F,S}}
     com = model.inner
-    com.info.n_constraint_types.reified += 1
+    com.info.n_constraint_types.indicator += 1
 
     internals = create_internals(com, func, set)
 

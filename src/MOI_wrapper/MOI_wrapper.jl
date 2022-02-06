@@ -166,6 +166,8 @@ function MOI.optimize!(model::Optimizer)
     # check if every variable has bounds and is an Integer
     check_var_bounds(model)
 
+    move_element_constraint(model)
+
     set_pvals!(model)
     set_var_in_all_different!(model)
 

@@ -104,7 +104,7 @@ The following list shows constraints that are implemented and those which are pl
     - one can write something like `a || !b` 
     - **Attention:** Does not check whether `a` and `b` are actually binary variables
 - Element constraints
-  - [ ] 1D array with constant values 
+  - [X] 1D array with constant values 
     - i.e `T = [12,87,42,1337]` `T[y] == z` with `y` and `z` being variables [#213](https://github.com/Wikunia/ConstraintSolver.jl/pull/213)
   - [ ] 2D array with constant values 
     - where T is an array
