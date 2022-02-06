@@ -1,5 +1,6 @@
 [deps]
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Cbc = "9961bab8-2fa3-5c5a-9d89-47fab24efd76"
 ConstraintSolver = "e0e52ebd-5523-408d-9ca3-7641f1cd1405"
 GLPK = "60bf3e95-4087-53dc-ae20-288a0d20c6a6"
