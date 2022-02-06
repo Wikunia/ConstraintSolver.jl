@@ -13,7 +13,7 @@ end
 function get_linear_constraint(func::SAF{T}, set) where {T<:Real}
     func = remove_zero_coeff(func)
 
-    indices = [v.variable_index.value for v in func.terms]
+    indices = [v.variable.value for v in func.terms]
 
     return LinearConstraint(0, func, set, indices)
 end
@@ -29,7 +29,7 @@ end
 Get indices from the VectorAffineFunction
 """
 function get_indices(func::VAF{T}) where {T}
-    return [v.scalar_term.variable_index.value for v in func.terms]
+    return [v.scalar_term.variable.value for v in func.terms]
 end
 
 """
@@ -119,11 +119,11 @@ function get_extrema(model::Optimizer, saf::MOI.ScalarAffineFunction{T}) where T
     max_val = saf.constant
     for term in saf.terms 
         if term.coefficient < 0
-            min_val += term.coefficient*model.variable_info[term.variable_index.value].upper_bound
-            max_val += term.coefficient*model.variable_info[term.variable_index.value].lower_bound
+            min_val += term.coefficient*model.variable_info[term.variable.value].upper_bound
+            max_val += term.coefficient*model.variable_info[term.variable.value].lower_bound
         else
-            min_val += term.coefficient*model.variable_info[term.variable_index.value].lower_bound
-            max_val += term.coefficient*model.variable_info[term.variable_index.value].upper_bound
+            min_val += term.coefficient*model.variable_info[term.variable.value].lower_bound
+            max_val += term.coefficient*model.variable_info[term.variable.value].upper_bound
         end
     end
     return min_val, max_val

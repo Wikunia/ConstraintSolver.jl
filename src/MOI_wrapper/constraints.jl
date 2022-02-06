@@ -138,7 +138,7 @@ end
 
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
     for term in aff.terms
-        check_inbounds(model, term.variable_index)
+        check_inbounds(model, term.variable)
     end
     return
 end
@@ -337,7 +337,7 @@ function MOI.add_constraint(
             new_constraint_fct = MOIU.operate(-, T, f, vidx)
             MOI.add_constraint(model, new_constraint_fct, MOI.EqualTo(0.0))
         else
-            variables[i] = f.terms[1].variable_index
+            variables[i] = f.terms[1].variable
         end
     end
     ci = MOI.add_constraint(model, MOI.VectorOfVariables(variables), set)
@@ -379,7 +379,7 @@ function MOI.add_constraint(
     check_inbounds(model, func)
 
     if length(func.terms) == 1
-        vidx = func.terms[1].variable_index.value
+        vidx = func.terms[1].variable.value
         val = convert(Int, (set.value - func.constant) / func.terms[1].coefficient)
         push!(model.inner.init_fixes, (vidx, val))
         return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(0)
@@ -387,8 +387,8 @@ function MOI.add_constraint(
         if func.terms[1].coefficient == -func.terms[2].coefficient
             # we have the form a == b
             vecOfvar = MOI.VectorOfVariables([
-                func.terms[1].variable_index,
-                func.terms[2].variable_index,
+                func.terms[1].variable,
+                func.terms[2].variable,
             ])
             com = model.inner
             internals = ConstraintInternals(
@@ -429,11 +429,11 @@ function add_variable_less_than_variable_constraint(
     com = model.inner
 
     if reverse_order
-        lhs = func.terms[2].variable_index.value
-        rhs = func.terms[1].variable_index.value
+        lhs = func.terms[2].variable.value
+        rhs = func.terms[1].variable.value
     else
-        lhs = func.terms[1].variable_index.value
-        rhs = func.terms[2].variable_index.value
+        lhs = func.terms[1].variable.value
+        rhs = func.terms[2].variable.value
     end
 
     internals = ConstraintInternals(
@@ -491,7 +491,7 @@ function MOI.add_constraint(
             rhs = get_approx_discrete(rhs)
             rm!(
                 com,
-                com.search_space[func.terms[1].variable_index.value],
+                com.search_space[func.terms[1].variable.value],
                 rhs;
                 changes = false,
             )
