@@ -151,3 +151,13 @@ steiner(3)
 SUITE["steiner"]["steiner_7"] =
     @benchmarkable steiner(7) seconds = 5
     
+
+include(joinpath(dir, "benchmark/sort/benchmark.jl"))
+
+SUITE["sorting"] = BenchmarkGroup(["element1Dconst", "alldifferent", "equal", "less_than"])
+# compiling run
+sort_element_constr(10)
+SUITE["sorting"]["50_elements"] =
+    @benchmarkable sort_element_constr(50) seconds = 5
+SUITE["sorting"]["100_elements"] =
+    @benchmarkable sort_element_constr(100) seconds = 10

@@ -1,7 +1,9 @@
 # ConstrainSolver.jl - Changelog
  
-## Unreleased
+## v0.8.2 (6th of February 2022)
 - Support for element constraints with a constant array like `T[y] == z`
+  - **This is experimental** Quite some stuff that might go wrong when combining it inside an indicator, reified or boolean constraint.
+    - If you find any problems please open an issue. I release it to get more feedback get this more tested. I plan on refactoring this quite a bit later.
 
 ## v0.8.1 (5th of February 2022)
 - bugfix when using `CS.Integers` together with an alldifferent constraint. [PR #283](https://github.com/Wikunia/ConstraintSolver.jl/pull/283)
