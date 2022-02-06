@@ -351,7 +351,6 @@ mutable struct ConstraintInternals{
     indices::Vector{Int}
     pvals::Vector{Int}
     is_initialized::Bool
-    is_activated::Bool
     is_deactivated::Bool # can be deactivated if it's absorbed by other constraints
     bound_rhs::Vector{BoundRhsVariable}# should be set if `update_best_bound` is true
 end
