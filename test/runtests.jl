@@ -75,6 +75,7 @@ include("constraints/xor.jl")
 include("constraints/indicator.jl")
 include("constraints/reified.jl")
 include("constraints/equal_to.jl")
+include("constraints/element1Dconst.jl")
 
 include("lp_solver.jl")
 

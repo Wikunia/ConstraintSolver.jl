@@ -75,7 +75,7 @@ function update_init_constraints!(com::CS.CoM; constraints = com.constraints)
 end
 
 """
-call_finished_pruning!(com)
+    call_finished_pruning!(com)
 
 Call `finished_pruning_constraint!` for every constraint which implements that function as saved in `constraint.impl.finished_pruning`
 """
@@ -86,7 +86,7 @@ function call_finished_pruning!(com)
 end
 
 """
-call_restore_pruning!(com, prune_steps)
+    call_restore_pruning!(com, prune_steps)
 
 Call `call_restore_pruning!` for every constraint which implements that function as saved in `constraint.impl.restore_pruning`
 """
@@ -203,6 +203,37 @@ end
 """
     reverse_pruning_constraint!(::CS.CoM, ::Constraint, fct, set, backtrack_id)
 
+Call [`_reverse_pruning_constraint!`](@ref) if the constraint is activated
+"""
+function reverse_pruning_constraint!(
+    com::CoM,
+    constraint::Constraint,
+    fct,
+    set,
+    backtrack_id,
+)
+    constraint.is_deactivated || _reverse_pruning_constraint!(com, constraint, fct, set, backtrack_id)
+end
+
+"""
+    single_reverse_pruning_constraint!(::CS.CoM, ::Constraint, fct, set, variable, backtrack_id)
+
+Call [`_single_reverse_pruning_constraint!`](@ref) if the constraint is activated
+"""
+function single_reverse_pruning_constraint!(
+    com::CoM,
+    constraint::Constraint,
+    fct,
+    set,
+    variable,
+    backtrack_id,
+)
+    constraint.is_deactivated || _single_reverse_pruning_constraint!(com, constraint, fct, set, variable, backtrack_id)
+end
+
+"""
+    _reverse_pruning_constraint!(::CS.CoM, ::Constraint, fct, set, backtrack_id)
+
 Fallback for `reverse_pruning_constraint!`. 
 This function will get called when a specific pruning step with id `backtrack_id` needs to get reversed.
 Should only be implemented when the data structure of the constraint needs to be updated. 
@@ -211,7 +242,7 @@ See also [`single_reverse_pruning_constraint!`](@ref) to change the data structu
 
 Return `nothing`
 """
-function reverse_pruning_constraint!(
+function _reverse_pruning_constraint!(
     com::CoM,
     constraint::Constraint,
     fct,
@@ -222,9 +253,9 @@ function reverse_pruning_constraint!(
 end
 
 """
-    single_reverse_pruning_constraint!(::CS.CoM, ::Constraint, fct, set, variable, backtrack_id)
+    _single_reverse_pruning_constraint!(::CS.CoM, ::Constraint, fct, set, variable, backtrack_id)
 
-Fallback for `single_reverse_pruning_constraint!`. 
+Fallback for `_single_reverse_pruning_constraint!`. 
 This function will get called when a specific pruning step with id `backtrack_id` needs to get reversed.
 In contrast to [`reverse_pruning_constraint!`](@ref) however this function will be called for each variable individually and is called 
 before [`reverse_pruning_constraint!`](@ref).
@@ -233,13 +264,13 @@ All variables are updated automatically anyway.
 
 Return `nothing`
 """
-function single_reverse_pruning_constraint!(
+function _single_reverse_pruning_constraint!(
     ::CoM,
     ::Constraint,
     fct,
     set,
     variable,
-    backtrack_idx,
+    backtrack_id,
 )
     nothing
 end

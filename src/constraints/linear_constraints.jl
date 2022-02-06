@@ -633,7 +633,7 @@ function min_sum_feasible(com, min_sum, set::CPE.Strictly{MOI.LessThan{T}}) wher
     return min_sum <= MOI.constant(set) + com.options.atol
 end
 
-function reverse_pruning_constraint!(
+function _reverse_pruning_constraint!(
     com::CoM,
     constraint::LinearConstraint,
     fct::SAF{T},

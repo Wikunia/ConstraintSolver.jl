@@ -148,3 +148,17 @@ end
     )
     @test !CS.is_constraint_violated(com, constraint, constraint.fct, constraint.set)
 end
+
+@testset "indicator is_constraint_violated test" begin
+    m = Model(optimizer_with_attributes(CS.Optimizer, "backtrack" => false, "logging" => []))
+    @variable(m, b, Bin)
+    v = [1,2,3,4,5]
+    @variable(m, -5 <= x <= 5, Int)
+    @constraint(m, b => {v[x] == 2})
+    optimize!(m)
+    com = CS.get_inner_model(m)
+
+    constraint = com.constraints[1]
+    # b is not active so no pruning should happen
+    @test sort(CS.values.(m, x)) == -5:5
+end
