@@ -1,9 +1,9 @@
 """
 JuMP constraints
 """
-sense_to_set(::Function, ::Val{:!=}) = CPE.DifferentFrom(0.0)
-sense_to_set(::Function, ::Val{:<}) = CPE.Strictly(MOI.LessThan(0.0))
-sense_to_set(::Function, ::Val{:>}) = CPE.Strictly(MOI.GreaterThan(0.0))
+operator_to_set(::Function, ::Val{:!=}) = CPE.DifferentFrom(0.0)
+operator_to_set(::Function, ::Val{:<}) = CPE.Strictly(MOI.LessThan(0.0))
+operator_to_set(::Function, ::Val{:>}) = CPE.Strictly(MOI.GreaterThan(0.0))
 
 include("indicator.jl")
 include("reified.jl")

@@ -50,7 +50,7 @@ function JuMP.parse_constraint_head(_error::Function, ::Val{:(:=)}, lhs, rhs)
     end
     rhs_con = rhs.args[1]
     rhs_vectorized, rhs_parsecode, rhs_buildcall =
-        JuMP.parse_constraint_expr(_error, rhs_con)
+        JuMP.parse_constraint(_error, rhs_con)
 
     # TODO implement vectorized version
     vectorized = false
