@@ -332,10 +332,9 @@ function MOI.add_constraint(
             vidx = MOI.add_variable(model)
             variables[i] = vidx
             min_val, max_val = get_extrema(model, f)
-            svf = VI(vidx)
-            MOI.add_constraint(model, svf, MOI.Integer())
-            MOI.add_constraint(model, svf, MOI.Interval(min_val, max_val))
-            new_constraint_fct = MOIU.operate(-, T, f, svf)
+            MOI.add_constraint(model, vidx, MOI.Integer())
+            MOI.add_constraint(model, vidx, MOI.Interval(min_val, max_val))
+            new_constraint_fct = MOIU.operate(-, T, f, vidx)
             MOI.add_constraint(model, new_constraint_fct, MOI.EqualTo(0.0))
         else
             variables[i] = f.terms[1].variable_index

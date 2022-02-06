@@ -80,8 +80,7 @@ has_lower_bound(model::Optimizer, vi::VI) = model.variable_info[vi.value].has_lo
 
 is_fixed(model::Optimizer, vi::VI) = model.variable_info[vi.value].is_fixed
 
-function MOI.add_constraint(model::Optimizer, v::VI, t::MOI.Integer)
-    vi = v.variable
+function MOI.add_constraint(model::Optimizer, vi::VI, t::MOI.Integer)
     model.variable_info[vi.value].is_integer = true
 
     cidx = length(model.var_constraints) + 1
@@ -91,8 +90,7 @@ function MOI.add_constraint(model::Optimizer, v::VI, t::MOI.Integer)
     return MOI.ConstraintIndex{VI,MOI.Integer}(cidx)
 end
 
-function MOI.add_constraint(model::Optimizer, v::VI, t::MOI.ZeroOne)
-    vi = v.variable
+function MOI.add_constraint(model::Optimizer, vi::VI, t::MOI.ZeroOne)
     model.variable_info[vi.value].is_integer = true
 
     # this gets called after setting lower and upper bound
@@ -124,8 +122,7 @@ function MOI.add_constraint(model::Optimizer, v::VI, t::MOI.ZeroOne)
     return MOI.ConstraintIndex{VI,MOI.ZeroOne}(cidx)
 end
 
-function MOI.add_constraint(model::Optimizer, v::VI, t::Integers)
-    vi = v.variable
+function MOI.add_constraint(model::Optimizer, vi::VI, t::Integers)
     model.variable_info[vi.value].is_integer = true
 
     set_vals = t.values
@@ -146,10 +143,9 @@ Populating Variable bounds
 =#
 function MOI.add_constraint(
     model::Optimizer,
-    v::VI,
+    vi::VI,
     interval::MOI.Interval{T},
 ) where {T<:Real}
-    vi = v.variable
     check_inbounds(model, vi)
     isnan(interval.upper) &&
         throw(ErrorException("The interval bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(interval.upper)"))
@@ -184,8 +180,7 @@ function MOI.add_constraint(
     return MOI.ConstraintIndex{VI,MOI.Interval{T}}(cidx)
 end
 
-function MOI.add_constraint(model::Optimizer, v::VI, lt::MOI.LessThan{T}) where {T<:Real}
-    vi = v.variable
+function MOI.add_constraint(model::Optimizer, vi::VI, lt::MOI.LessThan{T}) where {T<:Real}
     check_inbounds(model, vi)
     isnan(lt.upper) &&
         throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(lt.upper)"))
@@ -217,10 +212,9 @@ end
 
 function MOI.add_constraint(
     model::Optimizer,
-    v::VI,
+    vi::VI,
     gt::MOI.GreaterThan{T},
 ) where {T<:Real}
-    vi = v.variable
     check_inbounds(model, vi)
     isnan(gt.lower) &&
         throw(ErrorException("The variable bounds can not contain NaN and must be an Integer. Currently it has an upper bound of $(gt.upper)"))

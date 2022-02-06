@@ -89,9 +89,9 @@ end
 """
 Copy constructor for the optimizer
 """
-MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = !copy_names
+MOI.supports_incremental_interface(model::Optimizer) = true
 function MOI.copy_to(model::Optimizer, src::MOI.ModelLike)
-    return MOIU.automatic_copy_to(model, src)
+    return MOIU.default_copy_to(model, src)
 end
 
 MOI.supports(::Optimizer, ::MOI.RawOptimizerAttribute) = true
