@@ -245,7 +245,7 @@ function MOI.add_constraint(
 end
 
 function MOI.add_constraint(model::Optimizer, v::VI, eq::MOI.EqualTo{T}) where {T<:Real}
-    vi = v.variable
+    vi = v
     check_inbounds(model, vi)
     isnan(eq.value) && @error "Invalid fixed value $(eq.value)."
     has_lower_bound(model, vi) && @error "Variable $vi has a lower bound. Cannot be fixed."

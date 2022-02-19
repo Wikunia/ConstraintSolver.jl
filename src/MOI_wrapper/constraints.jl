@@ -462,22 +462,23 @@ end
 
 function MOI.add_constraint(
     model::Optimizer,
-    func::SAF{T},
+    fct::SAF{T},
     set::MOI.LessThan{T},
 ) where {T<:Real}
-    check_inbounds(model, func)
+    check_inbounds(model, fct)
+    fct, set = fct_constant_to_set(fct, set)
 
     # support for a <= b which is written as a-b <= 0
     # currently only supports if the coefficients are 1 and -1
     if set.upper == 0.0 &&
-       length(func.terms) == 2 &&
-       abs(func.terms[1].coefficient) == 1.0 &&
-       abs(func.terms[2].coefficient) == 1.0 &&
-       func.terms[1].coefficient == -func.terms[2].coefficient
-        return add_variable_less_than_variable_constraint(model, func, set)
+       length(fct.terms) == 2 &&
+       abs(fct.terms[1].coefficient) == 1.0 &&
+       abs(fct.terms[2].coefficient) == 1.0 &&
+       fct.terms[1].coefficient == -fct.terms[2].coefficient
+        return add_variable_less_than_variable_constraint(model, fct, set)
     end
 
-    lc = new_linear_constraint(model.inner, func, set)
+    lc = new_linear_constraint(model.inner, fct, set)
 
     add_constraint!(model, lc)
     model.inner.info.n_constraint_types.inequality += 1
@@ -487,34 +488,34 @@ end
 
 function MOI.add_constraint(
     model::Optimizer,
-    func::SAF{T},
+    fct::SAF{T},
     set::CPE.DifferentFrom{T},
 ) where {T<:Real}
     com = model.inner
     com.info.n_constraint_types.notequal += 1
+    fct, set = fct_constant_to_set(fct, set)
 
     # support for cx != a where a and c are constants
-    if length(func.terms) == 1
+    if length(fct.terms) == 1
         # reformulate to x != a where x is variable and a a constant
-        rhs = set.value / func.terms[1].coefficient
+        rhs = set.value / fct.terms[1].coefficient
         if isapprox_discrete(com, rhs)
             rhs = get_approx_discrete(rhs)
-            rm!(
-                com,
-                com.search_space[func.terms[1].variable.value],
-                rhs;
-                changes = false,
-            )
+            v = com.search_space[fct.terms[1].variable.value]
+            if has(v, rhs) 
+                rm!(com, v, rhs; changes = false)
+            end
         end
         return MOI.ConstraintIndex{SAF{T},CPE.DifferentFrom{T}}(0)
     end
 
-    lc = new_linear_constraint(model.inner, func, set)
+    lc = new_linear_constraint(model.inner, fct, set)
 
     add_constraint!(model, lc)
 
     return MOI.ConstraintIndex{SAF{T},CPE.DifferentFrom{T}}(length(com.constraints))
 end
+
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},

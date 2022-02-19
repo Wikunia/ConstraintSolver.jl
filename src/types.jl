@@ -279,7 +279,7 @@ struct Reified{A,F,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
     dimension::Int
 end
 
-ReifiedSet{A,F}(set::S) where {A,F,S} = ReifiedSet{A,F,S}(set, 1+MOI.dimension(set))
+Reified{A,F}(set::S) where {A,F,S} = Reified{A,F,S}(set, 1+MOI.dimension(set))
 Base.copy(R::Reified{A,F,S}) where {A,F,S} = Reified{A,F,S}(R.set, R.dimension)
 
 abstract type AbstractBoolSet{

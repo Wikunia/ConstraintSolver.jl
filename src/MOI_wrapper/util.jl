@@ -1,35 +1,54 @@
 """
-    new_linear_constraint(com::CS.CoM, func::SAF{T}, set) where {T<:Real}
+    new_linear_constraint(com::CS.CoM, fct::SAF{T}, set) where {T<:Real}
 
 Create a new linear constraint and return a `LinearConstraint` with already a correct index
 such that it can be simply added with [`add_constraint!`](@ref)
 """
-function new_linear_constraint(com::CS.CoM, func::SAF{T}, set) where {T<:Real}
-    lc = get_linear_constraint(func, set)
+function new_linear_constraint(com::CS.CoM, fct::SAF{T}, set) where {T<:Real}
+    lc = get_linear_constraint(fct, set)
     lc.idx = length(com.constraints) + 1
     return lc
 end
 
-function get_linear_constraint(func::SAF{T}, set) where {T<:Real}
-    func = remove_zero_coeff(func)
+function get_linear_constraint(fct::SAF{T}, set) where {T<:Real}
+    fct, set = fct_constant_to_set(fct, set)
+    fct = remove_zero_coeff(fct)
 
-    indices = [v.variable.value for v in func.terms]
+    indices = [v.variable.value for v in fct.terms]
 
-    return LinearConstraint(0, func, set, indices)
+    return LinearConstraint(0, fct, set, indices)
 end
 
-function remove_zero_coeff(func::MOI.ScalarAffineFunction)
-    terms = [term for term in func.terms if term.coefficient != 0]
-    return MOI.ScalarAffineFunction(terms, func.constant)
+function remove_zero_coeff(fct::MOI.ScalarAffineFunction)
+    terms = [term for term in fct.terms if term.coefficient != 0]
+    return MOI.ScalarAffineFunction(terms, fct.constant)
 end
+
+
+function fct_constant_to_set(fct::SAF{T}, set::ConstraintProgrammingExtensions.Strictly) where T
+    fct, inner_set = fct_constant_to_set(fct, set.set)
+    return fct, ConstraintProgrammingExtensions.Strictly(inner_set)
+end
+
+function fct_constant_to_set(fct::SAF{T}, set::MathOptInterface.AbstractScalarSet) where T
+    constant = fct.constant
+    set = typeof(set)(set_value(set) - constant)
+    fct = MOI.ScalarAffineFunction(fct.terms, zero(T))
+    return fct, set
+end
+
+set_value(set::MOI.LessThan) = set.upper
+set_value(set::MOI.GreaterThan) = set.lower
+set_value(set::MOI.EqualTo) = set.value
+set_value(set::ConstraintProgrammingExtensions.DifferentFrom) = set.value
 
 """
-    get_indices(func::VAF{T}) where {T}
+    get_indices(fct::VAF{T}) where {T}
 
 Get indices from the VectorAffineFunction
 """
-function get_indices(func::VAF{T}) where {T}
-    return [v.scalar_term.variable.value for v in func.terms]
+function get_indices(fct::VAF{T}) where {T}
+    return [v.scalar_term.variable.value for v in fct.terms]
 end
 
 """
@@ -136,8 +155,8 @@ function create_new_activator_constraint(model, activation_constraint::Activator
     T = parametric_type(com)
     ACS = typeof_without_params(activation_constraint.set)
     A = get_activation_condition(activation_constraint.set)
-    if ACS == MOI.IndicatorSet
-        ACS = IndicatorSet
+    if ACS == MOI.Indicator
+        ACS = Indicator
     end
     f = MOIU.eachscalar(activation_constraint.fct)
 

@@ -9,17 +9,17 @@
         )
         @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.CPE.AllEqual)
         @test MOI.supports_constraint(optimizer, MOI.VectorOfVariables, CS.TableSetInternal)
-        @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.ZeroOne)
-        @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.Integer)
-        @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.LessThan{Float64})
-        @test MOI.supports_constraint(optimizer, MOI.SingleVariable, CS.Integers)
+        @test MOI.supports_constraint(optimizer, MOI.VariableIndex, MOI.ZeroOne)
+        @test MOI.supports_constraint(optimizer, MOI.VariableIndex, MOI.Integer)
+        @test MOI.supports_constraint(optimizer, MOI.VariableIndex, MOI.LessThan{Float64})
+        @test MOI.supports_constraint(optimizer, MOI.VariableIndex, CS.Integers)
         @test MOI.supports_constraint(
             optimizer,
-            MOI.SingleVariable,
+            MOI.VariableIndex,
             MOI.GreaterThan{Float64},
         )
-        @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.EqualTo{Float64})
-        @test MOI.supports_constraint(optimizer, MOI.SingleVariable, MOI.Interval{Float64})
+        @test MOI.supports_constraint(optimizer, MOI.VariableIndex, MOI.EqualTo{Float64})
+        @test MOI.supports_constraint(optimizer, MOI.VariableIndex, MOI.Interval{Float64})
 
         @test MOI.supports_constraint(
             optimizer,
@@ -74,7 +74,7 @@
 
         # objective
         @test MOI.supports(optimizer, MOI.ObjectiveSense())
-        @test MOI.supports(optimizer, MOI.ObjectiveFunction{MOI.SingleVariable}())
+        @test MOI.supports(optimizer, MOI.ObjectiveFunction{MOI.VariableIndex}())
         @test MOI.supports(
             optimizer,
             MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}(),
