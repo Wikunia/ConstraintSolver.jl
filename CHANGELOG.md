@@ -2,6 +2,7 @@
 
 ## v0.9.0 (19th of February 2022)
 - Works with MathOptInterface v0.10/v1
+
 ## v0.8.2 (6th of February 2022)
 - Support for element constraints with a constant array like `T[y] == z`
   - **This is experimental** Quite some stuff that might go wrong when combining it inside an indicator, reified or boolean constraint.
