@@ -4,7 +4,7 @@
         constraint::IndicatorConstraint,
         fct::Union{MOI.VectorOfVariables, VAF{T}},
         set::IS
-    ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
+    ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{Indicator{A}, MOI.Indicator{A, ASS}}}
 
 Initialize the inner constraint if it needs to be initialized
 """
@@ -18,7 +18,7 @@ function init_constraint!(
     A,
     T<:Real,
     ASS<:MOI.AbstractScalarSet,
-    IS<:Union{IndicatorSet{A},MOI.IndicatorSet{A,ASS}},
+    IS<:Union{Indicator{A},MOI.Indicator{A,ASS}},
 }
     indicator_vidx = constraint.indices[1]
     search_space = com.search_space
@@ -48,7 +48,7 @@ end
         fct::Union{MOI.VectorOfVariables, VAF{T}},
         set::IS;
         logs = true,
-    ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
+    ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{Indicator{A}, MOI.Indicator{A, ASS}}}
 
 Prune the search space given the indicator constraint. An indicator constraint is of the form `b => {x + y == 2}`.
 Where the constraint in `{ }` is currently a linear constraint.
@@ -65,7 +65,7 @@ function prune_constraint!(
     A,
     T<:Real,
     ASS<:MOI.AbstractScalarSet,
-    IS<:Union{IndicatorSet{A},MOI.IndicatorSet{A,ASS}},
+    IS<:Union{Indicator{A},MOI.Indicator{A,ASS}},
 }
     indicator_vidx = constraint.indices[1]
     search_space = com.search_space
@@ -94,7 +94,7 @@ end
         set::IS,
         vidx::Int,
         val::Int,
-    ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
+    ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{Indicator{A}, MOI.Indicator{A, ASS}}}
 
 Return whether the search space is still feasible when setting `search_space[vidx]` to value.
 """
@@ -109,7 +109,7 @@ function still_feasible(
     A,
     T<:Real,
     ASS<:MOI.AbstractScalarSet,
-    IS<:Union{IndicatorSet{A},MOI.IndicatorSet{A,ASS}},
+    IS<:Union{Indicator{A},MOI.Indicator{A,ASS}},
 }
     indicator_vidx = constraint.indices[1]
     search_space = com.search_space
@@ -150,7 +150,7 @@ end
         fct::Union{MOI.VectorOfVariables, VAF{T}},
         set::IS,
         values::Vector{Int}
-    ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{IndicatorSet{A}, MOI.IndicatorSet{A, ASS}}}
+    ) where {A, T<:Real, ASS<:MOI.AbstractScalarSet, IS<:Union{Indicator{A}, MOI.Indicator{A, ASS}}}
 
 Return whether given `values` the constraint is fulfilled.
 """
@@ -163,7 +163,7 @@ function is_constraint_solved(
     A,
     T<:Real,
     ASS<:MOI.AbstractScalarSet,
-    IS<:Union{IndicatorSet{A},MOI.IndicatorSet{A,ASS}},
+    IS<:Union{Indicator{A},MOI.Indicator{A,ASS}},
 }
     if values[1] == Int(constraint.activate_on)
         inner_constraint = constraint.inner_constraint
@@ -187,7 +187,7 @@ end
         A,
         T<:Real,
         ASS<:MOI.AbstractScalarSet,
-        IS<:Union{IndicatorSet{A},MOI.IndicatorSet{A,ASS}},
+        IS<:Union{Indicator{A},MOI.Indicator{A,ASS}},
     }
 
 Checks if the constraint is violated as it is currently set. This can happen inside an
@@ -202,7 +202,7 @@ function is_constraint_violated(
     A,
     T<:Real,
     ASS<:MOI.AbstractScalarSet,
-    IS<:Union{IndicatorSet{A},MOI.IndicatorSet{A,ASS}},
+    IS<:Union{Indicator{A},MOI.Indicator{A,ASS}},
 }
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(

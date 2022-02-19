@@ -18,7 +18,7 @@ using JuMP:
     set_lower_bound,
     set_upper_bound,
     termination_status
-import JuMP.sense_to_set
+import JuMP.operator_to_set
 import JuMP
 import ConstraintProgrammingExtensions
 using LightGraphs
@@ -39,7 +39,6 @@ const MOIB = MathOptInterface.Bridges
 const MOIBC = MathOptInterface.Bridges.Constraint
 const MOIU = MOI.Utilities
 
-const SVF = MOI.SingleVariable
 const SAF = MOI.ScalarAffineFunction
 const VAF = MOI.VectorAffineFunction
 

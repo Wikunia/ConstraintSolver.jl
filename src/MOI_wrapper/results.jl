@@ -16,7 +16,7 @@ end
 
 function MOI.get(model::Optimizer, vp::MOI.VariablePrimal, vi::MOI.VariableIndex)
     check_inbounds(model, vi)
-    return model.inner.solutions[vp.N].values[vi.value]
+    return model.inner.solutions[vp.result_index].values[vi.value]
 end
 
 function set_status!(model::Optimizer, status::Symbol)
@@ -31,6 +31,6 @@ function set_status!(model::Optimizer, status::Symbol)
     end
 end
 
-function MOI.get(model::Optimizer, ::MOI.SolveTime)
+function MOI.get(model::Optimizer, ::MOI.SolveTimeSec)
     return model.inner.solve_time
 end

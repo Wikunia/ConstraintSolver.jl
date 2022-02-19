@@ -53,7 +53,7 @@ function solve_all(grids; benchmark = false, single_times = true)
             MOI.optimize!(m)
             status = MOI.get(m, MOI.TerminationStatus())
             GC.enable(true)
-            # println(i - 1, ", ", MOI.get(m, MOI.SolveTime()))
+            # println(i - 1, ", ", MOI.get(m, MOI.SolveTimeSec()))
         else
             GC.enable(false)
             MOI.optimize!(m)

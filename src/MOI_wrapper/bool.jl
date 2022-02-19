@@ -55,7 +55,7 @@ function parse_bool_constraint(_error, bool_val::BOOL_VALS, lhs, rhs)
     lhs = transform_binary_expr(lhs)
     
     lhs_vectorized, lhs_parsecode, lhs_buildcall =
-        JuMP.parse_constraint_expr(_error, lhs)
+        JuMP.parse_constraint(_error, lhs)
 
     if lhs_vectorized
         _error("`$(lhs)` should be non vectorized. There is currently no vectorized support for `and` constraints. Please open an issue at ConstraintSolver.jl")
@@ -63,7 +63,7 @@ function parse_bool_constraint(_error, bool_val::BOOL_VALS, lhs, rhs)
 
     rhs = transform_binary_expr(rhs)
     rhs_vectorized, rhs_parsecode, rhs_buildcall =
-        JuMP.parse_constraint_expr(_error1, rhs)
+        JuMP.parse_constraint(_error1, rhs)
 
     if rhs_vectorized
         _error("`$(rhs)` should be non vectorized. There is currently no vectorized support for `and` constraints. Please open an issue at ConstraintSolver.jl")
@@ -91,8 +91,8 @@ function JuMP.parse_constraint_head(_error::Function, bool_val::BOOL_VALS, lhs, 
     return parse_bool_constraint(_error, bool_val, lhs, rhs)
 end
 
-function JuMP.parse_one_operator_constraint(_error::Function, vectorized::Bool, bool_val::BOOL_VALS, lhs, rhs)
+function JuMP.parse_constraint_call(_error::Function, vectorized::Bool, bool_val::BOOL_VALS, lhs, rhs)
     @assert !vectorized
-    v,c,b = parse_bool_constraint(_error, bool_val, lhs, rhs)
-    return c,b
+    _, parse_code, build_code = parse_bool_constraint(_error, bool_val, lhs, rhs)
+    return parse_code, build_code
 end

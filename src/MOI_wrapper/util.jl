@@ -1,35 +1,54 @@
 """
-    new_linear_constraint(com::CS.CoM, func::SAF{T}, set) where {T<:Real}
+    new_linear_constraint(com::CS.CoM, fct::SAF{T}, set) where {T<:Real}
 
 Create a new linear constraint and return a `LinearConstraint` with already a correct index
 such that it can be simply added with [`add_constraint!`](@ref)
 """
-function new_linear_constraint(com::CS.CoM, func::SAF{T}, set) where {T<:Real}
-    lc = get_linear_constraint(func, set)
+function new_linear_constraint(com::CS.CoM, fct::SAF{T}, set) where {T<:Real}
+    lc = get_linear_constraint(fct, set)
     lc.idx = length(com.constraints) + 1
     return lc
 end
 
-function get_linear_constraint(func::SAF{T}, set) where {T<:Real}
-    func = remove_zero_coeff(func)
+function get_linear_constraint(fct::SAF{T}, set) where {T<:Real}
+    fct, set = fct_constant_to_set(fct, set)
+    fct = remove_zero_coeff(fct)
 
-    indices = [v.variable_index.value for v in func.terms]
+    indices = [v.variable.value for v in fct.terms]
 
-    return LinearConstraint(0, func, set, indices)
+    return LinearConstraint(0, fct, set, indices)
 end
 
-function remove_zero_coeff(func::MOI.ScalarAffineFunction)
-    terms = [term for term in func.terms if term.coefficient != 0]
-    return MOI.ScalarAffineFunction(terms, func.constant)
+function remove_zero_coeff(fct::MOI.ScalarAffineFunction)
+    terms = [term for term in fct.terms if term.coefficient != 0]
+    return MOI.ScalarAffineFunction(terms, fct.constant)
 end
+
+
+function fct_constant_to_set(fct::SAF{T}, set::ConstraintProgrammingExtensions.Strictly) where T
+    fct, inner_set = fct_constant_to_set(fct, set.set)
+    return fct, ConstraintProgrammingExtensions.Strictly(inner_set)
+end
+
+function fct_constant_to_set(fct::SAF{T}, set::MathOptInterface.AbstractScalarSet) where T
+    constant = fct.constant
+    set = typeof(set)(set_value(set) - constant)
+    fct = MOI.ScalarAffineFunction(fct.terms, zero(T))
+    return fct, set
+end
+
+set_value(set::MOI.LessThan) = set.upper
+set_value(set::MOI.GreaterThan) = set.lower
+set_value(set::MOI.EqualTo) = set.value
+set_value(set::ConstraintProgrammingExtensions.DifferentFrom) = set.value
 
 """
-    get_indices(func::VAF{T}) where {T}
+    get_indices(fct::VAF{T}) where {T}
 
 Get indices from the VectorAffineFunction
 """
-function get_indices(func::VAF{T}) where {T}
-    return [v.scalar_term.variable_index.value for v in func.terms]
+function get_indices(fct::VAF{T}) where {T}
+    return [v.scalar_term.variable.value for v in fct.terms]
 end
 
 """
@@ -37,7 +56,7 @@ end
 
 Create the inner constraint of a reified or indicator constraint
 """
-function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, IndicatorSet}, inner_set::MOI.AbstractVectorSet) where {T<:Real}
+function get_inner_constraint(com, func::VAF{T}, set::Union{Reified, Indicator}, inner_set::MOI.AbstractVectorSet) where {T<:Real}
     f = MOIU.eachscalar(func)
     inner_internals = ConstraintInternals(
         0,
@@ -49,11 +68,11 @@ function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, Indicato
 end
 
 """
-    get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, IndicatorSet}, inner_set::Union{ReifiedSet{A}, IndicatorSet{A}, MOI.IndicatorSet{A}}) where {A,T<:Real}
+    get_inner_constraint(com, func::VAF{T}, set::Union{Reified, Indicator}, inner_set::Union{Reified{A}, Indicator{A}, MOI.Indicator{A}}) where {A,T<:Real}
 
 Create the inner constraint when the inner constraint is a reified or indicator constraint as well.
 """
-function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, IndicatorSet}, inner_set::Union{ReifiedSet{A}, IndicatorSet{A}, MOI.IndicatorSet{A}}) where {A,T<:Real}
+function get_inner_constraint(com, func::VAF{T}, set::Union{Reified, Indicator}, inner_set::Union{Reified{A}, Indicator{A}, MOI.Indicator{A}}) where {A,T<:Real}
     f = MOIU.eachscalar(func)
     inner_internals = ConstraintInternals(
         0,
@@ -66,7 +85,7 @@ function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, Indicato
     complement_inner = get_complement_constraint(com, inner_constraint)
     indices = inner_internals.indices
     activator_internals = get_activator_internals(A, indices)
-    if inner_set isa ReifiedSet
+    if inner_set isa Reified
         constraint =
             ReifiedConstraint(inner_internals, activator_internals, inner_constraint, complement_inner)
     else
@@ -76,7 +95,7 @@ function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, Indicato
     return constraint
 end
 
-function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, IndicatorSet, MOI.IndicatorSet}, inner_set::MOI.AbstractScalarSet) where {T<:Real}
+function get_inner_constraint(com, func::VAF{T}, set::Union{Reified, Indicator, MOI.Indicator}, inner_set::MOI.AbstractScalarSet) where {T<:Real}
     inner_terms = [v.scalar_term for v in func.terms if v.output_index == 2]
     inner_constant = func.constants[2]
     inner_set = set.set
@@ -86,7 +105,7 @@ function get_inner_constraint(com, func::VAF{T}, set::Union{ReifiedSet, Indicato
     return get_linear_constraint(inner_func, inner_set)
 end
 
-function get_inner_constraint(com, vars::MOI.VectorOfVariables, set::Union{ReifiedSet, IndicatorSet}, inner_set)
+function get_inner_constraint(com, vars::MOI.VectorOfVariables, set::Union{Reified, Indicator}, inner_set)
     inner_internals = ConstraintInternals(
         0,
         MOI.VectorOfVariables(vars.variables[2:end]),
@@ -136,8 +155,8 @@ function create_new_activator_constraint(model, activation_constraint::Activator
     T = parametric_type(com)
     ACS = typeof_without_params(activation_constraint.set)
     A = get_activation_condition(activation_constraint.set)
-    if ACS == MOI.IndicatorSet
-        ACS = IndicatorSet
+    if ACS == MOI.Indicator
+        ACS = Indicator
     end
     f = MOIU.eachscalar(activation_constraint.fct)
 
@@ -209,13 +228,13 @@ function get_activator_internals(A, indices)
 end
 
 """
-    saf_is_svf(saf::MOI.ScalarAffineFunction)
+    is_vi(saf::MOI.ScalarAffineFunction)
 
-Checks if a `ScalarAffineFunction` can be represented as a `SingleVariable`.
+Checks if a `ScalarAffineFunction` can be represented as a `VariableIndex`.
 This can be used for example when having a `VectorAffineFunction` in `AllDifferentSet` constraint when the decision 
 has to be made whether a new constraint + variable has to be created.
 """
-function is_svf(saf::MOI.ScalarAffineFunction)
+function is_vi(saf::MOI.ScalarAffineFunction)
     !iszero(saf.constant) && return false
     length(saf.terms) != 1 && return false
     !isone(saf.terms[1].coefficient) && return false
@@ -227,11 +246,11 @@ function get_extrema(model::Optimizer, saf::MOI.ScalarAffineFunction{T}) where T
     max_val = saf.constant
     for term in saf.terms 
         if term.coefficient < 0
-            min_val += term.coefficient*model.variable_info[term.variable_index.value].upper_bound
-            max_val += term.coefficient*model.variable_info[term.variable_index.value].lower_bound
+            min_val += term.coefficient*model.variable_info[term.variable.value].upper_bound
+            max_val += term.coefficient*model.variable_info[term.variable.value].lower_bound
         else
-            min_val += term.coefficient*model.variable_info[term.variable_index.value].lower_bound
-            max_val += term.coefficient*model.variable_info[term.variable_index.value].upper_bound
+            min_val += term.coefficient*model.variable_info[term.variable.value].lower_bound
+            max_val += term.coefficient*model.variable_info[term.variable.value].upper_bound
         end
     end
     return min_val, max_val

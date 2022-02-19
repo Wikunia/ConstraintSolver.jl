@@ -89,20 +89,20 @@ end
 """
 Copy constructor for the optimizer
 """
-MOIU.supports_default_copy_to(model::Optimizer, copy_names::Bool) = !copy_names
-function MOI.copy_to(model::Optimizer, src::MOI.ModelLike; kws...)
-    return MOIU.automatic_copy_to(model, src; kws...)
+MOI.supports_incremental_interface(model::Optimizer) = true
+function MOI.copy_to(model::Optimizer, src::MOI.ModelLike)
+    return MOIU.default_copy_to(model, src)
 end
 
-MOI.supports(::Optimizer, ::MOI.RawParameter) = true
+MOI.supports(::Optimizer, ::MOI.RawOptimizerAttribute) = true
 MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
 
 """
-    MOI.set(model::Optimizer, p::MOI.RawParameter, value)
+    MOI.set(model::Optimizer, p::MOI.RawOptimizerAttribute, value)
 
-Set a RawParameter to `value`
+Set a RawOptimizerAttribute to `value`
 """
-function MOI.set(model::Optimizer, p::MOI.RawParameter, value)
+function MOI.set(model::Optimizer, p::MOI.RawOptimizerAttribute, value)
     current_options_type = SolverOptions
     current_options_obj = model.options
     p_symbol = Symbol(p.name)

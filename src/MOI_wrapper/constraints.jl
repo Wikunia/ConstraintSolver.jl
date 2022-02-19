@@ -1,9 +1,9 @@
 """
 JuMP constraints
 """
-sense_to_set(::Function, ::Val{:!=}) = CPE.DifferentFrom(0.0)
-sense_to_set(::Function, ::Val{:<}) = CPE.Strictly(MOI.LessThan(0.0))
-sense_to_set(::Function, ::Val{:>}) = CPE.Strictly(MOI.GreaterThan(0.0))
+operator_to_set(::Function, ::Val{:!=}) = CPE.DifferentFrom(0.0)
+operator_to_set(::Function, ::Val{:<}) = CPE.Strictly(MOI.LessThan(0.0))
+operator_to_set(::Function, ::Val{:>}) = CPE.Strictly(MOI.GreaterThan(0.0))
 
 include("element.jl")
 include("indicator.jl")
@@ -91,7 +91,7 @@ function MOI.supports_constraint(
     ::Optimizer,
     func::Type{VAF{T}},
     set::Type{OS},
-) where {A,T<:Real,IS<:MOI.AbstractScalarSet,OS<:MOI.IndicatorSet{A,IS}}
+) where {A,T<:Real,IS<:MOI.AbstractScalarSet,OS<:MOI.Indicator{A,IS}}
     if IS <: MOI.GreaterThan || IS <: CPE.Strictly{MOI.GreaterThan{T}}
         return false
     end
@@ -106,7 +106,7 @@ function MOI.supports_constraint(
     optimizer::Optimizer,
     func::Type{<:MOI.AbstractFunction},
     set::Type{OS},
-) where {A,F,IS,OS<:CS.IndicatorSet{A,F,IS}}
+) where {A,F,IS,OS<:CS.Indicator{A,F,IS}}
     !(A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO) && return false
     return supports_inner_constraint(optimizer, F, IS)
 end
@@ -115,7 +115,7 @@ function MOI.supports_constraint(
     optimizer::Optimizer,
     func::Type{<:MOI.AbstractFunction},
     set::Type{OS}
-) where {A,F,IS,OS<:CS.ReifiedSet{A,F,IS}}
+) where {A,F,IS,OS<:CS.Reified{A,F,IS}}
     !(A == MOI.ACTIVATE_ON_ONE || A == MOI.ACTIVATE_ON_ZERO) && return false
     return supports_inner_constraint(optimizer, F, IS)
 end
@@ -146,7 +146,7 @@ end
 
 function check_inbounds(model::Optimizer, aff::SAF{T}) where {T<:Real}
     for term in aff.terms
-        check_inbounds(model, term.variable_index)
+        check_inbounds(model, term.variable)
     end
     return
 end
@@ -333,8 +333,8 @@ function MOI.add_constraint(
     fs = MOIU.eachscalar(vaf)
     variables = Vector{MOI.VariableIndex}(undef, length(fs))
     for (i,f) in enumerate(fs)
-        # we need to create a new variable and SAF constraint when it's not a SVF
-        if !is_svf(f)
+        # we need to create a new variable and SAF constraint when it's not a variable index
+        if !is_vi(f)
             discrete, non_continuous_value = is_discrete_saf(f)
             if !discrete
                 throw(DomainError(non_continuous_value, "The constant and all coefficients need to be discrete"))
@@ -342,13 +342,12 @@ function MOI.add_constraint(
             vidx = MOI.add_variable(model)
             variables[i] = vidx
             min_val, max_val = get_extrema(model, f)
-            svf = MOI.SingleVariable(vidx)
-            MOI.add_constraint(model, svf, MOI.Integer())
-            MOI.add_constraint(model, svf, MOI.Interval(min_val, max_val))
-            new_constraint_fct = MOIU.operate(-, T, f, svf)
+            MOI.add_constraint(model, vidx, MOI.Integer())
+            MOI.add_constraint(model, vidx, MOI.Interval(min_val, max_val))
+            new_constraint_fct = MOIU.operate(-, T, f, vidx)
             MOI.add_constraint(model, new_constraint_fct, MOI.EqualTo(0.0))
         else
-            variables[i] = f.terms[1].variable_index
+            variables[i] = f.terms[1].variable
         end
     end
     ci = MOI.add_constraint(model, MOI.VectorOfVariables(variables), set)
@@ -390,7 +389,7 @@ function MOI.add_constraint(
     check_inbounds(model, func)
 
     if length(func.terms) == 1
-        vidx = func.terms[1].variable_index.value
+        vidx = func.terms[1].variable.value
         val = convert(Int, (set.value - func.constant) / func.terms[1].coefficient)
         push!(model.inner.init_fixes, (vidx, val))
         return MOI.ConstraintIndex{SAF{T},MOI.EqualTo{T}}(0)
@@ -398,8 +397,8 @@ function MOI.add_constraint(
         if func.terms[1].coefficient == -func.terms[2].coefficient
             # we have the form a == b
             vecOfvar = MOI.VectorOfVariables([
-                func.terms[1].variable_index,
-                func.terms[2].variable_index,
+                func.terms[1].variable,
+                func.terms[2].variable,
             ])
             com = model.inner
             internals = ConstraintInternals(
@@ -440,11 +439,11 @@ function add_variable_less_than_variable_constraint(
     com = model.inner
 
     if reverse_order
-        lhs = func.terms[2].variable_index.value
-        rhs = func.terms[1].variable_index.value
+        lhs = func.terms[2].variable.value
+        rhs = func.terms[1].variable.value
     else
-        lhs = func.terms[1].variable_index.value
-        rhs = func.terms[2].variable_index.value
+        lhs = func.terms[1].variable.value
+        rhs = func.terms[2].variable.value
     end
 
     internals = ConstraintInternals(
@@ -463,22 +462,23 @@ end
 
 function MOI.add_constraint(
     model::Optimizer,
-    func::SAF{T},
+    fct::SAF{T},
     set::MOI.LessThan{T},
 ) where {T<:Real}
-    check_inbounds(model, func)
+    check_inbounds(model, fct)
+    fct, set = fct_constant_to_set(fct, set)
 
     # support for a <= b which is written as a-b <= 0
     # currently only supports if the coefficients are 1 and -1
     if set.upper == 0.0 &&
-       length(func.terms) == 2 &&
-       abs(func.terms[1].coefficient) == 1.0 &&
-       abs(func.terms[2].coefficient) == 1.0 &&
-       func.terms[1].coefficient == -func.terms[2].coefficient
-        return add_variable_less_than_variable_constraint(model, func, set)
+       length(fct.terms) == 2 &&
+       abs(fct.terms[1].coefficient) == 1.0 &&
+       abs(fct.terms[2].coefficient) == 1.0 &&
+       fct.terms[1].coefficient == -fct.terms[2].coefficient
+        return add_variable_less_than_variable_constraint(model, fct, set)
     end
 
-    lc = new_linear_constraint(model.inner, func, set)
+    lc = new_linear_constraint(model.inner, fct, set)
 
     add_constraint!(model, lc)
     model.inner.info.n_constraint_types.inequality += 1
@@ -488,34 +488,34 @@ end
 
 function MOI.add_constraint(
     model::Optimizer,
-    func::SAF{T},
+    fct::SAF{T},
     set::CPE.DifferentFrom{T},
 ) where {T<:Real}
     com = model.inner
     com.info.n_constraint_types.notequal += 1
+    fct, set = fct_constant_to_set(fct, set)
 
     # support for cx != a where a and c are constants
-    if length(func.terms) == 1
+    if length(fct.terms) == 1
         # reformulate to x != a where x is variable and a a constant
-        rhs = set.value / func.terms[1].coefficient
+        rhs = set.value / fct.terms[1].coefficient
         if isapprox_discrete(com, rhs)
             rhs = get_approx_discrete(rhs)
-            rm!(
-                com,
-                com.search_space[func.terms[1].variable_index.value],
-                rhs;
-                changes = false,
-            )
+            v = com.search_space[fct.terms[1].variable.value]
+            if has(v, rhs) 
+                rm!(com, v, rhs; changes = false)
+            end
         end
         return MOI.ConstraintIndex{SAF{T},CPE.DifferentFrom{T}}(0)
     end
 
-    lc = new_linear_constraint(model.inner, func, set)
+    lc = new_linear_constraint(model.inner, fct, set)
 
     add_constraint!(model, lc)
 
     return MOI.ConstraintIndex{SAF{T},CPE.DifferentFrom{T}}(length(com.constraints))
 end
+
 function MOI.add_constraint(
     model::Optimizer,
     func::SAF{T},
@@ -535,7 +535,7 @@ function MOI.add_constraint(
     model::Optimizer,
     func::VAF{T},
     set::IS,
-) where {A,T<:Real,ASS<:MOI.AbstractScalarSet,IS<:MOI.IndicatorSet{A,ASS}}
+) where {A,T<:Real,ASS<:MOI.AbstractScalarSet,IS<:MOI.Indicator{A,ASS}}
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
@@ -544,7 +544,7 @@ function MOI.add_constraint(
     internals = ConstraintInternals(
         length(com.constraints)+1,
         func,
-        MOI.IndicatorSet{A}(set.set),
+        MOI.Indicator{A}(set.set),
         indices,
     )
 
@@ -556,14 +556,14 @@ function MOI.add_constraint(
 
     add_constraint!(model, constraint)
 
-    return MOI.ConstraintIndex{VAF{T},MOI.IndicatorSet{A,ASS}}(length(com.constraints))
+    return MOI.ConstraintIndex{VAF{T},MOI.Indicator{A,ASS}}(length(com.constraints))
 end
 
 function MOI.add_constraint(
     model::Optimizer,
     vars::MOI.VectorOfVariables,
     set::IS,
-) where {A,F,S,IS<:CS.IndicatorSet{A,F,S}}
+) where {A,F,S,IS<:CS.Indicator{A,F,S}}
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
@@ -578,7 +578,7 @@ function MOI.add_constraint(
 
     add_constraint!(model, constraint)
 
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.IndicatorSet{A,F,S}}(length(com.constraints))
+    return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.Indicator{A,F,S}}(length(com.constraints))
 end
 
 
@@ -586,7 +586,7 @@ function MOI.add_constraint(
     model::Optimizer,
     func::VAF{T},
     set::IS,
-) where {T,A,F,S<:MOI.AbstractVectorSet,IS<:CS.IndicatorSet{A,F,S}}
+) where {T,A,F,S<:MOI.AbstractVectorSet,IS<:CS.Indicator{A,F,S}}
     com = model.inner
     com.info.n_constraint_types.indicator += 1
 
@@ -602,14 +602,14 @@ function MOI.add_constraint(
 
     add_constraint!(model, constraint)
 
-    return MOI.ConstraintIndex{VAF{T},CS.IndicatorSet{A,F,S}}(length(com.constraints))
+    return MOI.ConstraintIndex{VAF{T},CS.Indicator{A,F,S}}(length(com.constraints))
 end
 
 function MOI.add_constraint(
     model::Optimizer,
     func::VAF{T},
     set::RS,
-) where {A,F,S,T<:Real,RS<:ReifiedSet{A,F,S}}
+) where {A,F,S,T<:Real,RS<:Reified{A,F,S}}
     com = model.inner
     com.info.n_constraint_types.reified += 1
 
@@ -630,14 +630,14 @@ function MOI.add_constraint(
 
     add_constraint!(model, constraint)
 
-    return MOI.ConstraintIndex{VAF{T},CS.ReifiedSet{A,F,S}}(length(com.constraints))
+    return MOI.ConstraintIndex{VAF{T},CS.Reified{A,F,S}}(length(com.constraints))
 end
 
 function MOI.add_constraint(
     model::Optimizer,
     vars::MOI.VectorOfVariables,
     set::RS,
-) where {A,F,S<:MOI.AbstractVectorSet,RS<:CS.ReifiedSet{A,F,S}}
+) where {A,F,S<:MOI.AbstractVectorSet,RS<:CS.Reified{A,F,S}}
     com = model.inner
     com.info.n_constraint_types.reified += 1
     internals = create_internals(com, vars, set)
@@ -651,7 +651,7 @@ function MOI.add_constraint(
 
     add_constraint!(model, constraint)
 
-    return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.ReifiedSet{A,F,S}}(length(com.constraints))
+    return MOI.ConstraintIndex{MOI.VectorOfVariables,CS.Reified{A,F,S}}(length(com.constraints))
 end
 
 function MOI.add_constraint(

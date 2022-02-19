@@ -288,16 +288,16 @@ end
 
 get_value(::Type{Val{i}}) where i = i
 
-get_activation_condition(::IndicatorSet{A}) where A = A
-get_activation_condition(::MOI.IndicatorSet{A}) where A = A
-get_activation_condition(::ReifiedSet{A}) where A = A
+get_activation_condition(::Indicator{A}) where A = A
+get_activation_condition(::MOI.Indicator{A}) where A = A
+get_activation_condition(::Reified{A}) where A = A
 
-typeof_without_params(::MOI.IndicatorSet) = MOI.IndicatorSet
-typeof_without_params(::Type{<:MOI.IndicatorSet}) = MOI.IndicatorSet
-typeof_without_params(::IndicatorSet) = IndicatorSet
-typeof_without_params(::Type{<:IndicatorSet}) = IndicatorSet
-typeof_without_params(::ReifiedSet) = ReifiedSet
-typeof_without_params(::Type{<:ReifiedSet}) = ReifiedSet
+typeof_without_params(::MOI.Indicator) = MOI.Indicator
+typeof_without_params(::Type{<:MOI.Indicator}) = MOI.Indicator
+typeof_without_params(::Indicator) = Indicator
+typeof_without_params(::Type{<:Indicator}) = Indicator
+typeof_without_params(::Reified) = Reified
+typeof_without_params(::Type{<:Reified}) = Reified
 
 for bool_pair = BOOL_SET_TO_CONSTRAINT
     bool_set = bool_pair.first
@@ -318,7 +318,7 @@ get_saf(fct::MOI.ScalarAffineFunction) = fct
 get_saf(fct::MOI.VectorAffineFunction) = MOI.ScalarAffineFunction([t.scalar_term for t in fct.terms], fct.constants[1])
 
 get_vov(fct::MOI.VectorOfVariables) = fct
-get_vov(fct::MOI.VectorAffineFunction) = MOI.VectorOfVariables([t.scalar_term.variable_index for t in fct.terms])
+get_vov(fct::MOI.VectorAffineFunction) = MOI.VectorOfVariables([t.scalar_term.variable for t in fct.terms])
 
 """
     init_and_activate_constraint!(com, constraint, fct, set)

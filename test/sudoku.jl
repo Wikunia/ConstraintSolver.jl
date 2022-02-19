@@ -514,7 +514,7 @@
         end
 
         optimize!(m)
-        @test MOI.get(m, MOI.SolveTime()) >= 1.0
+        @test MOI.get(m, MOI.SolveTimeSec()) >= 1.0
         # at least more than 1 but in that time frame it should find a lot ;)
         @test MOI.get(m, MOI.ResultCount()) >= 10
         @test JuMP.termination_status(m) == MOI.TIME_LIMIT
@@ -559,7 +559,7 @@
         end
 
         optimize!(m)
-        @test MOI.get(m, MOI.SolveTime()) >= 1.0
+        @test MOI.get(m, MOI.SolveTimeSec()) >= 1.0
         # at least more than 1 but in that time frame it should find a lot ;)
         @test MOI.get(m, MOI.ResultCount()) >= 10
         @test JuMP.termination_status(m) == MOI.TIME_LIMIT

@@ -4,7 +4,7 @@ function init_constraint!(
     fct::Union{MOI.VectorOfVariables,VAF{T}},
     set::RS;
     active = true
-) where {A,T<:Real,RS<:ReifiedSet{A}}
+) where {A,T<:Real,RS<:Reified{A}}
     inner_constraint = constraint.inner_constraint
     complement_constraint = constraint.complement_constraint
 
@@ -43,7 +43,7 @@ function prune_constraint!(
     fct::Union{MOI.VectorOfVariables,VAF{T}},
     set::RS;
     logs = true,
-) where {A,T<:Real,RS<:ReifiedSet{A}}
+) where {A,T<:Real,RS<:Reified{A}}
     # 1. if the inner constraint is solved then the reified variable can be set to activate_on
     # 2. if the inner constraint is infeasible the reified variable can be set to !activate_on
     # 3. if the reified constraint is active then prune can be called for the inner constraint
@@ -102,7 +102,7 @@ function still_feasible(
     set::RS,
     vidx::Int,
     val::Int,
-) where {A,T<:Real,RS<:ReifiedSet{A}}
+) where {A,T<:Real,RS<:Reified{A}}
     inner_constraint = constraint.inner_constraint
     variables = com.search_space
     activate_on = Int(constraint.activate_on)
@@ -151,7 +151,7 @@ function is_constraint_solved(
     fct::Union{MOI.VectorOfVariables,VAF{T}},
     set::RS,
     values::Vector{Int},
-) where {A,T<:Real,RS<:ReifiedSet{A}}
+) where {A,T<:Real,RS<:Reified{A}}
     activate_on = Int(constraint.activate_on)
     inner_constraint = constraint.inner_constraint
     return is_constraint_solved(
@@ -168,7 +168,7 @@ end
         constraint::ReifiedConstraint,
         fct::Union{MOI.VectorOfVariables,VAF{T}},
         set::RS
-    )  where {A,T<:Real,RS<:ReifiedSet{A}}
+    )  where {A,T<:Real,RS<:Reified{A}}
 
 Checks if the constraint is violated as it is currently set. This can happen inside an
 inactive reified or indicator constraint.
@@ -178,7 +178,7 @@ function is_constraint_violated(
     constraint::ReifiedConstraint,
     fct::Union{MOI.VectorOfVariables,VAF{T}},
     set::RS,
-) where {A,T<:Real,RS<:ReifiedSet{A}}
+) where {A,T<:Real,RS<:Reified{A}}
     if all(isfixed(var) for var in com.search_space[constraint.indices])
         return !is_constraint_solved(
             constraint,

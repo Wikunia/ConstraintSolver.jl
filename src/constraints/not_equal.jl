@@ -97,7 +97,7 @@ function is_constraint_solved(
     values::Vector{Int},
 ) where {T<:Real}
 
-    indices = [t.variable_index.value for t in fct.terms]
+    indices = [t.variable.value for t in fct.terms]
     coeffs = [t.coefficient for t in fct.terms]
     return get_approx_discrete(sum(values .* coeffs) + fct.constant) != set.value
 end

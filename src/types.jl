@@ -266,20 +266,21 @@ mutable struct TableBacktrackInfo
     indices::Vector{Int}
 end
 
-struct IndicatorSet{A,F,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
+struct Indicator{A,F,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <: MOI.AbstractVectorSet
     set::S
     dimension::Int
 end
-IndicatorSet{A,F}(set::S) where {A,F,S} = IndicatorSet{A,F,S}(set, 1+MOI.dimension(set))
-Base.copy(I::IndicatorSet{A,F,S}) where {A,F,S} = IndicatorSet{A,F,S}(I.set, I.dimension)
+Indicator{A,F}(set::S) where {A,F,S} = Indicator{A,F,S}(set, 1+MOI.dimension(set))
+Base.copy(I::Indicator{A,F,S}) where {A,F,S} = Indicator{A,F,S}(I.set, I.dimension)
 
-struct ReifiedSet{A,F,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
+struct Reified{A,F,S<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet}} <:
        MOI.AbstractVectorSet
     set::S
     dimension::Int
 end
-ReifiedSet{A,F}(set::S) where {A,F,S} = ReifiedSet{A,F,S}(set, 1+MOI.dimension(set))
-Base.copy(R::ReifiedSet{A,F,S}) where {A,F,S} = ReifiedSet{A,F,S}(R.set, R.dimension)
+
+Reified{A,F}(set::S) where {A,F,S} = Reified{A,F,S}(set, 1+MOI.dimension(set))
+Base.copy(R::Reified{A,F,S}) where {A,F,S} = Reified{A,F,S}(R.set, R.dimension)
 
 abstract type AbstractBoolSet{
     F1<:Union{SAF,VAF,MOI.VectorOfVariables},
@@ -506,7 +507,7 @@ end
 abstract type ObjectiveFunction end
 
 mutable struct SingleVariableObjective <: ObjectiveFunction
-    fct::MOI.SingleVariable
+    fct::VI
     vidx::Int # index of the variable
     indices::Vector{Int}
 end
