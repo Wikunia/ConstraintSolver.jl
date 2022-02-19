@@ -344,17 +344,6 @@ Base.copy(A::ComplementSet{F,S}) where {F,S} = ComplementSet{F,S}(A.set, A.dimen
 #====================================================================================
 ====================================================================================#
 
-mutable struct ImplementedConstraintFunctions
-    init::Bool
-    activate::Bool
-    update_init::Bool
-    finished_pruning::Bool
-    restore_pruning::Bool
-    single_reverse_pruning::Bool
-    reverse_pruning::Bool
-    update_best_bound::Bool
-end
-
 mutable struct ConstraintInternals{
     FCT<:Union{MOI.AbstractScalarFunction,MOI.AbstractVectorFunction},
     SET<:Union{MOI.AbstractScalarSet,MOI.AbstractVectorSet},
