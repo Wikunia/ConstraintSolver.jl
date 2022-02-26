@@ -1,7 +1,7 @@
 name = "ConstraintSolver"
 uuid = "e0e52ebd-5523-408d-9ca3-7641f1cd1405"
 authors = ["Ole Kröger <o.kroeger@opensourc.es>"]
-version = "0.9.0"
+version = "0.9.1"
 
 [deps]
 ConstraintProgrammingExtensions = "b65d079e-ed98-51d9-b0db-edee61a5c5f8"
