@@ -1,5 +1,8 @@
 # ConstrainSolver.jl - Changelog
 
+## v0.9.2 (26th of March 2022)
+- Compat change JuMP v1
+
 ## v0.9.1 (26th of February 2022)
 - Compat change JuMP v0.23
 ## v0.9.0 (19th of February 2022)
